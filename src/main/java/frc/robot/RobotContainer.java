@@ -26,7 +26,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.DriveSubsystem;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
@@ -46,7 +46,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  */
 public class RobotContainer {
     // Subsystems
-    private final Drive drive;
+    private final DriveSubsystem drive;
     private final Vision vision;
 
     // Controller
@@ -63,7 +63,7 @@ public class RobotContainer {
                 // ModuleIOTalonFX is intended for modules with TalonFX drive, TalonFX turn, and
                 // a CANcoder
                 drive =
-                        new Drive(
+                        new DriveSubsystem(
                                 new GyroIOPigeon2(),
                                 new ModuleIOTalonFX(TunerConstants.FrontLeft),
                                 new ModuleIOTalonFX(TunerConstants.FrontRight),
@@ -87,7 +87,7 @@ public class RobotContainer {
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
                 drive =
-                        new Drive(
+                        new DriveSubsystem(
                                 new GyroIO() {},
                                 new ModuleIOSim(TunerConstants.FrontLeft),
                                 new ModuleIOSim(TunerConstants.FrontRight),
@@ -106,7 +106,7 @@ public class RobotContainer {
             default:
                 // Replayed robot, disable IO implementations
                 drive =
-                        new Drive(
+                        new DriveSubsystem(
                                 new GyroIO() {},
                                 new ModuleIO() {},
                                 new ModuleIO() {},

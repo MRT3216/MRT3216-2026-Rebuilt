@@ -28,7 +28,7 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOLimelight;
+import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -65,16 +65,17 @@ public class RobotContainer {
                                 new ModuleIOTalonFX(TunerConstants.BackRight));
 
                 // Real robot, instantiate hardware IO implementations
+                // vision =
+                // new Vision(
+                // drive::addVisionMeasurement,
+                // new VisionIOLimelight(cameraLeftName, drive::getRotation),
+                // new VisionIOLimelight(cameraRightName, drive::getRotation));
                 vision =
                         new Vision(
                                 drive::addVisionMeasurement,
-                                new VisionIOLimelight(cameraLeftName, drive::getRotation),
-                                new VisionIOLimelight(cameraRightName, drive::getRotation));
-                // vision =
-                // new Vision(
-                // demoDrive::addVisionMeasurement,
-                // new VisionIOPhotonVision(camera0Name, robotToCamera0),
-                // new VisionIOPhotonVision(camera1Name, robotToCamera1));
+                                new VisionIOPhotonVision(cameraLeftName, robotToCameraLeft),
+                                new VisionIOPhotonVision(cameraRightName, robotToCameraRight),
+                                new VisionIOPhotonVision(cameraBackName, robotToCameraBack));
                 break;
 
             case SIM:

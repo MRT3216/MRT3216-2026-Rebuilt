@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.photonvision.PhotonCamera;
+import org.photonvision.targeting.PhotonPipelineResult;
 
 /** IO implementation for real PhotonVision hardware. */
 public class VisionIOPhotonVision implements VisionIO {
@@ -41,7 +42,7 @@ public class VisionIOPhotonVision implements VisionIO {
         // Read new camera observations
         Set<Short> tagIds = new HashSet<>();
         List<PoseObservation> poseObservations = new LinkedList<>();
-        for (var result : camera.getAllUnreadResults()) {
+        for (PhotonPipelineResult result : camera.getAllUnreadResults()) {
             // Update latest target observation
             if (result.hasTargets()) {
                 inputs.latestTargetObservation =

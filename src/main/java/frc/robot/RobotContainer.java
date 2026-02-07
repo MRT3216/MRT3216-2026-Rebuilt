@@ -7,7 +7,12 @@
 
 package frc.robot;
 
-import static frc.robot.subsystems.vision.VisionConstants.*;
+import static frc.robot.subsystems.vision.VisionConstants.cameraBackName;
+import static frc.robot.subsystems.vision.VisionConstants.cameraLeftName;
+import static frc.robot.subsystems.vision.VisionConstants.cameraRightName;
+import static frc.robot.subsystems.vision.VisionConstants.robotToCameraBack;
+import static frc.robot.subsystems.vision.VisionConstants.robotToCameraLeft;
+import static frc.robot.subsystems.vision.VisionConstants.robotToCameraRight;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -19,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
+import frc.robot.constants.Constants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;

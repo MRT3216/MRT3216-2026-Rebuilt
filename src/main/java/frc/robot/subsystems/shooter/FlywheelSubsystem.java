@@ -2,10 +2,11 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
-import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -20,12 +21,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import yams.gearing.GearBox;
-import yams.gearing.MechanismGearing;
 import yams.mechanisms.config.FlyWheelConfig;
 import yams.mechanisms.velocity.FlyWheel;
 import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
+import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
@@ -51,13 +51,28 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     private final SmartMotorControllerConfig motorConfig =
             new SmartMotorControllerConfig(this)
-                    .withClosedLoopController(1, 0, 0, RPM.of(10000), RPM.per(Second).of(60))
-                    .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 1)))
-                    .withIdleMode(MotorMode.COAST)
-                    .withTelemetry("FlywheelMotor", TelemetryVerbosity.HIGH)
-                    .withStatorCurrentLimit(Amps.of(40))
-                    .withMotorInverted(false)
+                    .withControlMode(ControlMode.CLOSED_LOOP)
+                    // Feedback Constants (PID Constants)
+                    .withClosedLoopController(
+                            50, 0, 0, DegreesPerSecond.of(90), DegreesPerSecondPerSecond.of(45))
+                    .withSimClosedLoopController(
+                            50, 0, 0, DegreesPerSecond.of(90), DegreesPerSecondPerSecond.of(45))
+                    // Feedforward Constants
                     .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+                    .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+                    // Telemetry name and verbosity level
+                    .withTelemetry("ShooterMotors", TelemetryVerbosity.HIGH)
+                    // Gearing from the motor rotor to final shaft.
+                    // In this example gearbox(3,4) is the same as gearbox("3:1","4:1") which
+                    // corresponds to
+                    // the gearbox attached to your motor.
+                    // .withGearing(new MechanismGearing(GearBox.fromReductionStages(3, 4)))
+                    // Motor properties to prevent over currenting.
+                    .withMotorInverted(false)
+                    .withIdleMode(MotorMode.COAST)
+                    .withStatorCurrentLimit(Amps.of(40))
+                    .withClosedLoopRampRate(Seconds.of(0.25))
+                    .withOpenLoopRampRate(Seconds.of(0.25))
                     .withFollowers(Pair.of(new TalonFX(52), true));
 
     private final SmartMotorController motor =

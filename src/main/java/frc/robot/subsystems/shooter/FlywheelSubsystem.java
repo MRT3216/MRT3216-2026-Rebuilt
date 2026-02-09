@@ -32,14 +32,13 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /** AdvantageKit Flywheel Subsystem, capable of replaying the flywheel. */
 public class FlywheelSubsystem extends SubsystemBase {
-
     /**
      * AdvantageKit identifies inputs via the "Replay Bubble". Everything going to the SMC is an
      * Output. Everything coming from the SMC is an Input.
      */
     @AutoLog
     public static class FlywheelInputs {
-        public AngularVelocity velocity = DegreesPerSecond.of(0);
+            public AngularVelocity velocity = DegreesPerSecond.of(0);
         public AngularVelocity setpoint = DegreesPerSecond.of(0);
         public Voltage volts = Volts.of(0);
         public Current current = Amps.of(0);
@@ -57,9 +56,10 @@ public class FlywheelSubsystem extends SubsystemBase {
                             50, 0, 0, DegreesPerSecond.of(90), DegreesPerSecondPerSecond.of(45))
                     .withSimClosedLoopController(
                             50, 0, 0, DegreesPerSecond.of(90), DegreesPerSecondPerSecond.of(45))
-                    // Feedforward Constants
+                                        // Feedforward Constants
                     .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
                     .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+                    .withVoltageCompensation(Volts.of(12))
                     // Telemetry name and verbosity level
                     .withTelemetry("ShooterMotors", TelemetryVerbosity.HIGH)
                     // Gearing from the motor rotor to final shaft.
@@ -71,8 +71,6 @@ public class FlywheelSubsystem extends SubsystemBase {
                     .withMotorInverted(false)
                     .withIdleMode(MotorMode.COAST)
                     .withStatorCurrentLimit(Amps.of(40))
-                    .withClosedLoopRampRate(Seconds.of(0.25))
-                    .withOpenLoopRampRate(Seconds.of(0.25))
                     .withFollowers(Pair.of(new TalonFX(52), true));
 
     private final SmartMotorController motor =

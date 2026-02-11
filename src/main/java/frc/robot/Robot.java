@@ -41,8 +41,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 public class Robot extends LoggedRobot {
     private Command autonomousCommand;
     private RobotContainer robotContainer;
-    private static final double lowBatteryVoltage = 11.0;
-    private static final double lowBatteryDisabledTime = 2.0;
+    // Low battery thresholds moved to Constants.RobotSafetyConstants
     private final Timer disabledTimer = new Timer();
     private final Alert lowBatteryAlert =
             new Alert(
@@ -137,8 +136,8 @@ public class Robot extends LoggedRobot {
         CommandScheduler.getInstance().run();
 
         if (RobotController.getBatteryVoltage() > 0.0
-                && RobotController.getBatteryVoltage() <= lowBatteryVoltage
-                && disabledTimer.hasElapsed(lowBatteryDisabledTime)) {
+                && RobotController.getBatteryVoltage() <= Constants.RobotSafetyConstants.kLowBatteryVoltage
+                && disabledTimer.hasElapsed(Constants.RobotSafetyConstants.kLowBatteryDisabledSecs)) {
             lowBatteryAlert.set(true);
             // TODO: Add this back if we have LEDs
             // Leds.getGlobal().lowBatteryAlert = true;

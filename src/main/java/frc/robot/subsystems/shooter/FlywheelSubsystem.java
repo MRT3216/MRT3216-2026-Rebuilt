@@ -57,36 +57,22 @@ public class FlywheelSubsystem extends SubsystemBase {
     private final FlywheelInputsAutoLogged flywheelInputs = new FlywheelInputsAutoLogged();
 
     /* Hardware Objects */
-    private final TalonFX leftMotor = new TalonFX(RobotMap.kLeftMotorId);
+    private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
 
     /* Configuration for the Smart Motor Controller (SMC) */
-    private final SmartMotorControllerConfig motorConfig =
-            new SmartMotorControllerConfig(this)
-                    .withControlMode(ControlMode.CLOSED_LOOP)
-                    .withClosedLoopController(ShooterConstants.kP, ShooterConstants.kI, ShooterConstants.kD)
-                    .withFeedforward(
-                            new SimpleMotorFeedforward(
-                                    ShooterConstants.kS, ShooterConstants.kV, ShooterConstants.kA))
-                    .withGearing(
-                            new MechanismGearing(GearBox.fromReductionStages(ShooterConstants.kGearReduction)))
-                    .withStatorCurrentLimit(ShooterConstants.kStatorCurrentLimit)
-                    .withFollowers(Pair.of(new TalonFX(RobotMap.kRightMotorId), true));
+    private final SmartMotorControllerConfig motorConfig;
 
     /** The SmartMotorController abstraction that allows for hardware/sim parity. */
-    private final SmartMotorController motor =
-            new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
+    private final SmartMotorController motor;
 
     /* High-level mechanism configuration (3 lb Flywheel) */
-    private final FlyWheelConfig flywheelConfig =
-            new FlyWheelConfig(motor)
-                    .withDiameter(ShooterConstants.kWheelDiameter)
-                    .withMass(ShooterConstants.kWheelMass);
+    private final FlyWheelConfig flywheelConfig;
 
-    private final FlyWheel flywheel = new FlyWheel(flywheelConfig);
+    private final FlyWheel flywheel;
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
@@ -106,10 +92,39 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public FlywheelSubsystem() {
-        // High-frequency updates for PID tuning (50Hz)
-        BaseStatusSignal.setUpdateFrequencyForAll(50, velocitySignal, referenceSignal);
+        // Initialize motor/controller objects here to avoid leaking "this" during field
+        // initialization (object-escape).
+        motorConfig =
+                new SmartMotorControllerConfig(this)
+                        .withControlMode(ControlMode.CLOSED_LOOP)
+                        .withClosedLoopController(ShooterConstants.kP, ShooterConstants.kI, ShooterConstants.kD)
+                        .withFeedforward(
+                                new SimpleMotorFeedforward(
+                                        ShooterConstants.kS, ShooterConstants.kV, ShooterConstants.kA))
+                        .withGearing(
+                                new MechanismGearing(GearBox.fromReductionStages(ShooterConstants.kGearReduction)))
+                        .withStatorCurrentLimit(ShooterConstants.kStatorCurrentLimit)
+                        .withFollowers(Pair.of(new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId), true));
 
-        // Optimization: Disable unused signals (like position) to conserve CAN bus bandwidth
+        // Create the SMC wrapper
+        motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
+
+        // Create the mechanism config now that motor is available
+        flywheelConfig =
+                new FlyWheelConfig(motor)
+                        .withDiameter(ShooterConstants.kWheelDiameter)
+                        .withMass(ShooterConstants.kWheelMass);
+
+        flywheel = new FlyWheel(flywheelConfig);
+
+        // High-frequency updates for PID tuning
+        BaseStatusSignal.setUpdateFrequencyForAll(
+                (int) frc.robot.constants.Constants.ShooterConstants.kUpdateHz,
+                velocitySignal,
+                referenceSignal);
+
+        // Optimization: Disable unused signals (like position) to conserve CAN bus
+        // bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);
     }
 
@@ -138,7 +153,7 @@ public class FlywheelSubsystem extends SubsystemBase {
      * @param dutyCycle The output percentage (-1.0 to 1.0).
      * @return A command to run the flywheel at the specified duty cycle.
      */
-    public Command set(double dutyCycle) {
+    public Command setDutyCycle(double dutyCycle) {
         return flywheel.set(dutyCycle);
     }
 

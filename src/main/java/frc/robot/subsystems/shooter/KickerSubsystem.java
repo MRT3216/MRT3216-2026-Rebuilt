@@ -1,8 +1,7 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.Pounds;
+// Diameter and mass are centralized in Constants.KickerConstants
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -14,6 +13,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -44,44 +44,16 @@ public class KickerSubsystem extends SubsystemBase {
 
     private final KickerInputsAutoLogged kickerInputs = new KickerInputsAutoLogged();
 
-    private final SparkFlex motorController = new SparkFlex(56, SparkFlex.MotorType.kBrushless);
+    private final SparkFlex motorController =
+            new SparkFlex(RobotMap.Shooter.Kicker.kMotorId, SparkFlex.MotorType.kBrushless);
 
-    private final SmartMotorControllerConfig motorConfig =
-            new SmartMotorControllerConfig(this)
-                    .withControlMode(ControlMode.CLOSED_LOOP)
-                    // Feedback Constants (PID Constants)
-                    .withClosedLoopController(1, 0, 0)
-                    .withSimClosedLoopController(1, 0, 0)
-                    // Feedforward Constants
-                    .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
-                    .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
-                    // .withVoltageCompensation(Volts.of(12))
-                    // Telemetry name and verbosity level
-                    .withTelemetry("KickerMotor", TelemetryVerbosity.HIGH)
-                    // Gearing from the motor rotor to final shaft.
-                    // In this example gearbox(3,4) is the same as gearbox("3:1","4:1") which
-                    // corresponds to
-                    // the gearbox attached to your motor.
-                    .withGearing(new MechanismGearing(GearBox.fromReductionStages(1, 1)))
-                    // Motor properties to prevent over currenting.
-                    .withMotorInverted(false)
-                    .withIdleMode(MotorMode.COAST)
-                    .withStatorCurrentLimit(Amps.of(60));
+    private final SmartMotorControllerConfig motorConfig;
 
-    private final SmartMotorController motor =
-            new SparkWrapper(motorController, DCMotor.getNeoVortex(1), motorConfig);
+    private final SmartMotorController motor;
 
-    private final FlyWheelConfig kickerConfig =
-            new FlyWheelConfig(motor)
-                    // Diameter of the kicker.
-                    .withDiameter(Inches.of(2))
-                    // Mass of the kicker.
-                    .withMass(Pounds.of(1))
-                    // Maximum speed of the shooter.
-                    // .withUpperSoftLimit(RPM.of(4000))
-                    .withTelemetry("KickerMech", TelemetryVerbosity.HIGH);
+    private final FlyWheelConfig kickerConfig;
 
-    private final FlyWheel kicker = new FlyWheel(kickerConfig);
+    private final FlyWheel kicker;
 
     /** Update the AdvantageKit "inputs" (data coming from the SMC) */
     private void updateInputs() {
@@ -91,7 +63,61 @@ public class KickerSubsystem extends SubsystemBase {
         kickerInputs.current = motor.getStatorCurrent();
     }
 
-    public KickerSubsystem() {}
+    public KickerSubsystem() {
+        // Initialize motor controller config in constructor to avoid object-escape
+        motorConfig =
+                new SmartMotorControllerConfig(this)
+                        .withControlMode(ControlMode.CLOSED_LOOP)
+                        // Feedback Constants (PID Constants)
+                        .withClosedLoopController(
+                                frc.robot.constants.Constants.KickerConstants.kP,
+                                frc.robot.constants.Constants.KickerConstants.kI,
+                                frc.robot.constants.Constants.KickerConstants.kD)
+                        .withSimClosedLoopController(
+                                frc.robot.constants.Constants.KickerConstants.kP,
+                                frc.robot.constants.Constants.KickerConstants.kI,
+                                frc.robot.constants.Constants.KickerConstants.kD)
+                        // Feedforward Constants
+                        .withFeedforward(
+                                new SimpleMotorFeedforward(
+                                        frc.robot.constants.Constants.KickerConstants.kS,
+                                        frc.robot.constants.Constants.KickerConstants.kV,
+                                        frc.robot.constants.Constants.KickerConstants.kA))
+                        .withSimFeedforward(
+                                new SimpleMotorFeedforward(
+                                        frc.robot.constants.Constants.KickerConstants.kS,
+                                        frc.robot.constants.Constants.KickerConstants.kV,
+                                        frc.robot.constants.Constants.KickerConstants.kA))
+                        // .withVoltageCompensation(Volts.of(12))
+                        // Telemetry name and verbosity level
+                        .withTelemetry(
+                                frc.robot.constants.Constants.KickerConstants.kMotorTelemetry,
+                                TelemetryVerbosity.HIGH)
+                        .withGearing(
+                                new MechanismGearing(
+                                        GearBox.fromReductionStages(
+                                                frc.robot.constants.Constants.KickerConstants.kGearReduction)))
+                        .withMotorInverted(false)
+                        .withIdleMode(MotorMode.COAST)
+                        .withStatorCurrentLimit(
+                                frc.robot.constants.Constants.KickerConstants.kStatorCurrentLimit);
+
+        motor = new SparkWrapper(motorController, DCMotor.getNeoVortex(1), motorConfig);
+
+        kickerConfig =
+                new FlyWheelConfig(motor)
+                        // Diameter of the kicker.
+                        .withDiameter(frc.robot.constants.Constants.KickerConstants.kWheelDiameter)
+                        // Mass of the kicker.
+                        .withMass(frc.robot.constants.Constants.KickerConstants.kWheelMass)
+                        // Maximum speed of the shooter.
+                        // .withUpperSoftLimit(RPM.of(4000))
+                        .withTelemetry(
+                                frc.robot.constants.Constants.KickerConstants.kMechTelemetry,
+                                TelemetryVerbosity.HIGH);
+
+        kicker = new FlyWheel(kickerConfig);
+    }
 
     /**
      * Gets the current velocity of the kicker.
@@ -119,7 +145,7 @@ public class KickerSubsystem extends SubsystemBase {
      * @param dutyCycle DutyCycle to set.
      * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
      */
-    public Command set(double dutyCycle) {
+    public Command setDutyCycle(double dutyCycle) {
         Logger.recordOutput("Kicker/DutyCycle", dutyCycle);
         return kicker.set(dutyCycle);
     }

@@ -15,6 +15,7 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.TurretConstants;
+import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -45,45 +46,15 @@ public class TurretSubsystem extends SubsystemBase {
     private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
 
     // CAN ID 53 - pivot motor
-    private TalonFX pivotMotor = new TalonFX(TurretConstants.kPivotMotorId);
+    private TalonFX pivotMotor = new TalonFX(RobotMap.Shooter.Turret.kPivotMotorId);
 
-    private final SmartMotorControllerConfig motorConfig =
-            new SmartMotorControllerConfig(this)
-                    .withControlMode(ControlMode.CLOSED_LOOP)
-                    // Feedback Constants (PID Constants)
-                    .withClosedLoopController(
-                            TurretConstants.kP,
-                            TurretConstants.kI,
-                            TurretConstants.kD,
-                            DegreesPerSecond.of(TurretConstants.kMaxVelocityDegPerSec),
-                            DegreesPerSecondPerSecond.of(TurretConstants.kMaxAccelDegPerSec2))
-                    .withSimClosedLoopController(
-                            TurretConstants.kP,
-                            TurretConstants.kI,
-                            TurretConstants.kD,
-                            DegreesPerSecond.of(TurretConstants.kMaxVelocityDegPerSec),
-                            DegreesPerSecondPerSecond.of(TurretConstants.kMaxAccelDegPerSec2))
-                    // Feedforward Constants
-                    .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
-                    .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
-                    .withTelemetry(TurretConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
-                    .withGearing(TurretConstants.kGearing)
-                    .withMotorInverted(TurretConstants.kMotorInverted)
-                    .withIdleMode(MotorMode.BRAKE)
-                    .withSoftLimit(TurretConstants.kSoftLimitMax, TurretConstants.kSoftLimitMin)
-                    .withStatorCurrentLimit(TurretConstants.kStatorCurrentLimit);
+    private final SmartMotorControllerConfig motorConfig;
 
-    private final SmartMotorController motor =
-            new TalonFXWrapper(pivotMotor, DCMotor.getKrakenX44Foc(1), motorConfig);
+    private final SmartMotorController motor;
 
-    private final PivotConfig turretConfig =
-            new PivotConfig(motor)
-                    .withMOI(TurretConstants.kMOI)
-                    .withHardLimit(TurretConstants.kHardLimitMax, TurretConstants.kHardLimitMin)
-                    .withStartingPosition(TurretConstants.kStartingPosition)
-                    .withTelemetry(TurretConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+    private final PivotConfig turretConfig;
 
-    private final Pivot turret = new Pivot(turretConfig);
+    private final Pivot turret;
 
     /** Update the AdvantageKit "inputs" (data coming from the SMC) */
     private void updateInputs() {
@@ -94,7 +65,45 @@ public class TurretSubsystem extends SubsystemBase {
         turretInputs.current = motor.getStatorCurrent();
     }
 
-    public TurretSubsystem() {}
+    public TurretSubsystem() {
+        // Initialize motor/controller objects in constructor to avoid object-escape
+        motorConfig =
+                new SmartMotorControllerConfig(this)
+                        .withControlMode(ControlMode.CLOSED_LOOP)
+                        // Feedback Constants (PID Constants)
+                        .withClosedLoopController(
+                                TurretConstants.kP,
+                                TurretConstants.kI,
+                                TurretConstants.kD,
+                                DegreesPerSecond.of(TurretConstants.kMaxVelocityDegPerSec),
+                                DegreesPerSecondPerSecond.of(TurretConstants.kMaxAccelDegPerSec2))
+                        .withSimClosedLoopController(
+                                TurretConstants.kP,
+                                TurretConstants.kI,
+                                TurretConstants.kD,
+                                DegreesPerSecond.of(TurretConstants.kMaxVelocityDegPerSec),
+                                DegreesPerSecondPerSecond.of(TurretConstants.kMaxAccelDegPerSec2))
+                        // Feedforward Constants
+                        .withFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+                        .withSimFeedforward(new SimpleMotorFeedforward(0, 0, 0))
+                        .withTelemetry(TurretConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
+                        .withGearing(TurretConstants.kGearing)
+                        .withMotorInverted(TurretConstants.kMotorInverted)
+                        .withIdleMode(MotorMode.BRAKE)
+                        .withSoftLimit(TurretConstants.kSoftLimitMax, TurretConstants.kSoftLimitMin)
+                        .withStatorCurrentLimit(TurretConstants.kStatorCurrentLimit);
+
+        motor = new TalonFXWrapper(pivotMotor, DCMotor.getKrakenX44Foc(1), motorConfig);
+
+        turretConfig =
+                new PivotConfig(motor)
+                        .withMOI(TurretConstants.kMOI)
+                        .withHardLimit(TurretConstants.kHardLimitMax, TurretConstants.kHardLimitMin)
+                        .withStartingPosition(TurretConstants.kStartingPosition)
+                        .withTelemetry(TurretConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+
+        turret = new Pivot(turretConfig);
+    }
 
     /**
      * Gets the current angle of the turret.
@@ -123,7 +132,7 @@ public class TurretSubsystem extends SubsystemBase {
         return turret.setAngle(
                 () -> {
                     // Log requested setpoint for debugging/telemetry
-                    Logger.recordOutput("Shooter/DutyCycle", setpoint.get());
+                    Logger.recordOutput("Turret/Setpoint", setpoint.get());
                     return setpoint.get();
                 });
     }
@@ -138,7 +147,7 @@ public class TurretSubsystem extends SubsystemBase {
         return turret.set(
                 () -> {
                     // Log requested duty cycle for debugging/telemetry
-                    Logger.recordOutput("Shooter/DutyCycle", dutyCycle.get());
+                    Logger.recordOutput("Turret/DutyCycle", dutyCycle.get());
                     return dutyCycle.get();
                 });
     }

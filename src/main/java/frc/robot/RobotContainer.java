@@ -148,8 +148,8 @@ public class RobotContainer {
         // () -> -controller.getLeftX(),
         // () -> -controller.getRightX()));
 
-        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.set(0));
-        kickerSubsystem.setDefaultCommand(kickerSubsystem.set(0));
+        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.setDutyCycle(0));
+        kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
 
         // Schedule `setVelocity` when the Xbox controller's B button is pressed,
         // cancelling on release.
@@ -161,7 +161,7 @@ public class RobotContainer {
         controller
                 .rightTrigger()
                 .whileTrue(flywheelSubsystem.setDutyCycle(() -> controller.getRightTriggerAxis()));
-        controller.x().whileTrue(kickerSubsystem.set(0.5));
+        controller.x().whileTrue(kickerSubsystem.setDutyCycle(0.5));
         controller.y().whileTrue(kickerSubsystem.setVelocity(RPM.of(4000)));
         controller
                 .leftTrigger()

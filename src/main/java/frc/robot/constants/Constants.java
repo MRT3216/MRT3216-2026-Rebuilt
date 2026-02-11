@@ -7,6 +7,13 @@
 
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Pounds;
+
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.wpilibj.RobotBase;
 
 public final class Constants {
@@ -29,6 +36,29 @@ public final class Constants {
     public enum RobotType {
         COMPBOT,
         SIMBOT
+    }
+
+    public static final class ShooterConstants {
+        // Physical Constants
+        public static final Distance kWheelDiameter = Inches.of(3);
+        public static final Mass kWheelMass = Pounds.of(3);
+        public static final double kGearReduction = 1.0;
+
+        // Current Limits
+        public static final Current kStatorCurrentLimit = Amps.of(80);
+
+        // Feedback (PID) Constants
+        public static final double kP = 1.0;
+        public static final double kI = 0.0;
+        public static final double kD = 0.0;
+
+        // Theoretical Feedforward (Kraken X60 FOC)
+        public static final double kS = 0.15; // Volts to break friction
+        public static final double kV = 0.00207; // Volts per RPM
+        public static final double kA = 0.0001; // Volts per RPM^2
+
+        // Telemetry Update Frequency
+        public static final double kUpdateHz = 50.0;
     }
 
     public static boolean disableHAL = false;

@@ -8,12 +8,16 @@
 package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Pounds;
 
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
+import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.wpilibj.RobotBase;
 
 public final class Constants {
@@ -59,6 +63,37 @@ public final class Constants {
 
         // Telemetry Update Frequency
         public static final double kUpdateHz = 50.0;
+    }
+
+    public static final class TurretConstants {
+        private TurretConstants() {}
+
+        // Hardware
+        public static final int kPivotMotorId = 53;
+
+        // PID / Motion limits
+        public static final double kP = 10.0;
+        public static final double kI = 0.0;
+        public static final double kD = 2.0;
+        public static final double kMaxVelocityDegPerSec = 90.0;
+        public static final double kMaxAccelDegPerSec2 = 45.0;
+
+        // Motor configuration
+        public static final double kGearing = 32.4000;
+        public static final boolean kMotorInverted = false;
+        public static final Current kStatorCurrentLimit = Amps.of(60);
+
+        // Mechanism properties & limits
+        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.0502269403);
+        public static final Angle kHardLimitMax = Degrees.of(180);
+        public static final Angle kHardLimitMin = Degrees.of(-180);
+        public static final Angle kSoftLimitMax = Degrees.of(170);
+        public static final Angle kSoftLimitMin = Degrees.of(-170);
+        public static final Angle kStartingPosition = Degrees.of(0);
+
+        // Telemetry keys
+        public static final String kMotorTelemetry = "TurretMotor";
+        public static final String kMechTelemetry = "TurretMech";
     }
 
     public static boolean disableHAL = false;

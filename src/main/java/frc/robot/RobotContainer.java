@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.wpilibj.GenericHID;
@@ -15,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
+import frc.robot.subsystems.shooter.TurretSubsystem;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -28,6 +30,7 @@ public class RobotContainer {
     // private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
+    private final TurretSubsystem turretSubsystem = new TurretSubsystem();
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -150,9 +153,11 @@ public class RobotContainer {
 
         // Schedule `setVelocity` when the Xbox controller's B button is pressed,
         // cancelling on release.
-        controller.a().whileTrue(flywheelSubsystem.setVelocity(RPM.of(500)));
+        // controller.a().whileTrue(flywheelSubsystem.setVelocity(RPM.of(500)));
 
-        controller.b().whileTrue(flywheelSubsystem.setVelocity(RPM.of(3000)));
+        // controller.b().whileTrue(flywheelSubsystem.setVelocity(RPM.of(3000)));
+        controller.b().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
+        controller.a().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
         controller
                 .rightTrigger()
                 .whileTrue(flywheelSubsystem.setDutyCycle(() -> controller.getRightTriggerAxis()));

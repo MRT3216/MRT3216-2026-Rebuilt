@@ -89,7 +89,7 @@ public class TurretSubsystem extends SubsystemBase {
                         .withGearing(TurretConstants.kGearing)
                         .withMotorInverted(TurretConstants.kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        .withSoftLimit(TurretConstants.kSoftLimitMax, TurretConstants.kSoftLimitMin)
+                        .withSoftLimit(TurretConstants.kSoftLimitMin, TurretConstants.kSoftLimitMax)
                         .withStatorCurrentLimit(TurretConstants.kStatorCurrentLimit);
 
         motor = new TalonFXWrapper(pivotMotor, DCMotor.getKrakenX44Foc(1), motorConfig);
@@ -97,7 +97,7 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig =
                 new PivotConfig(motor)
                         .withMOI(TurretConstants.kMOI)
-                        .withHardLimit(TurretConstants.kHardLimitMax, TurretConstants.kHardLimitMin)
+                        .withHardLimit(TurretConstants.kHardLimitMin, TurretConstants.kHardLimitMax)
                         .withStartingPosition(TurretConstants.kStartingPosition)
                         .withTelemetry(TurretConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
 

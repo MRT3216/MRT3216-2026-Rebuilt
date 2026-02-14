@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.RobotBase;
  * constants. This class should not be used for any other purpose.
  */
 public final class Constants {
+    // region Global Constants
     public static final RobotType robot = RobotType.COMPBOT;
     public static final boolean tuningMode = false;
 
@@ -40,10 +41,9 @@ public final class Constants {
         COMPBOT,
         SIMBOT
     }
+    // endregion
 
-    // ==========================================
-    // Shooter Constants (Flywheel)
-    // ==========================================
+    // region Shooter Constants (Flywheel)
     public static final class ShooterConstants {
         // Physical Constants
         public static final Distance kWheelDiameter = Inches.of(3);
@@ -66,10 +66,9 @@ public final class Constants {
         // Telemetry Update Frequency
         public static final double kUpdateHz = 50.0;
     }
+    // endregion
 
-    // ==========================================
-    // Turret Constants
-    // ==========================================
+    // region Turret Constants
     public static final class TurretConstants {
         private TurretConstants() {}
 
@@ -131,10 +130,9 @@ public final class Constants {
         public static final String kMotorTelemetry = "TurretMotor";
         public static final String kMechTelemetry = "TurretMech";
     }
+    // endregion
 
-    // ==========================================
-    // Drive / PathPlanner Constants
-    // ==========================================
+    // region Drive / PathPlanner Constants
     public static final class DriveConstants {
         private DriveConstants() {}
 
@@ -159,17 +157,6 @@ public final class Constants {
         public static final double kMotionMagicAccelWindowSec = 0.100;
     }
 
-    // ==========================================
-    // Communications / Phoenix Status Signal Constants
-    // ==========================================
-    public static final class CommsConstants {
-        private CommsConstants() {}
-
-        // Default frequency (Hz) for non-odometry Phoenix status signals such as velocity,
-        // applied voltage, and current. Previously scattered literals (50.0) are unified here.
-        public static final double kDefaultStatusSignalHz = 50.0;
-    }
-
     public static final class PathPlannerConstants {
         private PathPlannerConstants() {}
 
@@ -182,10 +169,19 @@ public final class Constants {
         public static final double kRotationI = 0.0;
         public static final double kRotationD = 0.0;
     }
+    // endregion
 
-    // ==========================================
-    // Drive Control (non-drive folder) tuning constants
-    // ==========================================
+    // region Communications Constants
+    public static final class CommsConstants {
+        private CommsConstants() {}
+
+        // Default frequency (Hz) for non-odometry Phoenix status signals such as velocity,
+        // applied voltage, and current. Previously scattered literals (50.0) are unified here.
+        public static final double kDefaultStatusSignalHz = 50.0;
+    }
+    // endregion
+
+    // region Drive Control Constants
     public static final class DriveControlConstants {
         private DriveControlConstants() {}
 
@@ -206,10 +202,9 @@ public final class Constants {
         public static final double kWheelRadiusMaxVelocity = 0.25; // rad/sec
         public static final double kWheelRadiusRampRate = 0.05; // rad/sec^2
     }
+    // endregion
 
-    // ==========================================
-    // Robot safety & thresholds
-    // ==========================================
+    // region Robot Safety Constants
     public static final class RobotSafetyConstants {
         private RobotSafetyConstants() {}
 
@@ -218,20 +213,18 @@ public final class Constants {
         // Time (seconds) after which a low battery condition will trigger alerts when disabled
         public static final double kLowBatteryDisabledSecs = 2.0;
     }
+    // endregion
 
-    // ==========================================
-    // Physics Constants
-    // ==========================================
+    // region Physics Constants
     public static final class PhysicsConstants {
         private PhysicsConstants() {}
 
         // Standard gravity (m/s^2). Use SI units for physics calculations.
         public static final double kStandardGravity = 9.80665;
     }
+    // endregion
 
-    // ==========================================
-    // Kicker Constants
-    // ==========================================
+    // region Kicker Constants
     public static final class KickerConstants {
         private KickerConstants() {}
 
@@ -257,57 +250,9 @@ public final class Constants {
         public static final String kMotorTelemetry = "KickerMotor";
         public static final String kMechTelemetry = "KickerMech";
     }
+    // endregion
 
-    // ==========================================
-    // Shooter lookup tables (static data moved from code)
-    // Each entry: {distance_m, shooter_speed, trajectory_angle_deg, time_of_flight_s}
-    public static final class ShooterLookupTables {
-        private ShooterLookupTables() {}
-
-        public static final double[][] HUB = {
-            {1.0, 80.0, 75.0, 0.45},
-            {2.0, 82.5, 72.0, 0.65},
-            {3.0, 85.0, 68.0, 0.85},
-            {4.0, 90.0, 65.0, 1.05},
-            {5.0, 95.0, 62.0, 1.25},
-            {6.0, 105.0, 60.0, 1.45},
-        };
-
-        public static final double[][] PASS = {
-            {1.0, 75.0, 54.0, 0.35},
-            {5.5, 78.3, 45.0, 1.25},
-        };
-    }
-
-    public static boolean disableHAL = false;
-
-    public static void disableHAL() {
-        disableHAL = true;
-    }
-
-    /** Checks whether the correct robot is selected when deploying. */
-    public static class CheckDeploy {
-        public static void main(String... args) {
-            if (robot == RobotType.SIMBOT) {
-                System.err.println("Cannot deploy, invalid robot selected: " + robot);
-                System.exit(1);
-            }
-        }
-    }
-
-    /** Checks that the default robot is selected and tuning mode is disabled. */
-    public static class CheckPullRequest {
-        public static void main(String... args) {
-            if (robot != RobotType.COMPBOT || tuningMode) {
-                System.err.println("Do not merge, non-default constants are configured.");
-                System.exit(1);
-            }
-        }
-    }
-
-    // ==========================================
-    // Spindexer Constants
-    // ==========================================
+    // region Spindexer Constants
     public static final class SpindexerConstants {
         private SpindexerConstants() {}
 
@@ -336,4 +281,53 @@ public final class Constants {
         public static final String kMotorTelemetry = "SpindexerMotor";
         public static final String kMechTelemetry = "SpindexerMech";
     }
+    // endregion
+
+    // region Shooter Lookup Tables
+    public static final class ShooterLookupTables {
+        private ShooterLookupTables() {}
+
+        public static final double[][] HUB = {
+            {1.0, 80.0, 75.0, 0.45},
+            {2.0, 82.5, 72.0, 0.65},
+            {3.0, 85.0, 68.0, 0.85},
+            {4.0, 90.0, 65.0, 1.05},
+            {5.0, 95.0, 62.0, 1.25},
+            {6.0, 105.0, 60.0, 1.45},
+        };
+
+        public static final double[][] PASS = {
+            {1.0, 75.0, 54.0, 0.35},
+            {5.5, 78.3, 45.0, 1.25},
+        };
+    }
+    // endregion
+
+    // region Utility Methods
+    public static boolean disableHAL = false;
+
+    public static void disableHAL() {
+        disableHAL = true;
+    }
+
+    /** Checks whether the correct robot is selected when deploying. */
+    public static class CheckDeploy {
+        public static void main(String... args) {
+            if (robot == RobotType.SIMBOT) {
+                System.err.println("Cannot deploy, invalid robot selected: " + robot);
+                System.exit(1);
+            }
+        }
+    }
+
+    /** Checks that the default robot is selected and tuning mode is disabled. */
+    public static class CheckPullRequest {
+        public static void main(String... args) {
+            if (robot != RobotType.COMPBOT || tuningMode) {
+                System.err.println("Do not merge, non-default constants are configured.");
+                System.exit(1);
+            }
+        }
+    }
+    // endregion
 }

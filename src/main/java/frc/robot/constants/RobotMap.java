@@ -19,4 +19,10 @@ public final class RobotMap {
     public final class Spindexer {
         public static final int kMotorId = 55;
     }
+
+    public final class Intake {
+        public static final int kLeftPivotMotorId = 61;
+        public static final int kRightPivotMotorId = 62;
+        public static final int kRollerMotorId = 63;
+    }
 }

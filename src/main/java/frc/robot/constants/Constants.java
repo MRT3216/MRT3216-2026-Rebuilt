@@ -106,11 +106,11 @@ public final class Constants {
                         new Rotation3d());
 
         // Mechanism Limits
-        public static final Angle kHardLimitMax = Degrees.of(180);
-        public static final Angle kHardLimitMin = Degrees.of(-180);
-        public static final Angle kSoftLimitMax = Degrees.of(170);
-        public static final Angle kSoftLimitMin = Degrees.of(-170);
-        public static final Angle kStartingPosition = Degrees.of(0);
+        public static final Angle kHardLimitMax = Degrees.of(360);
+        public static final Angle kHardLimitMin = Degrees.of(0);
+        public static final Angle kSoftLimitMax = Degrees.of(350);
+        public static final Angle kSoftLimitMin = Degrees.of(10);
+        public static final Angle kStartingPosition = Degrees.of(180);
 
         // Validation Ranges
         public static final Distance kMinShootingDistance = Meters.of(1.5);

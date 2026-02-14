@@ -15,7 +15,6 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.TurretConstants;
-import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -46,7 +45,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
 
     // CAN ID 53 - pivot motor
-    private TalonFX pivotMotor = new TalonFX(RobotMap.Shooter.Turret.kPivotMotorId);
+    private TalonFX pivotMotor = new TalonFX(TurretConstants.kTurretMotorId);
 
     private final SmartMotorControllerConfig motorConfig;
 
@@ -163,6 +162,11 @@ public class TurretSubsystem extends SubsystemBase {
         // Update logged inputs and telemetry each robot loop
         updateInputs();
         Logger.processInputs("Turret", turretInputs);
+
+        Logger.recordOutput("Turret/FX/Angle", turret.getAngle());
+
+        Logger.recordOutput("Turret/FX/Setpoint", turret.getMechanismSetpoint().orElse(Degrees.of(0)));
+
         turret.updateTelemetry();
     }
 }

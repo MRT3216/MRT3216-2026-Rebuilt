@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
+import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 
 /**
@@ -31,6 +32,7 @@ public class RobotContainer {
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
+    private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -150,19 +152,26 @@ public class RobotContainer {
 
         flywheelSubsystem.setDefaultCommand(flywheelSubsystem.setDutyCycle(0));
         kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
+        turretSubsystem.setDefaultCommand(turretSubsystem.setDutyCycle(0));
+        spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
 
         // Schedule `setVelocity` when the Xbox controller's B button is pressed,
         // cancelling on release.
-        // controller.a().whileTrue(flywheelSubsystem.setVelocity(RPM.of(500)));
+        controller.a().whileTrue(flywheelSubsystem.setVelocity(RPM.of(500)));
+        controller.b().whileTrue(flywheelSubsystem.setVelocity(RPM.of(3000)));
 
-        // controller.b().whileTrue(flywheelSubsystem.setVelocity(RPM.of(3000)));
-        controller.b().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
-        controller.a().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+        // controller.b().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
+        // controller.a().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
         controller
                 .rightTrigger()
                 .whileTrue(flywheelSubsystem.setDutyCycle(() -> controller.getRightTriggerAxis()));
-        controller.x().whileTrue(kickerSubsystem.setDutyCycle(0.5));
-        controller.y().whileTrue(kickerSubsystem.setVelocity(RPM.of(4000)));
+        controller.x().whileTrue(kickerSubsystem.setDutyCycle(0.5).alongWith(spindexerSubsystem.setDutyCycle(0.5)));
+        controller
+                .y()
+                .whileTrue(
+                        kickerSubsystem
+                                .setVelocity(RPM.of(4000))
+                                .alongWith(spindexerSubsystem.setVelocity(RPM.of(4000))));
         controller
                 .leftTrigger()
                 .whileTrue(kickerSubsystem.setDutyCycle(() -> controller.getRightTriggerAxis()));

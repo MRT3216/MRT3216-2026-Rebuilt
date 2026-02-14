@@ -15,4 +15,8 @@ public final class RobotMap {
             public static final int kPivotMotorId = 53;
         }
     }
+
+    public final class Spindexer {
+        public static final int kMotorId = 55;
+    }
 }

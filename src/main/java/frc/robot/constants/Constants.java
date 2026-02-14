@@ -304,4 +304,36 @@ public final class Constants {
             }
         }
     }
+
+    // ==========================================
+    // Spindexer Constants
+    // ==========================================
+    public static final class SpindexerConstants {
+        private SpindexerConstants() {}
+
+        // Physical Constants
+        public static final Distance kWheelDiameter = Inches.of(8);
+        public static final Mass kWheelMass = Ounces.of(33.10);
+        public static final double kGearReduction = 1.0;
+
+        // Current Limits
+        public static final Current kStatorCurrentLimit = Amps.of(60);
+
+        // Feedback (PID) Constants
+        public static final double kP = 1.0;
+        public static final double kI = 0.0;
+        public static final double kD = 0.0;
+
+        // Theoretical Feedforward (Neo Vortex)
+        public static final double kS = 0.0;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
+
+        // Telemetry Update Frequency
+        public static final double kUpdateHz = 50.0;
+
+        // Telemetry Labels
+        public static final String kMotorTelemetry = "SpindexerMotor";
+        public static final String kMechTelemetry = "SpindexerMech";
+    }
 }

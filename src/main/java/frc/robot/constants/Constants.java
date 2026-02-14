@@ -54,7 +54,7 @@ public final class Constants {
         public static final Current kStatorCurrentLimit = Amps.of(80);
 
         // Feedback (PID) Constants
-        public static final double kP = 1.0;
+        public static final double kP = 0.5;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
@@ -244,7 +244,7 @@ public final class Constants {
         public static final Current kStatorCurrentLimit = Amps.of(60);
 
         // Feedback (PID) Constants
-        public static final double kP = 1.0;
+        public static final double kP = 0.7356;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
@@ -314,13 +314,13 @@ public final class Constants {
         // Physical Constants
         public static final Distance kWheelDiameter = Inches.of(8);
         public static final Mass kWheelMass = Ounces.of(33.10);
-        public static final double kGearReduction = 1.0;
+        public static final double kGearReduction = (5);
 
         // Current Limits
         public static final Current kStatorCurrentLimit = Amps.of(60);
 
         // Feedback (PID) Constants
-        public static final double kP = 1.0;
+        public static final double kP = 0.5;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 

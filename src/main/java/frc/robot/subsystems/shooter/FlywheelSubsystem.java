@@ -104,6 +104,7 @@ public class FlywheelSubsystem extends SubsystemBase {
                         .withGearing(
                                 new MechanismGearing(GearBox.fromReductionStages(ShooterConstants.kGearReduction)))
                         .withStatorCurrentLimit(ShooterConstants.kStatorCurrentLimit)
+                        .withMotorInverted(true)
                         .withFollowers(Pair.of(new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId), true));
 
         // Create the SMC wrapper

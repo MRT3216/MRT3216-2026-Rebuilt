@@ -87,7 +87,7 @@ public class SpindexerSubsystem extends SubsystemBase {
                         .withGearing(
                                 new MechanismGearing(
                                         GearBox.fromReductionStages(SpindexerConstants.kGearReduction)))
-                        .withMotorInverted(false)
+                        .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
                         .withStatorCurrentLimit(SpindexerConstants.kStatorCurrentLimit);
 

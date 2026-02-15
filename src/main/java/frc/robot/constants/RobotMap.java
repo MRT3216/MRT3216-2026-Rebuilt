@@ -16,7 +16,7 @@ public final class RobotMap {
         }
 
         public final class Turret {
-            public static final int kPivotMotorId = 53;
+            public static final int kMotorId = 53;
         }
 
         public final class Spindexer {
@@ -26,13 +26,13 @@ public final class RobotMap {
     }
 
     public final class Intake {
-        public final class Arm {
-            public static final int kLeftPivotMotorId = 61;
-            public static final int kRightPivotMotorId = 62;
+        public final class Pivot {
+            public static final int kLeftMotorId = 61;
+            public static final int kRightMotorId = 62;
         }
 
         public final class Roller {
-            public static final int kRollerMotorId = 63;
+            public static final int kMotorId = 63;
         }
     }
 }

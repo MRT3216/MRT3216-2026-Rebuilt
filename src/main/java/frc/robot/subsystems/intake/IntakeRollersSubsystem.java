@@ -59,7 +59,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
             new IntakeRollersInputsAutoLogged();
 
     /* Hardware Objects */
-    private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kRollerMotorId);
+    private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();

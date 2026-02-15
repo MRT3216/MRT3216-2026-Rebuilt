@@ -8,20 +8,20 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.Pair;
-import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.constants.Constants.IntakeArmConstants;
+import frc.robot.constants.Constants.IntakePivotConstants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import yams.mechanisms.config.ArmConfig;
-import yams.mechanisms.positional.Arm;
+import yams.mechanisms.config.PivotConfig;
+import yams.mechanisms.positional.Pivot;
 import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
@@ -30,20 +30,20 @@ import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
- * AdvantageKit-ready Intake Arm Subsystem for MRT 3216.
+ * AdvantageKit-ready Intake Pivot Subsystem for MRT 3216.
  *
  * <p>This subsystem manages a single-Kraken intake arm pivot using the YAMS library and Phoenix 6.
  * It utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware
  * states (Inputs) are separated from software commands (Outputs).
  */
-public class IntakeArmSubsystem extends SubsystemBase {
+public class IntakePivotSubsystem extends SubsystemBase {
 
     /**
-     * IO inputs for the Intake Arm. AutoLogged to provide synchronized data for AdvantageScope and
+     * IO inputs for the Intake Pivot. AutoLogged to provide synchronized data for AdvantageScope and
      * log replay.
      */
     @AutoLog
-    public static class IntakeArmInputs {
+    public static class IntakePivotInputs {
         /** Actual angle of the intake arm. */
         public Angle angle = Degrees.of(0);
         /** Current target angle requested from the motor controller. */
@@ -54,11 +54,11 @@ public class IntakeArmSubsystem extends SubsystemBase {
         public Current current = Amps.of(0);
     }
 
-    private final IntakeArmInputsAutoLogged intakeArmInputs = new IntakeArmInputsAutoLogged();
+    private final IntakePivotInputsAutoLogged intakePivotInputs = new IntakePivotInputsAutoLogged();
 
     /* Hardware Objects */
-    private final TalonFX LeftPivotMotor = new TalonFX(RobotMap.Intake.Arm.kLeftPivotMotorId);
-    private final TalonFX RightPivotMotor = new TalonFX(RobotMap.Intake.Arm.kRightPivotMotorId);
+    private final TalonFX LeftPivotMotor = new TalonFX(RobotMap.Intake.Pivot.kLeftMotorId);
+    private final TalonFX RightPivotMotor = new TalonFX(RobotMap.Intake.Pivot.kRightMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<Angle> positionSignal = LeftPivotMotor.getPosition();
@@ -70,9 +70,9 @@ public class IntakeArmSubsystem extends SubsystemBase {
     private final SmartMotorController smartMotor;
 
     /* High-level mechanism configuration */
-    private final ArmConfig intakeArmConfig;
+    private final PivotConfig intakePivotConfig;
 
-    private final Arm intakeArm;
+    private final Pivot intakePivot;
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
@@ -82,48 +82,48 @@ public class IntakeArmSubsystem extends SubsystemBase {
         // Refresh all Phoenix 6 signals at once to minimize CAN latency jitter
         BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
 
-        intakeArmInputs.angle = intakeArm.getAngle();
-        intakeArmInputs.volts = smartMotor.getVoltage();
-        intakeArmInputs.current = smartMotor.getStatorCurrent();
+        intakePivotInputs.angle = intakePivot.getAngle();
+        intakePivotInputs.volts = smartMotor.getVoltage();
+        intakePivotInputs.current = smartMotor.getStatorCurrent();
 
         // Sets the setpoint input based on the current SMC state
-        intakeArmInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
+        intakePivotInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
     }
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
-    public IntakeArmSubsystem() {
+    public IntakePivotSubsystem() {
         // Initialize motor controller config in constructor to avoid object-escape
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
                         .withClosedLoopController(
-                                IntakeArmConstants.kP, IntakeArmConstants.kI, IntakeArmConstants.kD)
+                                IntakePivotConstants.kP, IntakePivotConstants.kI, IntakePivotConstants.kD)
                         .withSimClosedLoopController(
-                                IntakeArmConstants.kP, IntakeArmConstants.kI, IntakeArmConstants.kD)
+                                IntakePivotConstants.kP, IntakePivotConstants.kI, IntakePivotConstants.kD)
                         // Feedforward Constants
                         .withFeedforward(
-                                new ArmFeedforward(
-                                        IntakeArmConstants.kS, IntakeArmConstants.kV, IntakeArmConstants.kA))
+                                new SimpleMotorFeedforward(
+                                        IntakePivotConstants.kS, IntakePivotConstants.kV, IntakePivotConstants.kA))
                         .withSimFeedforward(
-                                new ArmFeedforward(
-                                        IntakeArmConstants.kS, IntakeArmConstants.kV, IntakeArmConstants.kA))
+                                new SimpleMotorFeedforward(
+                                        IntakePivotConstants.kS, IntakePivotConstants.kV, IntakePivotConstants.kA))
                         // Telemetry
-                        .withTelemetry(IntakeArmConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
-                        .withGearing(IntakeArmConstants.kGearing)
-                        .withMotorInverted(IntakeArmConstants.kMotorInverted)
+                        .withTelemetry(IntakePivotConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
+                        .withGearing(IntakePivotConstants.kGearing)
+                        .withMotorInverted(IntakePivotConstants.kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        .withStatorCurrentLimit(IntakeArmConstants.kStatorCurrentLimit)
+                        .withStatorCurrentLimit(IntakePivotConstants.kStatorCurrentLimit)
                         .withFollowers(Pair.of(RightPivotMotor, true));
 
         smartMotor = new TalonFXWrapper(LeftPivotMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
 
-        intakeArmConfig =
-                new ArmConfig(smartMotor)
-                        .withMOI(IntakeArmConstants.kMOI)
-                        .withTelemetry(IntakeArmConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+        intakePivotConfig =
+                new PivotConfig(smartMotor)
+                        .withMOI(IntakePivotConstants.kMOI)
+                        .withTelemetry(IntakePivotConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
 
-        intakeArm = new Arm(intakeArmConfig);
+        intakePivot = new Pivot(intakePivotConfig);
 
         // High-frequency updates for PID tuning
         BaseStatusSignal.setUpdateFrequencyForAll((int) 50.0, positionSignal, referenceSignal);
@@ -138,7 +138,7 @@ public class IntakeArmSubsystem extends SubsystemBase {
      * @return The current Angle measured by the encoder.
      */
     public Angle getPosition() {
-        return intakeArmInputs.angle;
+        return intakePivotInputs.angle;
     }
 
     /**
@@ -148,7 +148,7 @@ public class IntakeArmSubsystem extends SubsystemBase {
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        return intakeArm.setAngle(angle);
+        return intakePivot.setAngle(angle);
     }
 
     /**
@@ -158,7 +158,7 @@ public class IntakeArmSubsystem extends SubsystemBase {
      * @return A command to run the intake arm at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
-        return intakeArm.set(dutyCycle);
+        return intakePivot.set(dutyCycle);
     }
 
     /**
@@ -168,9 +168,9 @@ public class IntakeArmSubsystem extends SubsystemBase {
      * @return A command to track the supplier's angle.
      */
     public Command setAngle(Supplier<Angle> angle) {
-        return intakeArm.setAngle(
+        return intakePivot.setAngle(
                 () -> {
-                    Logger.recordOutput("Intake/Arm/Setpoint", angle.get());
+                    Logger.recordOutput("Intake/Pivot/Setpoint", angle.get());
                     return angle.get();
                 });
     }
@@ -182,22 +182,22 @@ public class IntakeArmSubsystem extends SubsystemBase {
      * @return A command to track the supplier's duty cycle.
      */
     public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return intakeArm.set(
+        return intakePivot.set(
                 () -> {
-                    Logger.recordOutput("Intake/Arm/DutyCycle", dutyCycle.get());
+                    Logger.recordOutput("Intake/Pivot/DutyCycle", dutyCycle.get());
                     return dutyCycle.get();
                 });
     }
 
     @Override
     public void simulationPeriodic() {
-        intakeArm.simIterate();
+        intakePivot.simIterate();
     }
 
     @Override
     public void periodic() {
         updateInputs();
-        Logger.processInputs("Intake/Arm", intakeArmInputs);
-        intakeArm.updateTelemetry();
+        Logger.processInputs("Intake/Pivot", intakePivotInputs);
+        intakePivot.updateTelemetry();
     }
 }

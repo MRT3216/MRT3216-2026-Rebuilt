@@ -56,7 +56,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
 
     /* Hardware Objects */
-    private final TalonFX motor = new TalonFX(TurretConstants.kTurretMotorId);
+    private final TalonFX motor = new TalonFX(RobotMap.Shooter.Turret.kMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<Angle> positionSignal = motor.getPosition();

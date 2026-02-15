@@ -7,12 +7,23 @@
 
 package frc.robot.constants;
 
-import static edu.wpi.first.units.Units.*;
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.InchesPerSecond;
+import static edu.wpi.first.units.Units.KilogramSquareMeters;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Pounds;
 
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.units.measure.*;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Mass;
+import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.wpilibj.RobotBase;
 
 public final class Constants {
@@ -124,7 +135,6 @@ public final class Constants {
 
     // region Shooter Constants (Flywheel)
     public static final class ShooterConstants {
-        // Physical Constants
         /** Diameter of the shooter wheel. */
         public static final Distance kWheelDiameter = Inches.of(3);
 
@@ -134,11 +144,9 @@ public final class Constants {
         /** Overall gear reduction from motor to wheel (ratio). */
         public static final double kGearReduction = 1.0;
 
-        // Current Limits
         /** Stator current limit applied to shooter motors. */
         public static final Current kStatorCurrentLimit = Amps.of(80);
 
-        // Feedback (PID) Constants
         /** Proportional gain for the shooter closed-loop controller. */
         public static final double kP = 1.0;
 
@@ -148,7 +156,6 @@ public final class Constants {
         /** Derivative gain for the shooter closed-loop controller. */
         public static final double kD = 0.0;
 
-        // Theoretical Feedforward (Kraken X60 FOC)
         /** Static/feedforward voltage to break friction (Volts). */
         public static final double kS = 0.15; // Volts to break friction
 
@@ -160,6 +167,7 @@ public final class Constants {
 
         /** Telemetry update frequency (Hz) for Phoenix status signals related to the shooter. */
         public static final double kUpdateHz = 50.0;
+
         public static final String kMotorTelemetry = "FlywheelMotor";
         public static final String kMechTelemetry = "FlywheelMech";
     }
@@ -220,6 +228,7 @@ public final class Constants {
 
         /** Z offset (meters) from floor to turret pivot height. */
         public static final Distance kTurretOffsetZ = Inches.of(18.5);
+
         public static final Transform3d kRobotToTurretTransform =
                 new Transform3d(
                         new Translation3d(
@@ -269,6 +278,7 @@ public final class Constants {
 
         /** Funnel height used for clearance and trajectory planning. */
         public static final Distance kFunnelHeight = Inches.of(104.0);
+
         public static final String kMotorTelemetry = "TurretMotor";
         public static final String kMechTelemetry = "TurretMech";
     }

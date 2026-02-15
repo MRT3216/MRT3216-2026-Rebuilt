@@ -13,11 +13,11 @@ import static edu.wpi.first.units.Units.Seconds;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.commands.ShootCommands;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
+import frc.robot.systems.ShooterSystem;
 import frc.robot.util.RobotMapValidator;
 
 /**
@@ -37,11 +37,12 @@ public class RobotContainer {
     // private final TurretSubsystem turretSubsystem = new TurretSubsystem();
     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
 
+    // Aggregated shooter system
+    private final ShooterSystem shooterSystem =
+            new ShooterSystem(flywheelSubsystem, kickerSubsystem, spindexerSubsystem);
+
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
-
-    private final ShootCommands shootCommands =
-            new ShootCommands(kickerSubsystem, spindexerSubsystem);
 
     // Dashboard inputs
     // private final LoggedDashboardChooser<Command> autoChooser;
@@ -173,7 +174,7 @@ public class RobotContainer {
         controller
                 .rightTrigger()
                 .whileTrue(flywheelSubsystem.setDutyCycle(() -> controller.getRightTriggerAxis()));
-        controller.x().whileTrue(shootCommands.shoot());
+        controller.x().whileTrue(shooterSystem.shoot());
         controller
                 .y()
                 .whileTrue(

@@ -7,7 +7,6 @@ import static edu.wpi.first.units.Units.Volts;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -15,7 +14,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.constants.Constants.ShooterConstants;
+import frc.robot.constants.Constants.IntakeConstants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -27,12 +26,14 @@ import yams.mechanisms.velocity.FlyWheel;
 import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
- * AdvantageKit-ready Flywheel Subsystem for MRT 3216. *
+ * AdvantageKit-ready Intake Rollers Subsystem for MRT 3216.
  *
- * <p>This subsystem manages a dual-Kraken flywheel using the YAMS library and Phoenix 6. It
+ * <p>This subsystem manages dual-Kraken intake rollers using the YAMS library and Phoenix 6. It
  * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
  * (Inputs) are separated from software commands (Outputs).
  */
@@ -50,7 +51,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         public AngularVelocity setpoint = RPM.of(0);
         /** Applied voltage across the master motor. */
         public Voltage volts = Volts.of(0);
-        /** Stator current draw of the master motor (useful for identifying jams). */
+        /** Stator current draw of the master motor. */
         public Current current = Amps.of(0);
     }
 
@@ -58,7 +59,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
             new IntakeRollersInputsAutoLogged();
 
     /* Hardware Objects */
-    private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.kRollerMotorId);
+    private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kRollerMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
@@ -70,7 +71,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     /** The SmartMotorController abstraction that allows for hardware/sim parity. */
     private final SmartMotorController motor;
 
-    /* High-level mechanism configuration (3 lb Flywheel) */
+    /* High-level mechanism configuration */
     private final FlyWheelConfig intakeRollersConfig;
 
     private final FlyWheel intakeRollers;
@@ -93,45 +94,48 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public IntakeRollersSubsystem() {
-        // Initialize motor/controller objects here to avoid leaking "this" during field
-        // initialization (object-escape).
+        // Initialize motor controller config in constructor to avoid object-escape
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(ShooterConstants.kP, ShooterConstants.kI, ShooterConstants.kD)
+                        // Feedback Constants (PID Constants)
+                        .withClosedLoopController(IntakeConstants.kP, IntakeConstants.kI, IntakeConstants.kD)
+                        .withSimClosedLoopController(IntakeConstants.kP, IntakeConstants.kI, IntakeConstants.kD)
+                        // Feedforward Constants
                         .withFeedforward(
                                 new SimpleMotorFeedforward(
-                                        ShooterConstants.kS, ShooterConstants.kV, ShooterConstants.kA))
+                                        IntakeConstants.kS, IntakeConstants.kV, IntakeConstants.kA))
+                        .withSimFeedforward(
+                                new SimpleMotorFeedforward(
+                                        IntakeConstants.kS, IntakeConstants.kV, IntakeConstants.kA))
+                        // Telemetry
+                        .withTelemetry(IntakeConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
                         .withGearing(
-                                new MechanismGearing(GearBox.fromReductionStages(ShooterConstants.kGearReduction)))
-                        .withStatorCurrentLimit(ShooterConstants.kStatorCurrentLimit)
-                        .withMotorInverted(true)
-                        .withFollowers(Pair.of(new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId), true));
+                                new MechanismGearing(GearBox.fromReductionStages(IntakeConstants.kGearReduction)))
+                        .withMotorInverted(false)
+                        .withIdleMode(MotorMode.COAST)
+                        .withStatorCurrentLimit(IntakeConstants.kStatorCurrentLimit);
 
-        // Create the SMC wrapper
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
 
-        // Create the mechanism config now that motor is available
         intakeRollersConfig =
                 new FlyWheelConfig(motor)
-                        .withDiameter(ShooterConstants.kWheelDiameter)
-                        .withMass(ShooterConstants.kWheelMass);
+                        .withDiameter(IntakeConstants.kWheelDiameter)
+                        .withMass(IntakeConstants.kWheelMass)
+                        .withTelemetry(IntakeConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
 
         intakeRollers = new FlyWheel(intakeRollersConfig);
 
         // High-frequency updates for PID tuning
         BaseStatusSignal.setUpdateFrequencyForAll(
-                (int) frc.robot.constants.Constants.ShooterConstants.kUpdateHz,
-                velocitySignal,
-                referenceSignal);
+                (int) IntakeConstants.kUpdateHz, velocitySignal, referenceSignal);
 
-        // Optimization: Disable unused signals (like position) to conserve CAN bus
-        // bandwidth
+        // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);
     }
 
     /**
-     * Returns the current velocity of the flywheel.
+     * Gets the current velocity of the intake rollers.
      *
      * @return The current AngularVelocity measured by the encoder.
      */
@@ -140,7 +144,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     }
 
     /**
-     * Sets the target velocity for the flywheel.
+     * Sets the target velocity for the intake rollers.
      *
      * @param speed The target AngularVelocity.
      * @return A command to set and maintain the requested speed.
@@ -150,10 +154,10 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     }
 
     /**
-     * Sets the duty cycle (percent output) for the flywheel.
+     * Sets the duty cycle (percent output) for the intake rollers.
      *
      * @param dutyCycle The output percentage (-1.0 to 1.0).
-     * @return A command to run the flywheel at the specified duty cycle.
+     * @return A command to run the intake rollers at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
         return intakeRollers.set(dutyCycle);
@@ -168,7 +172,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     public Command setVelocity(Supplier<AngularVelocity> speed) {
         return intakeRollers.setSpeed(
                 () -> {
-                    Logger.recordOutput("IntakeRollers/Setpoint", speed.get());
+                    Logger.recordOutput("Intake/Rollers/Setpoint", speed.get());
                     return speed.get();
                 });
     }
@@ -182,32 +186,20 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     public Command setDutyCycle(Supplier<Double> dutyCycle) {
         return intakeRollers.set(
                 () -> {
-                    Logger.recordOutput("IntakeRollers/DutyCycle", dutyCycle.get());
+                    Logger.recordOutput("Intake/Rollers/DutyCycle", dutyCycle.get());
                     return dutyCycle.get();
                 });
     }
 
     @Override
     public void simulationPeriodic() {
-        // Iterate physics simulation for the flywheel mechanism
         intakeRollers.simIterate();
     }
 
     @Override
     public void periodic() {
-        // 1. Pull data from hardware
         updateInputs();
-
-        // 2. Log data for AdvantageKit Replay
-        Logger.processInputs("IntakeRollers", intakeRollersInputs);
-
-        // 3. Log high-level outputs for AdvantageScope visual analysis
-        Logger.recordOutput("IntakeRollers/FX/Velocity", velocitySignal.getValue());
-
-        // Force conversion to RPM for standard graph scaling
-        Logger.recordOutput("IntakeRollers/FX/Reference", RPM.of(referenceSignal.getValue()));
-
-        // 4. Update YAMS telemetry for internal mechanism tracking
+        Logger.processInputs("Intake/Rollers", intakeRollersInputs);
         intakeRollers.updateTelemetry();
     }
 }

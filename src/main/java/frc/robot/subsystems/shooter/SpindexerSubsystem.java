@@ -28,34 +28,52 @@ import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 
-/** AdvantageKit Spindexer Subsystem, capable of replaying the spindexer. */
+/**
+ * AdvantageKit Spindexer Subsystem for MRT 3216.
+ *
+ * <p>This subsystem manages a single Neo Vortex spindexer using the YAMS library. It utilizes an
+ * IO-layer abstraction for full log replay capabilities, ensuring that hardware states (Inputs) are
+ * separated from software commands (Outputs).
+ */
 public class SpindexerSubsystem extends SubsystemBase {
+
     /**
-     * AdvantageKit identifies inputs via the "Replay Bubble". Everything going to the SMC is an
-     * Output. Everything coming from the SMC is an Input.
+     * IO inputs for the Spindexer. AutoLogged to provide synchronized data for AdvantageScope and log
+     * replay.
      */
     @AutoLog
     public static class SpindexerInputs {
+        /** Actual velocity of the spindexer mechanism. */
         public AngularVelocity velocity = RPM.of(0);
+        /** Current target velocity requested from the motor controller. */
         public AngularVelocity setpoint = RPM.of(0);
+        /** Applied voltage across the motor. */
         public Voltage volts = Volts.of(0);
+        /** Stator current draw of the motor. */
         public Current current = Amps.of(0);
     }
 
     private final SpindexerInputsAutoLogged spindexerInputs = new SpindexerInputsAutoLogged();
 
+    /* Hardware Objects */
     private final SparkFlex motorController =
             new SparkFlex(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
 
+    /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
+    /** The SmartMotorController abstraction that allows for hardware/sim parity. */
     private final SmartMotorController motor;
 
+    /* High-level mechanism configuration */
     private final FlyWheelConfig spindexerConfig;
 
     private final FlyWheel spindexer;
 
-    /** Update the AdvantageKit "inputs" (data coming from the SMC) */
+    /**
+     * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry
+     * for log replay.
+     */
     private void updateInputs() {
         spindexerInputs.velocity = spindexer.getSpeed();
         spindexerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
@@ -63,6 +81,7 @@ public class SpindexerSubsystem extends SubsystemBase {
         spindexerInputs.current = motor.getStatorCurrent();
     }
 
+    /** Initializes the subsystem and configures the motor controller with constants. */
     public SpindexerSubsystem() {
         // Initialize motor controller config in constructor to avoid object-escape
         motorConfig =
@@ -80,8 +99,7 @@ public class SpindexerSubsystem extends SubsystemBase {
                         .withSimFeedforward(
                                 new SimpleMotorFeedforward(
                                         SpindexerConstants.kS, SpindexerConstants.kV, SpindexerConstants.kA))
-                        // .withVoltageCompensation(Volts.of(12))
-                        // Telemetry name and verbosity level
+                        // Telemetry
                         .withTelemetry(SpindexerConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
                         .withGearing(
                                 new MechanismGearing(
@@ -94,12 +112,8 @@ public class SpindexerSubsystem extends SubsystemBase {
 
         spindexerConfig =
                 new FlyWheelConfig(motor)
-                        // Diameter of the spindexer.
                         .withDiameter(SpindexerConstants.kWheelDiameter)
-                        // Mass of the spindexer.
                         .withMass(SpindexerConstants.kWheelMass)
-                        // Maximum speed of the spindexer.
-                        // .withUpperSoftLimit(RPM.of(4000))
                         .withTelemetry(SpindexerConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
 
         spindexer = new FlyWheel(spindexerConfig);
@@ -108,34 +122,38 @@ public class SpindexerSubsystem extends SubsystemBase {
     /**
      * Gets the current velocity of the spindexer.
      *
-     * @return FlyWheel velocity.
+     * @return The current AngularVelocity measured by the encoder.
      */
     public AngularVelocity getVelocity() {
         return spindexerInputs.velocity;
     }
 
     /**
-     * Set the spindexer velocity.
+     * Sets the target velocity for the spindexer.
      *
-     * @param speed Speed to set.
-     * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
+     * @param speed The target AngularVelocity.
+     * @return A command to set and maintain the requested speed.
      */
     public Command setVelocity(AngularVelocity speed) {
-        Logger.recordOutput("Spindexer/Setpoint", speed);
         return spindexer.setSpeed(speed);
     }
 
     /**
-     * Set the dutycycle of the spindexer.
+     * Sets the duty cycle (percent output) for the spindexer.
      *
-     * @param dutyCycle DutyCycle to set.
-     * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
+     * @param dutyCycle The output percentage (-1.0 to 1.0).
+     * @return A command to run the spindexer at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
-        Logger.recordOutput("Spindexer/DutyCycle", dutyCycle);
         return spindexer.set(dutyCycle);
     }
 
+    /**
+     * Sets the target velocity using a dynamic supplier (e.g., from a Vision subsystem).
+     *
+     * @param speed A supplier providing the target AngularVelocity.
+     * @return A command to track the supplier's velocity.
+     */
     public Command setVelocity(Supplier<AngularVelocity> speed) {
         return spindexer.setSpeed(
                 () -> {
@@ -144,6 +162,12 @@ public class SpindexerSubsystem extends SubsystemBase {
                 });
     }
 
+    /**
+     * Sets the duty cycle using a dynamic supplier.
+     *
+     * @param dutyCycle A supplier providing the target duty cycle.
+     * @return A command to track the supplier's duty cycle.
+     */
     public Command setDutyCycle(Supplier<Double> dutyCycle) {
         return spindexer.set(
                 () -> {

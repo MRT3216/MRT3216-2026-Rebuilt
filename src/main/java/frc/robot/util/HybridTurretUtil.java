@@ -11,32 +11,39 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Time;
-import frc.robot.util.lookupTables.ShootingTable;
 
 /**
  * Utility class for calculating high-fidelity turret shooting solutions while the robot is in
  * motion. It accounts for robot velocity to "lead" the target, ensuring the ball reaches the
  * objective based on the time of flight and relative field movement.
+ *
+ * <p>This class performs an iterative refinement that predicts target motion during the ball's
+ * flight and looks up tuned table values to return a complete shot solution.
  */
 public class HybridTurretUtil {
 
     /**
-     * Calculates the required turret azimuth, hood angle, and flywheel speed to hit a target while
-     * moving. * @param robotPose The current global pose of the robot (from odometry).
+     * Calculate a shot solution while the robot is moving.
      *
+     * <p>It computes the required turret azimuth, hood angle, and flywheel speed to hit a target
+     * while accounting for the robot's motion. The method performs a small number of iterative
+     * refinements to predict where the target will be during the ball's flight and looks up tuned
+     * table parameters for the final solution.
+     *
+     * @param robotPose The current global pose of the robot (from odometry).
      * @param fieldSpeeds The current velocity of the robot relative to the field (m/s).
      * @param target The 3D coordinates of the target (Hub or Ally) in field space.
      * @param iterations Number of refinement passes (typically 2-4). More iterations increase
      *     accuracy but consume more CPU.
-     * @param table The {@link ShootingTable} (Hub or Pass) used to retrieve tuned parameters.
-     * @return A {@link ShotSolution} containing all setpoints for the shooter and turret subsystems.
+     * @param table The shooting lookup table used to retrieve tuned parameters.
+     * @return A ShotSolution containing all setpoints for the shooter and turret subsystems.
      */
     public static ShotSolution computeMovingShot(
             Pose2d robotPose,
             ChassisSpeeds fieldSpeeds,
             Translation3d target,
             int iterations,
-            ShootingTable table) {
+            ShootingLookupTable table) {
 
         // 1. Initial Guess: Calculate distance to the target as if we were stationary.
         double initialDist = robotPose.getTranslation().getDistance(target.toTranslation2d());
@@ -84,9 +91,9 @@ public class HybridTurretUtil {
     }
 
     /**
-     * Container record for all parameters required to execute a shot. * @param leadDistanceMeters The
-     * calculated distance to the "virtual" target point.
+     * Container record for all parameters required to execute a shot.
      *
+     * @param leadDistanceMeters The calculated distance to the "virtual" target point.
      * @param turretAzimuth The required rotation for the turret relative to the robot chassis.
      * @param hoodAngle The required vertical angle for the adjustable hood.
      * @param flywheelSpeed The target rotational velocity for the shooter wheels.

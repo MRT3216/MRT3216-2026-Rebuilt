@@ -1,5 +1,9 @@
 package frc.robot.constants;
 
+/**
+ * Mapping of hardware CAN IDs and other fixed device identifiers. Keep numeric IDs here to make it
+ * easy to change wiring without searching the codebase.
+ */
 public final class RobotMap {
     public final class Shooter {
         public final class Flywheel {
@@ -14,10 +18,11 @@ public final class RobotMap {
         public final class Turret {
             public static final int kPivotMotorId = 53;
         }
-    }
 
-    public final class Spindexer {
-        public static final int kMotorId = 55;
+        public final class Spindexer {
+            // CAN ID for the spindexer motor (NEO 2.0)
+            public static final int kMotorId = 55;
+        }
     }
 
     public final class Intake {

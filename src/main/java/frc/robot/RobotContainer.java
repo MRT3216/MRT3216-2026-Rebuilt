@@ -18,12 +18,15 @@ import frc.robot.constants.Constants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
+import frc.robot.util.RobotMapValidator;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
+ *
+ * <p>Container for robot subsystems, commands and button bindings.
  */
 public class RobotContainer {
     // Subsystems
@@ -45,6 +48,8 @@ public class RobotContainer {
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
+        // Validate RobotMap wiring early at startup and warn if duplicate IDs are found.
+        RobotMapValidator.validate();
         switch (Constants.currentMode) {
             case REAL:
                 // Real robot, instantiate hardware IO implementations
@@ -205,11 +210,13 @@ public class RobotContainer {
         // .ignoringDisable(true));
     }
 
-    /**
-     * // * Use this to pass the autonomous command to the main {@link Robot} class. // * // * @return
-     * the command to run in autonomous //
+    /*
+     * Use this to pass the autonomous command to the main {@link Robot} class.
+     * (Method currently commented out: kept here for future reference.)
+     *
+     * Example (uncomment to enable):
+     * public Command getAutonomousCommand() {
+     *     return autoChooser.get();
+     * }
      */
-    // public Command getAutonomousCommand() {
-    // return autoChooser.get();
-    // }
 }

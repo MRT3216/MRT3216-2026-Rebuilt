@@ -28,17 +28,27 @@ import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 
-/** AdvantageKit Kicker Subsystem, capable of replaying the kicker. */
+/**
+ * AdvantageKit Kicker Subsystem, capable of replaying the kicker. Subsystem that manages the ball
+ * kicker intake/outtake mechanism.
+ */
 public class KickerSubsystem extends SubsystemBase {
     /**
-     * AdvantageKit identifies inputs via the "Replay Bubble". Everything going to the SMC is an
-     * Output. Everything coming from the SMC is an Input.
+     * AdvantageKit-visible inputs for the kicker mechanism. Updated each loop from the motor
+     * controller and intended for replay/logging.
      */
     @AutoLog
     public static class KickerInputs {
+        /** Current measured angular velocity of the kicker wheel. */
         public AngularVelocity velocity = RPM.of(0);
+
+        /** Currently requested setpoint velocity (if any). */
         public AngularVelocity setpoint = RPM.of(0);
+
+        /** Applied motor voltage. */
         public Voltage volts = Volts.of(0);
+
+        /** Stator current draw for the kicker motor. */
         public Current current = Amps.of(0);
     }
 
@@ -63,6 +73,7 @@ public class KickerSubsystem extends SubsystemBase {
         kickerInputs.current = motor.getStatorCurrent();
     }
 
+    /** Construct the KickerSubsystem and configure motor/telemetry settings. */
     public KickerSubsystem() {
         // Initialize motor controller config in constructor to avoid object-escape
         motorConfig =
@@ -88,7 +99,6 @@ public class KickerSubsystem extends SubsystemBase {
                                         frc.robot.constants.Constants.KickerConstants.kS,
                                         frc.robot.constants.Constants.KickerConstants.kV,
                                         frc.robot.constants.Constants.KickerConstants.kA))
-                        // .withVoltageCompensation(Volts.of(12))
                         // Telemetry name and verbosity level
                         .withTelemetry(
                                 frc.robot.constants.Constants.KickerConstants.kMotorTelemetry,
@@ -150,6 +160,14 @@ public class KickerSubsystem extends SubsystemBase {
         return kicker.set(dutyCycle);
     }
 
+    /**
+     * Create a command that continuously sets the kicker velocity from a dynamic supplier. The
+     * supplier will be queried each scheduler run and the requested velocity will be applied to the
+     * mechanism. The requested value is also recorded to the logger.
+     *
+     * @param speed supplier that provides the desired AngularVelocity
+     * @return a Command that will track the supplied velocity while active
+     */
     public Command setVelocity(Supplier<AngularVelocity> speed) {
         return kicker.setSpeed(
                 () -> {
@@ -158,6 +176,14 @@ public class KickerSubsystem extends SubsystemBase {
                 });
     }
 
+    /**
+     * Create a command that continuously sets the kicker duty cycle from a supplier. The supplier
+     * will be queried each scheduler run and the resulting duty cycle will be applied. The value is
+     * also recorded to the logger for debugging.
+     *
+     * @param dutyCycle supplier providing the desired duty cycle (-1.0 to 1.0)
+     * @return a Command that will drive the kicker using the supplied duty cycle
+     */
     public Command setDutyCycle(Supplier<Double> dutyCycle) {
         return kicker.set(
                 () -> {
@@ -166,6 +192,7 @@ public class KickerSubsystem extends SubsystemBase {
                 });
     }
 
+    /** Advance the kicker simulation model by one simulation tick. */
     @Override
     public void simulationPeriodic() {
         kicker.simIterate();
@@ -173,6 +200,7 @@ public class KickerSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // Pull inputs, publish to AdvantageKit, and update mechanism telemetry
         updateInputs();
         Logger.processInputs("Kicker", kickerInputs);
         kicker.updateTelemetry();

@@ -16,6 +16,11 @@ import frc.robot.constants.FieldConstants;
  *
  * <p>Integrated with the official AprilTag field layout to solve 3D projectile kinematics and
  * moving-target compensation.
+ *
+ * <p>Calculator for turret geometry and ball trajectory computations. Provides static helpers to
+ * compute distances, launch angles, azimuths, and special-case trajectories (such as clearing the
+ * funnel). Results are expressed in unit-aware types (Units library) to reduce unit conversion
+ * mistakes.
  */
 public class TurretCalculator {
 

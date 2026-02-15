@@ -30,6 +30,13 @@ import java.util.List;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
+/**
+ * Collection of reusable drive-related Commands and command factories.
+ *
+ * <p>Includes joystick-based teleop commands and characterization routines used for tuning drive
+ * feedforward and wheel radius. These are pure command factories and do not hold mutable subsystem
+ * state.
+ */
 public class DriveCommands {
     private DriveCommands() {}
 
@@ -205,9 +212,11 @@ public class DriveCommands {
                                     double kV = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
 
                                     NumberFormat formatter = new DecimalFormat("#0.00000");
-                                    System.out.println("********** Drive FF Characterization Results **********");
-                                    System.out.println("\tkS: " + formatter.format(kS));
-                                    System.out.println("\tkV: " + formatter.format(kV));
+                                    String msg =
+                                            String.format(
+                                                    "Drive FF Characterization Results: kS=%s, kV=%s",
+                                                    formatter.format(kS), formatter.format(kV));
+                                    DriverStation.reportWarning(msg, false);
                                 }));
     }
 
@@ -271,18 +280,14 @@ public class DriveCommands {
                                                     (state.gyroDelta * DriveSubsystem.DRIVE_BASE_RADIUS) / wheelDelta;
 
                                             NumberFormat formatter = new DecimalFormat("#0.000");
-                                            System.out.println(
-                                                    "********** Wheel Radius Characterization Results **********");
-                                            System.out.println(
-                                                    "\tWheel Delta: " + formatter.format(wheelDelta) + " radians");
-                                            System.out.println(
-                                                    "\tGyro Delta: " + formatter.format(state.gyroDelta) + " radians");
-                                            System.out.println(
-                                                    "\tWheel Radius: "
-                                                            + formatter.format(wheelRadius)
-                                                            + " meters, "
-                                                            + formatter.format(Units.metersToInches(wheelRadius))
-                                                            + " inches");
+                                            String msg =
+                                                    String.format(
+                                                            "Wheel Radius Characterization Results: WheelDelta=%s rad, GyroDelta=%s rad, WheelRadius=%s m (%s in)",
+                                                            formatter.format(wheelDelta),
+                                                            formatter.format(state.gyroDelta),
+                                                            formatter.format(wheelRadius),
+                                                            formatter.format(Units.metersToInches(wheelRadius)));
+                                            DriverStation.reportWarning(msg, false);
                                         })));
     }
 

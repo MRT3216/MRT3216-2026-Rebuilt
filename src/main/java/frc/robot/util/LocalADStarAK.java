@@ -25,6 +25,7 @@ import org.littletonrobotics.junction.inputs.LoggableInputs;
 // NOTE: This file is available at
 // https://gist.github.com/mjansen4857/a8024b55eb427184dbd10ae8923bd57d
 
+/** Local AD* pathfinder adapter used for local path planning. */
 public class LocalADStarAK implements Pathfinder {
     private final ADStarIO io = new ADStarIO();
 
@@ -109,8 +110,13 @@ public class LocalADStarAK implements Pathfinder {
     }
 
     private static class ADStarIO implements LoggableInputs {
+        /** Underlying LocalADStar instance used for local pathfinding. */
         public LocalADStar adStar = new LocalADStar();
+
+        /** Whether a new path is available since the last read. */
         public boolean isNewPathAvailable = false;
+
+        /** Points for the current path as returned by the pathfinder. */
         public List<PathPoint> currentPathPoints = Collections.emptyList();
 
         @Override

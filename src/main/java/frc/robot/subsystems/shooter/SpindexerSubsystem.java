@@ -1,7 +1,6 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
-// Diameter and mass are centralized in Constants.SpindexerConstants
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -46,7 +45,7 @@ public class SpindexerSubsystem extends SubsystemBase {
     private final SpindexerInputsAutoLogged spindexerInputs = new SpindexerInputsAutoLogged();
 
     private final SparkFlex motorController =
-            new SparkFlex(RobotMap.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
+            new SparkFlex(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
 
     private final SmartMotorControllerConfig motorConfig;
 

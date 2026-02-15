@@ -11,6 +11,13 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 
+/**
+ * Utility for shifting hub references based on alliance, match clock, or configured schedule.
+ *
+ * <p>This class encapsulates the timing schedule used to determine which hub reference is currently
+ * active (useful for match choreography or timed field interactions). It exposes a small API for
+ * initialization and querying the current shift state.
+ */
 public class HubShiftUtil {
     private enum ShiftEnum {
         TRANSITION,
@@ -55,6 +62,12 @@ public class HubShiftUtil {
         shiftTimer.restart();
     }
 
+    /**
+     * Returns the current shift info including elapsed/remaining time and whether the schedule marks
+     * the current shift as active. Intended for UI and autonomous decision logic.
+     *
+     * @return a ShiftInfo record describing the current schedule state
+     */
     public static ShiftInfo getShiftInfo() {
         double currentTime = shiftTimer.get();
         boolean[] currentSchedule = inactiveSchedule;

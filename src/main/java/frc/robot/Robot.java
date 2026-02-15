@@ -37,6 +37,8 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
  * the package after creating this project, you must also update the build.gradle file in the
  * project.
+ *
+ * <p>Main robot entrypoint and lifecycle manager.
  */
 public class Robot extends LoggedRobot {
     private Command autonomousCommand;
@@ -48,6 +50,7 @@ public class Robot extends LoggedRobot {
                     "Battery voltage is very low, turn off the robot or replace the battery to avoid damage.",
                     AlertType.kWarning);
 
+    /** Construct the Robot, configure logging and instantiate RobotContainer. */
     public Robot() {
         // Set up data receivers & replay source
         switch (Constants.currentMode) {

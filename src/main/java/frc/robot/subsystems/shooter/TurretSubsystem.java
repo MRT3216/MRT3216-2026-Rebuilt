@@ -15,6 +15,7 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.TurretConstants;
+import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -27,17 +28,25 @@ import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
+/** Subsystem responsible for turret rotation and hood control. */
 public class TurretSubsystem extends SubsystemBase {
 
+    /**
+     * Inputs for AdvantageKit recording for the turret pivot. Public fields are populated from the
+     * mechanism each loop and included in logs for replay and analysis.
+     */
     @AutoLog
     public static class TurretInputs {
-        // Current turret angle (degrees)
+        /** Current turret angle (degrees). */
         public Angle angle = Degrees.of(0);
-        // Target setpoint angle (degrees)
+
+        /** Target setpoint angle (degrees) if any. */
         public Angle setpoint = Degrees.of(0);
-        // Motor voltage
+
+        /** Measured motor voltage. */
         public Voltage volts = Volts.of(0);
-        // Motor current draw
+
+        /** Measured motor current draw. */
         public Current current = Amps.of(0);
     }
 
@@ -45,7 +54,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
 
     // CAN ID 53 - pivot motor
-    private TalonFX pivotMotor = new TalonFX(TurretConstants.kTurretMotorId);
+    private TalonFX pivotMotor = new TalonFX(RobotMap.Shooter.Turret.kPivotMotorId);
 
     private final SmartMotorControllerConfig motorConfig;
 
@@ -64,6 +73,7 @@ public class TurretSubsystem extends SubsystemBase {
         turretInputs.current = motor.getStatorCurrent();
     }
 
+    /** Construct the TurretSubsystem and configure motor/controller and pivot mechanism. */
     public TurretSubsystem() {
         // Initialize motor/controller objects in constructor to avoid object-escape
         motorConfig =
@@ -122,6 +132,18 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     /**
+     * Create and return a command that sets the turret to the provided angle value.
+     *
+     * @param angle desired absolute Angle for the turret
+     * @return a Command that will drive the turret to the requested angle
+     */
+    public Command setAngleSupplier(Angle angle) {
+        // Note: small helper wrapper kept for consistent Javadoc coverage; callers generally
+        // use the Supplier-based overload instead.
+        return setAngle(angle);
+    }
+
+    /**
      * Creates a command that moves the turret to the provided angle setpoint.
      *
      * @param setpoint a Supplier that provides the desired Angle setpoint while the command is active
@@ -151,6 +173,7 @@ public class TurretSubsystem extends SubsystemBase {
                 });
     }
 
+    /** Advance the turret simulation model by one simulation tick. */
     @Override
     public void simulationPeriodic() {
         // Iterate simulation model each sim tick

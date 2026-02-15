@@ -30,26 +30,31 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
- * AdvantageKit-ready Flywheel Subsystem for MRT 3216. *
+ * AdvantageKit-ready Flywheel Subsystem for MRT 3216.
  *
  * <p>This subsystem manages a dual-Kraken flywheel using the YAMS library and Phoenix 6. It
  * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
  * (Inputs) are separated from software commands (Outputs).
+ *
+ * <p>Subsystem controlling the flywheel shooter motor and related telemetry.
  */
 public class FlywheelSubsystem extends SubsystemBase {
 
     /**
-     * IO inputs for the Flywheel. AutoLogged to provide synchronized data for AdvantageScope and log
-     * replay.
+     * AdvantageKit-visible inputs for the Flywheel subsystem. These fields are updated each loop from
+     * hardware and are intended to be logged/serialized for replay.
      */
     @AutoLog
     public static class FlywheelInputs {
         /** Actual velocity of the flywheel mechanism. */
         public AngularVelocity velocity = RPM.of(0);
+
         /** Current target velocity requested from the motor controller. */
         public AngularVelocity setpoint = RPM.of(0);
+
         /** Applied voltage across the master motor. */
         public Voltage volts = Volts.of(0);
+
         /** Stator current draw of the master motor (useful for identifying jams). */
         public Current current = Amps.of(0);
     }
@@ -186,6 +191,10 @@ public class FlywheelSubsystem extends SubsystemBase {
                 });
     }
 
+    /**
+     * Run the flywheel physics simulation step when the robot is in simulation. This advances the
+     * internal mechanism model by one simulation tick.
+     */
     @Override
     public void simulationPeriodic() {
         // Iterate physics simulation for the flywheel mechanism

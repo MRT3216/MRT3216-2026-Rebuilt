@@ -65,6 +65,10 @@ public final class Constants {
 
         // Telemetry Update Frequency
         public static final double kUpdateHz = 50.0;
+
+        // Telemetry Labels
+        public static final String kMotorTelemetry = "FlywheelMotor";
+        public static final String kMechTelemetry = "FlywheelMech";
     }
     // endregion
 
@@ -148,11 +152,14 @@ public final class Constants {
         public static final double kOdometryFreqNetworkFD = 250.0;
         public static final double kOdometryFreqCAN = 100.0;
 
-        // MotionMagic / low-level motion defaults used by TalonFX-based module implementations
-        // Cruise velocity (rotations per second before gearing reduction). Placed here so both
+        // MotionMagic / low-level motion defaults used by TalonFX-based module
+        // implementations
+        // Cruise velocity (rotations per second before gearing reduction). Placed here
+        // so both
         // TalonFX and TalonFXS module implementations can reference the same default.
         public static final double kDefaultMotionMagicCruiseVelocity = 100.0;
-        // Window (seconds) used when converting cruise velocity into an acceleration setpoint
+        // Window (seconds) used when converting cruise velocity into an acceleration
+        // setpoint
         // (previously a hard-coded 0.100 literal). Keeping as seconds for clarity.
         public static final double kMotionMagicAccelWindowSec = 0.100;
     }
@@ -160,7 +167,8 @@ public final class Constants {
     public static final class PathPlannerConstants {
         private PathPlannerConstants() {}
 
-        // Default PID constants used by the PathPlanner AutoBuilder's holonomic controllers
+        // Default PID constants used by the PathPlanner AutoBuilder's holonomic
+        // controllers
         public static final double kTranslationP = 5.0;
         public static final double kTranslationI = 0.0;
         public static final double kTranslationD = 0.0;
@@ -175,8 +183,10 @@ public final class Constants {
     public static final class CommsConstants {
         private CommsConstants() {}
 
-        // Default frequency (Hz) for non-odometry Phoenix status signals such as velocity,
-        // applied voltage, and current. Previously scattered literals (50.0) are unified here.
+        // Default frequency (Hz) for non-odometry Phoenix status signals such as
+        // velocity,
+        // applied voltage, and current. Previously scattered literals (50.0) are
+        // unified here.
         public static final double kDefaultStatusSignalHz = 50.0;
     }
     // endregion
@@ -210,7 +220,8 @@ public final class Constants {
 
         // Low battery threshold that triggers alerts
         public static final double kLowBatteryVoltage = 11.0;
-        // Time (seconds) after which a low battery condition will trigger alerts when disabled
+        // Time (seconds) after which a low battery condition will trigger alerts when
+        // disabled
         public static final double kLowBatteryDisabledSecs = 2.0;
     }
     // endregion
@@ -328,6 +339,72 @@ public final class Constants {
                 System.exit(1);
             }
         }
+    }
+    // endregion
+
+    // region Intake Constants
+    public static final class IntakeConstants {
+        private IntakeConstants() {}
+
+        // Physical Constants
+        public static final Distance kWheelDiameter = Inches.of(3.5);
+        public static final Mass kWheelMass = Pounds.of(2);
+        public static final double kGearReduction = 1.0;
+
+        // Current Limits
+        public static final Current kStatorCurrentLimit = Amps.of(80);
+
+        // Feedback (PID) Constants
+        public static final double kP = 0.5;
+        public static final double kI = 0.0;
+        public static final double kD = 0.0;
+
+        // Theoretical Feedforward (Kraken X60 FOC)
+        public static final double kS = 0.15;
+        public static final double kV = 0.00207;
+        public static final double kA = 0.0001;
+
+        // Telemetry Update Frequency
+        public static final double kUpdateHz = 50.0;
+
+        // Telemetry Labels
+        public static final String kMotorTelemetry = "IntakeRollersMotor";
+        public static final String kMechTelemetry = "IntakeRollersMech";
+    }
+    // endregion
+
+    // region Intake Arm Constants
+    public static final class IntakeArmConstants {
+        private IntakeArmConstants() {}
+
+        // Hardware & Motor Configuration
+        public static final double kGearing = 125.0;
+        public static final boolean kMotorInverted = false;
+        public static final Current kStatorCurrentLimit = Amps.of(60);
+        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.05);
+
+        // PID / Motion Profiling (Trapezoidal Limits)
+        public static final double kP = 10.0;
+        public static final double kI = 0.0;
+        public static final double kD = 2.0;
+        public static final double kMaxVelocityDegPerSec = 90.0;
+        public static final double kMaxAccelDegPerSec2 = 45.0;
+
+        // Feedforward Constants
+        public static final double kS = 0.1;
+        public static final double kV = 0.12;
+        public static final double kA = 0.01;
+
+        // Mechanism Limits
+        public static final Angle kHardLimitMax = Degrees.of(360);
+        public static final Angle kHardLimitMin = Degrees.of(0);
+        public static final Angle kSoftLimitMax = Degrees.of(350);
+        public static final Angle kSoftLimitMin = Degrees.of(10);
+        public static final Angle kStartingPosition = Degrees.of(0);
+
+        // Telemetry Labels
+        public static final String kMotorTelemetry = "IntakeArmMotor";
+        public static final String kMechTelemetry = "IntakeArmMech";
     }
     // endregion
 }

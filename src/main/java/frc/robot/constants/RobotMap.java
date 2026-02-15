@@ -21,8 +21,13 @@ public final class RobotMap {
     }
 
     public final class Intake {
-        public static final int kLeftPivotMotorId = 61;
-        public static final int kRightPivotMotorId = 62;
-        public static final int kRollerMotorId = 63;
+        public final class Arm {
+            public static final int kLeftPivotMotorId = 61;
+            public static final int kRightPivotMotorId = 62;
+        }
+
+        public final class Roller {
+            public static final int kRollerMotorId = 63;
+        }
     }
 }

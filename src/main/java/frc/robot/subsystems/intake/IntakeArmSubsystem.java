@@ -1,4 +1,4 @@
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
@@ -7,19 +7,21 @@ import static edu.wpi.first.units.Units.Volts;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.constants.Constants.TurretConstants;
+import frc.robot.constants.Constants.IntakeArmConstants;
+import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import yams.mechanisms.config.PivotConfig;
-import yams.mechanisms.positional.Pivot;
+import yams.mechanisms.config.ArmConfig;
+import yams.mechanisms.positional.Arm;
 import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
@@ -28,21 +30,21 @@ import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
- * AdvantageKit-ready Turret Subsystem for MRT 3216.
+ * AdvantageKit-ready Intake Arm Subsystem for MRT 3216.
  *
- * <p>This subsystem manages a single-Kraken turret pivot using the YAMS library and Phoenix 6. It
- * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
- * (Inputs) are separated from software commands (Outputs).
+ * <p>This subsystem manages a single-Kraken intake arm pivot using the YAMS library and Phoenix 6.
+ * It utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware
+ * states (Inputs) are separated from software commands (Outputs).
  */
-public class TurretSubsystem extends SubsystemBase {
+public class IntakeArmSubsystem extends SubsystemBase {
 
     /**
-     * IO inputs for the Turret. AutoLogged to provide synchronized data for AdvantageScope and log
-     * replay.
+     * IO inputs for the Intake Arm. AutoLogged to provide synchronized data for AdvantageScope and
+     * log replay.
      */
     @AutoLog
-    public static class TurretInputs {
-        /** Actual angle of the turret. */
+    public static class IntakeArmInputs {
+        /** Actual angle of the intake arm. */
         public Angle angle = Degrees.of(0);
         /** Current target angle requested from the motor controller. */
         public Angle setpoint = Degrees.of(0);
@@ -52,15 +54,15 @@ public class TurretSubsystem extends SubsystemBase {
         public Current current = Amps.of(0);
     }
 
-    private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
+    private final IntakeArmInputsAutoLogged intakeArmInputs = new IntakeArmInputsAutoLogged();
 
     /* Hardware Objects */
-    private final TalonFX motor = new TalonFX(TurretConstants.kTurretMotorId);
+    private final TalonFX LeftPivotMotor = new TalonFX(RobotMap.Intake.Arm.kLeftPivotMotorId);
+    private final TalonFX RightPivotMotor = new TalonFX(RobotMap.Intake.Arm.kRightPivotMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
-    private final StatusSignal<Angle> positionSignal = motor.getPosition();
-    private final StatusSignal<Double> referenceSignal = motor.getClosedLoopReference();
-
+    private final StatusSignal<Angle> positionSignal = LeftPivotMotor.getPosition();
+    private final StatusSignal<Double> referenceSignal = LeftPivotMotor.getClosedLoopReference();
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
@@ -68,9 +70,9 @@ public class TurretSubsystem extends SubsystemBase {
     private final SmartMotorController smartMotor;
 
     /* High-level mechanism configuration */
-    private final PivotConfig turretConfig;
+    private final ArmConfig intakeArmConfig;
 
-    private final Pivot turret;
+    private final Arm intakeArm;
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
@@ -80,80 +82,83 @@ public class TurretSubsystem extends SubsystemBase {
         // Refresh all Phoenix 6 signals at once to minimize CAN latency jitter
         BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
 
-        turretInputs.angle = turret.getAngle();
-        turretInputs.volts = smartMotor.getVoltage();
-        turretInputs.current = smartMotor.getStatorCurrent();
+        intakeArmInputs.angle = intakeArm.getAngle();
+        intakeArmInputs.volts = smartMotor.getVoltage();
+        intakeArmInputs.current = smartMotor.getStatorCurrent();
 
         // Sets the setpoint input based on the current SMC state
-        turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
+        intakeArmInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
     }
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
-    public TurretSubsystem() {
+    public IntakeArmSubsystem() {
         // Initialize motor controller config in constructor to avoid object-escape
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
-                        .withClosedLoopController(TurretConstants.kP, TurretConstants.kI, TurretConstants.kD)
-                        .withSimClosedLoopController(TurretConstants.kP, TurretConstants.kI, TurretConstants.kD)
+                        .withClosedLoopController(
+                                IntakeArmConstants.kP, IntakeArmConstants.kI, IntakeArmConstants.kD)
+                        .withSimClosedLoopController(
+                                IntakeArmConstants.kP, IntakeArmConstants.kI, IntakeArmConstants.kD)
                         // Feedforward Constants
                         .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        TurretConstants.kS, TurretConstants.kV, TurretConstants.kA))
+                                new ArmFeedforward(
+                                        IntakeArmConstants.kS, IntakeArmConstants.kV, IntakeArmConstants.kA))
                         .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        TurretConstants.kS, TurretConstants.kV, TurretConstants.kA))
+                                new ArmFeedforward(
+                                        IntakeArmConstants.kS, IntakeArmConstants.kV, IntakeArmConstants.kA))
                         // Telemetry
-                        .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
-                        .withGearing(TurretConstants.kGearing)
-                        .withMotorInverted(TurretConstants.kMotorInverted)
+                        .withTelemetry(IntakeArmConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
+                        .withGearing(IntakeArmConstants.kGearing)
+                        .withMotorInverted(IntakeArmConstants.kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        .withStatorCurrentLimit(TurretConstants.kStatorCurrentLimit);
+                        .withStatorCurrentLimit(IntakeArmConstants.kStatorCurrentLimit)
+                        .withFollowers(Pair.of(RightPivotMotor, true));
 
-        smartMotor = new TalonFXWrapper(motor, DCMotor.getKrakenX60Foc(1), motorConfig);
+        smartMotor = new TalonFXWrapper(LeftPivotMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
 
-        turretConfig =
-                new PivotConfig(smartMotor)
-                        .withMOI(TurretConstants.kMOI)
-                        .withTelemetry("TurretMech", TelemetryVerbosity.HIGH);
+        intakeArmConfig =
+                new ArmConfig(smartMotor)
+                        .withMOI(IntakeArmConstants.kMOI)
+                        .withTelemetry(IntakeArmConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
 
-        turret = new Pivot(turretConfig);
+        intakeArm = new Arm(intakeArmConfig);
 
         // High-frequency updates for PID tuning
         BaseStatusSignal.setUpdateFrequencyForAll((int) 50.0, positionSignal, referenceSignal);
 
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
-        motor.getVelocity().setUpdateFrequency(0);
+        LeftPivotMotor.getVelocity().setUpdateFrequency(0);
     }
 
     /**
-     * Gets the current angle of the turret.
+     * Gets the current angle of the intake arm.
      *
      * @return The current Angle measured by the encoder.
      */
     public Angle getPosition() {
-        return turretInputs.angle;
+        return intakeArmInputs.angle;
     }
 
     /**
-     * Sets the target angle for the turret.
+     * Sets the target angle for the intake arm.
      *
      * @param angle The target Angle.
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        return turret.setAngle(angle);
+        return intakeArm.setAngle(angle);
     }
 
     /**
-     * Sets the duty cycle (percent output) for the turret.
+     * Sets the duty cycle (percent output) for the intake arm.
      *
      * @param dutyCycle The output percentage (-1.0 to 1.0).
-     * @return A command to run the turret at the specified duty cycle.
+     * @return A command to run the intake arm at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
-        return turret.set(dutyCycle);
+        return intakeArm.set(dutyCycle);
     }
 
     /**
@@ -163,9 +168,9 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to track the supplier's angle.
      */
     public Command setAngle(Supplier<Angle> angle) {
-        return turret.setAngle(
+        return intakeArm.setAngle(
                 () -> {
-                    Logger.recordOutput("Shooter/Turret/Setpoint", angle.get());
+                    Logger.recordOutput("Intake/Arm/Setpoint", angle.get());
                     return angle.get();
                 });
     }
@@ -177,22 +182,22 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to track the supplier's duty cycle.
      */
     public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return turret.set(
+        return intakeArm.set(
                 () -> {
-                    Logger.recordOutput("Shooter/Turret/DutyCycle", dutyCycle.get());
+                    Logger.recordOutput("Intake/Arm/DutyCycle", dutyCycle.get());
                     return dutyCycle.get();
                 });
     }
 
     @Override
     public void simulationPeriodic() {
-        turret.simIterate();
+        intakeArm.simIterate();
     }
 
     @Override
     public void periodic() {
         updateInputs();
-        Logger.processInputs("Shooter/Turret", turretInputs);
-        turret.updateTelemetry();
+        Logger.processInputs("Intake/Arm", intakeArmInputs);
+        intakeArm.updateTelemetry();
     }
 }

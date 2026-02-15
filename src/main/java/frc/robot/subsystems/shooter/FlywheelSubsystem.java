@@ -27,10 +27,12 @@ import yams.mechanisms.velocity.FlyWheel;
 import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
- * AdvantageKit-ready Flywheel Subsystem for MRT 3216. *
+ * AdvantageKit-ready Flywheel Subsystem for MRT 3216.
  *
  * <p>This subsystem manages a dual-Kraken flywheel using the YAMS library and Phoenix 6. It
  * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
@@ -69,7 +71,7 @@ public class FlywheelSubsystem extends SubsystemBase {
     /** The SmartMotorController abstraction that allows for hardware/sim parity. */
     private final SmartMotorController motor;
 
-    /* High-level mechanism configuration (3 lb Flywheel) */
+    /* High-level mechanism configuration */
     private final FlyWheelConfig flywheelConfig;
 
     private final FlyWheel flywheel;
@@ -92,45 +94,50 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public FlywheelSubsystem() {
-        // Initialize motor/controller objects here to avoid leaking "this" during field
-        // initialization (object-escape).
+        // Initialize motor controller config in constructor to avoid object-escape
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
+                        // Feedback Constants (PID Constants)
                         .withClosedLoopController(ShooterConstants.kP, ShooterConstants.kI, ShooterConstants.kD)
+                        .withSimClosedLoopController(
+                                ShooterConstants.kP, ShooterConstants.kI, ShooterConstants.kD)
+                        // Feedforward Constants
                         .withFeedforward(
                                 new SimpleMotorFeedforward(
                                         ShooterConstants.kS, ShooterConstants.kV, ShooterConstants.kA))
+                        .withSimFeedforward(
+                                new SimpleMotorFeedforward(
+                                        ShooterConstants.kS, ShooterConstants.kV, ShooterConstants.kA))
+                        // Telemetry
+                        .withTelemetry(ShooterConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
                         .withGearing(
                                 new MechanismGearing(GearBox.fromReductionStages(ShooterConstants.kGearReduction)))
-                        .withStatorCurrentLimit(ShooterConstants.kStatorCurrentLimit)
                         .withMotorInverted(true)
+                        .withIdleMode(MotorMode.COAST)
+                        .withStatorCurrentLimit(ShooterConstants.kStatorCurrentLimit)
                         .withFollowers(Pair.of(new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId), true));
 
-        // Create the SMC wrapper
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
 
-        // Create the mechanism config now that motor is available
         flywheelConfig =
                 new FlyWheelConfig(motor)
                         .withDiameter(ShooterConstants.kWheelDiameter)
-                        .withMass(ShooterConstants.kWheelMass);
+                        .withMass(ShooterConstants.kWheelMass)
+                        .withTelemetry(ShooterConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
 
         flywheel = new FlyWheel(flywheelConfig);
 
         // High-frequency updates for PID tuning
         BaseStatusSignal.setUpdateFrequencyForAll(
-                (int) frc.robot.constants.Constants.ShooterConstants.kUpdateHz,
-                velocitySignal,
-                referenceSignal);
+                (int) ShooterConstants.kUpdateHz, velocitySignal, referenceSignal);
 
-        // Optimization: Disable unused signals (like position) to conserve CAN bus
-        // bandwidth
+        // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);
     }
 
     /**
-     * Returns the current velocity of the flywheel.
+     * Gets the current velocity of the flywheel.
      *
      * @return The current AngularVelocity measured by the encoder.
      */
@@ -188,25 +195,13 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     @Override
     public void simulationPeriodic() {
-        // Iterate physics simulation for the flywheel mechanism
         flywheel.simIterate();
     }
 
     @Override
     public void periodic() {
-        // 1. Pull data from hardware
         updateInputs();
-
-        // 2. Log data for AdvantageKit Replay
         Logger.processInputs("Shooter", flywheelInputs);
-
-        // 3. Log high-level outputs for AdvantageScope visual analysis
-        Logger.recordOutput("Shooter/FX/Velocity", velocitySignal.getValue());
-
-        // Force conversion to RPM for standard graph scaling
-        Logger.recordOutput("Shooter/FX/Reference", RPM.of(referenceSignal.getValue()));
-
-        // 4. Update YAMS telemetry for internal mechanism tracking
         flywheel.updateTelemetry();
     }
 }

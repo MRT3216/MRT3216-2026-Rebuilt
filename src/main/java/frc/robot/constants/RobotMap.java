@@ -20,7 +20,6 @@ public final class RobotMap {
         }
 
         public final class Spindexer {
-            // CAN ID for the spindexer motor (NEO 2.0)
             public static final int kMotorId = 55;
         }
     }

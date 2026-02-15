@@ -8,7 +8,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.Pair;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
@@ -103,10 +103,10 @@ public class IntakePivotSubsystem extends SubsystemBase {
                                 IntakePivotConstants.kP, IntakePivotConstants.kI, IntakePivotConstants.kD)
                         // Feedforward Constants
                         .withFeedforward(
-                                new SimpleMotorFeedforward(
+                                new ArmFeedforward(
                                         IntakePivotConstants.kS, IntakePivotConstants.kV, IntakePivotConstants.kA))
                         .withSimFeedforward(
-                                new SimpleMotorFeedforward(
+                                new ArmFeedforward(
                                         IntakePivotConstants.kS, IntakePivotConstants.kV, IntakePivotConstants.kA))
                         // Telemetry
                         .withTelemetry(IntakePivotConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)

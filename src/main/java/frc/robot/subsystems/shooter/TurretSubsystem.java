@@ -38,31 +38,31 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
 public class TurretSubsystem extends SubsystemBase {
 
     /**
-     * IO inputs for the Turret. AutoLogged to provide synchronized data for AdvantageScope and log
-     * replay.
+     * Inputs for AdvantageKit recording for the turret pivot. Public fields are populated from the
+     * mechanism each loop and included in logs for replay and analysis.
      */
     @AutoLog
     public static class TurretInputs {
-        /** Actual angle of the turret. */
+        /** Current turret angle (degrees). */
         public Angle angle = Degrees.of(0);
-        /** Current target angle requested from the motor controller. */
+
+        /** Target setpoint angle (degrees) if any. */
         public Angle setpoint = Degrees.of(0);
+
+        /** Measured motor voltage. */
         /** Applied voltage across the motor. */
         public Voltage volts = Volts.of(0);
-        /** Stator current draw of the motor. */
+
+        /** Measured motor current draw. */
         public Current current = Amps.of(0);
     }
 
     private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
 
-    /* Hardware Objects */
-    private final TalonFX motor = new TalonFX(RobotMap.Shooter.Turret.kMotorId);
+    private TalonFX pivotMotor = new TalonFX(RobotMap.Shooter.Turret.kMotorId);
+    private final StatusSignal<Angle> positionSignal = pivotMotor.getPosition();
+    private final StatusSignal<Double> referenceSignal = pivotMotor.getClosedLoopReference();
 
-    /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
-    private final StatusSignal<Angle> positionSignal = motor.getPosition();
-    private final StatusSignal<Double> referenceSignal = motor.getClosedLoopReference();
-
-    /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
     /** The SmartMotorController abstraction that allows for hardware/sim parity. */
@@ -112,7 +112,7 @@ public class TurretSubsystem extends SubsystemBase {
                         .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(TurretConstants.kStatorCurrentLimit);
 
-        smartMotor = new TalonFXWrapper(motor, DCMotor.getKrakenX60Foc(1), motorConfig);
+        smartMotor = new TalonFXWrapper(pivotMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
 
         turretConfig =
                 new PivotConfig(smartMotor)
@@ -125,7 +125,7 @@ public class TurretSubsystem extends SubsystemBase {
         BaseStatusSignal.setUpdateFrequencyForAll((int) 50.0, positionSignal, referenceSignal);
 
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
-        motor.getVelocity().setUpdateFrequency(0);
+        pivotMotor.getVelocity().setUpdateFrequency(0);
     }
 
     /**
@@ -155,18 +155,6 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public Command setDutyCycle(double dutyCycle) {
         return turret.set(dutyCycle);
-    }
-
-    /**
-     * Create and return a command that sets the turret to the provided angle value.
-     *
-     * @param angle desired absolute Angle for the turret
-     * @return a Command that will drive the turret to the requested angle
-     */
-    public Command setAngleSupplier(Angle angle) {
-        // Note: small helper wrapper kept for consistent Javadoc coverage; callers generally
-        // use the Supplier-based overload instead.
-        return setAngle(angle);
     }
 
     /**

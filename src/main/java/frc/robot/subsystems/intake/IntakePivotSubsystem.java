@@ -20,8 +20,8 @@ import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import yams.mechanisms.config.PivotConfig;
-import yams.mechanisms.positional.Pivot;
+import yams.mechanisms.config.ArmConfig;
+import yams.mechanisms.positional.Arm;
 import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
@@ -70,9 +70,9 @@ public class IntakePivotSubsystem extends SubsystemBase {
     private final SmartMotorController smartMotor;
 
     /* High-level mechanism configuration */
-    private final PivotConfig intakePivotConfig;
+    private final ArmConfig intakePivotConfig;
 
-    private final Pivot intakePivot;
+    private final Arm intakePivot;
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
@@ -119,11 +119,12 @@ public class IntakePivotSubsystem extends SubsystemBase {
         smartMotor = new TalonFXWrapper(LeftPivotMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
 
         intakePivotConfig =
-                new PivotConfig(smartMotor)
-                        .withMOI(IntakePivotConstants.kMOI)
+                new ArmConfig(smartMotor)
+                        .withMass(IntakePivotConstants.kMass)
+                        .withLength(IntakePivotConstants.kLength)
                         .withTelemetry(IntakePivotConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
 
-        intakePivot = new Pivot(intakePivotConfig);
+        intakePivot = new Arm(intakePivotConfig);
 
         // High-frequency updates for PID tuning
         BaseStatusSignal.setUpdateFrequencyForAll((int) 50.0, positionSignal, referenceSignal);

@@ -27,8 +27,8 @@ import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
- * Central repository of robot constants. Keep this file tidy: avoid duplicate nested classes
- * and prefer Javadoc over short inline comment headings.
+ * Central repository of robot constants. Keep this file tidy: avoid duplicate nested classes and
+ * prefer Javadoc over short inline comment headings.
  */
 public final class Constants {
     /** Selected robot hardware profile used at runtime (COMPBOT or SIMBOT). */
@@ -124,6 +124,7 @@ public final class Constants {
     // region Drive
     public static final class DriveConstants {
         private DriveConstants() {}
+
         public static final double kRobotMassKg = 74.088;
         public static final double kRobotMOI = 6.883;
         public static final double kWheelCoef = 1.2;
@@ -138,6 +139,7 @@ public final class Constants {
     // region Communications
     public static final class CommsConstants {
         private CommsConstants() {}
+
         public static final double kDefaultStatusSignalHz = 50.0;
     }
 
@@ -146,6 +148,7 @@ public final class Constants {
     // region PathPlanner
     public static final class PathPlannerConstants {
         private PathPlannerConstants() {}
+
         public static final double kTranslationP = 5.0;
         public static final double kTranslationI = 0.0;
         public static final double kTranslationD = 0.0;
@@ -159,6 +162,7 @@ public final class Constants {
     // region DriveControl
     public static final class DriveControlConstants {
         private DriveControlConstants() {}
+
         public static final double kDeadband = 0.1;
         public static final double kAngleKP = 5.0;
         public static final double kAngleKD = 0.4;
@@ -175,6 +179,7 @@ public final class Constants {
     // region RobotSafety
     public static final class RobotSafetyConstants {
         private RobotSafetyConstants() {}
+
         public static final double kLowBatteryVoltage = 11.0;
         public static final double kLowBatteryDisabledSecs = 2.0;
     }
@@ -184,6 +189,7 @@ public final class Constants {
     // region Physics
     public static final class PhysicsConstants {
         private PhysicsConstants() {}
+
         public static final double kStandardGravity = 9.80665;
     }
 
@@ -192,6 +198,7 @@ public final class Constants {
     // region Kicker
     public static final class KickerConstants {
         private KickerConstants() {}
+
         public static final Distance kWheelDiameter = Inches.of(2);
         public static final Mass kWheelMass = Pounds.of(1);
         public static final double kGearReduction = 1.0;
@@ -211,6 +218,7 @@ public final class Constants {
     // region Spindexer
     public static final class SpindexerConstants {
         private SpindexerConstants() {}
+
         public static final double kGearing = 5.0;
         /** Backwards-compatible alias used by some subsystems. */
         public static final double kGearReduction = kGearing;
@@ -220,6 +228,7 @@ public final class Constants {
 
         /** Roller mass used by FlyWheel configs. */
         public static final Mass kWheelMass = Pounds.of(0.5);
+
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(30);
         public static final double kP = 0.5;
@@ -237,6 +246,7 @@ public final class Constants {
     // region ShooterLookupTables
     public static final class ShooterLookupTables {
         private ShooterLookupTables() {}
+
         public static final double[][] HUB = {
             {1.0, 80.0, 75.0, 0.45},
             {2.0, 82.5, 72.0, 0.65},
@@ -253,6 +263,7 @@ public final class Constants {
     // region Intake
     public static final class IntakeConstants {
         private IntakeConstants() {}
+
         public static final Distance kWheelDiameter = Inches.of(3.5);
         public static final Mass kWheelMass = Pounds.of(2);
         public static final double kGearReduction = 1.0;
@@ -273,15 +284,17 @@ public final class Constants {
     // region IntakePivot
     public static final class IntakePivotConstants {
         private IntakePivotConstants() {}
-        public static final double kGearing = 125.0;
+
+        public static final double kGearing = 30.0;
+        public static final Distance kLength = Inches.of(11.5);
+        public static final Mass kMass = Pounds.of(6.4);
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(60);
-        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.05);
         public static final double kP = 10.0;
         public static final double kI = 0.0;
         public static final double kD = 2.0;
-        public static final double kMaxVelocityDegPerSec = 90.0;
-        public static final double kMaxAccelDegPerSec2 = 45.0;
+        public static final double kMaxVelocityDegPerSec = 20.0;
+        public static final double kMaxAccelDegPerSec2 = 20.0;
         public static final double kS = 0.1;
         public static final double kV = 0.12;
         public static final double kA = 0.01;

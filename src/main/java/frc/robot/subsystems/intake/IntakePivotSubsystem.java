@@ -147,10 +147,10 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        // Enforce configured hard limits before commanding the mechanism
+        // Enforce configured soft limits before commanding the mechanism
         double requestedDeg = angle.in(Degrees);
-        double minDeg = IntakePivotConstants.kHardLimitMin.in(Degrees);
-        double maxDeg = IntakePivotConstants.kHardLimitMax.in(Degrees);
+        double minDeg = IntakePivotConstants.kSoftLimitMin.in(Degrees);
+        double maxDeg = IntakePivotConstants.kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         Angle clamped = Degrees.of(clampedDeg);
         if (clampedDeg != requestedDeg) {

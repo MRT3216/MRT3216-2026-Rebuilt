@@ -99,14 +99,15 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
                         .withClosedLoopController(IntakeConstants.kP, IntakeConstants.kI, IntakeConstants.kD)
-                        .withSimClosedLoopController(IntakeConstants.kP, IntakeConstants.kI, IntakeConstants.kD)
+                        .withSimClosedLoopController(
+                                IntakeConstants.kP_sim, IntakeConstants.kI_sim, IntakeConstants.kD_sim)
                         // Feedforward Constants
                         .withFeedforward(
                                 new SimpleMotorFeedforward(
                                         IntakeConstants.kS, IntakeConstants.kV, IntakeConstants.kA))
                         .withSimFeedforward(
                                 new SimpleMotorFeedforward(
-                                        IntakeConstants.kS, IntakeConstants.kV, IntakeConstants.kA))
+                                        IntakeConstants.kS_sim, IntakeConstants.kV_sim, IntakeConstants.kA_sim))
                         // Telemetry
                         .withTelemetry(IntakeConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
                         .withGearing(

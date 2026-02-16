@@ -64,8 +64,6 @@ public class KickerSubsystem extends SubsystemBase {
 
     private final FlyWheel kicker;
 
-    // Setpoint logging removed to reduce telemetry noise.
-
     /** Update the AdvantageKit "inputs" (data coming from the SMC) */
     private void updateInputs() {
         kickerInputs.velocity = kicker.getSpeed();
@@ -86,9 +84,9 @@ public class KickerSubsystem extends SubsystemBase {
                                 frc.robot.constants.Constants.KickerConstants.kI,
                                 frc.robot.constants.Constants.KickerConstants.kD)
                         .withSimClosedLoopController(
-                                frc.robot.constants.Constants.KickerConstants.kP,
-                                frc.robot.constants.Constants.KickerConstants.kI,
-                                frc.robot.constants.Constants.KickerConstants.kD)
+                                frc.robot.constants.Constants.KickerConstants.kP_sim,
+                                frc.robot.constants.Constants.KickerConstants.kI_sim,
+                                frc.robot.constants.Constants.KickerConstants.kD_sim)
                         // Feedforward Constants
                         .withFeedforward(
                                 new SimpleMotorFeedforward(
@@ -97,9 +95,9 @@ public class KickerSubsystem extends SubsystemBase {
                                         frc.robot.constants.Constants.KickerConstants.kA))
                         .withSimFeedforward(
                                 new SimpleMotorFeedforward(
-                                        frc.robot.constants.Constants.KickerConstants.kS,
-                                        frc.robot.constants.Constants.KickerConstants.kV,
-                                        frc.robot.constants.Constants.KickerConstants.kA))
+                                        frc.robot.constants.Constants.KickerConstants.kS_sim,
+                                        frc.robot.constants.Constants.KickerConstants.kV_sim,
+                                        frc.robot.constants.Constants.KickerConstants.kA_sim))
                         // Telemetry name and verbosity level
                         .withTelemetry(
                                 frc.robot.constants.Constants.KickerConstants.kMotorTelemetry,

@@ -90,14 +90,16 @@ public class SpindexerSubsystem extends SubsystemBase {
                         .withClosedLoopController(
                                 SpindexerConstants.kP, SpindexerConstants.kI, SpindexerConstants.kD)
                         .withSimClosedLoopController(
-                                SpindexerConstants.kP, SpindexerConstants.kI, SpindexerConstants.kD)
+                                SpindexerConstants.kP_sim, SpindexerConstants.kI_sim, SpindexerConstants.kD_sim)
                         // Feedforward Constants
                         .withFeedforward(
                                 new SimpleMotorFeedforward(
                                         SpindexerConstants.kS, SpindexerConstants.kV, SpindexerConstants.kA))
                         .withSimFeedforward(
                                 new SimpleMotorFeedforward(
-                                        SpindexerConstants.kS, SpindexerConstants.kV, SpindexerConstants.kA))
+                                        SpindexerConstants.kS_sim,
+                                        SpindexerConstants.kV_sim,
+                                        SpindexerConstants.kA_sim))
                         // Telemetry
                         .withTelemetry(SpindexerConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
                         .withGearing(

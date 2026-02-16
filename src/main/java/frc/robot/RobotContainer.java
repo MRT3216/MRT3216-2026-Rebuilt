@@ -238,6 +238,22 @@ public class RobotContainer {
                                 .withTimeout(Seconds.of(1))
                                 .andThen(spindexerSubsystem.setVelocity(RPM.of(4000))));
 
+        // Turret test controls -------------------------------------------------
+        // Hold the BACK button to manually steer the turret using the left stick X axis.
+        // While held the supplier reads the current turret angle and adjusts it by a small
+        // amount proportional to the left-stick X position (degrees per loop).
+        controller
+                .back()
+                .whileTrue(
+                        turretSubsystem.setAngle(
+                                () ->
+                                        Degrees.of(
+                                                turretSubsystem.getPosition().in(Degrees) + controller.getLeftX() * 5.0)));
+
+        // Press left-stick to snap turret to -90°, press right-stick to snap to +90°.
+        controller.leftStick().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+        controller.rightStick().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
+
         // Test button: while the START button is held, run the shooter's clear routine
         // (spins kicker and spindexer in reverse at the configured clear RPMs).
         controller.start().whileTrue(shooterSystem.clear());

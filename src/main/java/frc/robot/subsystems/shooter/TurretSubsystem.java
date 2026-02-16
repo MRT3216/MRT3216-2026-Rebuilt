@@ -91,14 +91,15 @@ public class TurretSubsystem extends SubsystemBase {
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
                         .withClosedLoopController(TurretConstants.kP, TurretConstants.kI, TurretConstants.kD)
-                        .withSimClosedLoopController(TurretConstants.kP, TurretConstants.kI, TurretConstants.kD)
+                        .withSimClosedLoopController(
+                                TurretConstants.kP_sim, TurretConstants.kI_sim, TurretConstants.kD_sim)
                         // Feedforward Constants
                         .withFeedforward(
                                 new SimpleMotorFeedforward(
                                         TurretConstants.kS, TurretConstants.kV, TurretConstants.kA))
                         .withSimFeedforward(
                                 new SimpleMotorFeedforward(
-                                        TurretConstants.kS, TurretConstants.kV, TurretConstants.kA))
+                                        TurretConstants.kS_sim, TurretConstants.kV_sim, TurretConstants.kA_sim))
                         // Telemetry
                         .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
                         .withGearing(TurretConstants.kGearing)
@@ -112,6 +113,8 @@ public class TurretSubsystem extends SubsystemBase {
                 new PivotConfig(smartMotor)
                         .withMOI(TurretConstants.kMOI)
                         .withTelemetry("TurretMech", TelemetryVerbosity.HIGH)
+                        // Provide a starting position so the Pivot has a known angle at init (required by YAMS)
+                        .withStartingPosition(TurretConstants.kStartingPosition)
                         .withHardLimit(TurretConstants.kHardLimitMin, TurretConstants.kHardLimitMax)
                         .withSoftLimits(TurretConstants.kSoftLimitMin, TurretConstants.kSoftLimitMax);
 

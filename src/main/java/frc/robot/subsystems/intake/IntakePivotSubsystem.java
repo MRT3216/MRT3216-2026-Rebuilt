@@ -94,14 +94,18 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withClosedLoopController(
                                 IntakePivotConstants.kP, IntakePivotConstants.kI, IntakePivotConstants.kD)
                         .withSimClosedLoopController(
-                                IntakePivotConstants.kP, IntakePivotConstants.kI, IntakePivotConstants.kD)
+                                IntakePivotConstants.kP_sim,
+                                IntakePivotConstants.kI_sim,
+                                IntakePivotConstants.kD_sim)
                         // Feedforward Constants
                         .withFeedforward(
                                 new ArmFeedforward(
                                         IntakePivotConstants.kS, IntakePivotConstants.kV, IntakePivotConstants.kA))
                         .withSimFeedforward(
                                 new ArmFeedforward(
-                                        IntakePivotConstants.kS, IntakePivotConstants.kV, IntakePivotConstants.kA))
+                                        IntakePivotConstants.kS_sim,
+                                        IntakePivotConstants.kV_sim,
+                                        IntakePivotConstants.kA_sim))
                         // Telemetry
                         .withTelemetry(IntakePivotConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
                         .withGearing(IntakePivotConstants.kGearing)
@@ -125,6 +129,8 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withMass(IntakePivotConstants.kMass)
                         .withLength(IntakePivotConstants.kLength)
                         .withTelemetry(IntakePivotConstants.kMechTelemetry, TelemetryVerbosity.HIGH)
+                        // Provide a starting position so the Arm has a known initial angle
+                        .withStartingPosition(IntakePivotConstants.kStartingPosition)
                         .withHardLimit(IntakePivotConstants.kHardLimitMin, IntakePivotConstants.kHardLimitMax)
                         .withSoftLimits(IntakePivotConstants.kSoftLimitMin, IntakePivotConstants.kSoftLimitMax);
 

@@ -58,18 +58,18 @@ public class HoodSubsystem extends SubsystemBase {
     private final ArmConfig hoodConfig;
     private final Arm hood;
 
-    // Setpoint logging removed to reduce telemetry noise.
-
     public HoodSubsystem() {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         .withClosedLoopController(HoodConstants.kP, HoodConstants.kI, HoodConstants.kD)
-                        .withSimClosedLoopController(HoodConstants.kP, HoodConstants.kI, HoodConstants.kD)
+                        .withSimClosedLoopController(
+                                HoodConstants.kP_sim, HoodConstants.kI_sim, HoodConstants.kD_sim)
                         .withFeedforward(
                                 new ArmFeedforward(HoodConstants.kS, HoodConstants.kV, HoodConstants.kA))
                         .withSimFeedforward(
-                                new ArmFeedforward(HoodConstants.kS, HoodConstants.kV, HoodConstants.kA))
+                                new ArmFeedforward(
+                                        HoodConstants.kS_sim, HoodConstants.kV_sim, HoodConstants.kA_sim))
                         .withTelemetry(HoodConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
                         .withGearing(HoodConstants.kGearing)
                         .withMotorInverted(HoodConstants.kMotorInverted)
@@ -83,6 +83,8 @@ public class HoodSubsystem extends SubsystemBase {
                         .withMass(HoodConstants.kMass)
                         .withLength(HoodConstants.kLength)
                         .withTelemetry(HoodConstants.kMechTelemetry, TelemetryVerbosity.HIGH)
+                        // Ensure Arm has a known starting angle for simulation and replay
+                        .withStartingPosition(HoodConstants.kStartingPosition)
                         .withHardLimit(HoodConstants.kHardLimitMin, HoodConstants.kHardLimitMax)
                         .withSoftLimits(HoodConstants.kSoftLimitMin, HoodConstants.kSoftLimitMax);
 

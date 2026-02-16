@@ -105,14 +105,14 @@ public class FlywheelSubsystem extends SubsystemBase {
                         // Feedback Constants (PID Constants)
                         .withClosedLoopController(ShooterConstants.kP, ShooterConstants.kI, ShooterConstants.kD)
                         .withSimClosedLoopController(
-                                ShooterConstants.kP, ShooterConstants.kI, ShooterConstants.kD)
+                                ShooterConstants.kP_sim, ShooterConstants.kI_sim, ShooterConstants.kD_sim)
                         // Feedforward Constants
                         .withFeedforward(
                                 new SimpleMotorFeedforward(
                                         ShooterConstants.kS, ShooterConstants.kV, ShooterConstants.kA))
                         .withSimFeedforward(
                                 new SimpleMotorFeedforward(
-                                        ShooterConstants.kS, ShooterConstants.kV, ShooterConstants.kA))
+                                        ShooterConstants.kS_sim, ShooterConstants.kV_sim, ShooterConstants.kA_sim))
                         // Telemetry
                         .withTelemetry(ShooterConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
                         .withGearing(

@@ -16,7 +16,7 @@ public final class RobotMap {
         }
 
         public final class Turret {
-            public static final int kMotorId = 53;
+            public static final int kMotorId = 54;
         }
 
         public final class Spindexer {

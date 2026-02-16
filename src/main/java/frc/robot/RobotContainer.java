@@ -7,18 +7,26 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Seconds;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.constants.Constants;
+import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
+import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
+import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.RobotMapValidator;
+import frc.robot.util.ShootingLookupTable;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -34,12 +42,14 @@ public class RobotContainer {
     // private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
-    // private final TurretSubsystem turretSubsystem = new TurretSubsystem();
+    private final TurretSubsystem turretSubsystem = new TurretSubsystem();
     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
+    private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
 
     // Aggregated shooter system
     private final ShooterSystem shooterSystem =
-            new ShooterSystem(flywheelSubsystem, kickerSubsystem, spindexerSubsystem);
+            new ShooterSystem(
+                    flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem, hoodSubsystem);
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -159,19 +169,67 @@ public class RobotContainer {
         // () -> -controller.getLeftX(),
         // () -> -controller.getRightX()));
 
-        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.setDutyCycle(0));
-        kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
+        // Default commands now use closed-loop controllers (PID) instead of open-loop duty
+        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.setVelocity(RPM.of(0)));
+        kickerSubsystem.setDefaultCommand(kickerSubsystem.setVelocity(RPM.of(0)));
         // turretSubsystem.setDefaultCommand(turretSubsystem.setDutyCycle(0));
-        spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
+        spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setVelocity(RPM.of(0)));
+        // Have hood hold its current position using the positional controller
+        hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(() -> hoodSubsystem.getPosition()));
 
         // Schedule `setVelocity` when the Xbox controller's B button is pressed,
         // cancelling on release.
-        controller.a().whileTrue(flywheelSubsystem.setDutyCycle(0.2));
+        // Button A spins a low test speed using closed-loop velocity control
+        controller.a().whileTrue(flywheelSubsystem.setVelocity(RPM.of(1000)));
+        // Button B spins to tuned shooting speed
         controller.b().whileTrue(flywheelSubsystem.setVelocity(RPM.of(3000)));
 
         // controller.b().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
         // controller.a().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
-        controller.x().whileTrue(shooterSystem.shoot());
+        // Bind X to a different command depending on runtime mode: SIM uses a simplified routine,
+        // REAL uses the dynamic aim-and-shoot routine (requires pose/vision suppliers).
+        switch (Constants.currentMode) {
+            case REAL:
+                {
+                    Command realShoot =
+                            shooterSystem.aimAndShoot(
+                                    () -> new Pose2d(),
+                                    () -> new ChassisSpeeds(0.0, 0.0, 0.0),
+                                    () -> FieldConstants.Hub.innerCenterPoint,
+                                    3,
+                                    ShootingLookupTable.Mode.HUB);
+                    controller.x().whileTrue(realShoot);
+                    break;
+                }
+            case SIM:
+            default:
+                {
+                    Command simShoot = shooterSystem.shoot();
+                    controller.x().whileTrue(simShoot);
+                    break;
+                }
+        }
+        // Hood presets and manual control
+        controller.leftBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(15)));
+        controller.rightBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(45)));
+        // Manual hood control: small incremental adjustments to the target angle while held.
+        // The supplier computes an absolute angle based on current position and trigger axis.
+        controller
+                .leftTrigger(0.1)
+                .whileTrue(
+                        hoodSubsystem.setAngle(
+                                () ->
+                                        Degrees.of(
+                                                hoodSubsystem.getPosition().in(Degrees)
+                                                        - controller.getLeftTriggerAxis() * 2.0)));
+        controller
+                .rightTrigger(0.1)
+                .whileTrue(
+                        hoodSubsystem.setAngle(
+                                () ->
+                                        Degrees.of(
+                                                hoodSubsystem.getPosition().in(Degrees)
+                                                        + controller.getRightTriggerAxis() * 2.0)));
         controller
                 .y()
                 .whileTrue(
@@ -179,6 +237,10 @@ public class RobotContainer {
                                 .setVelocity(RPM.of(2000))
                                 .withTimeout(Seconds.of(1))
                                 .andThen(spindexerSubsystem.setVelocity(RPM.of(4000))));
+
+        // Test button: while the START button is held, run the shooter's clear routine
+        // (spins kicker and spindexer in reverse at the configured clear RPMs).
+        controller.start().whileTrue(shooterSystem.clear());
 
         // // Lock to 0° when A button is held
         // controller

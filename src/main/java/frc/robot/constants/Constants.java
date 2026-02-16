@@ -9,16 +9,21 @@ package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
+import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
@@ -43,8 +48,16 @@ public final class Constants {
     /** Watchdog period for loop monitoring (seconds). */
     public static final double loopPeriodWatchdogSecs = 0.2;
 
-    /** Currently active runtime mode (REAL, SIM, REPLAY). */
-    public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.SIM;
+    /**
+     * Currently active runtime mode (REAL, SIM, REPLAY).
+     *
+     * <p>By default this is inferred from WPILib's {@link RobotBase#isReal()}. To force a specific
+     * mode for testing or CI, set {@link #FORCE_MODE} to the desired value below.
+     */
+    public static final Mode FORCE_MODE = null; // set to Mode.SIM or Mode.REAL to override
+
+    public static final Mode currentMode =
+            (FORCE_MODE != null) ? FORCE_MODE : (RobotBase.isReal() ? Mode.REAL : Mode.SIM);
 
     /** Operation modes for the robot (simulation, real robot, etc.). */
     public enum Mode {
@@ -74,6 +87,11 @@ public final class Constants {
         public static final double kUpdateHz = 50.0;
         public static final String kMotorTelemetry = "FlywheelMotor";
         public static final String kMechTelemetry = "FlywheelMech";
+        // Recommended test target velocity for coordinated shooting (units-aware)
+        public static final AngularVelocity kTargetFlywheel = RPM.of(3000.0);
+        // (No SIM-specific overrides: use the same tuned constants in both environments.)
+        /** Duration to run the clear routine while the flywheel spins up (seconds). */
+        public static final double kClearDurationSecs = 0.5;
     }
 
     // endregion
@@ -89,8 +107,9 @@ public final class Constants {
         public static final double kP = 10.0;
         public static final double kI = 0.0;
         public static final double kD = 2.0;
-        public static final double kMaxVelocityDegPerSec = 90.0;
-        public static final double kMaxAccelDegPerSec2 = 45.0;
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
+        public static final AngularAcceleration kMaxAccelDegPerSec2 =
+                DegreesPerSecondPerSecond.of(45.0);
         public static final double kS = 0.1;
         public static final double kV = 0.12;
         public static final double kA = 0.01;
@@ -211,6 +230,10 @@ public final class Constants {
         public static final double kA = 0.0;
         public static final String kMotorTelemetry = "KickerMotor";
         public static final String kMechTelemetry = "KickerMech";
+        // Recommended target velocity for the kicker (units-aware)
+        public static final AngularVelocity kTargetVelocity = RPM.of(2000.0);
+        // Default clear velocity (negative to reverse) used to clear jams
+        public static final AngularVelocity kClearVelocity = RPM.of(-100.0);
     }
 
     // endregion
@@ -239,6 +262,10 @@ public final class Constants {
         public static final double kA = 0.0;
         public static final String kMotorTelemetry = "SpindexerMotor";
         public static final String kMechTelemetry = "SpindexerMech";
+        // Recommended target velocity for the spindexer (units-aware)
+        public static final AngularVelocity kTargetVelocity = RPM.of(2000.0);
+        // Default clear velocity (negative to reverse) used to clear jams
+        public static final AngularVelocity kClearVelocity = RPM.of(-100.0);
     }
 
     // endregion
@@ -269,8 +296,9 @@ public final class Constants {
         public static final double kV = 0.12;
         public static final double kA = 0.01;
 
-        public static final double kMaxVelocityDegPerSec = 90.0;
-        public static final double kMaxAccelDegPerSec2 = 180.0;
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
+        public static final AngularAcceleration kMaxAccelDegPerSec2 =
+                DegreesPerSecondPerSecond.of(180.0);
 
         public static final Angle kHardLimitMax = Degrees.of(90);
         public static final Angle kHardLimitMin = Degrees.of(0);
@@ -334,8 +362,9 @@ public final class Constants {
         public static final double kP = 10.0;
         public static final double kI = 0.0;
         public static final double kD = 2.0;
-        public static final double kMaxVelocityDegPerSec = 20.0;
-        public static final double kMaxAccelDegPerSec2 = 20.0;
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(20.0);
+        public static final AngularAcceleration kMaxAccelDegPerSec2 =
+                DegreesPerSecondPerSecond.of(20.0);
         public static final double kS = 0.1;
         public static final double kV = 0.12;
         public static final double kA = 0.01;

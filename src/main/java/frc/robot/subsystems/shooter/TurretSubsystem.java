@@ -28,7 +28,6 @@ import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
-/** Subsystem responsible for turret rotation and hood control. */
 /**
  * AdvantageKit-ready Turret Subsystem for MRT 3216.
  *
@@ -42,28 +41,16 @@ public class TurretSubsystem extends SubsystemBase {
      * Inputs for AdvantageKit recording for the turret pivot. Public fields are populated from the
      * mechanism each loop and included in logs for replay and analysis.
      */
-    /**
-     * Inputs for AdvantageKit recording for the turret pivot. Public fields are populated from the
-     * mechanism each loop and included in logs for replay and analysis.
-     */
     @AutoLog
     public static class TurretInputs {
-        /** Current turret angle (degrees). */
         /** Current turret angle (degrees). */
         public Angle angle = Degrees.of(0);
 
         /** Target setpoint angle (degrees) if any. */
-
-        /** Target setpoint angle (degrees) if any. */
         public Angle setpoint = Degrees.of(0);
 
-        /** Measured motor voltage. */
-
-        /** Measured motor voltage. */
         /** Applied voltage across the motor. */
         public Voltage volts = Volts.of(0);
-
-        /** Measured motor current draw. */
 
         /** Measured motor current draw. */
         public Current current = Amps.of(0);
@@ -183,21 +170,6 @@ public class TurretSubsystem extends SubsystemBase {
                 });
     }
 
-    /**
-     * Sets the duty cycle using a dynamic supplier.
-     *
-     * @param dutyCycle A supplier providing the target duty cycle.
-     * @return A command to track the supplier's duty cycle.
-     */
-    public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return turret.set(
-                () -> {
-                    Logger.recordOutput("Shooter/Turret/DutyCycle", dutyCycle.get());
-                    return dutyCycle.get();
-                });
-    }
-
-    /** Advance the turret simulation model by one simulation tick. */
     /** Advance the turret simulation model by one simulation tick. */
     @Override
     public void simulationPeriodic() {

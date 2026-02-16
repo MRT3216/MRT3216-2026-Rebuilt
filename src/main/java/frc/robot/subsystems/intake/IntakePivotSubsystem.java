@@ -56,9 +56,9 @@ public class IntakePivotSubsystem extends SubsystemBase {
     private final IntakePivotInputsAutoLogged intakePivotInputs = new IntakePivotInputsAutoLogged();
 
     /* Hardware controllers (left master, right follower) */
-    private final SparkFlex LeftPivotMotor =
+    private final SparkFlex leftPivotMotor =
             new SparkFlex(RobotMap.Intake.Pivot.kLeftMotorId, SparkFlex.MotorType.kBrushless);
-    private final SparkFlex RightPivotMotor =
+    private final SparkFlex rightPivotMotor =
             new SparkFlex(RobotMap.Intake.Pivot.kRightMotorId, SparkFlex.MotorType.kBrushless);
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -109,16 +109,16 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(IntakePivotConstants.kStatorCurrentLimit)
                         // Configure the REV ThroughBore absolute encoder plugged into the right pivot motor
-                        .withExternalEncoder(RightPivotMotor.getAbsoluteEncoder())
+                        .withExternalEncoder(rightPivotMotor.getAbsoluteEncoder())
                         .withExternalEncoderInverted(false)
                         .withExternalEncoderGearing(
                                 new MechanismGearing(
                                         GearBox.fromReductionStages(IntakePivotConstants.kEncoderGearing)))
                         .withUseExternalFeedbackEncoder(true)
                         .withExternalEncoderZeroOffset(IntakePivotConstants.kStartingPosition)
-                        .withFollowers(Pair.of(RightPivotMotor, true));
+                        .withFollowers(Pair.of(rightPivotMotor, true));
 
-        smartMotor = new SparkWrapper(LeftPivotMotor, DCMotor.getNeoVortex(1), motorConfig);
+        smartMotor = new SparkWrapper(leftPivotMotor, DCMotor.getNeoVortex(1), motorConfig);
 
         intakePivotConfig =
                 new ArmConfig(smartMotor)
@@ -147,7 +147,17 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        return intakePivot.setAngle(angle);
+        // Enforce configured hard limits before commanding the mechanism
+        double requestedDeg = angle.in(Degrees);
+        double minDeg = IntakePivotConstants.kHardLimitMin.in(Degrees);
+        double maxDeg = IntakePivotConstants.kHardLimitMax.in(Degrees);
+        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
+        Angle clamped = Degrees.of(clampedDeg);
+        if (clampedDeg != requestedDeg) {
+            // Record that we clamped the requested setpoint
+            Logger.recordOutput("Intake/Pivot/ClampedSetpoint", clamped);
+        }
+        return intakePivot.setAngle(clamped);
     }
 
     /**
@@ -157,6 +167,15 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * @return A command to run the intake arm at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
+        // Prevent driving further into a hard limit. If we're at/above the max and
+        // the command would drive further out, block the output.
+        double posDeg = getPosition().in(Degrees);
+        double minDeg = IntakePivotConstants.kHardLimitMin.in(Degrees);
+        double maxDeg = IntakePivotConstants.kHardLimitMax.in(Degrees);
+        if ((dutyCycle > 0 && posDeg >= maxDeg) || (dutyCycle < 0 && posDeg <= minDeg)) {
+            Logger.recordOutput("Intake/Pivot/DutyBlocked", dutyCycle);
+            dutyCycle = 0.0;
+        }
         return intakePivot.set(dutyCycle);
     }
 

@@ -137,7 +137,7 @@ public final class Constants {
         public static final String kMotorTelemetry = "TurretMotor";
         public static final String kMechTelemetry = "TurretMech";
         /** Gearing used specifically for external encoder wiring (motor:mechanism). */
-        public static final double kEncoderGearing = kGearing;
+        public static final double kEncoderGearing = 1.0;
     }
 
     // endregion
@@ -378,7 +378,7 @@ public final class Constants {
         public static final String kMotorTelemetry = "IntakeArmMotor";
         public static final String kMechTelemetry = "IntakeArmMech";
         /** Gearing used specifically for external encoder wiring (motor:mechanism). */
-        public static final double kEncoderGearing = kGearing;
+        public static final double kEncoderGearing = 1.0;
     }
 
     // endregion

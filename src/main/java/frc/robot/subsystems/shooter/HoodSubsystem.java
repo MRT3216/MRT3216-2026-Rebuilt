@@ -118,14 +118,7 @@ public class HoodSubsystem extends SubsystemBase {
     }
 
     public Command setDutyCycle(double dutyCycle) {
-        // Block duty commands that would drive further into hard limits
-        double posDeg = getPosition().in(Degrees);
-        double minDeg = HoodConstants.kHardLimitMin.in(Degrees);
-        double maxDeg = HoodConstants.kHardLimitMax.in(Degrees);
-        if ((dutyCycle > 0 && posDeg >= maxDeg) || (dutyCycle < 0 && posDeg <= minDeg)) {
-            Logger.recordOutput("Hood/DutyBlocked", dutyCycle);
-            dutyCycle = 0.0;
-        }
+        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied via ArmConfig
         return hood.set(dutyCycle);
     }
 

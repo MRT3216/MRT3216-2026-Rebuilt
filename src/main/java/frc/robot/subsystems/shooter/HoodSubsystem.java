@@ -58,6 +58,8 @@ public class HoodSubsystem extends SubsystemBase {
     private final ArmConfig hoodConfig;
     private final Arm hood;
 
+    // Setpoint logging removed to reduce telemetry noise.
+
     public HoodSubsystem() {
         motorConfig =
                 new SmartMotorControllerConfig(this)
@@ -123,8 +125,8 @@ public class HoodSubsystem extends SubsystemBase {
     public Command setAngle(Supplier<Angle> angle) {
         return hood.setAngle(
                 () -> {
-                    Logger.recordOutput("Hood/Setpoint", angle.get());
-                    return angle.get();
+                    Angle a = angle.get();
+                    return a;
                 });
     }
 

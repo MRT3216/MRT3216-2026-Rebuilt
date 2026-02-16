@@ -64,6 +64,8 @@ public class KickerSubsystem extends SubsystemBase {
 
     private final FlyWheel kicker;
 
+    // Setpoint logging removed to reduce telemetry noise.
+
     /** Update the AdvantageKit "inputs" (data coming from the SMC) */
     private void updateInputs() {
         kickerInputs.velocity = kicker.getSpeed();
@@ -144,7 +146,6 @@ public class KickerSubsystem extends SubsystemBase {
      * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
      */
     public Command setVelocity(AngularVelocity speed) {
-        Logger.recordOutput("Kicker/Setpoint", speed);
         return kicker.setSpeed(speed);
     }
 
@@ -155,7 +156,8 @@ public class KickerSubsystem extends SubsystemBase {
      * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
      */
     public Command setDutyCycle(double dutyCycle) {
-        Logger.recordOutput("Kicker/DutyCycle", dutyCycle);
+        // Duty cycle recorded via mechanism telemetry; removed per-invocation telemetry to reduce
+        // noise.
         return kicker.set(dutyCycle);
     }
 

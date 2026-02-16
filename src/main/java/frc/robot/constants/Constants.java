@@ -84,13 +84,13 @@ public final class Constants {
         public static final double kS = 0.15;
         public static final double kV = 0.00207;
         public static final double kA = 0.0001;
-        // SIM variants (default to real values)
-        public static final double kS_sim = kS;
-        public static final double kV_sim = kV;
-        public static final double kA_sim = kA;
-        public static final double kP_sim = kP;
-        public static final double kI_sim = kI;
-        public static final double kD_sim = kD;
+        // SIM variants (tuned for smoother/less-friction simulation)
+        public static final double kS_sim = 0.10;
+        public static final double kV_sim = 0.0018;
+        public static final double kA_sim = 0.00008;
+        public static final double kP_sim = 0.6;
+        public static final double kI_sim = 0.0;
+        public static final double kD_sim = 0.0;
         public static final double kUpdateHz = 50.0;
         public static final String kMotorTelemetry = "FlywheelMotor";
         public static final String kMechTelemetry = "FlywheelMech";
@@ -120,13 +120,13 @@ public final class Constants {
         public static final double kS = 0.1;
         public static final double kV = 0.12;
         public static final double kA = 0.01;
-        // Simulation-specific feedforward / PID defaults (can be tuned separately)
-        public static final double kS_sim = kS;
-        public static final double kV_sim = kV;
-        public static final double kA_sim = kA;
-        public static final double kP_sim = kP;
-        public static final double kI_sim = kI;
-        public static final double kD_sim = kD;
+        // Simulation-specific feedforward / PID defaults (tuned for sim)
+        public static final double kS_sim = 0.05;
+        public static final double kV_sim = 0.09;
+        public static final double kA_sim = 0.008;
+        public static final double kP_sim = 6.0;
+        public static final double kI_sim = 0.0;
+        public static final double kD_sim = 1.0;
         public static final Distance kTurretOffsetX = Inches.of(0.0);
         public static final Distance kTurretOffsetY = Inches.of(0.0);
         public static final Distance kTurretOffsetZ = Inches.of(18.5);
@@ -248,7 +248,7 @@ public final class Constants {
         public static final double kS_sim = kS;
         public static final double kV_sim = kV;
         public static final double kA_sim = kA;
-        public static final double kP_sim = kP;
+        public static final double kP_sim = 0.7;
         public static final double kI_sim = kI;
         public static final double kD_sim = kD;
         public static final String kMotorTelemetry = "KickerMotor";
@@ -284,12 +284,12 @@ public final class Constants {
         public static final double kV = 0.01;
         public static final double kA = 0.0;
         // Simulation-specific feedforward / PID defaults for Spindexer
-        public static final double kS_sim = kS;
-        public static final double kV_sim = kV;
+        public static final double kS_sim = 0.03;
+        public static final double kV_sim = 0.008;
         public static final double kA_sim = kA;
-        public static final double kP_sim = kP;
-        public static final double kI_sim = kI;
-        public static final double kD_sim = kD;
+        public static final double kP_sim = 0.35;
+        public static final double kI_sim = 0.0;
+        public static final double kD_sim = 0.0;
         public static final String kMotorTelemetry = "SpindexerMotor";
         public static final String kMechTelemetry = "SpindexerMech";
         // Recommended target velocity for the spindexer (units-aware)
@@ -325,13 +325,13 @@ public final class Constants {
         public static final double kS = 0.05;
         public static final double kV = 0.12;
         public static final double kA = 0.01;
-        // Simulation-specific feedforward / PID defaults for Hood
-        public static final double kS_sim = kS;
-        public static final double kV_sim = kV;
-        public static final double kA_sim = kA;
-        public static final double kP_sim = kP;
-        public static final double kI_sim = kI;
-        public static final double kD_sim = kD;
+        // Simulation-specific feedforward / PID defaults for Hood (tuned for sim)
+        public static final double kS_sim = 0.03;
+        public static final double kV_sim = 0.09;
+        public static final double kA_sim = 0.008;
+        public static final double kP_sim = 4.0;
+        public static final double kI_sim = 0.0;
+        public static final double kD_sim = 0.5;
 
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
         public static final AngularAcceleration kMaxAccelDegPerSec2 =
@@ -380,13 +380,13 @@ public final class Constants {
         public static final double kS = 0.15;
         public static final double kV = 0.00207;
         public static final double kA = 0.0001;
-        // SIM variants (default to real values)
-        public static final double kS_sim = kS;
-        public static final double kV_sim = kV;
-        public static final double kA_sim = kA;
-        public static final double kP_sim = kP;
-        public static final double kI_sim = kI;
-        public static final double kD_sim = kD;
+        // SIM variants (tuned for sim: reduce P and feedforward a bit)
+        public static final double kS_sim = 0.12;
+        public static final double kV_sim = 0.001656;
+        public static final double kA_sim = 0.00008;
+        public static final double kP_sim = 0.35;
+        public static final double kI_sim = 0.0;
+        public static final double kD_sim = 0.0;
         public static final double kUpdateHz = 50.0;
         public static final String kMotorTelemetry = "IntakeRollersMotor";
         public static final String kMechTelemetry = "IntakeRollersMech";
@@ -412,13 +412,13 @@ public final class Constants {
         public static final double kS = 0.1;
         public static final double kV = 0.12;
         public static final double kA = 0.01;
-        // SIM variants (default to real values)
-        public static final double kS_sim = kS;
-        public static final double kV_sim = kV;
-        public static final double kA_sim = kA;
-        public static final double kP_sim = kP;
-        public static final double kI_sim = kI;
-        public static final double kD_sim = kD;
+        // SIM variants (tuned for sim)
+        public static final double kS_sim = 0.05;
+        public static final double kV_sim = 0.09;
+        public static final double kA_sim = 0.008;
+        public static final double kP_sim = 6.0;
+        public static final double kI_sim = 0.0;
+        public static final double kD_sim = 1.0;
         public static final Angle kHardLimitMax = Degrees.of(360);
         public static final Angle kHardLimitMin = Degrees.of(0);
         public static final Angle kSoftLimitMax = Degrees.of(350);

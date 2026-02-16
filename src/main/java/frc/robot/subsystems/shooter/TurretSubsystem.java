@@ -134,7 +134,16 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        return turret.setAngle(angle);
+        // Clamp requested angle to configured soft limits
+        double requestedDeg = angle.in(Degrees);
+        double minDeg = TurretConstants.kSoftLimitMin.in(Degrees);
+        double maxDeg = TurretConstants.kSoftLimitMax.in(Degrees);
+        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
+        Angle clamped = Degrees.of(clampedDeg);
+        if (clampedDeg != requestedDeg) {
+            Logger.recordOutput("Turret/ClampedSetpoint", clamped);
+        }
+        return turret.setAngle(clamped);
     }
 
     /**
@@ -144,6 +153,14 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to run the turret at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
+        // Block duty commands that would drive further into hard limits
+        double posDeg = getPosition().in(Degrees);
+        double minDeg = TurretConstants.kHardLimitMin.in(Degrees);
+        double maxDeg = TurretConstants.kHardLimitMax.in(Degrees);
+        if ((dutyCycle > 0 && posDeg >= maxDeg) || (dutyCycle < 0 && posDeg <= minDeg)) {
+            Logger.recordOutput("Turret/DutyBlocked", dutyCycle);
+            dutyCycle = 0.0;
+        }
         return turret.set(dutyCycle);
     }
 

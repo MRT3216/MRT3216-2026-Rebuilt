@@ -103,10 +103,27 @@ public class HoodSubsystem extends SubsystemBase {
     }
 
     public Command setAngle(Angle angle) {
-        return hood.setAngle(angle);
+        // Clamp requested angle to configured soft limits
+        double requestedDeg = angle.in(Degrees);
+        double minDeg = HoodConstants.kSoftLimitMin.in(Degrees);
+        double maxDeg = HoodConstants.kSoftLimitMax.in(Degrees);
+        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
+        Angle clamped = Degrees.of(clampedDeg);
+        if (clampedDeg != requestedDeg) {
+            Logger.recordOutput("Hood/ClampedSetpoint", clamped);
+        }
+        return hood.setAngle(clamped);
     }
 
     public Command setDutyCycle(double dutyCycle) {
+        // Block duty commands that would drive further into hard limits
+        double posDeg = getPosition().in(Degrees);
+        double minDeg = HoodConstants.kHardLimitMin.in(Degrees);
+        double maxDeg = HoodConstants.kHardLimitMax.in(Degrees);
+        if ((dutyCycle > 0 && posDeg >= maxDeg) || (dutyCycle < 0 && posDeg <= minDeg)) {
+            Logger.recordOutput("Hood/DutyBlocked", dutyCycle);
+            dutyCycle = 0.0;
+        }
         return hood.set(dutyCycle);
     }
 

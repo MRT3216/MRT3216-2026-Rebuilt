@@ -155,10 +155,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
         double maxDeg = IntakePivotConstants.kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         Angle clamped = Degrees.of(clampedDeg);
-        if (clampedDeg != requestedDeg) {
-            // Record that we clamped the requested setpoint
-            Logger.recordOutput("Intake/Pivot/ClampedSetpoint", clamped);
-        }
+        // If requested setpoint was outside soft limits, it was clamped to the allowed range.
         return intakePivot.setAngle(clamped);
     }
 

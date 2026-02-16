@@ -111,9 +111,7 @@ public class HoodSubsystem extends SubsystemBase {
         double maxDeg = HoodConstants.kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         Angle clamped = Degrees.of(clampedDeg);
-        if (clampedDeg != requestedDeg) {
-            Logger.recordOutput("Hood/ClampedSetpoint", clamped);
-        }
+        // If requested setpoint was outside soft limits, it was clamped to the allowed range.
         return hood.setAngle(clamped);
     }
 

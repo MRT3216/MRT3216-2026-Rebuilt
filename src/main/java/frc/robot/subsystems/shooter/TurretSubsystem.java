@@ -142,9 +142,7 @@ public class TurretSubsystem extends SubsystemBase {
         double maxDeg = TurretConstants.kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         Angle clamped = Degrees.of(clampedDeg);
-        if (clampedDeg != requestedDeg) {
-            Logger.recordOutput("Turret/ClampedSetpoint", clamped);
-        }
+        // If requested setpoint was outside soft limits, it was clamped to the allowed range.
         return turret.setAngle(clamped);
     }
 

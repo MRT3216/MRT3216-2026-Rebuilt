@@ -155,14 +155,7 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to run the turret at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
-        // Block duty commands that would drive further into hard limits
-        double posDeg = getPosition().in(Degrees);
-        double minDeg = TurretConstants.kHardLimitMin.in(Degrees);
-        double maxDeg = TurretConstants.kHardLimitMax.in(Degrees);
-        if ((dutyCycle > 0 && posDeg >= maxDeg) || (dutyCycle < 0 && posDeg <= minDeg)) {
-            Logger.recordOutput("Turret/DutyBlocked", dutyCycle);
-            dutyCycle = 0.0;
-        }
+        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied via PivotConfig
         return turret.set(dutyCycle);
     }
 

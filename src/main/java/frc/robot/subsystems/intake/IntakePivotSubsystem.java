@@ -124,7 +124,9 @@ public class IntakePivotSubsystem extends SubsystemBase {
                 new ArmConfig(smartMotor)
                         .withMass(IntakePivotConstants.kMass)
                         .withLength(IntakePivotConstants.kLength)
-                        .withTelemetry(IntakePivotConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+                        .withTelemetry(IntakePivotConstants.kMechTelemetry, TelemetryVerbosity.HIGH)
+                        .withHardLimit(IntakePivotConstants.kHardLimitMin, IntakePivotConstants.kHardLimitMax)
+                        .withSoftLimits(IntakePivotConstants.kSoftLimitMin, IntakePivotConstants.kSoftLimitMax);
 
         intakePivot = new Arm(intakePivotConfig);
 

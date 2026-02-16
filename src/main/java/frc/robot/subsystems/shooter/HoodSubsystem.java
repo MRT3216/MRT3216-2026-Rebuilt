@@ -80,7 +80,9 @@ public class HoodSubsystem extends SubsystemBase {
                 new ArmConfig(smartMotor)
                         .withMass(HoodConstants.kMass)
                         .withLength(HoodConstants.kLength)
-                        .withTelemetry(HoodConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+                        .withTelemetry(HoodConstants.kMechTelemetry, TelemetryVerbosity.HIGH)
+                        .withHardLimit(HoodConstants.kHardLimitMin, HoodConstants.kHardLimitMax)
+                        .withSoftLimits(HoodConstants.kSoftLimitMin, HoodConstants.kSoftLimitMax);
 
         hood = new Arm(hoodConfig);
 

@@ -111,7 +111,9 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig =
                 new PivotConfig(smartMotor)
                         .withMOI(TurretConstants.kMOI)
-                        .withTelemetry("TurretMech", TelemetryVerbosity.HIGH);
+                        .withTelemetry("TurretMech", TelemetryVerbosity.HIGH)
+                        .withHardLimit(TurretConstants.kHardLimitMin, TurretConstants.kHardLimitMax)
+                        .withSoftLimits(TurretConstants.kSoftLimitMin, TurretConstants.kSoftLimitMax);
 
         turret = new Pivot(turretConfig);
 

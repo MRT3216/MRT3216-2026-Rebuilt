@@ -22,6 +22,10 @@ public final class RobotMap {
         public final class Spindexer {
             public static final int kMotorId = 55;
         }
+
+        public final class Hood {
+            public static final int kMotorId = 53;
+        }
     }
 
     public final class Intake {

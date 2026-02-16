@@ -243,6 +243,47 @@ public final class Constants {
 
     // endregion
 
+    // region Hood
+    public static final class HoodConstants {
+        private HoodConstants() {}
+
+        /** Gearing from motor to hood pivot (ratio). */
+        public static final double kGearing = 30.0;
+
+        /** Physical arm length from pivot to hood center (useful for dynamics) */
+        public static final Distance kLength = Inches.of(6.0);
+
+        /** Approximate mass of the hood assembly. */
+        public static final Mass kMass = Pounds.of(1.0);
+
+        public static final boolean kMotorInverted = false;
+        public static final Current kStatorCurrentLimit = Amps.of(30);
+
+        /* PID */
+        public static final double kP = 6.0;
+        public static final double kI = 0.0;
+        public static final double kD = 1.0;
+
+        /* Feedforward (Arm-style) */
+        public static final double kS = 0.05;
+        public static final double kV = 0.12;
+        public static final double kA = 0.01;
+
+        public static final double kMaxVelocityDegPerSec = 90.0;
+        public static final double kMaxAccelDegPerSec2 = 180.0;
+
+        public static final Angle kHardLimitMax = Degrees.of(90);
+        public static final Angle kHardLimitMin = Degrees.of(0);
+        public static final Angle kSoftLimitMax = Degrees.of(85);
+        public static final Angle kSoftLimitMin = Degrees.of(5);
+        public static final Angle kStartingPosition = Degrees.of(0);
+
+        public static final String kMotorTelemetry = "HoodMotor";
+        public static final String kMechTelemetry = "HoodMech";
+    }
+
+    // endregion
+
     // region ShooterLookupTables
     public static final class ShooterLookupTables {
         private ShooterLookupTables() {}

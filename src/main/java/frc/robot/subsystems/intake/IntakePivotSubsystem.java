@@ -167,15 +167,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * @return A command to run the intake arm at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
-        // Prevent driving further into a hard limit. If we're at/above the max and
-        // the command would drive further out, block the output.
-        double posDeg = getPosition().in(Degrees);
-        double minDeg = IntakePivotConstants.kHardLimitMin.in(Degrees);
-        double maxDeg = IntakePivotConstants.kHardLimitMax.in(Degrees);
-        if ((dutyCycle > 0 && posDeg >= maxDeg) || (dutyCycle < 0 && posDeg <= minDeg)) {
-            Logger.recordOutput("Intake/Pivot/DutyBlocked", dutyCycle);
-            dutyCycle = 0.0;
-        }
         return intakePivot.set(dutyCycle);
     }
 

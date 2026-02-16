@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.SpindexerConstants;
 import frc.robot.constants.RobotMap;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -146,34 +145,6 @@ public class SpindexerSubsystem extends SubsystemBase {
      */
     public Command setDutyCycle(double dutyCycle) {
         return spindexer.set(dutyCycle);
-    }
-
-    /**
-     * Sets the target velocity using a dynamic supplier (e.g., from a Vision subsystem).
-     *
-     * @param speed A supplier providing the target AngularVelocity.
-     * @return A command to track the supplier's velocity.
-     */
-    public Command setVelocity(Supplier<AngularVelocity> speed) {
-        return spindexer.setSpeed(
-                () -> {
-                    Logger.recordOutput("Spindexer/Setpoint", speed.get());
-                    return speed.get();
-                });
-    }
-
-    /**
-     * Sets the duty cycle using a dynamic supplier.
-     *
-     * @param dutyCycle A supplier providing the target duty cycle.
-     * @return A command to track the supplier's duty cycle.
-     */
-    public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return spindexer.set(
-                () -> {
-                    Logger.recordOutput("Spindexer/DutyCycle", dutyCycle.get());
-                    return dutyCycle.get();
-                });
     }
 
     @Override

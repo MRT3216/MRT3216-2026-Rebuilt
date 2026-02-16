@@ -14,7 +14,6 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.RobotMap;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -158,38 +157,6 @@ public class KickerSubsystem extends SubsystemBase {
     public Command setDutyCycle(double dutyCycle) {
         Logger.recordOutput("Kicker/DutyCycle", dutyCycle);
         return kicker.set(dutyCycle);
-    }
-
-    /**
-     * Create a command that continuously sets the kicker velocity from a dynamic supplier. The
-     * supplier will be queried each scheduler run and the requested velocity will be applied to the
-     * mechanism. The requested value is also recorded to the logger.
-     *
-     * @param speed supplier that provides the desired AngularVelocity
-     * @return a Command that will track the supplied velocity while active
-     */
-    public Command setVelocity(Supplier<AngularVelocity> speed) {
-        return kicker.setSpeed(
-                () -> {
-                    Logger.recordOutput("Kicker/Setpoint", speed.get());
-                    return speed.get();
-                });
-    }
-
-    /**
-     * Create a command that continuously sets the kicker duty cycle from a supplier. The supplier
-     * will be queried each scheduler run and the resulting duty cycle will be applied. The value is
-     * also recorded to the logger for debugging.
-     *
-     * @param dutyCycle supplier providing the desired duty cycle (-1.0 to 1.0)
-     * @return a Command that will drive the kicker using the supplied duty cycle
-     */
-    public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return kicker.set(
-                () -> {
-                    Logger.recordOutput("Kicker/DutyCycle", dutyCycle.get());
-                    return dutyCycle.get();
-                });
     }
 
     /** Advance the kicker simulation model by one simulation tick. */

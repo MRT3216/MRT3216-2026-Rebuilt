@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.IntakePivotConstants;
 import frc.robot.constants.RobotMap;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.mechanisms.config.ArmConfig;
@@ -160,34 +159,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
      */
     public Command setDutyCycle(double dutyCycle) {
         return intakePivot.set(dutyCycle);
-    }
-
-    /**
-     * Sets the target angle using a dynamic supplier (e.g., from a Vision subsystem).
-     *
-     * @param angle A supplier providing the target Angle.
-     * @return A command to track the supplier's angle.
-     */
-    public Command setAngle(Supplier<Angle> angle) {
-        return intakePivot.setAngle(
-                () -> {
-                    Logger.recordOutput("Intake/Pivot/Setpoint", angle.get());
-                    return angle.get();
-                });
-    }
-
-    /**
-     * Sets the duty cycle using a dynamic supplier.
-     *
-     * @param dutyCycle A supplier providing the target duty cycle.
-     * @return A command to track the supplier's duty cycle.
-     */
-    public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return intakePivot.set(
-                () -> {
-                    Logger.recordOutput("Intake/Pivot/DutyCycle", dutyCycle.get());
-                    return dutyCycle.get();
-                });
     }
 
     @Override

@@ -171,9 +171,6 @@ public class RobotContainer {
 
         // controller.b().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
         // controller.a().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
-        controller
-                .rightTrigger()
-                .whileTrue(flywheelSubsystem.setDutyCycle(() -> controller.getRightTriggerAxis()));
         controller.x().whileTrue(shooterSystem.shoot());
         controller
                 .y()
@@ -182,9 +179,6 @@ public class RobotContainer {
                                 .setVelocity(RPM.of(2000))
                                 .withTimeout(Seconds.of(1))
                                 .andThen(spindexerSubsystem.setVelocity(RPM.of(4000))));
-        controller
-                .leftTrigger()
-                .whileTrue(kickerSubsystem.setDutyCycle(() -> controller.getRightTriggerAxis()));
 
         // // Lock to 0° when A button is held
         // controller

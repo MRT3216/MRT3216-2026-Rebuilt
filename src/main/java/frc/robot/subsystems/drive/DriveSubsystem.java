@@ -7,7 +7,8 @@
 
 package frc.robot.subsystems.drive;
 
-import static edu.wpi.first.units.Units.*;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.ModuleConfig;
@@ -39,8 +40,8 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.Constants;
-import frc.robot.Constants.Mode;
+import frc.robot.constants.Constants;
+import frc.robot.constants.Constants.Mode;
 import frc.robot.generated.TunerConstants;
 import frc.robot.util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
@@ -48,7 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class Drive extends SubsystemBase {
+public class DriveSubsystem extends SubsystemBase {
     // TunerConstants doesn't include these constants, so they are declared locally
     static final double ODOMETRY_FREQUENCY = TunerConstants.kCANBus.isNetworkFD() ? 250.0 : 100.0;
     public static final double DRIVE_BASE_RADIUS =
@@ -98,7 +99,7 @@ public class Drive extends SubsystemBase {
     private SwerveDrivePoseEstimator poseEstimator =
             new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
 
-    public Drive(
+    public DriveSubsystem(
             GyroIO gyroIO,
             ModuleIO flModuleIO,
             ModuleIO frModuleIO,

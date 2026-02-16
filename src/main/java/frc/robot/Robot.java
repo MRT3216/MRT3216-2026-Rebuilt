@@ -7,8 +7,24 @@
 
 package frc.robot;
 
+import edu.wpi.first.hal.AllianceStationID;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.IterativeRobotBase;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.Watchdog;
+import edu.wpi.first.wpilibj.simulation.DriverStationSim;
+import edu.wpi.first.wpilibj.simulation.RoboRioSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.constants.Constants;
+import frc.robot.constants.Constants.RobotType;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -21,11 +37,20 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
  * the package after creating this project, you must also update the build.gradle file in the
  * project.
+ *
+ * <p>Main robot entrypoint and lifecycle manager.
  */
 public class Robot extends LoggedRobot {
     private Command autonomousCommand;
     private RobotContainer robotContainer;
+    // Low battery thresholds moved to Constants.RobotSafetyConstants
+    private final Timer disabledTimer = new Timer();
+    private final Alert lowBatteryAlert =
+            new Alert(
+                    "Battery voltage is very low, turn off the robot or replace the battery to avoid damage.",
+                    AlertType.kWarning);
 
+    /** Construct the Robot, configure logging and instantiate RobotContainer. */
     public Robot() {
         // Set up data receivers & replay source
         switch (Constants.currentMode) {
@@ -52,6 +77,48 @@ public class Robot extends LoggedRobot {
         // Start AdvantageKit logger
         Logger.start();
 
+        // Adjust loop overrun warning timeout
+        try {
+            Field watchdogField = IterativeRobotBase.class.getDeclaredField("m_watchdog");
+            watchdogField.setAccessible(true);
+            Watchdog watchdog = (Watchdog) watchdogField.get(this);
+            watchdog.setTimeout(Constants.loopPeriodWatchdogSecs);
+        } catch (Exception e) {
+            DriverStation.reportWarning("Failed to disable loop overrun warnings.", false);
+        }
+        CommandScheduler.getInstance().setPeriod(Constants.loopPeriodWatchdogSecs);
+
+        // Silence joystick alerts
+        DriverStation.silenceJoystickConnectionWarning(true);
+
+        // Log active commands
+        Map<String, Integer> commandCounts = new HashMap<>();
+        BiConsumer<Command, Boolean> logCommandFunction =
+                (Command command, Boolean active) -> {
+                    String name = command.getName();
+                    int count = commandCounts.getOrDefault(name, 0) + (active ? 1 : -1);
+                    commandCounts.put(name, count);
+                    Logger.recordOutput(
+                            "CommandsUnique/" + name + "_" + Integer.toHexString(command.hashCode()), active);
+                    Logger.recordOutput("CommandsAll/" + name, count > 0);
+                };
+        CommandScheduler.getInstance()
+                .onCommandInitialize((Command command) -> logCommandFunction.accept(command, true));
+        CommandScheduler.getInstance()
+                .onCommandFinish((Command command) -> logCommandFunction.accept(command, false));
+        CommandScheduler.getInstance()
+                .onCommandInterrupt((Command command) -> logCommandFunction.accept(command, false));
+
+        // Configure Driver Station for sim
+        RoboRioSim.setTeamNumber(3216);
+        if (Constants.robot == RobotType.SIMBOT) {
+            DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
+            DriverStationSim.notifyNewData();
+        }
+
+        // Reset alert timers
+        disabledTimer.restart();
+
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
         robotContainer = new RobotContainer();
@@ -71,6 +138,14 @@ public class Robot extends LoggedRobot {
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
 
+        if (RobotController.getBatteryVoltage() > 0.0
+                && RobotController.getBatteryVoltage() <= Constants.RobotSafetyConstants.kLowBatteryVoltage
+                && disabledTimer.hasElapsed(Constants.RobotSafetyConstants.kLowBatteryDisabledSecs)) {
+            lowBatteryAlert.set(true);
+            // TODO: Add this back if we have LEDs
+            // Leds.getGlobal().lowBatteryAlert = true;
+        }
+
         // Return to non-RT thread priority (do not modify the first argument)
         // Threads.setCurrentThreadPriority(false, 10);
     }
@@ -86,7 +161,7 @@ public class Robot extends LoggedRobot {
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
     @Override
     public void autonomousInit() {
-        autonomousCommand = robotContainer.getAutonomousCommand();
+        // autonomousCommand = robotContainer.getAutonomousCommand();
 
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {

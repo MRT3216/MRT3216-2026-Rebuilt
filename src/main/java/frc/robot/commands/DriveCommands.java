@@ -22,7 +22,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.DriveSubsystem;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
@@ -30,22 +30,21 @@ import java.util.List;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
+/**
+ * Collection of reusable drive-related Commands and command factories.
+ *
+ * <p>Includes joystick-based teleop commands and characterization routines used for tuning drive
+ * feedforward and wheel radius. These are pure command factories and do not hold mutable subsystem
+ * state.
+ */
 public class DriveCommands {
-    private static final double DEADBAND = 0.1;
-    private static final double ANGLE_KP = 5.0;
-    private static final double ANGLE_KD = 0.4;
-    private static final double ANGLE_MAX_VELOCITY = 8.0;
-    private static final double ANGLE_MAX_ACCELERATION = 20.0;
-    private static final double FF_START_DELAY = 2.0; // Secs
-    private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
-    private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
-    private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
-
     private DriveCommands() {}
 
     private static Translation2d getLinearVelocityFromJoysticks(double x, double y) {
         // Apply deadband
-        double linearMagnitude = MathUtil.applyDeadband(Math.hypot(x, y), DEADBAND);
+        double linearMagnitude =
+                MathUtil.applyDeadband(
+                        Math.hypot(x, y), frc.robot.constants.Constants.DriveControlConstants.kDeadband);
         Rotation2d linearDirection = new Rotation2d(Math.atan2(y, x));
 
         // Square magnitude for more precise control
@@ -61,7 +60,7 @@ public class DriveCommands {
      * Field relative drive command using two joysticks (controlling linear and angular velocities).
      */
     public static Command joystickDrive(
-            Drive drive,
+            DriveSubsystem drive,
             DoubleSupplier xSupplier,
             DoubleSupplier ySupplier,
             DoubleSupplier omegaSupplier) {
@@ -72,7 +71,10 @@ public class DriveCommands {
                             getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
                     // Apply rotation deadband
-                    double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
+                    double omega =
+                            MathUtil.applyDeadband(
+                                    omegaSupplier.getAsDouble(),
+                                    frc.robot.constants.Constants.DriveControlConstants.kDeadband);
 
                     // Square rotation value for more precise control
                     omega = Math.copySign(omega * omega, omega);
@@ -102,7 +104,7 @@ public class DriveCommands {
      * absolute rotation with a joystick.
      */
     public static Command joystickDriveAtAngle(
-            Drive drive,
+            DriveSubsystem drive,
             DoubleSupplier xSupplier,
             DoubleSupplier ySupplier,
             Supplier<Rotation2d> rotationSupplier) {
@@ -110,10 +112,12 @@ public class DriveCommands {
         // Create PID controller
         ProfiledPIDController angleController =
                 new ProfiledPIDController(
-                        ANGLE_KP,
+                        frc.robot.constants.Constants.DriveControlConstants.kAngleKP,
                         0.0,
-                        ANGLE_KD,
-                        new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+                        frc.robot.constants.Constants.DriveControlConstants.kAngleKD,
+                        new TrapezoidProfile.Constraints(
+                                frc.robot.constants.Constants.DriveControlConstants.kAngleMaxVelocity,
+                                frc.robot.constants.Constants.DriveControlConstants.kAngleMaxAcceleration));
         angleController.enableContinuousInput(-Math.PI, Math.PI);
 
         // Construct command
@@ -155,7 +159,7 @@ public class DriveCommands {
      *
      * <p>This command should only be used in voltage control mode.
      */
-    public static Command feedforwardCharacterization(Drive drive) {
+    public static Command feedforwardCharacterization(DriveSubsystem drive) {
         List<Double> velocitySamples = new LinkedList<>();
         List<Double> voltageSamples = new LinkedList<>();
         Timer timer = new Timer();
@@ -174,7 +178,7 @@ public class DriveCommands {
                                     drive.runCharacterization(0.0);
                                 },
                                 drive)
-                        .withTimeout(FF_START_DELAY),
+                        .withTimeout(frc.robot.constants.Constants.DriveControlConstants.kFFStartDelay),
 
                 // Start timer
                 Commands.runOnce(timer::restart),
@@ -182,7 +186,8 @@ public class DriveCommands {
                 // Accelerate and gather data
                 Commands.run(
                                 () -> {
-                                    double voltage = timer.get() * FF_RAMP_RATE;
+                                    double voltage =
+                                            timer.get() * frc.robot.constants.Constants.DriveControlConstants.kFFRampRate;
                                     drive.runCharacterization(voltage);
                                     velocitySamples.add(drive.getFFCharacterizationVelocity());
                                     voltageSamples.add(voltage);
@@ -207,15 +212,19 @@ public class DriveCommands {
                                     double kV = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
 
                                     NumberFormat formatter = new DecimalFormat("#0.00000");
-                                    System.out.println("********** Drive FF Characterization Results **********");
-                                    System.out.println("\tkS: " + formatter.format(kS));
-                                    System.out.println("\tkV: " + formatter.format(kV));
+                                    String msg =
+                                            String.format(
+                                                    "Drive FF Characterization Results: kS=%s, kV=%s",
+                                                    formatter.format(kS), formatter.format(kV));
+                                    DriverStation.reportWarning(msg, false);
                                 }));
     }
 
     /** Measures the robot's wheel radius by spinning in a circle. */
-    public static Command wheelRadiusCharacterization(Drive drive) {
-        SlewRateLimiter limiter = new SlewRateLimiter(WHEEL_RADIUS_RAMP_RATE);
+    public static Command wheelRadiusCharacterization(DriveSubsystem drive) {
+        SlewRateLimiter limiter =
+                new SlewRateLimiter(
+                        frc.robot.constants.Constants.DriveControlConstants.kWheelRadiusRampRate);
         WheelRadiusCharacterizationState state = new WheelRadiusCharacterizationState();
 
         return Commands.parallel(
@@ -230,7 +239,10 @@ public class DriveCommands {
                         // Turn in place, accelerating up to full speed
                         Commands.run(
                                 () -> {
-                                    double speed = limiter.calculate(WHEEL_RADIUS_MAX_VELOCITY);
+                                    double speed =
+                                            limiter.calculate(
+                                                    frc.robot.constants.Constants.DriveControlConstants
+                                                            .kWheelRadiusMaxVelocity);
                                     drive.runVelocity(new ChassisSpeeds(0.0, 0.0, speed));
                                 },
                                 drive)),
@@ -264,21 +276,18 @@ public class DriveCommands {
                                             for (int i = 0; i < 4; i++) {
                                                 wheelDelta += Math.abs(positions[i] - state.positions[i]) / 4.0;
                                             }
-                                            double wheelRadius = (state.gyroDelta * Drive.DRIVE_BASE_RADIUS) / wheelDelta;
+                                            double wheelRadius =
+                                                    (state.gyroDelta * DriveSubsystem.DRIVE_BASE_RADIUS) / wheelDelta;
 
                                             NumberFormat formatter = new DecimalFormat("#0.000");
-                                            System.out.println(
-                                                    "********** Wheel Radius Characterization Results **********");
-                                            System.out.println(
-                                                    "\tWheel Delta: " + formatter.format(wheelDelta) + " radians");
-                                            System.out.println(
-                                                    "\tGyro Delta: " + formatter.format(state.gyroDelta) + " radians");
-                                            System.out.println(
-                                                    "\tWheel Radius: "
-                                                            + formatter.format(wheelRadius)
-                                                            + " meters, "
-                                                            + formatter.format(Units.metersToInches(wheelRadius))
-                                                            + " inches");
+                                            String msg =
+                                                    String.format(
+                                                            "Wheel Radius Characterization Results: WheelDelta=%s rad, GyroDelta=%s rad, WheelRadius=%s m (%s in)",
+                                                            formatter.format(wheelDelta),
+                                                            formatter.format(state.gyroDelta),
+                                                            formatter.format(wheelRadius),
+                                                            formatter.format(Units.metersToInches(wheelRadius)));
+                                            DriverStation.reportWarning(msg, false);
                                         })));
     }
 

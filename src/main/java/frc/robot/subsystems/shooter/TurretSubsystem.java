@@ -4,9 +4,7 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.hardware.TalonFX;
+import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -26,7 +24,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
-import yams.motorcontrollers.remote.TalonFXWrapper;
+import yams.motorcontrollers.local.SparkWrapper;
 
 /**
  * AdvantageKit-ready Turret Subsystem for MRT 3216.
@@ -58,9 +56,8 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
 
-    private TalonFX pivotMotor = new TalonFX(RobotMap.Shooter.Turret.kMotorId);
-    private final StatusSignal<Angle> positionSignal = pivotMotor.getPosition();
-    private final StatusSignal<Double> referenceSignal = pivotMotor.getClosedLoopReference();
+    private final SparkFlex pivotMotor =
+            new SparkFlex(RobotMap.Shooter.Turret.kMotorId, SparkFlex.MotorType.kBrushless);
 
     private final SmartMotorControllerConfig motorConfig;
 
@@ -77,9 +74,7 @@ public class TurretSubsystem extends SubsystemBase {
      * to ensure telemetry is time-aligned.
      */
     private void updateInputs() {
-        // Refresh all Phoenix 6 signals at once to minimize CAN latency jitter
-        BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
-
+        // Update turret inputs from mechanism (hardware signals are handled by the SMC wrapper)
         turretInputs.angle = turret.getAngle();
         turretInputs.volts = smartMotor.getVoltage();
         turretInputs.current = smartMotor.getStatorCurrent();
@@ -111,7 +106,7 @@ public class TurretSubsystem extends SubsystemBase {
                         .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(TurretConstants.kStatorCurrentLimit);
 
-        smartMotor = new TalonFXWrapper(pivotMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
+        smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);
 
         turretConfig =
                 new PivotConfig(smartMotor)
@@ -120,11 +115,7 @@ public class TurretSubsystem extends SubsystemBase {
 
         turret = new Pivot(turretConfig);
 
-        // High-frequency updates for PID tuning
-        BaseStatusSignal.setUpdateFrequencyForAll((int) 50.0, positionSignal, referenceSignal);
-
-        // Optimization: Disable unused signals to conserve CAN bus bandwidth
-        pivotMotor.getVelocity().setUpdateFrequency(0);
+        // No direct Phoenix status signals to optimize for SparkFlex here.
     }
 
     /**

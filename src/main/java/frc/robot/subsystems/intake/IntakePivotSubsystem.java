@@ -4,9 +4,7 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.hardware.TalonFX;
+import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -26,7 +24,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
-import yams.motorcontrollers.remote.TalonFXWrapper;
+import yams.motorcontrollers.local.SparkWrapper;
 
 /**
  * AdvantageKit-ready Intake Pivot Subsystem for MRT 3216.
@@ -55,13 +53,11 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     private final IntakePivotInputsAutoLogged intakePivotInputs = new IntakePivotInputsAutoLogged();
 
-    /* Hardware Objects */
-    private final TalonFX LeftPivotMotor = new TalonFX(RobotMap.Intake.Pivot.kLeftMotorId);
-    private final TalonFX RightPivotMotor = new TalonFX(RobotMap.Intake.Pivot.kRightMotorId);
-
-    /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
-    private final StatusSignal<Angle> positionSignal = LeftPivotMotor.getPosition();
-    private final StatusSignal<Double> referenceSignal = LeftPivotMotor.getClosedLoopReference();
+    /* Hardware controllers (left master, right follower) */
+    private final SparkFlex LeftPivotMotor =
+            new SparkFlex(RobotMap.Intake.Pivot.kLeftMotorId, SparkFlex.MotorType.kBrushless);
+    private final SparkFlex RightPivotMotor =
+            new SparkFlex(RobotMap.Intake.Pivot.kRightMotorId, SparkFlex.MotorType.kBrushless);
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
@@ -78,9 +74,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * to ensure telemetry is time-aligned.
      */
     private void updateInputs() {
-        // Refresh all Phoenix 6 signals at once to minimize CAN latency jitter
-        BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
-
         intakePivotInputs.angle = intakePivot.getAngle();
         intakePivotInputs.volts = smartMotor.getVoltage();
         intakePivotInputs.current = smartMotor.getStatorCurrent();
@@ -115,7 +108,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withStatorCurrentLimit(IntakePivotConstants.kStatorCurrentLimit)
                         .withFollowers(Pair.of(RightPivotMotor, true));
 
-        smartMotor = new TalonFXWrapper(LeftPivotMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
+        smartMotor = new SparkWrapper(LeftPivotMotor, DCMotor.getNeoVortex(1), motorConfig);
 
         intakePivotConfig =
                 new ArmConfig(smartMotor)
@@ -125,11 +118,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
         intakePivot = new Arm(intakePivotConfig);
 
-        // High-frequency updates for PID tuning
-        BaseStatusSignal.setUpdateFrequencyForAll((int) 50.0, positionSignal, referenceSignal);
-
-        // Optimization: Disable unused signals to conserve CAN bus bandwidth
-        LeftPivotMotor.getVelocity().setUpdateFrequency(0);
+        // No Phoenix status signals to configure for SparkFlex here.
     }
 
     /**

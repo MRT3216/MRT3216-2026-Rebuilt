@@ -74,7 +74,7 @@ public class HoodSubsystem extends SubsystemBase {
                         .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(HoodConstants.kStatorCurrentLimit);
 
-        smartMotor = new TalonFXWrapper(motor, DCMotor.getKrakenX60Foc(1), motorConfig);
+        smartMotor = new TalonFXWrapper(motor, DCMotor.getKrakenX44Foc(1), motorConfig);
 
         hoodConfig =
                 new ArmConfig(smartMotor)

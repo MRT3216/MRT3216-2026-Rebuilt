@@ -107,7 +107,7 @@ public class SpindexerSubsystem extends SubsystemBase {
                         .withIdleMode(MotorMode.COAST)
                         .withStatorCurrentLimit(SpindexerConstants.kStatorCurrentLimit);
 
-        motor = new SparkWrapper(motorController, DCMotor.getNeoVortex(1), motorConfig);
+        motor = new SparkWrapper(motorController, DCMotor.getNEO(1), motorConfig);
 
         spindexerConfig =
                 new FlyWheelConfig(motor)

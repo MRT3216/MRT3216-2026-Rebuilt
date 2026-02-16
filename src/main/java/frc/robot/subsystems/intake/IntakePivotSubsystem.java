@@ -17,6 +17,8 @@ import frc.robot.constants.Constants.IntakePivotConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
+import yams.gearing.GearBox;
+import yams.gearing.MechanismGearing;
 import yams.mechanisms.config.ArmConfig;
 import yams.mechanisms.positional.Arm;
 import yams.motorcontrollers.SmartMotorController;
@@ -106,6 +108,14 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withMotorInverted(IntakePivotConstants.kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(IntakePivotConstants.kStatorCurrentLimit)
+                        // Configure the REV ThroughBore absolute encoder plugged into the right pivot motor
+                        .withExternalEncoder(RightPivotMotor.getAbsoluteEncoder())
+                        .withExternalEncoderInverted(false)
+                        .withExternalEncoderGearing(
+                                new MechanismGearing(
+                                        GearBox.fromReductionStages(IntakePivotConstants.kEncoderGearing)))
+                        .withUseExternalFeedbackEncoder(true)
+                        .withExternalEncoderZeroOffset(IntakePivotConstants.kStartingPosition)
                         .withFollowers(Pair.of(RightPivotMotor, true));
 
         smartMotor = new SparkWrapper(LeftPivotMotor, DCMotor.getNeoVortex(1), motorConfig);

@@ -136,6 +136,8 @@ public final class Constants {
         public static final Distance kFunnelHeight = Inches.of(104.0);
         public static final String kMotorTelemetry = "TurretMotor";
         public static final String kMechTelemetry = "TurretMech";
+        /** Gearing used specifically for external encoder wiring (motor:mechanism). */
+        public static final double kEncoderGearing = kGearing;
     }
 
     // endregion
@@ -375,6 +377,8 @@ public final class Constants {
         public static final Angle kStartingPosition = Degrees.of(0);
         public static final String kMotorTelemetry = "IntakeArmMotor";
         public static final String kMechTelemetry = "IntakeArmMech";
+        /** Gearing used specifically for external encoder wiring (motor:mechanism). */
+        public static final double kEncoderGearing = kGearing;
     }
 
     // endregion

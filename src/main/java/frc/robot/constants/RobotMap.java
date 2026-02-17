@@ -41,4 +41,8 @@ public final class RobotMap {
             public static final int kMotorId = 63;
         }
     }
+
+    public final class LEDs {
+        public static final int kPort = 0;
+    }
 }

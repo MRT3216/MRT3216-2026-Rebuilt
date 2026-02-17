@@ -492,6 +492,14 @@ public final class Constants {
 
     // endregion
 
+    // region LEDs
+    public static final class LEDsConstants {        
+        //TODO - update to led length
+        public static final int kNumLEDs = 60;
+    }
+
+    // endregion
+
     // region Utility
     private static boolean disableHAL = false;
 

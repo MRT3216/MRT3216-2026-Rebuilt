@@ -1,6 +1,5 @@
 package frc.robot.systems;
 
-import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -8,8 +7,9 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
@@ -19,7 +19,6 @@ import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.HybridTurretUtil;
 import frc.robot.util.ShootingLookupTable;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -64,19 +63,39 @@ public class ShooterSystem {
         // Run spin and clear in parallel while waiting for the flywheel to reach speed
         Command spinAndClear = spin.alongWith(clearTimed);
 
-        // Wait until flywheel reaches ~98% of target (or timeout)
-        BooleanSupplier atSpeed = () -> flywheel.getVelocity().in(RPM) >= 0.98 * flywheelTarget.in(RPM);
-        Command waitForSpin = new WaitUntilCommand(atSpeed).withTimeout(Seconds.of(3));
-
-        // When at speed, run kicker and spindexer to feed balls
-        Command feed =
+        // When at speed, run kicker and spindexer to feed balls continuously until the user
+        // stops the overall shoot command. The feed Core is a long-running command (no timeout).
+        Command feedCore =
                 kicker
                         .setVelocity(Constants.KickerConstants.kTargetVelocity)
                         .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity));
 
-        // Compose the sequence: start spin+clear, wait for speed, then feed. Cancel feeding when
-        // the overall command is interrupted.
-        return spinAndClear.andThen(waitForSpin).andThen(feed);
+        // Monitor command: lambda-based monitor that starts feeding once the flywheel first
+        // reaches speed and keeps feeding until the user cancels the overall shoot command.
+        final java.util.concurrent.atomic.AtomicBoolean feedStarted =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        Command monitor =
+                Commands.runEnd(
+                        () -> {
+                            if (!feedStarted.get() && flywheel.atSpeed().getAsBoolean()) {
+                                if (!feedCore.isScheduled()) {
+                                    CommandScheduler.getInstance().schedule(feedCore);
+                                }
+                                feedStarted.set(true);
+                            }
+                        },
+                        () -> {
+                            if (feedCore.isScheduled()) {
+                                CommandScheduler.getInstance().cancel(feedCore);
+                            }
+                        },
+                        kicker,
+                        spindexer);
+
+        // Compose: run spin+clear and the monitor together; feeding will start/stop while this
+        // command is active based on the flywheel trigger. The whole command runs until the
+        // user cancels it.
+        return new edu.wpi.first.wpilibj2.command.ParallelCommandGroup(spinAndClear, monitor);
     }
 
     /** Clear the shooter (spin backwards and reverse spindexer briefly). */
@@ -140,16 +159,25 @@ public class ShooterSystem {
                             return s != null ? s.hoodAngle() : hood.getPosition();
                         });
 
-        // Condition: shot computed and flywheel has reached ~98% of current computed speed
-        BooleanSupplier atSpeed =
-                () -> {
-                    var s = shotRef.get();
-                    return s != null
-                            && s.isValid()
-                            && flywheel.getVelocity().in(RPM) >= 0.98 * s.flywheelSpeed().in(RPM);
-                };
-
-        Command waitForSpin = new WaitUntilCommand(atSpeed).withTimeout(Seconds.of(3));
+        // Condition: shot computed and flywheel has reached configured target within error margin
+        // Lambda-based wait: implement as a RunCommand that cancels itself when the condition
+        // becomes true. Use an AtomicReference to capture the command instance for self-cancel.
+        final java.util.concurrent.atomic.AtomicReference<Command> waitRef =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        Command waitForSpin =
+                Commands.run(
+                                () -> {
+                                    var s = shotRef.get();
+                                    if (s != null && s.isValid() && flywheel.atSetpoint().getAsBoolean()) {
+                                        var c = waitRef.get();
+                                        if (c != null) {
+                                            CommandScheduler.getInstance().cancel(c);
+                                        }
+                                    }
+                                },
+                                flywheel)
+                        .withTimeout(Seconds.of(3));
+        waitRef.set(waitForSpin);
 
         // Feed using kicker and spindexer at the computed shooter-speed-derived rates (applied once)
         Command feed =

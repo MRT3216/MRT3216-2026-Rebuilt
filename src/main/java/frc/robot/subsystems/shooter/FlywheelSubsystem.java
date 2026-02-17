@@ -15,6 +15,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants.ShooterConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
@@ -183,5 +184,35 @@ public class FlywheelSubsystem extends SubsystemBase {
         updateInputs();
         Logger.processInputs("Shooter", flywheelInputs);
         flywheel.updateTelemetry();
+    }
+
+    /**
+     * Returns a Trigger that is active when the flywheel is within the configured error margin of the
+     * canonical shooter target (Constants.ShooterConstants.kTargetFlywheel). The Trigger evaluates
+     * the current measured velocity each time it is sampled.
+     */
+    public Trigger atSpeed() {
+        return new Trigger(
+                () -> {
+                    double tgtRpm = ShooterConstants.kTargetFlywheel.in(RPM);
+                    return tgtRpm > 0
+                            && Math.abs(getVelocity().in(RPM) - tgtRpm)
+                                    <= ShooterConstants.kFlywheelAtSpeedError * tgtRpm;
+                });
+    }
+
+    /**
+     * Trigger that's active when the flywheel is within the configured error margin of the currently
+     * commanded setpoint. Useful for dynamic shot targets where the setpoint changes at runtime (e.g.
+     * `aimAndShoot`).
+     */
+    public Trigger atSetpoint() {
+        return new Trigger(
+                () -> {
+                    double tgtRpm = flywheelInputs.setpoint.in(RPM);
+                    return tgtRpm > 0
+                            && Math.abs(getVelocity().in(RPM) - tgtRpm)
+                                    <= ShooterConstants.kFlywheelAtSpeedError * tgtRpm;
+                });
     }
 }

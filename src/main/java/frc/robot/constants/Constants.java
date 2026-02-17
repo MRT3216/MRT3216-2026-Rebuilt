@@ -97,6 +97,8 @@ public final class Constants {
         public static final String kMechTelemetry = "FlywheelMech";
         // Recommended test target velocity for coordinated shooting (units-aware)
         public static final AngularVelocity kTargetFlywheel = RPM.of(3000.0);
+        /** Fractional error margin (e.g. 0.02 == 2%) used to decide when the flywheel is "at speed" */
+        public static final double kFlywheelAtSpeedError = 0.02;
         // (No SIM-specific overrides: use the same tuned constants in both environments.)
         /** Duration to run the clear routine while the flywheel spins up (seconds). */
         public static final double kClearDurationSecs = 0.5;
@@ -493,8 +495,8 @@ public final class Constants {
     // endregion
 
     // region LEDs
-    public static final class LEDsConstants {        
-        //TODO - update to led length
+    public static final class LEDsConstants {
+        // TODO - update to led length
         public static final int kNumLEDs = 60;
     }
 

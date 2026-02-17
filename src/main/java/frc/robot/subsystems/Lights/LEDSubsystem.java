@@ -1,8 +1,5 @@
 package frc.robot.subsystems.Lights;
 
-import java.util.Optional;
-import java.util.function.BooleanSupplier;
-
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -13,6 +10,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.LEDsConstants;
 import frc.robot.constants.RobotMap.LEDs;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
 
 public class LEDSubsystem extends SubsystemBase {
     private final AddressableLEDBuffer ledBuffer;
@@ -51,9 +50,10 @@ public class LEDSubsystem extends SubsystemBase {
         // Update alliance color
         if (DriverStation.isFMSAttached()) {
             alliance = DriverStation.getAlliance();
-            allianceColor = alliance
-                    .map(alliance -> alliance == Alliance.Blue ? Color.kDarkBlue : Color.kRed)
-                    .orElse(Color.kTurquoise);
+            allianceColor =
+                    alliance
+                            .map(alliance -> alliance == Alliance.Blue ? Color.kDarkBlue : Color.kRed)
+                            .orElse(Color.kTurquoise);
         }
 
         if (DriverStation.isAutonomous()) {
@@ -145,24 +145,27 @@ public class LEDSubsystem extends SubsystemBase {
     // #region Command Factories
 
     public Command setHubLEDCommand(BooleanSupplier on) {
-        return this.runOnce(() -> {
-            clearState();
-            aimLock = on.getAsBoolean();
-        });
+        return this.runOnce(
+                () -> {
+                    clearState();
+                    aimLock = on.getAsBoolean();
+                });
     }
 
     public Command setIntakingLEDCommand(BooleanSupplier on) {
-        return this.runOnce(() -> {
-            clearState();
-            intaking = on.getAsBoolean();
-        });
+        return this.runOnce(
+                () -> {
+                    clearState();
+                    intaking = on.getAsBoolean();
+                });
     }
 
     public Command setLEDCommand(BooleanSupplier on) {
-        return this.runOnce(() -> {
-            clearState();
-            hopperFull = on.getAsBoolean();
-        });
+        return this.runOnce(
+                () -> {
+                    clearState();
+                    hopperFull = on.getAsBoolean();
+                });
     }
 
     public Command setClimbingLEDCommand(BooleanSupplier on) {

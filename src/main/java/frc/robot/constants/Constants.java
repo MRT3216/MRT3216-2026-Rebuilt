@@ -140,7 +140,7 @@ public final class Constants {
     public static final class TurretConstants {
         private TurretConstants() {}
 
-        public static final double kGearing = 32.4;
+        public static final double kGearing = 9.0;
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(60);
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.0502269403);
@@ -158,9 +158,9 @@ public final class Constants {
         public static final double kV_sim = 0.09;
         public static final double kA_sim = 0.008;
         // Simulation-tuned PID defaults (reduced to avoid oscillation in sim)
-        public static final double kP_sim = 1.8;
+        public static final double kP_sim = 0.5;
         public static final double kI_sim = 0.0;
-        public static final double kD_sim = 0.6;
+        public static final double kD_sim = 0.1;
         public static final Distance kTurretOffsetX = Inches.of(0.0);
         public static final Distance kTurretOffsetY = Inches.of(0.0);
         public static final Distance kTurretOffsetZ = Inches.of(18.5);

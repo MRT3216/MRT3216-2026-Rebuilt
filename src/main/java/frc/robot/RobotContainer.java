@@ -172,7 +172,7 @@ public class RobotContainer {
         // Default commands now use closed-loop controllers (PID) instead of open-loop duty
         flywheelSubsystem.setDefaultCommand(flywheelSubsystem.setDutyCycle(0));
         kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
-        // turretSubsystem.setDefaultCommand(turretSubsystem.setDutyCycle(0));
+        turretSubsystem.setDefaultCommand(turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
         // Have hood hold its current position using the positional controller
         hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(() -> hoodSubsystem.getPosition()));

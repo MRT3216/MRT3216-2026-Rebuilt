@@ -10,6 +10,8 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.TurretConstants;
@@ -25,6 +27,8 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
+import yams.units.EasyCRT;
+import yams.units.EasyCRTConfig;
 
 /**
  * AdvantageKit-ready Turret Subsystem for MRT 3216.
@@ -68,6 +72,18 @@ public class TurretSubsystem extends SubsystemBase {
     private final PivotConfig turretConfig;
 
     private final Pivot turret;
+
+    // Track whether EasyCRT has been run to avoid re-seeding accidentally
+    private boolean easyCrtInitialized = false;
+
+    // Retry counters for periodic auto-initialization (avoid blocking in constructor)
+    private int easyCrtAttempts = 0;
+    private static final int EASY_CRT_MAX_ATTEMPTS = 10; // total attempts before giving up
+    private int easyCrtPeriodicCounter = 0; // counts periodic loops between attempts
+
+    // PWM duty-cycle absolute encoder wired to the RoboRIO for turret absolute position
+    private final DutyCycleEncoder turretPwmEncoder =
+            new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
@@ -121,6 +137,96 @@ public class TurretSubsystem extends SubsystemBase {
         turret = new Pivot(turretConfig);
 
         // No direct Phoenix status signals to optimize for SparkFlex here.
+    }
+
+    /**
+     * Run EasyCRT once to resolve absolute mechanism angle from two absolute encoders and seed the
+     * SmartMotorController / YAMS pivot with the resolved mechanism angle.
+     *
+     * <p>Call this once at startup (after sensors are ready). The PWM supplier should return the
+     * RoboRIO-connected absolute encoder reading in rotations (0..1) as an {@link Angle}.
+     */
+    public void initializeEasyCRT() {
+        if (easyCrtInitialized) {
+            return;
+        }
+
+        // Snapshot the two absolute encoders immediately to avoid latency between reads.
+        Angle abs1;
+        try {
+            // REV/Spark absolute encoder on the SparkFlex returns rotations (0..1).
+            double raw = pivotMotor.getAbsoluteEncoder().getPosition();
+            // Basic sanity check: ensure we don't propagate NaN/Infinity into the solver
+            if (!Double.isFinite(raw)) {
+                Logger.recordOutput("EasyCRT/Status", "SparkAbsReadInvalid");
+                return;
+            }
+            abs1 = Degrees.of(raw * 360.0);
+        } catch (RuntimeException e) {
+            // Narrow catch to runtime issues (missing device, API problem). Avoid catching
+            // Errors (e.g. linkage issues) which should surface during development.
+            Logger.recordOutput(
+                    "EasyCRT/Status",
+                    "SparkAbsReadFailure:" + e.getClass().getSimpleName() + ":" + e.getMessage());
+            return;
+        }
+
+        final Angle abs2;
+        try {
+            double rawPwm = this.turretPwmEncoder.get(); // returns duty-cycle fraction 0..1
+            if (!Double.isFinite(rawPwm)) {
+                Logger.recordOutput("EasyCRT/Status", "PWMAbsReadInvalid");
+                return;
+            }
+            abs2 = Degrees.of(rawPwm * 360.0);
+        } catch (RuntimeException e) {
+            Logger.recordOutput(
+                    "EasyCRT/Status",
+                    "PWMAbsReadFailure:" + e.getClass().getSimpleName() + ":" + e.getMessage());
+            return;
+        }
+
+        // Wrap snapshot values in suppliers so EasyCRT sees a consistent pair
+        Supplier<Angle> s1 = () -> abs1;
+        Supplier<Angle> s2 = () -> abs2;
+
+        // Build the EasyCRT config using the requested builder-style API: supply the two
+        // absolute-encoder snapshots and then configure gearing, mechanism range, and
+        // inversion flags. This mirrors the user's preferred example.
+        EasyCRTConfig config =
+                new EasyCRTConfig(s1, s2)
+                        .withAbsoluteEncoder1Gearing(
+                                TurretConstants.kEasyCrtEncoder1DriverTeeth, TurretConstants.kTurretDrivenTeeth)
+                        .withAbsoluteEncoder2Gearing(
+                                TurretConstants.kTurretMotorDriverTeeth, TurretConstants.kTurretDrivenTeeth)
+                        .withMechanismRange(
+                                TurretConstants.kEasyCrtMechanismRangeMin,
+                                TurretConstants.kEasyCrtMechanismRangeMax)
+                        .withAbsoluteEncoderInversions(
+                                TurretConstants.kEasyCrtAbs1Inverted, TurretConstants.kEasyCrtAbs2Inverted);
+
+        // Optionally run the gear recommender in simulation to propose pinion pairs.
+        if (RobotBase.isSimulation()) {
+            config.withCrtGearRecommendationConstraints(
+                    TurretConstants.kCrtGearRecCoverage,
+                    TurretConstants.kCrtGearRecMinTeeth,
+                    TurretConstants.kCrtGearRecMaxTeeth,
+                    TurretConstants.kCrtGearRecMaxCompoundTeeth);
+        }
+
+        EasyCRT solver = new EasyCRT(config);
+        var opt = solver.getAngleOptional();
+        if (opt.isPresent()) {
+            Angle mechAngle = opt.get();
+            // Seed the SmartMotorController so closed-loop control starts at the correct absolute angle
+            smartMotor.setEncoderPosition(mechAngle);
+            Logger.recordOutput("EasyCRT/Status", "OK");
+            easyCrtInitialized = true;
+        } else {
+            Logger.recordOutput("EasyCRT/Status", solver.getLastStatus().toString());
+            Logger.recordOutput("EasyCRT/LastErrorRot", solver.getLastErrorRotations());
+            Logger.recordOutput("EasyCRT/Iterations", solver.getLastIterations());
+        }
     }
 
     /**
@@ -181,6 +287,19 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a few
+        // times with a small spacing between attempts in case absolute encoders are not ready
+        // immediately after construction (cold-power-up behavior).
+        if (!easyCrtInitialized && easyCrtAttempts < EASY_CRT_MAX_ATTEMPTS) {
+            easyCrtPeriodicCounter++;
+            // try roughly every 10 periodic cycles (~0.2s at 50Hz)
+            if (easyCrtPeriodicCounter >= 10) {
+                easyCrtPeriodicCounter = 0;
+                easyCrtAttempts++;
+                initializeEasyCRT();
+            }
+        }
+
         updateInputs();
         Logger.processInputs("Shooter/Turret", turretInputs);
         turret.updateTelemetry();

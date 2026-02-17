@@ -17,6 +17,9 @@ public final class RobotMap {
 
         public final class Turret {
             public static final int kMotorId = 54;
+            // PWM channel for the turret's RoboRIO-connected absolute encoder (DutyCycleEncoder)
+            // Change this to match your wiring; default 0 used as a safe placeholder.
+            public static final int kAbsoluteEncoderPwmChannel = 0;
         }
 
         public final class Spindexer {

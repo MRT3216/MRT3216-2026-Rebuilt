@@ -21,6 +21,7 @@ import static edu.wpi.first.units.Units.RPM;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -103,6 +104,38 @@ public final class Constants {
 
     // endregion
 
+    // region Kicker
+    public static final class KickerConstants {
+        private KickerConstants() {}
+
+        public static final Distance kWheelDiameter = Inches.of(2.5);
+        public static final Mass kWheelMass = Pounds.of(1);
+        public static final double kGearReduction = 1.0;
+        public static final Current kStatorCurrentLimit = Amps.of(40);
+
+        public static final double kP = 1.0;
+        public static final double kI = 0.0;
+        public static final double kD = 0.0;
+        public static final double kS = 0.05;
+        public static final double kV = 0.001;
+        public static final double kA = 0.0001;
+
+        public static final double kS_sim = kS;
+        public static final double kV_sim = kV;
+        public static final double kA_sim = kA;
+        public static final double kP_sim = kP;
+        public static final double kI_sim = kI;
+        public static final double kD_sim = kD;
+
+        public static final String kMotorTelemetry = "KickerMotor";
+        public static final String kMechTelemetry = "KickerMech";
+
+        public static final AngularVelocity kTargetVelocity = RPM.of(2000.0);
+        public static final AngularVelocity kClearVelocity = RPM.of(-100.0);
+    }
+
+    // endregion
+
     // region Turret
     public static final class TurretConstants {
         private TurretConstants() {}
@@ -124,9 +157,10 @@ public final class Constants {
         public static final double kS_sim = 0.05;
         public static final double kV_sim = 0.09;
         public static final double kA_sim = 0.008;
-        public static final double kP_sim = 6.0;
+        // Simulation-tuned PID defaults (reduced to avoid oscillation in sim)
+        public static final double kP_sim = 1.8;
         public static final double kI_sim = 0.0;
-        public static final double kD_sim = 1.0;
+        public static final double kD_sim = 0.6;
         public static final Distance kTurretOffsetX = Inches.of(0.0);
         public static final Distance kTurretOffsetY = Inches.of(0.0);
         public static final Distance kTurretOffsetZ = Inches.of(18.5);
@@ -152,6 +186,42 @@ public final class Constants {
         public static final String kMechTelemetry = "TurretMech";
         /** Gearing used specifically for external encoder wiring (motor:mechanism). */
         public static final double kEncoderGearing = 1.0;
+        /**
+         * Encoder ratios for EasyCRT / external-encoder wiring. These represent encoder rotations per
+         * one mechanism rotation (encoder_rotations / mech_rotation). Use `withEncoderRatios(...)` or
+         * feed into gearing helpers when configuring EasyCRT or external encoder `MechanismGearing`.
+         */
+        public static final double kEncoder1RotPerMechRot =
+                1.0; // Spark-mounted absolute encoder (default 1:1)
+
+        public static final double kEncoder2RotPerMechRot =
+                1.0; // RoboRIO PWM absolute encoder (default 1:1)
+
+        // EasyCRT configuration constants (simple teeth counts)
+        /** Encoder 1 gear teeth: driver (encoder pinion) */
+        public static final int kEasyCrtEncoder1DriverTeeth = 13;
+
+        /** Driven teeth on the turret gear (shared) */
+        public static final int kTurretDrivenTeeth = 90;
+
+        /** Motor pinion teeth (driver) used for mechanism gearing */
+        public static final int kTurretMotorDriverTeeth = 10;
+
+        /** Mechanism search range for EasyCRT (rotations) */
+        public static final Angle kEasyCrtMechanismRangeMin = Units.Rotations.of(0.0);
+
+        public static final Angle kEasyCrtMechanismRangeMax = Units.Rotations.of(1.2);
+
+        /** Absolute encoder inversion flags used by EasyCRT */
+        public static final boolean kEasyCrtAbs1Inverted = false;
+
+        public static final boolean kEasyCrtAbs2Inverted = false;
+
+        // Simulation-only CRT gear recommender constraints
+        public static final double kCrtGearRecCoverage = 1.2;
+        public static final int kCrtGearRecMinTeeth = 15;
+        public static final int kCrtGearRecMaxTeeth = 45;
+        public static final int kCrtGearRecMaxCompoundTeeth = 30;
     }
 
     // endregion
@@ -225,16 +295,6 @@ public final class Constants {
     public static final class PhysicsConstants {
         private PhysicsConstants() {}
 
-        public static final double kStandardGravity = 9.80665;
-    }
-
-    // endregion
-
-    // region Kicker
-    public static final class KickerConstants {
-        private KickerConstants() {}
-
-        public static final Distance kWheelDiameter = Inches.of(2);
         public static final Mass kWheelMass = Pounds.of(1);
         public static final double kGearReduction = 1.0;
         public static final Current kStatorCurrentLimit = Amps.of(60);

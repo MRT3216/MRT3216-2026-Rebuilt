@@ -7,9 +7,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
@@ -54,9 +52,6 @@ public class ShooterSystem {
 
         // Start spinning the flywheel to target velocity
         Command spin = flywheel.setVelocity(flywheelTarget);
-
-        // Run the clear routine concurrently while the flywheel is spinning up. Use a timed
-        // version so the clear routine doesn't persist longer than intended.
         Command clearTimed =
                 clear().withTimeout(Seconds.of(Constants.ShooterConstants.kClearDurationSecs));
 
@@ -70,32 +65,16 @@ public class ShooterSystem {
                         .setVelocity(Constants.KickerConstants.kTargetVelocity)
                         .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity));
 
-        // Monitor command: lambda-based monitor that starts feeding once the flywheel first
-        // reaches speed and keeps feeding until the user cancels the overall shoot command.
-        final java.util.concurrent.atomic.AtomicBoolean feedStarted =
-                new java.util.concurrent.atomic.AtomicBoolean(false);
-        Command monitor =
-                Commands.runEnd(
-                        () -> {
-                            if (!feedStarted.get() && flywheel.atSpeed().getAsBoolean()) {
-                                if (!feedCore.isScheduled()) {
-                                    CommandScheduler.getInstance().schedule(feedCore);
-                                }
-                                feedStarted.set(true);
-                            }
-                        },
-                        () -> {
-                            if (feedCore.isScheduled()) {
-                                CommandScheduler.getInstance().cancel(feedCore);
-                            }
-                        },
-                        kicker,
-                        spindexer);
+        // Monitor command: wait until the flywheel Trigger becomes true once, then start the
+        // continuous feeding command. Using command composition avoids directly calling the
+        // CommandScheduler; feeding will continue until this returned monitor command is
+        // interrupted/cancelled (for example, when the driver cancels the shoot command).
+        Command monitor = Commands.waitUntil(flywheel.atSpeed).andThen(feedCore);
 
         // Compose: run spin+clear and the monitor together; feeding will start/stop while this
         // command is active based on the flywheel trigger. The whole command runs until the
         // user cancels it.
-        return new edu.wpi.first.wpilibj2.command.ParallelCommandGroup(spinAndClear, monitor);
+        return spinAndClear.alongWith(monitor);
     }
 
     /** Clear the shooter (spin backwards and reverse spindexer briefly). */
@@ -122,9 +101,10 @@ public class ShooterSystem {
 
         ShootingLookupTable table = new ShootingLookupTable(tableMode);
 
-        // Continuously compute the shot solution and apply the computed flywheel setpoint
+        // Continuously compute the shot solution. A separate long-running command will
+        // apply the computed flywheel setpoint (so we don't construct Commands each loop).
         var computeLoop =
-                new edu.wpi.first.wpilibj2.command.RunCommand(
+                Commands.run(
                         () -> {
                             try {
                                 HybridTurretUtil.ShotSolution sol =
@@ -135,15 +115,20 @@ public class ShooterSystem {
                                                 refinementIterations,
                                                 table);
                                 shotRef.set(sol);
-                                // Apply flywheel setpoint each loop so it updates as the solution
-                                if (sol != null) {
-                                    flywheel.setVelocity(sol.flywheelSpeed());
-                                }
                             } catch (Exception ex) {
                                 // Defensive: don't let an exception kill the loop; leave last solution
                             }
-                        },
-                        flywheel);
+                        });
+
+        // Long-running command that continuously writes the latest computed flywheel setpoint
+        // into the flywheel mechanism. This owns the flywheel subsystem and uses a supplier so
+        // the setpoint is updated each loop without allocating new Commands.
+        Command flywheelTrack =
+                flywheel.setVelocity(
+                        () -> {
+                            var s = shotRef.get();
+                            return s != null ? s.flywheelSpeed() : flywheel.getVelocity();
+                        });
 
         // Supplier-backed commands that read the last computed solution (with null-safety)
         Command aimTurret =
@@ -159,45 +144,133 @@ public class ShooterSystem {
                             return s != null ? s.hoodAngle() : hood.getPosition();
                         });
 
-        // Condition: shot computed and flywheel has reached configured target within error margin
-        // Lambda-based wait: implement as a RunCommand that cancels itself when the condition
-        // becomes true. Use an AtomicReference to capture the command instance for self-cancel.
-        final java.util.concurrent.atomic.AtomicReference<Command> waitRef =
-                new java.util.concurrent.atomic.AtomicReference<>();
-        Command waitForSpin =
-                Commands.run(
-                                () -> {
-                                    var s = shotRef.get();
-                                    if (s != null && s.isValid() && flywheel.atSetpoint().getAsBoolean()) {
-                                        var c = waitRef.get();
-                                        if (c != null) {
-                                            CommandScheduler.getInstance().cancel(c);
-                                        }
-                                    }
-                                },
-                                flywheel)
-                        .withTimeout(Seconds.of(3));
-        waitRef.set(waitForSpin);
+        // Condition: shot computed and flywheel has reached the configured target within the
+        // error margin. We don't require turret/hood to be at setpoint before feeding;
+        // they will continue to adjust while feeding occurs.
+        Command waitForSpin = Commands.waitUntil(flywheel.atSetpoint).withTimeout(Seconds.of(3));
 
-        // Feed using kicker and spindexer at the computed shooter-speed-derived rates (applied once)
+        // Feed using kicker and spindexer at the fixed configured feed rates. The kicker and
+        // spindexer always run at fixed velocities when feeding for this robot.
         Command feed =
-                new InstantCommand(
-                                () -> {
-                                    var s = shotRef.get();
-                                    if (s != null) {
-                                        kicker.setVelocity(s.flywheelSpeed());
-                                        spindexer.setVelocity(s.flywheelSpeed());
-                                    }
-                                },
-                                kicker,
-                                spindexer)
+                kicker
+                        .setVelocity(Constants.KickerConstants.kTargetVelocity)
+                        .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity))
                         .withTimeout(Seconds.of(2));
 
-        // Run the compute+aim loop until the flywheel is at speed (waitForSpin finishes), then feed
+        // Run the compute loop and the flywheel tracker in parallel until the flywheel is at
+        // speed (waitForSpin finishes), while also running the aiming commands.
         Command computeAndAimRace =
-                new edu.wpi.first.wpilibj2.command.ParallelRaceGroup(
-                        computeLoop, aimTurret, aimHood, waitForSpin);
+                computeLoop.alongWith(flywheelTrack).raceWith(aimTurret, aimHood, waitForSpin);
 
         return computeAndAimRace.andThen(feed);
+    }
+
+    /**
+     * Convenience: returns a composed command that runs the kicker and spindexer at the configured
+     * feed velocities. This is a short helper used by the private feed monitor.
+     */
+    private Command feedBalls() {
+        return kicker
+                .setVelocity(Constants.KickerConstants.kTargetVelocity)
+                .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity));
+    }
+
+    /**
+     * Private monitor: once the flywheel reaches the configured setpoint, start feeding and keep
+     * feeding until the parent command is cancelled. This implements the "start feeding when at
+     * speed, keep feeding until driver stops" behavior.
+     */
+    private Command feedWhenAtSpeed() {
+        return Commands.waitUntil(flywheel.atSetpoint).andThen(feedBalls());
+    }
+
+    /**
+     * Start the full dynamic aim-and-shoot pipeline as a long-running command. This will: -
+     * continuously compute shot solutions (using the lookup table) - track/apply flywheel setpoints -
+     * aim turret and hood - begin feeding automatically once the flywheel reaches the commanded
+     * setpoint and continue feeding until this returned command is cancelled.
+     *
+     * <p>The returned command owns the relevant subsystems so calling an interrupting command (for
+     * example, {@link #stopShooting()}) will cancel it and return control to defaults.
+     */
+    public Command startShooting(
+            Supplier<Pose2d> robotPose,
+            Supplier<ChassisSpeeds> fieldSpeeds,
+            Supplier<Translation3d> targetSupplier,
+            int refinementIterations,
+            ShootingLookupTable.Mode tableMode) {
+        AtomicReference<HybridTurretUtil.ShotSolution> shotRef = new AtomicReference<>();
+
+        ShootingLookupTable table = new ShootingLookupTable(tableMode);
+
+        var computeLoop =
+                Commands.run(
+                        () -> {
+                            try {
+                                HybridTurretUtil.ShotSolution sol =
+                                        HybridTurretUtil.computeMovingShot(
+                                                robotPose.get(),
+                                                fieldSpeeds.get(),
+                                                targetSupplier.get(),
+                                                refinementIterations,
+                                                table);
+                                shotRef.set(sol);
+                            } catch (Exception ex) {
+                                // Defensive: preserve last solution
+                            }
+                        });
+
+        Command flywheelTrack =
+                flywheel.setVelocity(
+                        () -> {
+                            var s = shotRef.get();
+                            return s != null ? s.flywheelSpeed() : flywheel.getVelocity();
+                        });
+
+        Command aimTurret =
+                turret.setAngle(
+                        () -> {
+                            var s = shotRef.get();
+                            return s != null ? s.turretAzimuth() : turret.getPosition();
+                        });
+        Command aimHood =
+                hood.setAngle(
+                        () -> {
+                            var s = shotRef.get();
+                            return s != null ? s.hoodAngle() : hood.getPosition();
+                        });
+
+        // Monitor that waits for flywheel to reach the commanded setpoint and then starts
+        // feeding. The feed command runs until this whole startShooting command is cancelled.
+        Command monitor = feedWhenAtSpeed();
+
+        // Also run a short clear routine while the flywheel spins up. We race the clear
+        // with the flywheel at-setpoint trigger so the clear stops early if the shooter
+        // reaches speed before the clear timed duration completes.
+        Command clearTimed =
+                clear().withTimeout(Seconds.of(Constants.ShooterConstants.kClearDurationSecs));
+        Command clearDuringSpin = clearTimed.raceWith(Commands.waitUntil(flywheel.atSetpoint));
+
+        // Run compute, flywheel tracking, aiming, the feed monitor, and the clear routine in
+        // parallel. The returned command owns the subsystems; feeding will begin when the
+        // flywheel reaches setpoint and the clear will automatically stop when the flywheel
+        // reaches setpoint or the clear timeout expires.
+        return computeLoop
+                .alongWith(flywheelTrack)
+                .alongWith(aimTurret)
+                .alongWith(aimHood)
+                .alongWith(monitor)
+                .alongWith(clearDuringSpin);
+    }
+
+    /**
+     * Stops any active shooting pipeline by taking the required subsystems briefly (thus interrupting
+     * long-running shooting commands) and allowing subsystem defaults to resume.
+     */
+    public Command stopShooting() {
+        // A no-op runOnce that requires the shooter subsystems will interrupt running shooting
+        // commands and then finish; subsystem default commands (which set duty to zero) will
+        // take over immediately.
+        return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood);
     }
 }

@@ -161,6 +161,19 @@ public class FlywheelSubsystem extends SubsystemBase {
     }
 
     /**
+     * Returns a command that continuously applies the provided supplier as the flywheel setpoint.
+     * This is intended for use as a long-running command that owns the flywheel subsystem and updates
+     * the closed-loop target each loop without creating/scheduling commands repeatedly.
+     */
+    public Command setVelocity(java.util.function.Supplier<AngularVelocity> speed) {
+        return flywheel.setSpeed(
+                () -> {
+                    AngularVelocity v = speed.get();
+                    return v;
+                });
+    }
+
+    /**
      * Sets the duty cycle (percent output) for the flywheel.
      *
      * @param dutyCycle The output percentage (-1.0 to 1.0).
@@ -191,28 +204,28 @@ public class FlywheelSubsystem extends SubsystemBase {
      * canonical shooter target (Constants.ShooterConstants.kTargetFlywheel). The Trigger evaluates
      * the current measured velocity each time it is sampled.
      */
-    public Trigger atSpeed() {
-        return new Trigger(
-                () -> {
-                    double tgtRpm = ShooterConstants.kTargetFlywheel.in(RPM);
-                    return tgtRpm > 0
-                            && Math.abs(getVelocity().in(RPM) - tgtRpm)
-                                    <= ShooterConstants.kFlywheelAtSpeedError * tgtRpm;
-                });
-    }
+    /** Public Trigger active when the flywheel is within error of the canonical target. */
+    public final Trigger atSpeed =
+            new Trigger(
+                    () -> {
+                        double tgtRpm = ShooterConstants.kTargetFlywheel.in(RPM);
+                        return tgtRpm > 0
+                                && Math.abs(getVelocity().in(RPM) - tgtRpm)
+                                        <= ShooterConstants.kFlywheelAtSpeedError * tgtRpm;
+                    });
 
     /**
      * Trigger that's active when the flywheel is within the configured error margin of the currently
      * commanded setpoint. Useful for dynamic shot targets where the setpoint changes at runtime (e.g.
      * `aimAndShoot`).
      */
-    public Trigger atSetpoint() {
-        return new Trigger(
-                () -> {
-                    double tgtRpm = flywheelInputs.setpoint.in(RPM);
-                    return tgtRpm > 0
-                            && Math.abs(getVelocity().in(RPM) - tgtRpm)
-                                    <= ShooterConstants.kFlywheelAtSpeedError * tgtRpm;
-                });
-    }
+    /** Public Trigger active when the flywheel is within error of the current setpoint. */
+    public final Trigger atSetpoint =
+            new Trigger(
+                    () -> {
+                        double tgtRpm = flywheelInputs.setpoint.in(RPM);
+                        return tgtRpm > 0
+                                && Math.abs(getVelocity().in(RPM) - tgtRpm)
+                                        <= ShooterConstants.kFlywheelAtSpeedError * tgtRpm;
+                    });
 }

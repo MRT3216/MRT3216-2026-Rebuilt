@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants.TurretConstants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
@@ -284,6 +285,18 @@ public class TurretSubsystem extends SubsystemBase {
     public void simulationPeriodic() {
         turret.simIterate();
     }
+
+    /**
+     * Public Trigger active when the turret is within the configured position tolerance of the
+     * current setpoint.
+     */
+    public final Trigger atSetpoint =
+            new Trigger(
+                    () -> {
+                        var tgt = turretInputs.setpoint;
+                        double diff = Math.abs(getPosition().in(Degrees) - tgt.in(Degrees));
+                        return diff <= TurretConstants.kPositionTolerance.in(Degrees);
+                    });
 
     @Override
     public void periodic() {

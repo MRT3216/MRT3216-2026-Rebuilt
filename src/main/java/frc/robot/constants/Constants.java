@@ -97,6 +97,8 @@ public final class Constants {
         public static final String kMechTelemetry = "FlywheelMech";
         // Recommended test target velocity for coordinated shooting (units-aware)
         public static final AngularVelocity kTargetFlywheel = RPM.of(3000.0);
+        /** A lower spin-up/test velocity used for button-driven quick checks. */
+        public static final AngularVelocity kLowSpinVelocity = RPM.of(1000.0);
         /** Fractional error margin (e.g. 0.02 == 2%) used to decide when the flywheel is "at speed" */
         public static final double kFlywheelAtSpeedError = 0.02;
         // (No SIM-specific overrides: use the same tuned constants in both environments.)
@@ -176,6 +178,9 @@ public final class Constants {
         public static final Angle kSoftLimitMax = Degrees.of(170);
         public static final Angle kSoftLimitMin = Degrees.of(-170);
         public static final Angle kStartingPosition = Degrees.of(0);
+        /** Allowed absolute position error for turret angle comparisons (degrees). */
+        public static final Angle kPositionTolerance = Degrees.of(1.0);
+
         public static final Distance kMinShootingDistance = Meters.of(1.5);
         public static final Distance kMaxShootingDistance = Meters.of(12.0);
         public static final LinearVelocity kBaseVel = InchesPerSecond.of(300);
@@ -407,6 +412,8 @@ public final class Constants {
 
         public static final String kMotorTelemetry = "HoodMotor";
         public static final String kMechTelemetry = "HoodMech";
+        /** Allowed absolute position error for hood angle comparisons (degrees). */
+        public static final Angle kPositionTolerance = Degrees.of(1.0);
     }
 
     // endregion

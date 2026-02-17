@@ -14,6 +14,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants.HoodConstants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
@@ -136,6 +137,18 @@ public class HoodSubsystem extends SubsystemBase {
     public void simulationPeriodic() {
         hood.simIterate();
     }
+
+    /**
+     * Public Trigger active when the hood is within the configured position tolerance of the current
+     * setpoint.
+     */
+    public final Trigger atSetpoint =
+            new Trigger(
+                    () -> {
+                        Angle tgt = inputs.setpoint;
+                        double diff = Math.abs(getPosition().in(Degrees) - tgt.in(Degrees));
+                        return diff <= HoodConstants.kPositionTolerance.in(Degrees);
+                    });
 
     @Override
     public void periodic() {

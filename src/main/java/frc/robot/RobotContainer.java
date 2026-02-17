@@ -8,7 +8,6 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -16,6 +15,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
@@ -180,9 +180,13 @@ public class RobotContainer {
         // Schedule `setVelocity` when the Xbox controller's B button is pressed,
         // cancelling on release.
         // Button A spins a low test speed using closed-loop velocity control
-        controller.a().whileTrue(flywheelSubsystem.setVelocity(RPM.of(1000)));
+        controller
+                .a()
+                .whileTrue(flywheelSubsystem.setVelocity(Constants.ShooterConstants.kLowSpinVelocity));
         // Button B spins to tuned shooting speed
-        controller.b().whileTrue(flywheelSubsystem.setVelocity(RPM.of(3000)));
+        controller
+                .b()
+                .whileTrue(flywheelSubsystem.setVelocity(Constants.ShooterConstants.kTargetFlywheel));
 
         // controller.b().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
         // controller.a().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
@@ -191,14 +195,16 @@ public class RobotContainer {
         switch (Constants.currentMode) {
             case REAL:
                 {
-                    Command realShoot =
-                            shooterSystem.aimAndShoot(
+                    // Start/stop buttons: X starts the long-running shoot pipeline; Y stops it.
+                    Command start =
+                            shooterSystem.startShooting(
                                     () -> new Pose2d(),
                                     () -> new ChassisSpeeds(0.0, 0.0, 0.0),
                                     () -> FieldConstants.Hub.innerCenterPoint,
                                     3,
                                     ShootingLookupTable.Mode.HUB);
-                    controller.x().whileTrue(realShoot);
+                    controller.x().onTrue(start);
+                    controller.y().onTrue(shooterSystem.stopShooting());
                     break;
                 }
             case SIM:
@@ -230,18 +236,19 @@ public class RobotContainer {
                                         Degrees.of(
                                                 hoodSubsystem.getPosition().in(Degrees)
                                                         + controller.getRightTriggerAxis() * 2.0)));
-        controller
-                .y()
-                .whileTrue(
-                        kickerSubsystem
-                                .setVelocity(RPM.of(2000))
-                                .withTimeout(Seconds.of(1))
-                                .andThen(spindexerSubsystem.setVelocity(RPM.of(4000))));
+        // Quick manual feed: only start the short feed if turret and hood are at their setpoints.
+        Command guardedQuickFeed =
+                Commands.waitUntil(turretSubsystem.atSetpoint.and(hoodSubsystem.atSetpoint))
+                        .withTimeout(Seconds.of(0.5))
+                        .andThen(
+                                kickerSubsystem
+                                        .setVelocity(Constants.KickerConstants.kTargetVelocity)
+                                        .withTimeout(Seconds.of(1))
+                                        .andThen(
+                                                spindexerSubsystem.setVelocity(
+                                                        Constants.SpindexerConstants.kTargetVelocity)));
 
-        // Turret test controls -------------------------------------------------
-        // Hold the BACK button to manually steer the turret using the left stick X axis.
-        // While held the supplier reads the current turret angle and adjusts it by a small
-        // amount proportional to the left-stick X position (degrees per loop).
+        controller.y().whileTrue(guardedQuickFeed);
         controller
                 .back()
                 .whileTrue(

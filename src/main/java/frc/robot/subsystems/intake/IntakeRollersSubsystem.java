@@ -14,6 +14,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.IntakeConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
@@ -26,7 +27,6 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
@@ -109,7 +109,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                                 new SimpleMotorFeedforward(
                                         IntakeConstants.kS_sim, IntakeConstants.kV_sim, IntakeConstants.kA_sim))
                         // Telemetry
-                        .withTelemetry(IntakeConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
+                        .withTelemetry(IntakeConstants.kMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(
                                 new MechanismGearing(GearBox.fromReductionStages(IntakeConstants.kGearReduction)))
                         .withMotorInverted(false)
@@ -122,7 +122,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(IntakeConstants.kWheelDiameter)
                         .withMass(IntakeConstants.kWheelMass)
-                        .withTelemetry(IntakeConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+                        .withTelemetry(IntakeConstants.kMechTelemetry, Constants.telemetryVerbosity());
 
         intakeRollers = new FlyWheel(intakeRollersConfig);
 

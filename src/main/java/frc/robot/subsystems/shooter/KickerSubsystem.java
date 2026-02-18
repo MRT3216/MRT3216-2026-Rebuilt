@@ -13,6 +13,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -24,7 +25,6 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 
 /**
@@ -101,7 +101,7 @@ public class KickerSubsystem extends SubsystemBase {
                         // Telemetry name and verbosity level
                         .withTelemetry(
                                 frc.robot.constants.Constants.KickerConstants.kMotorTelemetry,
-                                TelemetryVerbosity.HIGH)
+                                Constants.telemetryVerbosity())
                         .withGearing(
                                 new MechanismGearing(
                                         GearBox.fromReductionStages(
@@ -123,7 +123,7 @@ public class KickerSubsystem extends SubsystemBase {
                         // .withUpperSoftLimit(RPM.of(4000))
                         .withTelemetry(
                                 frc.robot.constants.Constants.KickerConstants.kMechTelemetry,
-                                TelemetryVerbosity.HIGH);
+                                Constants.telemetryVerbosity());
 
         kicker = new FlyWheel(kickerConfig);
     }

@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.TurretConstants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
@@ -26,7 +27,6 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 import yams.units.EasyCRT;
 import yams.units.EasyCRTConfig;
@@ -118,7 +118,7 @@ public class TurretSubsystem extends SubsystemBase {
                                 new SimpleMotorFeedforward(
                                         TurretConstants.kS_sim, TurretConstants.kV_sim, TurretConstants.kA_sim))
                         // Telemetry
-                        .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
+                        .withTelemetry(TurretConstants.kMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(TurretConstants.kGearing)
                         .withMotorInverted(TurretConstants.kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
@@ -129,7 +129,7 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig =
                 new PivotConfig(smartMotor)
                         .withMOI(TurretConstants.kMOI)
-                        .withTelemetry("TurretMech", TelemetryVerbosity.HIGH)
+                        .withTelemetry(TurretConstants.kMechTelemetry, Constants.telemetryVerbosity())
                         // Provide a starting position so the Pivot has a known angle at init (required by YAMS)
                         .withStartingPosition(TurretConstants.kStartingPosition)
                         .withHardLimit(TurretConstants.kHardLimitMin, TurretConstants.kHardLimitMax)

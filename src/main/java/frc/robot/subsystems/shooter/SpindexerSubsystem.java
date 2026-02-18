@@ -12,6 +12,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.SpindexerConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
@@ -24,7 +25,6 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 
 /**
@@ -101,7 +101,7 @@ public class SpindexerSubsystem extends SubsystemBase {
                                         SpindexerConstants.kV_sim,
                                         SpindexerConstants.kA_sim))
                         // Telemetry
-                        .withTelemetry(SpindexerConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
+                        .withTelemetry(SpindexerConstants.kMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(
                                 new MechanismGearing(
                                         GearBox.fromReductionStages(SpindexerConstants.kGearReduction)))
@@ -115,7 +115,7 @@ public class SpindexerSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(SpindexerConstants.kWheelDiameter)
                         .withMass(SpindexerConstants.kWheelMass)
-                        .withTelemetry(SpindexerConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+                        .withTelemetry(SpindexerConstants.kMechTelemetry, Constants.telemetryVerbosity());
 
         spindexer = new FlyWheel(spindexerConfig);
     }

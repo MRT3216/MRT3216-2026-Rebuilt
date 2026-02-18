@@ -16,6 +16,7 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.ShooterConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
@@ -28,7 +29,6 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
@@ -115,7 +115,7 @@ public class FlywheelSubsystem extends SubsystemBase {
                                 new SimpleMotorFeedforward(
                                         ShooterConstants.kS_sim, ShooterConstants.kV_sim, ShooterConstants.kA_sim))
                         // Telemetry
-                        .withTelemetry(ShooterConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
+                        .withTelemetry(ShooterConstants.kMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(
                                 new MechanismGearing(GearBox.fromReductionStages(ShooterConstants.kGearReduction)))
                         .withMotorInverted(true)
@@ -129,7 +129,7 @@ public class FlywheelSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(ShooterConstants.kWheelDiameter)
                         .withMass(ShooterConstants.kWheelMass)
-                        .withTelemetry(ShooterConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+                        .withTelemetry(ShooterConstants.kMechTelemetry, Constants.telemetryVerbosity());
 
         flywheel = new FlyWheel(flywheelConfig);
 

@@ -31,6 +31,7 @@ import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.wpilibj.RobotBase;
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 
 /**
  * Central repository of robot constants. Keep this file tidy: avoid duplicate nested classes and
@@ -63,6 +64,7 @@ public final class Constants {
     /** Operation modes for the robot (simulation, real robot, etc.). */
     public enum Mode {
         REAL,
+        TUNING,
         SIM,
         REPLAY
     }
@@ -71,6 +73,32 @@ public final class Constants {
     public enum RobotType {
         COMPBOT,
         SIMBOT
+    }
+
+    /**
+     * Returns the YAMS telemetry verbosity to use for mechanisms. Centralized so it is easy to change
+     * behavior for REAL vs TUNING/SIM in one place.
+     *
+     * <p>Returns a sensible default based on {@link #currentMode}:
+     *
+     * <ul>
+     *   <li>{@link Mode#REAL} -> LOW (minimize live tuning traffic on the real robot)
+     *   <li>{@link Mode#TUNING} -> HIGH (enable live tuning)
+     *   <li>{@link Mode#SIM} -> HIGH (enable rich telemetry in simulation)
+     *   <li>{@link Mode#REPLAY} -> MEDIUM (balance telemetry during replay)
+     * </ul>
+     */
+    public static TelemetryVerbosity telemetryVerbosity() {
+        // Keep a mode-based switch so it's easy to change behavior per-mode in the future,
+        // but return HIGH for all current modes as requested.
+        switch (currentMode) {
+            case REAL:
+            case TUNING:
+            case SIM:
+            case REPLAY:
+            default:
+                return TelemetryVerbosity.HIGH;
+        }
     }
 
     // region Shooter

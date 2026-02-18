@@ -13,6 +13,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.IntakePivotConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
@@ -25,7 +26,6 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 
 /**
@@ -107,7 +107,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                                         IntakePivotConstants.kV_sim,
                                         IntakePivotConstants.kA_sim))
                         // Telemetry
-                        .withTelemetry(IntakePivotConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
+                        .withTelemetry(IntakePivotConstants.kMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(IntakePivotConstants.kGearing)
                         .withMotorInverted(IntakePivotConstants.kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
@@ -128,7 +128,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                 new ArmConfig(smartMotor)
                         .withMass(IntakePivotConstants.kMass)
                         .withLength(IntakePivotConstants.kLength)
-                        .withTelemetry(IntakePivotConstants.kMechTelemetry, TelemetryVerbosity.HIGH)
+                        .withTelemetry(IntakePivotConstants.kMechTelemetry, Constants.telemetryVerbosity())
                         // Provide a starting position so the Arm has a known initial angle
                         .withStartingPosition(IntakePivotConstants.kStartingPosition)
                         .withHardLimit(IntakePivotConstants.kHardLimitMin, IntakePivotConstants.kHardLimitMax)

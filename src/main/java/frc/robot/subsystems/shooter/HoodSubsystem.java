@@ -15,6 +15,7 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.HoodConstants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
@@ -26,7 +27,6 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
@@ -71,7 +71,7 @@ public class HoodSubsystem extends SubsystemBase {
                         .withSimFeedforward(
                                 new ArmFeedforward(
                                         HoodConstants.kS_sim, HoodConstants.kV_sim, HoodConstants.kA_sim))
-                        .withTelemetry(HoodConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
+                        .withTelemetry(HoodConstants.kMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(HoodConstants.kGearing)
                         .withMotorInverted(HoodConstants.kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
@@ -83,7 +83,7 @@ public class HoodSubsystem extends SubsystemBase {
                 new ArmConfig(smartMotor)
                         .withMass(HoodConstants.kMass)
                         .withLength(HoodConstants.kLength)
-                        .withTelemetry(HoodConstants.kMechTelemetry, TelemetryVerbosity.HIGH)
+                        .withTelemetry(HoodConstants.kMechTelemetry, Constants.telemetryVerbosity())
                         // Ensure Arm has a known starting angle for simulation and replay
                         .withStartingPosition(HoodConstants.kStartingPosition)
                         .withHardLimit(HoodConstants.kHardLimitMin, HoodConstants.kHardLimitMax)

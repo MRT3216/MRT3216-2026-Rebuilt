@@ -93,7 +93,7 @@ public class SpindexerSubsystem extends SubsystemBase {
                         .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
                         .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kSpindexerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
@@ -105,7 +105,7 @@ public class SpindexerSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(kWheelDiameter)
                         .withMass(kWheelMass)
-                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity());
+                        .withTelemetry(kSpindexerMechTelemetry, Constants.telemetryVerbosity());
 
         spindexer = new FlyWheel(spindexerConfig);
     }

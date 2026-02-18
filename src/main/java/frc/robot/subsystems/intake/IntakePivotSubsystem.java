@@ -97,7 +97,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withFeedforward(new ArmFeedforward(kS, kV, kA))
                         .withSimFeedforward(new ArmFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kIntakeArmMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
@@ -117,7 +117,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                 new ArmConfig(smartMotor)
                         .withMass(kMass)
                         .withLength(kLength)
-                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kIntakeArmMechTelemetry, Constants.telemetryVerbosity())
                         // Provide a starting position so the Arm has a known initial angle
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)

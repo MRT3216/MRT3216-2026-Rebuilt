@@ -110,7 +110,7 @@ public class FlywheelSubsystem extends SubsystemBase {
                         .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
                         .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kFlywheelMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
@@ -123,7 +123,7 @@ public class FlywheelSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(kWheelDiameter)
                         .withMass(kWheelMass)
-                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity());
+                        .withTelemetry(kFlywheelMechTelemetry, Constants.telemetryVerbosity());
 
         flywheel = new FlyWheel(flywheelConfig);
 
@@ -194,14 +194,14 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     /**
      * Returns a Trigger that is active when the flywheel is within the configured error margin of the
-     * canonical shooter target (ShooterConstants.kTargetFlywheel). The Trigger evaluates the current
-     * measured velocity each time it is sampled.
+     * canonical shooter target (ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity).
+     * The Trigger evaluates the current measured velocity each time it is sampled.
      */
     /** Public Trigger active when the flywheel is within error of the canonical target. */
     public final Trigger atSpeed =
             new Trigger(
                     () -> {
-                        double tgtRpm = kTargetFlywheel.in(RPM);
+                        double tgtRpm = kFlywheelTargetAngularVelocity.in(RPM);
                         return tgtRpm > 0
                                 && Math.abs(getVelocity().in(RPM) - tgtRpm) <= kFlywheelAtSpeedError * tgtRpm;
                     });

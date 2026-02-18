@@ -113,7 +113,7 @@ public class TurretSubsystem extends SubsystemBase {
                         .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
                         .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kTurretMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
@@ -124,7 +124,7 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig =
                 new PivotConfig(smartMotor)
                         .withMOI(kMOI)
-                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
                         // Provide a starting position so the Pivot has a known angle at init (required by YAMS)
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)

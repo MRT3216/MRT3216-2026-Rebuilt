@@ -72,7 +72,7 @@ public class RobotContainer {
 
     // Tuning state (only used when running in TUNING mode)
     private final AtomicReference<AngularVelocity> tuningFlywheel =
-            new AtomicReference<>(ShooterConstants.FlywheelConstants.kTargetFlywheel);
+            new AtomicReference<>(ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity);
 
     // Aggregated shooter system
     private final ShooterSystem shooterSystem =
@@ -383,11 +383,13 @@ public class RobotContainer {
                                     .withTimeout(Seconds.of(0.5))
                                     .andThen(
                                             kickerSubsystem
-                                                    .setVelocity(ShooterConstants.KickerConstants.kTargetVelocity)
+                                                    .setVelocity(
+                                                            ShooterConstants.KickerConstants.kKickerTargetAngularVelocity)
                                                     .withTimeout(Seconds.of(1))
                                                     .andThen(
                                                             spindexerSubsystem.setVelocity(
-                                                                    ShooterConstants.SpindexerConstants.kTargetVelocity)));
+                                                                    ShooterConstants.SpindexerConstants
+                                                                            .kSpindexerTargetAngularVelocity)));
 
                     controller.y().whileTrue(guardedQuickFeed);
 

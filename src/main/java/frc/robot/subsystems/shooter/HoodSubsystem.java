@@ -67,7 +67,7 @@ public class HoodSubsystem extends SubsystemBase {
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         .withFeedforward(new ArmFeedforward(kS, kV, kA))
                         .withSimFeedforward(new ArmFeedforward(kS_sim, kV_sim, kA_sim))
-                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kHoodMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
@@ -79,7 +79,7 @@ public class HoodSubsystem extends SubsystemBase {
                 new ArmConfig(smartMotor)
                         .withMass(kMass)
                         .withLength(kLength)
-                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kHoodMechTelemetry, Constants.telemetryVerbosity())
                         // Ensure Arm has a known starting angle for simulation and replay
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)

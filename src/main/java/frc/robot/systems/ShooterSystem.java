@@ -49,7 +49,8 @@ public class ShooterSystem {
     /** High-level shoot command: clear, spin kicker, and feed spindexer. */
     public Command shoot() {
         // Targets — chosen as safe defaults for testing. Adjust as needed.
-        final AngularVelocity flywheelTarget = ShooterConstants.FlywheelConstants.kTargetFlywheel;
+        final AngularVelocity flywheelTarget =
+                ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity;
 
         // Start spinning the flywheel to target velocity
         Command spin = flywheel.setVelocity(flywheelTarget);
@@ -62,10 +63,11 @@ public class ShooterSystem {
         // feed will start and continue until cancelled by the operator.
         Command feedCore =
                 kicker
-                        .setVelocity(kTargetVelocity)
+                        .setVelocity(kKickerTargetAngularVelocity)
                         .alongWith(
                                 spindexer.setVelocity(
-                                        frc.robot.constants.ShooterConstants.SpindexerConstants.kTargetVelocity));
+                                        frc.robot.constants.ShooterConstants.SpindexerConstants
+                                                .kSpindexerTargetAngularVelocity));
 
         Command clearThenFeed = clearTimed.andThen(feedCore);
 
@@ -77,10 +79,11 @@ public class ShooterSystem {
         // Use small negative closed-loop velocities to clear any jammed balls. Closed-loop
         // ensures repeatable behavior across real and sim.
         return kicker
-                .setVelocity(kClearVelocity)
+                .setVelocity(kKickerClearAngularVelocity)
                 .alongWith(
                         spindexer.setVelocity(
-                                frc.robot.constants.ShooterConstants.SpindexerConstants.kClearVelocity));
+                                frc.robot.constants.ShooterConstants.SpindexerConstants
+                                        .kSpindexerClearAngularVelocity));
     }
 
     /**
@@ -152,10 +155,11 @@ public class ShooterSystem {
         // spindexer always run at fixed velocities when feeding for this robot.
         Command feed =
                 kicker
-                        .setVelocity(kTargetVelocity)
+                        .setVelocity(kKickerTargetAngularVelocity)
                         .alongWith(
                                 spindexer.setVelocity(
-                                        frc.robot.constants.ShooterConstants.SpindexerConstants.kTargetVelocity))
+                                        frc.robot.constants.ShooterConstants.SpindexerConstants
+                                                .kSpindexerTargetAngularVelocity))
                         .withTimeout(Seconds.of(2));
 
         // Run the compute loop and the flywheel tracker in parallel until the flywheel is at
@@ -172,10 +176,11 @@ public class ShooterSystem {
      */
     private Command feedBalls() {
         return kicker
-                .setVelocity(kTargetVelocity)
+                .setVelocity(kKickerTargetAngularVelocity)
                 .alongWith(
                         spindexer.setVelocity(
-                                frc.robot.constants.ShooterConstants.SpindexerConstants.kTargetVelocity));
+                                frc.robot.constants.ShooterConstants.SpindexerConstants
+                                        .kSpindexerTargetAngularVelocity));
     }
 
     /**

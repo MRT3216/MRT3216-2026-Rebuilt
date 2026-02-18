@@ -104,7 +104,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
                         .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kIntakeRollersMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
                         .withIdleMode(MotorMode.COAST)
@@ -116,7 +116,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(kWheelDiameter)
                         .withMass(kWheelMass)
-                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity());
+                        .withTelemetry(kIntakeRollersMechTelemetry, Constants.telemetryVerbosity());
 
         intakeRollers = new FlyWheel(intakeRollersConfig);
 

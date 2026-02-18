@@ -21,10 +21,6 @@ import edu.wpi.first.units.measure.Mass;
 public final class IntakeConstants {
     private IntakeConstants() {}
 
-    // NOTE: roller-specific values live under the nested `Rollers` class below. This file
-    // previously exposed flat aliases; those were removed to make `Rollers` the single source
-    // of truth for roller constants.
-
     /** Grouped roller constants to keep intake-related values organized. */
     public static final class Rollers {
         private Rollers() {}
@@ -48,8 +44,8 @@ public final class IntakeConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
         public static final double kUpdateHz = 50.0;
-        public static final String kMotorTelemetry = "IntakeRollersMotor";
-        public static final String kMechTelemetry = "IntakeRollersMech";
+        public static final String kIntakeRollersMotorTelemetry = "IntakeRollersMotor";
+        public static final String kIntakeRollersMechTelemetry = "IntakeRollersMech";
     }
 
     /**
@@ -85,8 +81,8 @@ public final class IntakeConstants {
         public static final Angle kSoftLimitMax = Degrees.of(350);
         public static final Angle kSoftLimitMin = Degrees.of(10);
         public static final Angle kStartingPosition = Degrees.of(0);
-        public static final String kMotorTelemetry = "IntakeArmMotor";
-        public static final String kMechTelemetry = "IntakeArmMech";
+        public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
+        public static final String kIntakeArmMechTelemetry = "IntakeArmMech";
         /** Gearing used specifically for external encoder wiring (motor:mechanism). */
         public static final double kEncoderGearing = 1.0;
     }

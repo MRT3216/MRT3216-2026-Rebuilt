@@ -86,7 +86,7 @@ public class KickerSubsystem extends SubsystemBase {
                         .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
                         .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry name and verbosity level
-                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withTelemetry(kKickerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
                         .withIdleMode(MotorMode.COAST)
@@ -102,7 +102,7 @@ public class KickerSubsystem extends SubsystemBase {
                         .withMass(kWheelMass)
                         // Maximum speed of the shooter.
                         // .withUpperSoftLimit(RPM.of(4000))
-                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity());
+                        .withTelemetry(kKickerMechTelemetry, Constants.telemetryVerbosity());
 
         kicker = new FlyWheel(kickerConfig);
     }

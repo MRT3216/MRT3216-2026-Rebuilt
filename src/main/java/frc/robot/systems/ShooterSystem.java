@@ -1,6 +1,7 @@
 package frc.robot.systems;
 
 import static edu.wpi.first.units.Units.Seconds;
+import static frc.robot.constants.ShooterConstants.KickerConstants.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -8,7 +9,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.constants.Constants;
+import frc.robot.constants.ShooterConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -48,12 +49,12 @@ public class ShooterSystem {
     /** High-level shoot command: clear, spin kicker, and feed spindexer. */
     public Command shoot() {
         // Targets — chosen as safe defaults for testing. Adjust as needed.
-        final AngularVelocity flywheelTarget = Constants.ShooterConstants.kTargetFlywheel;
+        final AngularVelocity flywheelTarget = ShooterConstants.FlywheelConstants.kTargetFlywheel;
 
         // Start spinning the flywheel to target velocity
         Command spin = flywheel.setVelocity(flywheelTarget);
         Command clearTimed =
-                clear().withTimeout(Seconds.of(Constants.ShooterConstants.kClearDurationSecs));
+                clear().withTimeout(Seconds.of(ShooterConstants.FlywheelConstants.kClearDurationSecs));
 
         // Run spin and clear in parallel. After the clear timeout completes, begin feeding.
         // We run the spin (long-running) and a short sequence (clearTimed -> feedCore) in
@@ -61,8 +62,10 @@ public class ShooterSystem {
         // feed will start and continue until cancelled by the operator.
         Command feedCore =
                 kicker
-                        .setVelocity(Constants.KickerConstants.kTargetVelocity)
-                        .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity));
+                        .setVelocity(kTargetVelocity)
+                        .alongWith(
+                                spindexer.setVelocity(
+                                        frc.robot.constants.ShooterConstants.SpindexerConstants.kTargetVelocity));
 
         Command clearThenFeed = clearTimed.andThen(feedCore);
 
@@ -74,8 +77,10 @@ public class ShooterSystem {
         // Use small negative closed-loop velocities to clear any jammed balls. Closed-loop
         // ensures repeatable behavior across real and sim.
         return kicker
-                .setVelocity(Constants.KickerConstants.kClearVelocity)
-                .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kClearVelocity));
+                .setVelocity(kClearVelocity)
+                .alongWith(
+                        spindexer.setVelocity(
+                                frc.robot.constants.ShooterConstants.SpindexerConstants.kClearVelocity));
     }
 
     /**
@@ -105,7 +110,7 @@ public class ShooterSystem {
                                                 fieldSpeeds.get(),
                                                 targetSupplier.get(),
                                                 refinementIterations,
-                                                Constants.ShooterConstants.kRefinementConvergenceEpsilon,
+                                                ShooterConstants.FlywheelConstants.kRefinementConvergenceEpsilon,
                                                 table);
                                 shotRef.set(sol);
                             } catch (Exception ex) {
@@ -147,8 +152,10 @@ public class ShooterSystem {
         // spindexer always run at fixed velocities when feeding for this robot.
         Command feed =
                 kicker
-                        .setVelocity(Constants.KickerConstants.kTargetVelocity)
-                        .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity))
+                        .setVelocity(kTargetVelocity)
+                        .alongWith(
+                                spindexer.setVelocity(
+                                        frc.robot.constants.ShooterConstants.SpindexerConstants.kTargetVelocity))
                         .withTimeout(Seconds.of(2));
 
         // Run the compute loop and the flywheel tracker in parallel until the flywheel is at
@@ -165,8 +172,10 @@ public class ShooterSystem {
      */
     private Command feedBalls() {
         return kicker
-                .setVelocity(Constants.KickerConstants.kTargetVelocity)
-                .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity));
+                .setVelocity(kTargetVelocity)
+                .alongWith(
+                        spindexer.setVelocity(
+                                frc.robot.constants.ShooterConstants.SpindexerConstants.kTargetVelocity));
     }
 
     /**
@@ -208,7 +217,7 @@ public class ShooterSystem {
                                                 fieldSpeeds.get(),
                                                 targetSupplier.get(),
                                                 refinementIterations,
-                                                Constants.ShooterConstants.kRefinementConvergenceEpsilon,
+                                                ShooterConstants.FlywheelConstants.kRefinementConvergenceEpsilon,
                                                 table);
                                 shotRef.set(sol);
                             } catch (Exception ex) {
@@ -244,7 +253,7 @@ public class ShooterSystem {
         // with the flywheel at-setpoint trigger so the clear stops early if the shooter
         // reaches speed before the clear timed duration completes.
         Command clearTimed =
-                clear().withTimeout(Seconds.of(Constants.ShooterConstants.kClearDurationSecs));
+                clear().withTimeout(Seconds.of(ShooterConstants.FlywheelConstants.kClearDurationSecs));
         Command clearDuringSpin = clearTimed.raceWith(Commands.waitUntil(flywheel.atSetpoint));
 
         // Run compute, flywheel tracking, aiming, the feed monitor, and the clear routine in

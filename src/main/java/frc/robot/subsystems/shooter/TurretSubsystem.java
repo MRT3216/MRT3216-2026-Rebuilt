@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.TurretConstants.*;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -16,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
-import frc.robot.constants.Constants.TurretConstants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -107,33 +107,28 @@ public class TurretSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
-                        .withClosedLoopController(TurretConstants.kP, TurretConstants.kI, TurretConstants.kD)
-                        .withSimClosedLoopController(
-                                TurretConstants.kP_sim, TurretConstants.kI_sim, TurretConstants.kD_sim)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         // Feedforward Constants
-                        .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        TurretConstants.kS, TurretConstants.kV, TurretConstants.kA))
-                        .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        TurretConstants.kS_sim, TurretConstants.kV_sim, TurretConstants.kA_sim))
+                        .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
+                        .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(TurretConstants.kMotorTelemetry, Constants.telemetryVerbosity())
-                        .withGearing(TurretConstants.kGearing)
-                        .withMotorInverted(TurretConstants.kMotorInverted)
+                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(kGearing)
+                        .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        .withStatorCurrentLimit(TurretConstants.kStatorCurrentLimit);
+                        .withStatorCurrentLimit(kStatorCurrentLimit);
 
         smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);
 
         turretConfig =
                 new PivotConfig(smartMotor)
-                        .withMOI(TurretConstants.kMOI)
-                        .withTelemetry(TurretConstants.kMechTelemetry, Constants.telemetryVerbosity())
+                        .withMOI(kMOI)
+                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity())
                         // Provide a starting position so the Pivot has a known angle at init (required by YAMS)
-                        .withStartingPosition(TurretConstants.kStartingPosition)
-                        .withHardLimit(TurretConstants.kHardLimitMin, TurretConstants.kHardLimitMax)
-                        .withSoftLimits(TurretConstants.kSoftLimitMin, TurretConstants.kSoftLimitMax);
+                        .withStartingPosition(kStartingPosition)
+                        .withHardLimit(kHardLimitMin, kHardLimitMax)
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         turret = new Pivot(turretConfig);
 
@@ -196,23 +191,18 @@ public class TurretSubsystem extends SubsystemBase {
         // inversion flags. This mirrors the user's preferred example.
         EasyCRTConfig config =
                 new EasyCRTConfig(s1, s2)
-                        .withAbsoluteEncoder1Gearing(
-                                TurretConstants.kEasyCrtEncoder1DriverTeeth, TurretConstants.kTurretDrivenTeeth)
-                        .withAbsoluteEncoder2Gearing(
-                                TurretConstants.kTurretMotorDriverTeeth, TurretConstants.kTurretDrivenTeeth)
-                        .withMechanismRange(
-                                TurretConstants.kEasyCrtMechanismRangeMin,
-                                TurretConstants.kEasyCrtMechanismRangeMax)
-                        .withAbsoluteEncoderInversions(
-                                TurretConstants.kEasyCrtAbs1Inverted, TurretConstants.kEasyCrtAbs2Inverted);
+                        .withAbsoluteEncoder1Gearing(kEasyCrtEncoder1DriverTeeth, kTurretDrivenTeeth)
+                        .withAbsoluteEncoder2Gearing(kTurretMotorDriverTeeth, kTurretDrivenTeeth)
+                        .withMechanismRange(kEasyCrtMechanismRangeMin, kEasyCrtMechanismRangeMax)
+                        .withAbsoluteEncoderInversions(kEasyCrtAbs1Inverted, kEasyCrtAbs2Inverted);
 
         // Optionally run the gear recommender in simulation to propose pinion pairs.
         if (RobotBase.isSimulation()) {
             config.withCrtGearRecommendationConstraints(
-                    TurretConstants.kCrtGearRecCoverage,
-                    TurretConstants.kCrtGearRecMinTeeth,
-                    TurretConstants.kCrtGearRecMaxTeeth,
-                    TurretConstants.kCrtGearRecMaxCompoundTeeth);
+                    kCrtGearRecCoverage,
+                    kCrtGearRecMinTeeth,
+                    kCrtGearRecMaxTeeth,
+                    kCrtGearRecMaxCompoundTeeth);
         }
 
         EasyCRT solver = new EasyCRT(config);
@@ -248,8 +238,8 @@ public class TurretSubsystem extends SubsystemBase {
     public Command setAngle(Angle angle) {
         // Clamp requested angle to configured soft limits
         double requestedDeg = angle.in(Degrees);
-        double minDeg = TurretConstants.kSoftLimitMin.in(Degrees);
-        double maxDeg = TurretConstants.kSoftLimitMax.in(Degrees);
+        double minDeg = kSoftLimitMin.in(Degrees);
+        double maxDeg = kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         Angle clamped = Degrees.of(clampedDeg);
         return turret.setAngle(clamped);
@@ -295,7 +285,7 @@ public class TurretSubsystem extends SubsystemBase {
                     () -> {
                         var tgt = turretInputs.setpoint;
                         double diff = Math.abs(getPosition().in(Degrees) - tgt.in(Degrees));
-                        return diff <= TurretConstants.kPositionTolerance.in(Degrees);
+                        return diff <= kPositionTolerance.in(Degrees);
                     });
 
     @Override

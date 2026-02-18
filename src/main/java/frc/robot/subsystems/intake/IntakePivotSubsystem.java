@@ -3,6 +3,7 @@ package frc.robot.subsystems.intake;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.IntakeConstants.Pivot.*;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.Pair;
@@ -14,7 +15,6 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
-import frc.robot.constants.Constants.IntakePivotConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -91,48 +91,37 @@ public class IntakePivotSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
-                        .withClosedLoopController(
-                                IntakePivotConstants.kP, IntakePivotConstants.kI, IntakePivotConstants.kD)
-                        .withSimClosedLoopController(
-                                IntakePivotConstants.kP_sim,
-                                IntakePivotConstants.kI_sim,
-                                IntakePivotConstants.kD_sim)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         // Feedforward Constants
-                        .withFeedforward(
-                                new ArmFeedforward(
-                                        IntakePivotConstants.kS, IntakePivotConstants.kV, IntakePivotConstants.kA))
-                        .withSimFeedforward(
-                                new ArmFeedforward(
-                                        IntakePivotConstants.kS_sim,
-                                        IntakePivotConstants.kV_sim,
-                                        IntakePivotConstants.kA_sim))
+                        .withFeedforward(new ArmFeedforward(kS, kV, kA))
+                        .withSimFeedforward(new ArmFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(IntakePivotConstants.kMotorTelemetry, Constants.telemetryVerbosity())
-                        .withGearing(IntakePivotConstants.kGearing)
-                        .withMotorInverted(IntakePivotConstants.kMotorInverted)
+                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(kGearing)
+                        .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        .withStatorCurrentLimit(IntakePivotConstants.kStatorCurrentLimit)
+                        .withStatorCurrentLimit(kStatorCurrentLimit)
                         // Configure the REV ThroughBore absolute encoder plugged into the right pivot motor
                         .withExternalEncoder(rightPivotMotor.getAbsoluteEncoder())
                         .withExternalEncoderInverted(false)
                         .withExternalEncoderGearing(
-                                new MechanismGearing(
-                                        GearBox.fromReductionStages(IntakePivotConstants.kEncoderGearing)))
+                                new MechanismGearing(GearBox.fromReductionStages(kEncoderGearing)))
                         .withUseExternalFeedbackEncoder(true)
-                        .withExternalEncoderZeroOffset(IntakePivotConstants.kStartingPosition)
+                        .withExternalEncoderZeroOffset(kStartingPosition)
                         .withFollowers(Pair.of(rightPivotMotor, true));
 
         smartMotor = new SparkWrapper(leftPivotMotor, DCMotor.getNeoVortex(1), motorConfig);
 
         intakePivotConfig =
                 new ArmConfig(smartMotor)
-                        .withMass(IntakePivotConstants.kMass)
-                        .withLength(IntakePivotConstants.kLength)
-                        .withTelemetry(IntakePivotConstants.kMechTelemetry, Constants.telemetryVerbosity())
+                        .withMass(kMass)
+                        .withLength(kLength)
+                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity())
                         // Provide a starting position so the Arm has a known initial angle
-                        .withStartingPosition(IntakePivotConstants.kStartingPosition)
-                        .withHardLimit(IntakePivotConstants.kHardLimitMin, IntakePivotConstants.kHardLimitMax)
-                        .withSoftLimits(IntakePivotConstants.kSoftLimitMin, IntakePivotConstants.kSoftLimitMax);
+                        .withStartingPosition(kStartingPosition)
+                        .withHardLimit(kHardLimitMin, kHardLimitMax)
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         intakePivot = new Arm(intakePivotConfig);
 
@@ -157,8 +146,8 @@ public class IntakePivotSubsystem extends SubsystemBase {
     public Command setAngle(Angle angle) {
         // Enforce configured soft limits before commanding the mechanism
         double requestedDeg = angle.in(Degrees);
-        double minDeg = IntakePivotConstants.kSoftLimitMin.in(Degrees);
-        double maxDeg = IntakePivotConstants.kSoftLimitMax.in(Degrees);
+        double minDeg = kSoftLimitMin.in(Degrees);
+        double maxDeg = kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         Angle clamped = Degrees.of(clampedDeg);
         // If requested setpoint was outside soft limits, it was clamped to the allowed range.

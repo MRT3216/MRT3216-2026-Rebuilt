@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.HoodConstants.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -16,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
-import frc.robot.constants.Constants.HoodConstants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -63,31 +63,27 @@ public class HoodSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(HoodConstants.kP, HoodConstants.kI, HoodConstants.kD)
-                        .withSimClosedLoopController(
-                                HoodConstants.kP_sim, HoodConstants.kI_sim, HoodConstants.kD_sim)
-                        .withFeedforward(
-                                new ArmFeedforward(HoodConstants.kS, HoodConstants.kV, HoodConstants.kA))
-                        .withSimFeedforward(
-                                new ArmFeedforward(
-                                        HoodConstants.kS_sim, HoodConstants.kV_sim, HoodConstants.kA_sim))
-                        .withTelemetry(HoodConstants.kMotorTelemetry, Constants.telemetryVerbosity())
-                        .withGearing(HoodConstants.kGearing)
-                        .withMotorInverted(HoodConstants.kMotorInverted)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        .withFeedforward(new ArmFeedforward(kS, kV, kA))
+                        .withSimFeedforward(new ArmFeedforward(kS_sim, kV_sim, kA_sim))
+                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(kGearing)
+                        .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        .withStatorCurrentLimit(HoodConstants.kStatorCurrentLimit);
+                        .withStatorCurrentLimit(kStatorCurrentLimit);
 
         smartMotor = new TalonFXWrapper(motor, DCMotor.getKrakenX44Foc(1), motorConfig);
 
         hoodConfig =
                 new ArmConfig(smartMotor)
-                        .withMass(HoodConstants.kMass)
-                        .withLength(HoodConstants.kLength)
-                        .withTelemetry(HoodConstants.kMechTelemetry, Constants.telemetryVerbosity())
+                        .withMass(kMass)
+                        .withLength(kLength)
+                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity())
                         // Ensure Arm has a known starting angle for simulation and replay
-                        .withStartingPosition(HoodConstants.kStartingPosition)
-                        .withHardLimit(HoodConstants.kHardLimitMin, HoodConstants.kHardLimitMax)
-                        .withSoftLimits(HoodConstants.kSoftLimitMin, HoodConstants.kSoftLimitMax);
+                        .withStartingPosition(kStartingPosition)
+                        .withHardLimit(kHardLimitMin, kHardLimitMax)
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         hood = new Arm(hoodConfig);
 
@@ -112,8 +108,8 @@ public class HoodSubsystem extends SubsystemBase {
     public Command setAngle(Angle angle) {
         // Clamp requested angle to configured soft limits
         double requestedDeg = angle.in(Degrees);
-        double minDeg = HoodConstants.kSoftLimitMin.in(Degrees);
-        double maxDeg = HoodConstants.kSoftLimitMax.in(Degrees);
+        double minDeg = kSoftLimitMin.in(Degrees);
+        double maxDeg = kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         Angle clamped = Degrees.of(clampedDeg);
         // If requested setpoint was outside soft limits, it was clamped to the allowed range.
@@ -147,7 +143,7 @@ public class HoodSubsystem extends SubsystemBase {
                     () -> {
                         Angle tgt = inputs.setpoint;
                         double diff = Math.abs(getPosition().in(Degrees) - tgt.in(Degrees));
-                        return diff <= HoodConstants.kPositionTolerance.in(Degrees);
+                        return diff <= kPositionTolerance.in(Degrees);
                     });
 
     @Override

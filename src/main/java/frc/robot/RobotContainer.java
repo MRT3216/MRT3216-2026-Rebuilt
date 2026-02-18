@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
+import frc.robot.constants.ShooterConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.DriveSubsystem;
 import frc.robot.subsystems.drive.GyroIO;
@@ -71,7 +72,7 @@ public class RobotContainer {
 
     // Tuning state (only used when running in TUNING mode)
     private final AtomicReference<AngularVelocity> tuningFlywheel =
-            new AtomicReference<>(Constants.ShooterConstants.kTargetFlywheel);
+            new AtomicReference<>(ShooterConstants.FlywheelConstants.kTargetFlywheel);
 
     // Aggregated shooter system
     private final ShooterSystem shooterSystem =
@@ -382,11 +383,11 @@ public class RobotContainer {
                                     .withTimeout(Seconds.of(0.5))
                                     .andThen(
                                             kickerSubsystem
-                                                    .setVelocity(Constants.KickerConstants.kTargetVelocity)
+                                                    .setVelocity(ShooterConstants.KickerConstants.kTargetVelocity)
                                                     .withTimeout(Seconds.of(1))
                                                     .andThen(
                                                             spindexerSubsystem.setVelocity(
-                                                                    Constants.SpindexerConstants.kTargetVelocity)));
+                                                                    ShooterConstants.SpindexerConstants.kTargetVelocity)));
 
                     controller.y().whileTrue(guardedQuickFeed);
 

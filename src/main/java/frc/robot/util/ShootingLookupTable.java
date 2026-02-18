@@ -1,5 +1,6 @@
 package frc.robot.util;
 
+import frc.robot.constants.ShooterLookupTables;
 import java.util.TreeMap;
 
 /**
@@ -30,10 +31,10 @@ public class ShootingLookupTable {
         double[][] data;
         switch (mode) {
             case HUB:
-                data = frc.robot.constants.Constants.ShooterLookupTables.HUB;
+                data = ShooterLookupTables.HUB;
                 break;
             case PASS:
-                data = frc.robot.constants.Constants.ShooterLookupTables.PASS;
+                data = ShooterLookupTables.PASS;
                 break;
             default:
                 data = new double[0][];

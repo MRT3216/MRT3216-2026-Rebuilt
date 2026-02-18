@@ -3,6 +3,7 @@ package frc.robot.subsystems.intake;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.IntakeConstants.Rollers.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -15,7 +16,6 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
-import frc.robot.constants.Constants.IntakeConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -98,37 +98,30 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
-                        .withClosedLoopController(IntakeConstants.kP, IntakeConstants.kI, IntakeConstants.kD)
-                        .withSimClosedLoopController(
-                                IntakeConstants.kP_sim, IntakeConstants.kI_sim, IntakeConstants.kD_sim)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         // Feedforward Constants
-                        .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        IntakeConstants.kS, IntakeConstants.kV, IntakeConstants.kA))
-                        .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        IntakeConstants.kS_sim, IntakeConstants.kV_sim, IntakeConstants.kA_sim))
+                        .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
+                        .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(IntakeConstants.kMotorTelemetry, Constants.telemetryVerbosity())
-                        .withGearing(
-                                new MechanismGearing(GearBox.fromReductionStages(IntakeConstants.kGearReduction)))
+                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
                         .withIdleMode(MotorMode.COAST)
-                        .withStatorCurrentLimit(IntakeConstants.kStatorCurrentLimit);
+                        .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
 
         intakeRollersConfig =
                 new FlyWheelConfig(motor)
-                        .withDiameter(IntakeConstants.kWheelDiameter)
-                        .withMass(IntakeConstants.kWheelMass)
-                        .withTelemetry(IntakeConstants.kMechTelemetry, Constants.telemetryVerbosity());
+                        .withDiameter(kWheelDiameter)
+                        .withMass(kWheelMass)
+                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity());
 
         intakeRollers = new FlyWheel(intakeRollersConfig);
 
         // High-frequency updates for PID tuning
-        BaseStatusSignal.setUpdateFrequencyForAll(
-                (int) IntakeConstants.kUpdateHz, velocitySignal, referenceSignal);
+        BaseStatusSignal.setUpdateFrequencyForAll((int) kUpdateHz, velocitySignal, referenceSignal);
 
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);

@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -17,7 +18,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
-import frc.robot.constants.Constants.ShooterConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -104,38 +104,31 @@ public class FlywheelSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
-                        .withClosedLoopController(ShooterConstants.kP, ShooterConstants.kI, ShooterConstants.kD)
-                        .withSimClosedLoopController(
-                                ShooterConstants.kP_sim, ShooterConstants.kI_sim, ShooterConstants.kD_sim)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         // Feedforward Constants
-                        .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        ShooterConstants.kS, ShooterConstants.kV, ShooterConstants.kA))
-                        .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        ShooterConstants.kS_sim, ShooterConstants.kV_sim, ShooterConstants.kA_sim))
+                        .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
+                        .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(ShooterConstants.kMotorTelemetry, Constants.telemetryVerbosity())
-                        .withGearing(
-                                new MechanismGearing(GearBox.fromReductionStages(ShooterConstants.kGearReduction)))
+                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
-                        .withStatorCurrentLimit(ShooterConstants.kStatorCurrentLimit)
+                        .withStatorCurrentLimit(kStatorCurrentLimit)
                         .withFollowers(Pair.of(new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId), true));
 
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
 
         flywheelConfig =
                 new FlyWheelConfig(motor)
-                        .withDiameter(ShooterConstants.kWheelDiameter)
-                        .withMass(ShooterConstants.kWheelMass)
-                        .withTelemetry(ShooterConstants.kMechTelemetry, Constants.telemetryVerbosity());
+                        .withDiameter(kWheelDiameter)
+                        .withMass(kWheelMass)
+                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity());
 
         flywheel = new FlyWheel(flywheelConfig);
 
         // High-frequency updates for PID tuning
-        BaseStatusSignal.setUpdateFrequencyForAll(
-                (int) ShooterConstants.kUpdateHz, velocitySignal, referenceSignal);
+        BaseStatusSignal.setUpdateFrequencyForAll((int) kUpdateHz, velocitySignal, referenceSignal);
 
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);
@@ -201,17 +194,16 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     /**
      * Returns a Trigger that is active when the flywheel is within the configured error margin of the
-     * canonical shooter target (Constants.ShooterConstants.kTargetFlywheel). The Trigger evaluates
-     * the current measured velocity each time it is sampled.
+     * canonical shooter target (ShooterConstants.kTargetFlywheel). The Trigger evaluates the current
+     * measured velocity each time it is sampled.
      */
     /** Public Trigger active when the flywheel is within error of the canonical target. */
     public final Trigger atSpeed =
             new Trigger(
                     () -> {
-                        double tgtRpm = ShooterConstants.kTargetFlywheel.in(RPM);
+                        double tgtRpm = kTargetFlywheel.in(RPM);
                         return tgtRpm > 0
-                                && Math.abs(getVelocity().in(RPM) - tgtRpm)
-                                        <= ShooterConstants.kFlywheelAtSpeedError * tgtRpm;
+                                && Math.abs(getVelocity().in(RPM) - tgtRpm) <= kFlywheelAtSpeedError * tgtRpm;
                     });
 
     /**
@@ -225,7 +217,6 @@ public class FlywheelSubsystem extends SubsystemBase {
                     () -> {
                         double tgtRpm = flywheelInputs.setpoint.in(RPM);
                         return tgtRpm > 0
-                                && Math.abs(getVelocity().in(RPM) - tgtRpm)
-                                        <= ShooterConstants.kFlywheelAtSpeedError * tgtRpm;
+                                && Math.abs(getVelocity().in(RPM) - tgtRpm) <= kFlywheelAtSpeedError * tgtRpm;
                     });
 }

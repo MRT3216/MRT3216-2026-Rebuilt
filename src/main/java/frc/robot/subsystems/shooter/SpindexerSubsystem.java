@@ -3,6 +3,7 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.*;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -13,7 +14,6 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
-import frc.robot.constants.Constants.SpindexerConstants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -87,35 +87,25 @@ public class SpindexerSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
-                        .withClosedLoopController(
-                                SpindexerConstants.kP, SpindexerConstants.kI, SpindexerConstants.kD)
-                        .withSimClosedLoopController(
-                                SpindexerConstants.kP_sim, SpindexerConstants.kI_sim, SpindexerConstants.kD_sim)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         // Feedforward Constants
-                        .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        SpindexerConstants.kS, SpindexerConstants.kV, SpindexerConstants.kA))
-                        .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        SpindexerConstants.kS_sim,
-                                        SpindexerConstants.kV_sim,
-                                        SpindexerConstants.kA_sim))
+                        .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
+                        .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         // Telemetry
-                        .withTelemetry(SpindexerConstants.kMotorTelemetry, Constants.telemetryVerbosity())
-                        .withGearing(
-                                new MechanismGearing(
-                                        GearBox.fromReductionStages(SpindexerConstants.kGearReduction)))
+                        .withTelemetry(kMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
-                        .withStatorCurrentLimit(SpindexerConstants.kStatorCurrentLimit);
+                        .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new SparkWrapper(motorController, DCMotor.getNEO(1), motorConfig);
 
         spindexerConfig =
                 new FlyWheelConfig(motor)
-                        .withDiameter(SpindexerConstants.kWheelDiameter)
-                        .withMass(SpindexerConstants.kWheelMass)
-                        .withTelemetry(SpindexerConstants.kMechTelemetry, Constants.telemetryVerbosity());
+                        .withDiameter(kWheelDiameter)
+                        .withMass(kWheelMass)
+                        .withTelemetry(kMechTelemetry, Constants.telemetryVerbosity());
 
         spindexer = new FlyWheel(spindexerConfig);
     }

@@ -131,47 +131,6 @@ public final class Constants {
     // endregion
 
     // ---------------------------------------------------------------------
-    // Subsystems: Intake, Shooter group (spindexer/shooter/kicker/hood/turret)
-    // ---------------------------------------------------------------------
-
-    // Intake constants were moved to top-level classes to live next to their subsystem
-    // implementations: see {@link frc.robot.constants.IntakeConstants} (Rollers & Pivot).
-
-    // region Spindexer
-
-    // Spindexer constants moved to {@link frc.robot.constants.ShooterConstants.SpindexerConstants}
-
-    // endregion
-
-    // region Shooter
-
-    /**
-     * Shooter-related constants have been moved to top-level classes to reduce merge conflicts during
-     * active development. See {@link frc.robot.constants.ShooterConstants} and {@link
-     * frc.robot.constants.ShooterLookupTables}.
-     */
-
-    // endregion
-
-    // region Kicker
-
-    // Kicker constants moved to {@link frc.robot.constants.ShooterConstants.KickerConstants}
-
-    // endregion
-
-    // region Hood
-
-    // Hood constants moved to {@link frc.robot.constants.ShooterConstants.HoodConstants}
-
-    // endregion
-
-    // region Turret
-
-    // Turret constants moved to {@link frc.robot.constants.ShooterConstants.TurretConstants}
-
-    // endregion
-
-    // ---------------------------------------------------------------------
     // Safety / communications / misc infrastructure
     // ---------------------------------------------------------------------
 

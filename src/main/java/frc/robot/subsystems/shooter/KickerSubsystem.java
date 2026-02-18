@@ -148,7 +148,7 @@ public class KickerSubsystem extends SubsystemBase {
     public void periodic() {
         // Pull inputs, publish to AdvantageKit, and update mechanism telemetry
         updateInputs();
-        Logger.processInputs("Kicker", kickerInputs);
+        Logger.processInputs("Shooter/Kicker", kickerInputs);
         kicker.updateTelemetry();
     }
 }

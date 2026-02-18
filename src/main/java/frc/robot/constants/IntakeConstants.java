@@ -44,8 +44,8 @@ public final class IntakeConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
         public static final double kUpdateHz = 50.0;
-        public static final String kIntakeRollersMotorTelemetry = "IntakeRollersMotor";
-        public static final String kIntakeRollersMechTelemetry = "IntakeRollersMech";
+        public static final String kIntakeRollersMotorTelemetry = "Intake/Rollers/Motor";
+        public static final String kIntakeRollersMechTelemetry = "Intake/Rollers/Mech";
     }
 
     /**
@@ -81,8 +81,8 @@ public final class IntakeConstants {
         public static final Angle kSoftLimitMax = Degrees.of(350);
         public static final Angle kSoftLimitMin = Degrees.of(10);
         public static final Angle kStartingPosition = Degrees.of(0);
-        public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
-        public static final String kIntakeArmMechTelemetry = "IntakeArmMech";
+        public static final String kIntakeArmMotorTelemetry = "Intake/Pivot/Motor";
+        public static final String kIntakeArmMechTelemetry = "Intake/Pivot/Mech";
         /** Gearing used specifically for external encoder wiring (motor:mechanism). */
         public static final double kEncoderGearing = 1.0;
     }

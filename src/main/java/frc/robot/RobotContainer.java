@@ -11,7 +11,6 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
-import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -293,6 +292,7 @@ public class RobotContainer {
                     controller.y().onTrue(shooterSystem.stopShooting());
                     break;
                 }
+            case SIM:
             case TUNING:
                 {
                     // TUNING-mode: simple tuning bindings
@@ -339,75 +339,6 @@ public class RobotContainer {
                     // A/B: snap turret to +90/-90 degrees
                     controller.a().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
                     controller.b().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
-
-                    break;
-                }
-            case SIM:
-                {
-                    // Dynamic aim-and-shoot uses vision; enable the A-button in SIM where Vision is
-                    // configured.
-                    controller
-                            .a()
-                            .onTrue(
-                                    shooterSystem.aimAndShoot(
-                                            drive::getPose,
-                                            drive::getChassisSpeeds,
-                                            () -> FieldConstants.Hub.innerCenterPoint,
-                                            3,
-                                            ShootingLookupTable.Mode.HUB));
-
-                    // Hood presets and manual control
-                    controller.leftBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(30)));
-                    controller.rightBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(45)));
-                    // Manual hood control: small incremental adjustments to the target angle while held.
-                    controller
-                            .leftTrigger(0.1)
-                            .whileTrue(
-                                    hoodSubsystem.setAngle(
-                                            () ->
-                                                    Degrees.of(
-                                                            hoodSubsystem.getPosition().in(Degrees)
-                                                                    - controller.getLeftTriggerAxis() * 2.0)));
-                    controller
-                            .rightTrigger(0.1)
-                            .whileTrue(
-                                    hoodSubsystem.setAngle(
-                                            () ->
-                                                    Degrees.of(
-                                                            hoodSubsystem.getPosition().in(Degrees)
-                                                                    + controller.getRightTriggerAxis() * 2.0)));
-
-                    // Quick manual feed: only start the short feed if turret and hood are at their setpoints.
-                    Command guardedQuickFeed =
-                            Commands.waitUntil(turretSubsystem.atSetpoint.and(hoodSubsystem.atSetpoint))
-                                    .withTimeout(Seconds.of(0.5))
-                                    .andThen(
-                                            kickerSubsystem
-                                                    .setVelocity(
-                                                            ShooterConstants.KickerConstants.kKickerTargetAngularVelocity)
-                                                    .withTimeout(Seconds.of(1))
-                                                    .andThen(
-                                                            spindexerSubsystem.setVelocity(
-                                                                    ShooterConstants.SpindexerConstants
-                                                                            .kSpindexerTargetAngularVelocity)));
-
-                    controller.y().whileTrue(guardedQuickFeed);
-
-                    // Manual turret adjustment while holding the RIGHT-STICK button (SIM only).
-                    controller
-                            .rightStick()
-                            .whileTrue(
-                                    turretSubsystem.setAngle(
-                                            () ->
-                                                    Degrees.of(
-                                                            turretSubsystem.getPosition().in(Degrees)
-                                                                    + controller.getLeftX() * 5.0)));
-
-                    // Press left-stick to snap turret to -90°, press right-stick to snap to +90°.
-                    controller.leftStick().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
-                    controller.rightStick().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
-
-                    // Note: START used for tuning/real gyro reset; SIM clear routine removed here.
 
                     break;
                 }

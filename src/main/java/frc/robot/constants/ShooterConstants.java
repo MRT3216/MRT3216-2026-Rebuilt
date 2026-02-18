@@ -40,8 +40,8 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
         public static final double kUpdateHz = 50.0;
-        public static final String kFlywheelMotorTelemetry = "FlywheelMotor";
-        public static final String kFlywheelMechTelemetry = "FlywheelMech";
+        public static final String kFlywheelMotorTelemetry = "Shooter/Flywheel/Motor";
+        public static final String kFlywheelMechTelemetry = "Shooter/Flywheel/Mech";
 
         // Recommended test target velocity for coordinated shooting (units-aware)
         public static final AngularVelocity kFlywheelTargetAngularVelocity = RPM.of(3000.0);
@@ -94,8 +94,8 @@ public final class ShooterConstants {
         public static final double kP_sim = 0.35;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
-        public static final String kSpindexerMotorTelemetry = "SpindexerMotor";
-        public static final String kSpindexerMechTelemetry = "SpindexerMech";
+        public static final String kSpindexerMotorTelemetry = "Shooter/Spindexer/Motor";
+        public static final String kSpindexerMechTelemetry = "Shooter/Spindexer/Mech";
         // Recommended target velocity for the spindexer (units-aware)
         public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(2000.0);
         // Default clear velocity (negative to reverse) used to clear jams
@@ -124,8 +124,8 @@ public final class ShooterConstants {
         public static final double kI_sim = kI;
         public static final double kD_sim = kD;
 
-        public static final String kKickerMotorTelemetry = "KickerMotor";
-        public static final String kKickerMechTelemetry = "KickerMech";
+        public static final String kKickerMotorTelemetry = "Shooter/Kicker/Motor";
+        public static final String kKickerMechTelemetry = "Shooter/Kicker/Mech";
 
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2000.0);
         public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
@@ -179,8 +179,8 @@ public final class ShooterConstants {
         public static final edu.wpi.first.units.measure.Angle kStartingPosition =
                 edu.wpi.first.units.Units.Degrees.of(0);
 
-        public static final String kHoodMotorTelemetry = "HoodMotor";
-        public static final String kHoodMechTelemetry = "HoodMech";
+        public static final String kHoodMotorTelemetry = "Shooter/Hood/Motor";
+        public static final String kHoodMechTelemetry = "Shooter/Hood/Mech";
         /** Allowed absolute position error for hood angle comparisons (degrees). */
         public static final edu.wpi.first.units.measure.Angle kPositionTolerance =
                 edu.wpi.first.units.Units.Degrees.of(1.0);
@@ -243,8 +243,8 @@ public final class ShooterConstants {
         public static final Distance kDistanceAboveFunnel = Inches.of(12.0);
         public static final Distance kFunnelRadius = Inches.of(24.0);
         public static final Distance kFunnelHeight = Inches.of(104.0);
-        public static final String kTurretMotorTelemetry = "TurretMotor";
-        public static final String kTurretMechTelemetry = "TurretMech";
+        public static final String kTurretMotorTelemetry = "Shooter/Turret/Motor";
+        public static final String kTurretMechTelemetry = "Shooter/Turret/Mech";
         /** Gearing used specifically for external encoder wiring (motor:mechanism). */
         public static final double kEncoderGearing = 1.0;
         /**

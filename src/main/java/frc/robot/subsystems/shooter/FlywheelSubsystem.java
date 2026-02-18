@@ -188,7 +188,10 @@ public class FlywheelSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         updateInputs();
-        Logger.processInputs("Shooter", flywheelInputs);
+        // Record flywheel inputs under a distinct path to avoid colliding with other
+        // shooter subcomponents (e.g., Turret). This organizes telemetry as
+        // Shooter/Flywheel which matches other subsystem telemetry keys.
+        Logger.processInputs("Shooter/Flywheel", flywheelInputs);
         flywheel.updateTelemetry();
     }
 

@@ -1,6 +1,7 @@
 package frc.robot.util;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
@@ -10,6 +11,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Time;
 
 /**
@@ -43,6 +45,7 @@ public class HybridTurretUtil {
             ChassisSpeeds fieldSpeeds,
             Translation3d target,
             int iterations,
+            Distance convergenceEpsilon,
             ShootingLookupTable table) {
 
         // 1. Initial Guess: Calculate distance to the target as if we were stationary.
@@ -57,6 +60,7 @@ public class HybridTurretUtil {
         // during the ball's flight.
         // We then re-calculate Time of Flight (ToF) based on that new distance and
         // repeat.
+        double prevLeadDist = leadDist;
         for (int i = 0; i < iterations; i++) {
             // Subtracting velocity * time effectively "pushes" the target in the opposite
             // direction
@@ -68,6 +72,14 @@ public class HybridTurretUtil {
             // Update parameters for the next iteration based on the "virtual" lead distance
             leadDist = robotPose.getTranslation().getDistance(predictedTarget.toTranslation2d());
             tof = table.getTimeOfFlight(leadDist);
+
+            // Early-exit: if the change in lead distance between iterations is below the
+            // convergence threshold, break out to save CPU. Convert the units-aware
+            // convergenceEpsilon to meters for the comparison.
+            if (Math.abs(leadDist - prevLeadDist) < convergenceEpsilon.in(Meters)) {
+                break;
+            }
+            prevLeadDist = leadDist;
         }
 
         // 3. Final Solve: Look up tuned RPS/Angle values for the final calculated lead

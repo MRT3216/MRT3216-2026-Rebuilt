@@ -101,6 +101,11 @@ public final class Constants {
         public static final AngularVelocity kLowSpinVelocity = RPM.of(1000.0);
         /** Fractional error margin (e.g. 0.02 == 2%) used to decide when the flywheel is "at speed" */
         public static final double kFlywheelAtSpeedError = 0.02;
+        /**
+         * Early-exit threshold (meters). If iterative refinement changes lead distance by less than
+         * this amount between passes, stop iterating early.
+         */
+        public static final Distance kRefinementConvergenceEpsilon = Meters.of(0.01); // 1 cm
         // (No SIM-specific overrides: use the same tuned constants in both environments.)
         /** Duration to run the clear routine while the flywheel spins up (seconds). */
         public static final double kClearDurationSecs = 0.5;

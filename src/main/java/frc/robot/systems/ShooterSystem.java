@@ -55,35 +55,18 @@ public class ShooterSystem {
         Command clearTimed =
                 clear().withTimeout(Seconds.of(Constants.ShooterConstants.kClearDurationSecs));
 
-        // Run spin and clear in parallel while waiting for the flywheel to reach speed
-        Command spinAndClear = spin.alongWith(clearTimed);
-
-        // When at speed, run kicker and spindexer to feed balls continuously until the user
-        // stops the overall shoot command. The feed Core is a long-running command (no timeout).
+        // Run spin and clear in parallel. After the clear timeout completes, begin feeding.
+        // We run the spin (long-running) and a short sequence (clearTimed -> feedCore) in
+        // parallel so the flywheel spins up while the clear runs; once the clear finishes the
+        // feed will start and continue until cancelled by the operator.
         Command feedCore =
                 kicker
                         .setVelocity(Constants.KickerConstants.kTargetVelocity)
                         .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity));
 
-        // Monitor command: wait until the flywheel Trigger becomes true once, then start the
-        // continuous feeding command. We can't directly put a SequentialCommandGroup that
-        // requires the same subsystems into a ParallelCommandGroup (WPILib will throw an
-        // IllegalArgumentException). To avoid that, schedule the long-running feed command
-        // when the flywheel reaches speed, and keep a lightweight no-requirement command
-        // running so we can cancel the feed when the overall shoot command is interrupted.
-        Command monitor =
-                Commands.waitUntil(() -> flywheel.atSpeed.getAsBoolean())
-                        // Schedule the feed command once when at speed
-                        .andThen(Commands.runOnce(() -> feedCore.schedule()))
-                        // Run a no-requirement command that does nothing while active, but
-                        // cancels the feed command when this monitor ends (e.g., when the
-                        // parent shoot command is interrupted).
-                        .andThen(Commands.runEnd(() -> {}, () -> feedCore.cancel()));
+        Command clearThenFeed = clearTimed.andThen(feedCore);
 
-        // Compose: run spin+clear and the monitor together; feeding will start/stop while this
-        // command is active based on the flywheel trigger. The whole command runs until the
-        // user cancels it.
-        return spinAndClear.alongWith(monitor);
+        return spin.alongWith(clearThenFeed);
     }
 
     /** Clear the shooter (spin backwards and reverse spindexer briefly). */
@@ -122,6 +105,7 @@ public class ShooterSystem {
                                                 fieldSpeeds.get(),
                                                 targetSupplier.get(),
                                                 refinementIterations,
+                                                Constants.ShooterConstants.kRefinementConvergenceEpsilon,
                                                 table);
                                 shotRef.set(sol);
                             } catch (Exception ex) {
@@ -224,6 +208,7 @@ public class ShooterSystem {
                                                 fieldSpeeds.get(),
                                                 targetSupplier.get(),
                                                 refinementIterations,
+                                                Constants.ShooterConstants.kRefinementConvergenceEpsilon,
                                                 table);
                                 shotRef.set(sol);
                             } catch (Exception ex) {

@@ -13,6 +13,7 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
@@ -231,35 +232,12 @@ public class RobotContainer {
         // duty
         flywheelSubsystem.setDefaultCommand(flywheelSubsystem.setDutyCycle(0));
         kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
-        // turretSubsystem.setDefaultCommand(turretSubsystem.setDutyCycle(0));
+        turretSubsystem.setDefaultCommand(
+                turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
         // Have hood hold its current position using the positional controller
         hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(() -> hoodSubsystem.getPosition()));
 
-        // Schedule `setVelocity` when the Xbox controller's B button is pressed,
-        // cancelling on release.
-        // Button A spins a low test speed using closed-loop velocity control
-        // controller
-        //         .a()
-        //
-        // .whileTrue(flywheelSubsystem.setVelocity(Constants.ShooterConstants.kLowSpinVelocity));
-
-        controller
-                .a().onTrue(
-                        shooterSystem.aimAndShoot(
-                                drive::getPose,
-                                drive::getChassisSpeeds,
-                                () -> vision.getTagTranslation3d(10),
-                                3,
-                                ShootingLookupTable.Mode.HUB));
-
-        // Button B spins to tuned shooting speed
-        controller
-                .b()
-                .whileTrue(flywheelSubsystem.setVelocity(Constants.ShooterConstants.kTargetFlywheel));
-
-        // controller.b().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
-        // controller.a().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
         // Bind X to a different command depending on runtime mode: SIM uses a
         // simplified routine,
         // REAL uses the dynamic aim-and-shoot routine (requires pose/vision suppliers).
@@ -279,89 +257,94 @@ public class RobotContainer {
                     break;
                 }
             case SIM:
-            default:
                 {
+                    // SIM-mode: simplified shoot command and SIM-only test bindings
                     Command simShoot = shooterSystem.shoot();
                     controller.x().whileTrue(simShoot);
+
+                    // Dynamic aim-and-shoot uses vision; enable the A-button in SIM where Vision is
+                    // configured.
+                    controller
+                            .a()
+                            .onTrue(
+                                    shooterSystem.aimAndShoot(
+                                            drive::getPose,
+                                            drive::getChassisSpeeds,
+                                            () -> FieldConstants.Hub.innerCenterPoint,
+                                            3,
+                                            ShootingLookupTable.Mode.HUB));
+
+                    // Hood presets and manual control
+                    controller.leftBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(15)));
+                    controller.rightBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(45)));
+                    // Manual hood control: small incremental adjustments to the target angle while held.
+                    controller
+                            .leftTrigger(0.1)
+                            .whileTrue(
+                                    hoodSubsystem.setAngle(
+                                            () ->
+                                                    Degrees.of(
+                                                            hoodSubsystem.getPosition().in(Degrees)
+                                                                    - controller.getLeftTriggerAxis() * 2.0)));
+                    controller
+                            .rightTrigger(0.1)
+                            .whileTrue(
+                                    hoodSubsystem.setAngle(
+                                            () ->
+                                                    Degrees.of(
+                                                            hoodSubsystem.getPosition().in(Degrees)
+                                                                    + controller.getRightTriggerAxis() * 2.0)));
+
+                    // Quick manual feed: only start the short feed if turret and hood are at their setpoints.
+                    Command guardedQuickFeed =
+                            Commands.waitUntil(turretSubsystem.atSetpoint.and(hoodSubsystem.atSetpoint))
+                                    .withTimeout(Seconds.of(0.5))
+                                    .andThen(
+                                            kickerSubsystem
+                                                    .setVelocity(Constants.KickerConstants.kTargetVelocity)
+                                                    .withTimeout(Seconds.of(1))
+                                                    .andThen(
+                                                            spindexerSubsystem.setVelocity(
+                                                                    Constants.SpindexerConstants.kTargetVelocity)));
+
+                    controller.y().whileTrue(guardedQuickFeed);
+
+                    // Manual turret adjustment while holding the RIGHT-STICK button (SIM only).
+                    controller
+                            .rightStick()
+                            .whileTrue(
+                                    turretSubsystem.setAngle(
+                                            () ->
+                                                    Degrees.of(
+                                                            turretSubsystem.getPosition().in(Degrees)
+                                                                    + controller.getLeftX() * 5.0)));
+
+                    // Press left-stick to snap turret to -90°, press right-stick to snap to +90°.
+                    controller.leftStick().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+                    controller.rightStick().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
+
+                    // Test button: while the START button is held, run the shooter's clear routine
+                    // (spins kicker and spindexer in reverse at the configured clear RPMs).
+                    controller.start().whileTrue(shooterSystem.clear());
+
+                    break;
+                }
+            default:
+                {
+                    // Default (REPLAY/unknown) — no SIM-specific bindings here.
                     break;
                 }
         }
-        // Hood presets and manual control
-        controller.leftBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(15)));
-        controller.rightBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(45)));
-        // Manual hood control: small incremental adjustments to the target angle while
-        // held.
-        // The supplier computes an absolute angle based on current position and trigger
-        // axis.
-        controller
-                .leftTrigger(0.1)
-                .whileTrue(
-                        hoodSubsystem.setAngle(
-                                () ->
-                                        Degrees.of(
-                                                hoodSubsystem.getPosition().in(Degrees)
-                                                        - controller.getLeftTriggerAxis() * 2.0)));
-        controller
-                .rightTrigger(0.1)
-                .whileTrue(
-                        hoodSubsystem.setAngle(
-                                () ->
-                                        Degrees.of(
-                                                hoodSubsystem.getPosition().in(Degrees)
-                                                        + controller.getRightTriggerAxis() * 2.0)));
-        // Quick manual feed: only start the short feed if turret and hood are at their
-        // setpoints.
-        Command guardedQuickFeed =
-                Commands.waitUntil(turretSubsystem.atSetpoint.and(hoodSubsystem.atSetpoint))
-                        .withTimeout(Seconds.of(0.5))
-                        .andThen(
-                                kickerSubsystem
-                                        .setVelocity(Constants.KickerConstants.kTargetVelocity)
-                                        .withTimeout(Seconds.of(1))
-                                        .andThen(
-                                                spindexerSubsystem.setVelocity(
-                                                        Constants.SpindexerConstants.kTargetVelocity)));
-
-        controller.y().whileTrue(guardedQuickFeed);
+        // Reset gyro to 0° when Back button is pressed (available in both REAL and SIM)
         controller
                 .back()
-                .whileTrue(
-                        turretSubsystem.setAngle(
-                                () ->
-                                        Degrees.of(
-                                                turretSubsystem.getPosition().in(Degrees) + controller.getLeftX() * 5.0)));
-
-        // Press left-stick to snap turret to -90°, press right-stick to snap to +90°.
-        controller.leftStick().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
-        controller.rightStick().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
-
-        // Test button: while the START button is held, run the shooter's clear routine
-        // (spins kicker and spindexer in reverse at the configured clear RPMs).
-        controller.start().whileTrue(shooterSystem.clear());
-
-        // // Lock to 0° when A button is held
-        // controller
-        // .a()
-        // .whileTrue(
-        // DriveCommands.joystickDriveAtAngle(
-        // drive,
-        // () -> -controller.getLeftY(),
-        // () -> -controller.getLeftX(),
-        // () -> Rotation2d.kZero));
-
-        // // Switch to X pattern when X button is pressed
-        // controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
-
-        // // Reset gyro to 0° when B button is pressed
-        // controller
-        // .b()
-        // .onTrue(
-        // Commands.runOnce(
-        // () ->
-        // drive.setPose(
-        // new Pose2d(drive.getPose().getTranslation(), Rotation2d.kZero)),
-        // drive)
-        // .ignoringDisable(true));
+                .onTrue(
+                        Commands.runOnce(
+                                        () ->
+                                                drive.setPose(
+                                                        new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
+                                        drive)
+                                .ignoringDisable(true));
     }
 
     /*

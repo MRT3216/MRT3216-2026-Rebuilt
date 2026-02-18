@@ -148,9 +148,9 @@ public final class Constants {
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(60);
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.0502269403);
-        public static final double kP = 10.0;
+        public static final double kP = 1.0;
         public static final double kI = 0.0;
-        public static final double kD = 2.0;
+        public static final double kD = 0.0;
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
         public static final AngularAcceleration kMaxAccelDegPerSec2 =
                 DegreesPerSecondPerSecond.of(45.0);
@@ -158,13 +158,13 @@ public final class Constants {
         public static final double kV = 0.12;
         public static final double kA = 0.01;
         // Simulation-specific feedforward / PID defaults (tuned for sim)
-        public static final double kS_sim = 0.05;
-        public static final double kV_sim = 0.09;
-        public static final double kA_sim = 0.008;
+        public static final double kS_sim = 2.0;
+        public static final double kV_sim = 0.0;
+        public static final double kA_sim = 0.0;
         // Simulation-tuned PID defaults (reduced to avoid oscillation in sim)
-        public static final double kP_sim = 1.8;
+        public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
-        public static final double kD_sim = 0.6;
+        public static final double kD_sim = 0.0;
         public static final Distance kTurretOffsetX = Inches.of(0.0);
         public static final Distance kTurretOffsetY = Inches.of(0.0);
         public static final Distance kTurretOffsetZ = Inches.of(18.5);

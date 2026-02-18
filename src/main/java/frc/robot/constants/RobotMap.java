@@ -43,6 +43,6 @@ public final class RobotMap {
     }
 
     public final class LEDs {
-        public static final int kPort = 0;
+        public static final int kPort = 1;
     }
 }

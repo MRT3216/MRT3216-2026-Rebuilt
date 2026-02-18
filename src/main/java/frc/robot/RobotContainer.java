@@ -8,23 +8,38 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
+import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.drive.DriveSubsystem;
+import frc.robot.subsystems.drive.GyroIO;
+import frc.robot.subsystems.drive.GyroIOPigeon2;
+import frc.robot.subsystems.drive.ModuleIO;
+import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
+import frc.robot.subsystems.vision.VisionIO;
+import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.ShooterSystem;
+import frc.robot.util.FuelSim;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.ShootingLookupTable;
 
@@ -38,13 +53,14 @@ import frc.robot.util.ShootingLookupTable;
  */
 public class RobotContainer {
     // Subsystems
-    // private final DriveSubsystem drive;
-    // private final Vision vision;
+    private final DriveSubsystem drive;
+    private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
+    public FuelSim fuelSim;
 
     // Aggregated shooter system
     private final ShooterSystem shooterSystem =
@@ -59,7 +75,8 @@ public class RobotContainer {
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
-        // Validate RobotMap wiring early at startup and warn if duplicate IDs are found.
+        // Validate RobotMap wiring early at startup and warn if duplicate IDs are
+        // found.
         RobotMapValidator.validate();
         switch (Constants.currentMode) {
             case REAL:
@@ -90,39 +107,44 @@ public class RobotContainer {
 
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
-                // drive =
-                // new DriveSubsystem(
-                // new GyroIO() {},
-                // new ModuleIOSim(TunerConstants.FrontLeft),
-                // new ModuleIOSim(TunerConstants.FrontRight),
-                // new ModuleIOSim(TunerConstants.BackLeft),
-                // new ModuleIOSim(TunerConstants.BackRight));
-
+                drive =
+                        new DriveSubsystem(
+                                new GyroIOPigeon2() {},
+                                new ModuleIOSim(TunerConstants.FrontLeft),
+                                new ModuleIOSim(TunerConstants.FrontRight),
+                                new ModuleIOSim(TunerConstants.BackLeft),
+                                new ModuleIOSim(TunerConstants.BackRight));
                 // Sim robot, instantiate physics sim IO implementations
-                // vision =
-                // new Vision(
-                // drive::addVisionMeasurement,
-                // new VisionIOPhotonVisionSim(cameraLeftName, robotToCameraLeft,
-                // drive::getPose),
-                // new VisionIOPhotonVisionSim(cameraRightName, robotToCameraRight,
-                // drive::getPose),
-                // new VisionIOPhotonVisionSim(cameraBackName, robotToCameraBack,
-                // drive::getPose));
+                vision =
+                        new Vision(
+                                drive::addVisionMeasurement,
+                                new VisionIOPhotonVisionSim(
+                                        VisionConstants.cameraFrontName,
+                                        VisionConstants.robotToCameraLeft,
+                                        drive::getPose),
+                                new VisionIOPhotonVisionSim(
+                                        VisionConstants.cameraRightName,
+                                        VisionConstants.robotToCameraRight,
+                                        drive::getPose),
+                                new VisionIOPhotonVisionSim(
+                                        VisionConstants.cameraBackName,
+                                        VisionConstants.robotToCameraBack,
+                                        drive::getPose));
+
                 break;
 
             default:
                 // Replayed robot, disable IO implementations
-                // drive =
-                // new DriveSubsystem(
-                // new GyroIO() {},
-                // new ModuleIO() {},
-                // new ModuleIO() {},
-                // new ModuleIO() {},
-                // new ModuleIO() {});
+                drive =
+                        new DriveSubsystem(
+                                new GyroIO() {},
+                                new ModuleIO() {},
+                                new ModuleIO() {},
+                                new ModuleIO() {},
+                                new ModuleIO() {});
 
                 // (Use same number of dummy implementations as the real robot)
-                // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new
-                // VisionIO() {});
+                vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
                 break;
         }
 
@@ -152,6 +174,42 @@ public class RobotContainer {
 
         // Configure the button bindings
         configureButtonBindings();
+
+        // Configure fuel sim (sim only)
+        if (Constants.currentMode == Constants.Mode.SIM) {
+            configureFuelSim();
+            configureFuelSimRobot();
+        }
+    }
+
+    private void configureFuelSim() {
+        fuelSim = new FuelSim();
+        fuelSim.spawnStartingFuel();
+
+        fuelSim.start();
+        SmartDashboard.putData(
+                Commands.runOnce(
+                                () -> {
+                                    fuelSim.clearFuel();
+                                    fuelSim.spawnStartingFuel();
+                                })
+                        .withName("Reset Fuel")
+                        .ignoringDisable(true));
+    }
+
+    private void configureFuelSimRobot() {
+        fuelSim.registerRobot(
+                Inches.of(34.625).in(Meters),
+                Inches.of(34.625).in(Meters),
+                Inches.of(5.125).in(Meters),
+                drive::getPose,
+                drive::getChassisSpeeds);
+        fuelSim.registerIntake(
+                Inches.of(34.625).div(2).in(Meters),
+                Inches.of(34.625).div(2).plus(Inches.of(11.475556)).in(Meters),
+                -Inches.of(34.625).div(2.0).in(Meters),
+                Inches.of(34.625).div(2.0).in(Meters),
+                () -> true);
     }
 
     /**
@@ -162,14 +220,15 @@ public class RobotContainer {
      */
     private void configureButtonBindings() {
         // Default command, normal field-relative drive
-        // drive.setDefaultCommand(
-        // DriveCommands.joystickDrive(
-        // drive,
-        // () -> -controller.getLeftY(),
-        // () -> -controller.getLeftX(),
-        // () -> -controller.getRightX()));
+        drive.setDefaultCommand(
+                DriveCommands.joystickDrive(
+                        drive,
+                        () -> -controller.getLeftY(),
+                        () -> -controller.getLeftX(),
+                        () -> -controller.getRightX()));
 
-        // Default commands now use closed-loop controllers (PID) instead of open-loop duty
+        // Default commands now use closed-loop controllers (PID) instead of open-loop
+        // duty
         flywheelSubsystem.setDefaultCommand(flywheelSubsystem.setDutyCycle(0));
         kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
         // turretSubsystem.setDefaultCommand(turretSubsystem.setDutyCycle(0));
@@ -180,9 +239,20 @@ public class RobotContainer {
         // Schedule `setVelocity` when the Xbox controller's B button is pressed,
         // cancelling on release.
         // Button A spins a low test speed using closed-loop velocity control
+        // controller
+        //         .a()
+        //
+        // .whileTrue(flywheelSubsystem.setVelocity(Constants.ShooterConstants.kLowSpinVelocity));
+
         controller
-                .a()
-                .whileTrue(flywheelSubsystem.setVelocity(Constants.ShooterConstants.kLowSpinVelocity));
+                .a().onTrue(
+                        shooterSystem.aimAndShoot(
+                                drive::getPose,
+                                drive::getChassisSpeeds,
+                                () -> vision.getTagTranslation3d(10),
+                                3,
+                                ShootingLookupTable.Mode.HUB));
+
         // Button B spins to tuned shooting speed
         controller
                 .b()
@@ -190,7 +260,8 @@ public class RobotContainer {
 
         // controller.b().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
         // controller.a().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
-        // Bind X to a different command depending on runtime mode: SIM uses a simplified routine,
+        // Bind X to a different command depending on runtime mode: SIM uses a
+        // simplified routine,
         // REAL uses the dynamic aim-and-shoot routine (requires pose/vision suppliers).
         switch (Constants.currentMode) {
             case REAL:
@@ -218,8 +289,10 @@ public class RobotContainer {
         // Hood presets and manual control
         controller.leftBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(15)));
         controller.rightBumper().onTrue(hoodSubsystem.setAngle(Degrees.of(45)));
-        // Manual hood control: small incremental adjustments to the target angle while held.
-        // The supplier computes an absolute angle based on current position and trigger axis.
+        // Manual hood control: small incremental adjustments to the target angle while
+        // held.
+        // The supplier computes an absolute angle based on current position and trigger
+        // axis.
         controller
                 .leftTrigger(0.1)
                 .whileTrue(
@@ -236,7 +309,8 @@ public class RobotContainer {
                                         Degrees.of(
                                                 hoodSubsystem.getPosition().in(Degrees)
                                                         + controller.getRightTriggerAxis() * 2.0)));
-        // Quick manual feed: only start the short feed if turret and hood are at their setpoints.
+        // Quick manual feed: only start the short feed if turret and hood are at their
+        // setpoints.
         Command guardedQuickFeed =
                 Commands.waitUntil(turretSubsystem.atSetpoint.and(hoodSubsystem.atSetpoint))
                         .withTimeout(Seconds.of(0.5))
@@ -296,7 +370,7 @@ public class RobotContainer {
      *
      * Example (uncomment to enable):
      * public Command getAutonomousCommand() {
-     *     return autoChooser.get();
+     * return autoChooser.get();
      * }
      */
 }

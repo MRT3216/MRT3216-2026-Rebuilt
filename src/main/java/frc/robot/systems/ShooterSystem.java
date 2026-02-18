@@ -66,10 +66,19 @@ public class ShooterSystem {
                         .alongWith(spindexer.setVelocity(Constants.SpindexerConstants.kTargetVelocity));
 
         // Monitor command: wait until the flywheel Trigger becomes true once, then start the
-        // continuous feeding command. Using command composition avoids directly calling the
-        // CommandScheduler; feeding will continue until this returned monitor command is
-        // interrupted/cancelled (for example, when the driver cancels the shoot command).
-        Command monitor = Commands.waitUntil(flywheel.atSpeed).andThen(feedCore);
+        // continuous feeding command. We can't directly put a SequentialCommandGroup that
+        // requires the same subsystems into a ParallelCommandGroup (WPILib will throw an
+        // IllegalArgumentException). To avoid that, schedule the long-running feed command
+        // when the flywheel reaches speed, and keep a lightweight no-requirement command
+        // running so we can cancel the feed when the overall shoot command is interrupted.
+        Command monitor =
+                Commands.waitUntil(() -> flywheel.atSpeed.getAsBoolean())
+                        // Schedule the feed command once when at speed
+                        .andThen(Commands.runOnce(() -> feedCore.schedule()))
+                        // Run a no-requirement command that does nothing while active, but
+                        // cancels the feed command when this monitor ends (e.g., when the
+                        // parent shoot command is interrupted).
+                        .andThen(Commands.runEnd(() -> {}, () -> feedCore.cancel()));
 
         // Compose: run spin+clear and the monitor together; feeding will start/stop while this
         // command is active based on the flywheel trigger. The whole command runs until the
@@ -147,7 +156,8 @@ public class ShooterSystem {
         // Condition: shot computed and flywheel has reached the configured target within the
         // error margin. We don't require turret/hood to be at setpoint before feeding;
         // they will continue to adjust while feeding occurs.
-        Command waitForSpin = Commands.waitUntil(flywheel.atSetpoint).withTimeout(Seconds.of(3));
+        Command waitForSpin =
+                Commands.waitUntil(() -> flywheel.atSetpoint.getAsBoolean()).withTimeout(Seconds.of(3));
 
         // Feed using kicker and spindexer at the fixed configured feed rates. The kicker and
         // spindexer always run at fixed velocities when feeding for this robot.
@@ -181,7 +191,8 @@ public class ShooterSystem {
      * speed, keep feeding until driver stops" behavior.
      */
     private Command feedWhenAtSpeed() {
-        return Commands.waitUntil(flywheel.atSetpoint).andThen(feedBalls());
+        // Wrap the Trigger to a BooleanSupplier to avoid any ambiguous overloads
+        return Commands.waitUntil(() -> flywheel.atSetpoint.getAsBoolean()).andThen(feedBalls());
     }
 
     /**

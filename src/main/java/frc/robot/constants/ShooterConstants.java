@@ -39,7 +39,6 @@ public final class ShooterConstants {
         public static final double kP_sim = 0.6;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
-        public static final double kUpdateHz = 50.0;
         public static final String kFlywheelMotorTelemetry = "FlywheelMotor";
         public static final String kFlywheelMechTelemetry = "FlywheelMech";
 

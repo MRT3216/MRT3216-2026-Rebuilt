@@ -279,8 +279,9 @@ public class RobotContainer {
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
-        // Have hood hold its current position using the positional controller
-        hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(() -> hoodSubsystem.getPosition()));
+        // Have hood hold its current commanded target using the positional controller
+        // (we track a commanded target so button bumps are applied relative to it).
+        hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(() -> hoodSubsystem.getTarget()));
 
         // Bind X to a different command depending on runtime mode: SIM uses a
         // simplified routine,
@@ -307,17 +308,20 @@ public class RobotContainer {
                     // Right trigger: hold to run the simple shoot routine (clear-while-spin-up + feed)
                     controller.rightTrigger(0.1).whileTrue(shooterSystem.shoot());
 
-                    // Hood: left/right bumper adjust by -/+1 degree per press
+                    // Hood: left/right bumper adjust by -/+1 degree per press. Use a one-shot
+                    // command that calls a helper on the subsystem to avoid supplier/command
+                    // construction timing issues.
                     controller
                             .leftBumper()
                             .onTrue(
-                                    hoodSubsystem.setAngle(
-                                            () -> Degrees.of(hoodSubsystem.getPosition().in(Degrees) - 1.0)));
+                                    Commands.runOnce(() -> hoodSubsystem.bumpBy(Degrees.of(-1.0)), hoodSubsystem)
+                                            .ignoringDisable(true));
+
                     controller
                             .rightBumper()
                             .onTrue(
-                                    hoodSubsystem.setAngle(
-                                            () -> Degrees.of(hoodSubsystem.getPosition().in(Degrees) + 1.0)));
+                                    Commands.runOnce(() -> hoodSubsystem.bumpBy(Degrees.of(1.0)), hoodSubsystem)
+                                            .ignoringDisable(true));
 
                     // X / Y: decrease/increase tuning RPM by 100
                     controller

@@ -57,6 +57,8 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     private final IntakeRollersInputsAutoLogged intakeRollersInputs =
             new IntakeRollersInputsAutoLogged();
 
+    // Explicit Phoenix refreshes are required for telemetry; call directly.
+
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kMotorId);
 
@@ -80,7 +82,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
      * to ensure telemetry is time-aligned.
      */
     private void updateInputs() {
-        // Refresh all Phoenix 6 signals at once to minimize CAN latency jitter
+        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
         BaseStatusSignal.refreshAll(velocitySignal, referenceSignal);
 
         intakeRollersInputs.velocity = intakeRollers.getSpeed();
@@ -120,8 +122,9 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
         intakeRollers = new FlyWheel(intakeRollersConfig);
 
-        // High-frequency updates for PID tuning
-        BaseStatusSignal.setUpdateFrequencyForAll((int) kUpdateHz, velocitySignal, referenceSignal);
+        // High-frequency updates for PID tuning (use centralized telemetry constant)
+        BaseStatusSignal.setUpdateFrequencyForAll(
+                Constants.CommsConstants.DEFAULT_TELEMETRY_HZ, velocitySignal, referenceSignal);
 
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);

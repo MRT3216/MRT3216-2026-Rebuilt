@@ -43,7 +43,6 @@ public final class IntakeConstants {
         public static final double kP_sim = 0.35;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
-        public static final double kUpdateHz = 50.0;
         public static final String kIntakeRollersMotorTelemetry = "IntakeRollersMotor";
         public static final String kIntakeRollersMechTelemetry = "IntakeRollersMech";
     }

@@ -58,6 +58,10 @@ public class HoodSubsystem extends SubsystemBase {
     private final SmartMotorController smartMotor;
     private final ArmConfig hoodConfig;
     private final Arm hood;
+    /** Current commanded target for the hood; used by the default hold command. */
+    private volatile Angle currentTarget;
+
+    // Explicit Phoenix refreshes are required for telemetry; call directly.
 
     public HoodSubsystem() {
         motorConfig =
@@ -87,12 +91,20 @@ public class HoodSubsystem extends SubsystemBase {
 
         hood = new Arm(hoodConfig);
 
-        // Optimize CAN update frequency for the signals we use
-        BaseStatusSignal.setUpdateFrequencyForAll((int) 50.0, positionSignal, referenceSignal);
+        // Initialize the currentTarget to a clamped starting angle (avoid commanding
+        // outside the configured soft limits at startup which can cause unwanted motion).
+        double startMeasuredDeg = hood.getAngle().in(Degrees);
+        double clampedStartDeg =
+                Math.max(kSoftLimitMin.in(Degrees), Math.min(kSoftLimitMax.in(Degrees), startMeasuredDeg));
+        currentTarget = Degrees.of(clampedStartDeg);
+        // Optimize CAN update frequency for the signals we use (centralized default)
+        BaseStatusSignal.setUpdateFrequencyForAll(
+                Constants.CommsConstants.DEFAULT_TELEMETRY_HZ, positionSignal, referenceSignal);
         motor.getVelocity().setUpdateFrequency(0);
     }
 
     private void updateInputs() {
+        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
         BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
 
         inputs.angle = hood.getAngle();
@@ -127,6 +139,37 @@ public class HoodSubsystem extends SubsystemBase {
                     Angle a = angle.get();
                     return a;
                 });
+    }
+
+    /**
+     * Convenience helper to bump the current hood setpoint by the provided delta (signed). This
+     * schedules a short-lived command that updates the positional controller's target to (current
+     * setpoint + delta).
+     */
+    public void bumpBy(Angle delta) {
+        // Compute the new target relative to the current commanded target. This avoids
+        // accumulating error if the mechanism is still moving; bumping the commanded
+        // setpoint is the simplest, most deterministic behavior for button presses.
+        double newDeg = currentTarget.in(Degrees) + delta.in(Degrees);
+        double minDeg = kSoftLimitMin.in(Degrees);
+        double maxDeg = kSoftLimitMax.in(Degrees);
+        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, newDeg));
+        currentTarget = Degrees.of(clampedDeg);
+        // Immediately schedule a positional command to apply the new target so the
+        // adjustment takes effect even if other commands or default behaviors exist.
+        // Use a fixed/clamped Angle here (not a Supplier) so the scheduled command
+        // holds an immutable setpoint and is not affected by subsequent changes to
+        // `currentTarget` while the command is running.
+        Angle fixedTarget = Degrees.of(clampedDeg);
+        // Schedule the positional command directly (no console logging).
+        final Command inner = hood.setAngle(fixedTarget);
+        // Use the Command API to schedule rather than accessing the scheduler singleton.
+        inner.schedule();
+    }
+
+    /** Returns the current commanded target for the hood. */
+    public Angle getTarget() {
+        return currentTarget;
     }
 
     @Override

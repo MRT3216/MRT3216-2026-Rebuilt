@@ -77,12 +77,14 @@ public class TurretSubsystem extends SubsystemBase {
     // Track whether EasyCRT has been run to avoid re-seeding accidentally
     private boolean easyCrtInitialized = false;
 
-    // Retry counters for periodic auto-initialization (avoid blocking in constructor)
+    // Retry counters for periodic auto-initialization (avoid blocking in
+    // constructor)
     private int easyCrtAttempts = 0;
     private static final int EASY_CRT_MAX_ATTEMPTS = 10; // total attempts before giving up
     private int easyCrtPeriodicCounter = 0; // counts periodic loops between attempts
 
-    // PWM duty-cycle absolute encoder wired to the RoboRIO for turret absolute position
+    // PWM duty-cycle absolute encoder wired to the RoboRIO for turret absolute
+    // position
     private final DutyCycleEncoder turretPwmEncoder =
             new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
 
@@ -91,7 +93,8 @@ public class TurretSubsystem extends SubsystemBase {
      * to ensure telemetry is time-aligned.
      */
     private void updateInputs() {
-        // Update turret inputs from mechanism (hardware signals are handled by the SMC wrapper)
+        // Update turret inputs from mechanism (hardware signals are handled by the SMC
+        // wrapper)
         turretInputs.angle = turret.getAngle();
         turretInputs.volts = smartMotor.getVoltage();
         turretInputs.current = smartMotor.getStatorCurrent();
@@ -125,7 +128,8 @@ public class TurretSubsystem extends SubsystemBase {
                 new PivotConfig(smartMotor)
                         .withMOI(kMOI)
                         .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
-                        // Provide a starting position so the Pivot has a known angle at init (required by YAMS)
+                        // Provide a starting position so the Pivot has a known angle at init (required
+                        // by YAMS)
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
                         .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
@@ -147,7 +151,8 @@ public class TurretSubsystem extends SubsystemBase {
             return;
         }
 
-        // Snapshot the two absolute encoders immediately to avoid latency between reads.
+        // Snapshot the two absolute encoders immediately to avoid latency between
+        // reads.
         Angle abs1;
         try {
             // REV/Spark absolute encoder on the SparkFlex returns rotations (0..1).
@@ -186,7 +191,8 @@ public class TurretSubsystem extends SubsystemBase {
         Supplier<Angle> s1 = () -> abs1;
         Supplier<Angle> s2 = () -> abs2;
 
-        // Build the EasyCRT config using the requested builder-style API: supply the two
+        // Build the EasyCRT config using the requested builder-style API: supply the
+        // two
         // absolute-encoder snapshots and then configure gearing, mechanism range, and
         // inversion flags. This mirrors the user's preferred example.
         EasyCRTConfig config =
@@ -209,7 +215,8 @@ public class TurretSubsystem extends SubsystemBase {
         var opt = solver.getAngleOptional();
         if (opt.isPresent()) {
             Angle mechAngle = opt.get();
-            // Seed the SmartMotorController so closed-loop control starts at the correct absolute angle
+            // Seed the SmartMotorController so closed-loop control starts at the correct
+            // absolute angle
             smartMotor.setEncoderPosition(mechAngle);
             Logger.recordOutput("EasyCRT/Status", "OK");
             easyCrtInitialized = true;
@@ -252,7 +259,8 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to run the turret at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
-        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied via PivotConfig
+        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied
+        // via PivotConfig
         return turret.set(dutyCycle);
     }
 
@@ -263,11 +271,7 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to track the supplier's angle.
      */
     public Command setAngle(Supplier<Angle> angle) {
-        return turret.setAngle(
-                () -> {
-                    Angle a = angle.get();
-                    return a;
-                });
+        return turret.setAngle(angle);
     }
 
     /** Advance the turret simulation model by one simulation tick. */
@@ -290,8 +294,10 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a few
-        // times with a small spacing between attempts in case absolute encoders are not ready
+        // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a
+        // few
+        // times with a small spacing between attempts in case absolute encoders are not
+        // ready
         // immediately after construction (cold-power-up behavior).
         if (!easyCrtInitialized && easyCrtAttempts < EASY_CRT_MAX_ATTEMPTS) {
             easyCrtPeriodicCounter++;

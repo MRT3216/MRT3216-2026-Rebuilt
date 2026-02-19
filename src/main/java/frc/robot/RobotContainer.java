@@ -34,6 +34,8 @@ import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
+import frc.robot.subsystems.intake.IntakePivotSubsystem;
+import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -44,6 +46,7 @@ import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
+import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.FuelSim;
 import frc.robot.util.RobotMapValidator;
@@ -67,6 +70,8 @@ public class RobotContainer {
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
+    private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
+    private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
     public FuelSim fuelSim;
 
     // Tuning state (only used when running in TUNING mode)
@@ -77,6 +82,9 @@ public class RobotContainer {
     private final ShooterSystem shooterSystem =
             new ShooterSystem(
                     flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem, hoodSubsystem);
+
+    private final IntakeSystem intakeSystem =
+            new IntakeSystem(rollersSubsystem, intakePivotSubsystem);
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -214,8 +222,8 @@ public class RobotContainer {
 
         // Configure fuel sim (sim only)
         if (Constants.currentMode == Constants.Mode.SIM) {
-            configureFuelSim();
-            configureFuelSimRobot();
+            // configureFuelSim();
+            // configureFuelSimRobot();
         }
     }
 
@@ -242,8 +250,8 @@ public class RobotContainer {
                 drive::getPose,
                 drive::getChassisSpeeds);
         fuelSim.registerIntake(
-                Inches.of(34.625).div(2.0).in(Meters),
-                Inches.of(34.625).div(2.0).plus(Inches.of(11.475556)).in(Meters),
+                -Inches.of(34.625).div(2.0).plus(Inches.of(11.475556)).in(Meters),
+                -Inches.of(34.625).div(2.0).in(Meters),
                 -Inches.of(34.625).div(2.0).in(Meters),
                 Inches.of(34.625).div(2.0).in(Meters),
                 () -> true);
@@ -339,6 +347,9 @@ public class RobotContainer {
                     // A/B: snap turret to +90/-90 degrees
                     controller.a().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
                     controller.b().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+
+                    controller.povUp().onTrue(intakeSystem.intake());
+                    controller.povDown().onTrue(intakeSystem.stow());
 
                     break;
                 }

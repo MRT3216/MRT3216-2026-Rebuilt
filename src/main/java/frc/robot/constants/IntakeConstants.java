@@ -80,10 +80,14 @@ public final class IntakeConstants {
         public static final Angle kHardLimitMin = Degrees.of(0);
         public static final Angle kSoftLimitMax = Degrees.of(350);
         public static final Angle kSoftLimitMin = Degrees.of(10);
-        public static final Angle kStartingPosition = Degrees.of(0);
+        public static final Angle kStartingPosition = Degrees.of(140);
         public static final String kIntakeArmMotorTelemetry = "Intake/Pivot/Motor";
         public static final String kIntakeArmMechTelemetry = "Intake/Pivot/Mech";
         /** Gearing used specifically for external encoder wiring (motor:mechanism). */
         public static final double kEncoderGearing = 1.0;
+
+        // Arm position presets
+        public static final Angle kStowedAngle = Degrees.of(140);
+        public static final Angle kDeployedAngle = Degrees.of(0);
     }
 }

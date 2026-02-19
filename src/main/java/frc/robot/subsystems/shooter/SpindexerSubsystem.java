@@ -147,7 +147,7 @@ public class SpindexerSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         updateInputs();
-        Logger.processInputs("Shooter/Spindexer", spindexerInputs);
+        Logger.processInputs("Spindexer", spindexerInputs);
         spindexer.updateTelemetry();
     }
 }

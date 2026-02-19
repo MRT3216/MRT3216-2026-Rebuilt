@@ -149,7 +149,7 @@ public class HoodSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         updateInputs();
-        Logger.processInputs("Shooter/Hood", inputs);
+        Logger.processInputs("Hood", inputs);
         hood.updateTelemetry();
     }
 }

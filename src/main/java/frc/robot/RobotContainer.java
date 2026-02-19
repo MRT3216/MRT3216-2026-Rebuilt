@@ -311,17 +311,9 @@ public class RobotContainer {
                     // Hood: left/right bumper adjust by -/+1 degree per press. Use a one-shot
                     // command that calls a helper on the subsystem to avoid supplier/command
                     // construction timing issues.
-                    controller
-                            .leftBumper()
-                            .onTrue(
-                                    Commands.runOnce(() -> hoodSubsystem.bumpBy(Degrees.of(-1.0)), hoodSubsystem)
-                                            .ignoringDisable(true));
+                    controller.leftBumper().onTrue(shooterSystem.hoodBumpCommand(Degrees.of(-1.0)));
 
-                    controller
-                            .rightBumper()
-                            .onTrue(
-                                    Commands.runOnce(() -> hoodSubsystem.bumpBy(Degrees.of(1.0)), hoodSubsystem)
-                                            .ignoringDisable(true));
+                    controller.rightBumper().onTrue(shooterSystem.hoodBumpCommand(Degrees.of(1.0)));
 
                     // X / Y: decrease/increase tuning RPM by 100
                     controller

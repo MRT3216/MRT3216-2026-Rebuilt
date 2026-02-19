@@ -61,8 +61,6 @@ public class HoodSubsystem extends SubsystemBase {
     /** Current commanded target for the hood; used by the default hold command. */
     private volatile Angle currentTarget;
 
-    // Explicit Phoenix refreshes are required for telemetry; call directly.
-
     public HoodSubsystem() {
         motorConfig =
                 new SmartMotorControllerConfig(this)
@@ -91,8 +89,8 @@ public class HoodSubsystem extends SubsystemBase {
 
         hood = new Arm(hoodConfig);
 
-        // Initialize the currentTarget to a clamped starting angle (avoid commanding
-        // outside the configured soft limits at startup which can cause unwanted motion).
+        // Initialize the commanded target to a clamped starting angle to avoid
+        // commanding outside the configured soft limits at startup.
         double startMeasuredDeg = hood.getAngle().in(Degrees);
         double clampedStartDeg =
                 Math.max(kSoftLimitMin.in(Degrees), Math.min(kSoftLimitMax.in(Degrees), startMeasuredDeg));
@@ -104,7 +102,7 @@ public class HoodSubsystem extends SubsystemBase {
     }
 
     private void updateInputs() {
-        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
+        // Refresh Phoenix signals so logged telemetry is time-aligned with hardware.
         BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
 
         inputs.angle = hood.getAngle();
@@ -134,37 +132,24 @@ public class HoodSubsystem extends SubsystemBase {
     }
 
     public Command setAngle(Supplier<Angle> angle) {
-        return hood.setAngle(
-                () -> {
-                    Angle a = angle.get();
-                    return a;
-                });
+        // Delegate supplier directly to the Arm positional command
+        return hood.setAngle(angle);
     }
 
     /**
-     * Convenience helper to bump the current hood setpoint by the provided delta (signed). This
-     * schedules a short-lived command that updates the positional controller's target to (current
-     * setpoint + delta).
+     * Returns a one-shot Command that bumps the hood by the provided delta. The returned Command
+     * captures a fixed/clamped setpoint so it is deterministic when scheduled by callers such as the
+     * ShooterSystem or RobotContainer.
      */
-    public void bumpBy(Angle delta) {
-        // Compute the new target relative to the current commanded target. This avoids
-        // accumulating error if the mechanism is still moving; bumping the commanded
-        // setpoint is the simplest, most deterministic behavior for button presses.
+    public Command bumpCommand(Angle delta) {
         double newDeg = currentTarget.in(Degrees) + delta.in(Degrees);
         double minDeg = kSoftLimitMin.in(Degrees);
         double maxDeg = kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, newDeg));
-        currentTarget = Degrees.of(clampedDeg);
-        // Immediately schedule a positional command to apply the new target so the
-        // adjustment takes effect even if other commands or default behaviors exist.
-        // Use a fixed/clamped Angle here (not a Supplier) so the scheduled command
-        // holds an immutable setpoint and is not affected by subsequent changes to
-        // `currentTarget` while the command is running.
         Angle fixedTarget = Degrees.of(clampedDeg);
-        // Schedule the positional command directly (no console logging).
-        final Command inner = hood.setAngle(fixedTarget);
-        // Use the Command API to schedule rather than accessing the scheduler singleton.
-        inner.schedule();
+        // Update the tracked commanded target so default commands/readers see the new value
+        currentTarget = fixedTarget;
+        return hood.setAngle(fixedTarget).withName("HoodBump");
     }
 
     /** Returns the current commanded target for the hood. */
@@ -177,10 +162,7 @@ public class HoodSubsystem extends SubsystemBase {
         hood.simIterate();
     }
 
-    /**
-     * Public Trigger active when the hood is within the configured position tolerance of the current
-     * setpoint.
-     */
+    /** Trigger active when the hood is within the configured position tolerance of the setpoint. */
     public final Trigger atSetpoint =
             new Trigger(
                     () -> {

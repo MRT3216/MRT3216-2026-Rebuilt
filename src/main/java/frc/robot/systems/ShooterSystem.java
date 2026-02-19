@@ -273,6 +273,11 @@ public class ShooterSystem {
                 .alongWith(clearDuringSpin);
     }
 
+    /** Factory helper: returns a command that bumps the hood by the provided delta. */
+    public Command hoodBumpCommand(edu.wpi.first.units.measure.Angle delta) {
+        return hood.bumpCommand(delta);
+    }
+
     /**
      * Stops any active shooting pipeline by taking the required subsystems briefly (thus interrupting
      * long-running shooting commands) and allowing subsystem defaults to resume.

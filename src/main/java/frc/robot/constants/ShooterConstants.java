@@ -3,15 +3,25 @@
 package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.InchesPerSecond;
+import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Rotations;
 
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Mass;
+import edu.wpi.first.units.measure.MomentOfInertia;
 
 /** Flywheel shooter constants: wheel geometry, control gains, and velocities. */
 public final class ShooterConstants {
@@ -162,27 +172,20 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.5;
 
-        public static final AngularVelocity kMaxVelocity =
-                edu.wpi.first.units.Units.DegreesPerSecond.of(90.0);
-        public static final edu.wpi.first.units.measure.AngularAcceleration kMaxAccelDegPerSec2 =
-                edu.wpi.first.units.Units.DegreesPerSecondPerSecond.of(180.0);
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
+        public static final AngularAcceleration kMaxAccelDegPerSec2 =
+                DegreesPerSecondPerSecond.of(180.0);
 
-        public static final edu.wpi.first.units.measure.Angle kHardLimitMax =
-                edu.wpi.first.units.Units.Degrees.of(90);
-        public static final edu.wpi.first.units.measure.Angle kHardLimitMin =
-                edu.wpi.first.units.Units.Degrees.of(0);
-        public static final edu.wpi.first.units.measure.Angle kSoftLimitMax =
-                edu.wpi.first.units.Units.Degrees.of(85);
-        public static final edu.wpi.first.units.measure.Angle kSoftLimitMin =
-                edu.wpi.first.units.Units.Degrees.of(5);
-        public static final edu.wpi.first.units.measure.Angle kStartingPosition =
-                edu.wpi.first.units.Units.Degrees.of(0);
+        public static final Angle kHardLimitMax = Degrees.of(90);
+        public static final Angle kHardLimitMin = Degrees.of(0);
+        public static final Angle kSoftLimitMax = Degrees.of(85);
+        public static final Angle kSoftLimitMin = Degrees.of(5);
+        public static final Angle kStartingPosition = Degrees.of(0);
 
         public static final String kHoodMotorTelemetry = "HoodMotor";
         public static final String kHoodMechTelemetry = "HoodMech";
         /** Allowed absolute position error for hood angle comparisons (degrees). */
-        public static final edu.wpi.first.units.measure.Angle kPositionTolerance =
-                edu.wpi.first.units.Units.Degrees.of(1.0);
+        public static final Angle kPositionTolerance = Degrees.of(1.0);
     }
 
     public static final class TurretConstants {
@@ -191,15 +194,13 @@ public final class ShooterConstants {
         public static final double kGearing = 32.4;
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(60);
-        public static final edu.wpi.first.units.measure.MomentOfInertia kMOI =
-                edu.wpi.first.units.Units.KilogramSquareMeters.of(0.0502269403);
+        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.0502269403);
         public static final double kP = 1.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
-        public static final AngularVelocity kMaxVelocity =
-                edu.wpi.first.units.Units.DegreesPerSecond.of(90.0);
-        public static final edu.wpi.first.units.measure.AngularAcceleration kMaxAccelDegPerSec2 =
-                edu.wpi.first.units.Units.DegreesPerSecondPerSecond.of(45.0);
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
+        public static final AngularAcceleration kMaxAccelDegPerSec2 =
+                DegreesPerSecondPerSecond.of(45.0);
         public static final double kS = 0.1;
         public static final double kV = 0.12;
         public static final double kA = 0.01;
@@ -219,24 +220,17 @@ public final class ShooterConstants {
                         new edu.wpi.first.math.geometry.Translation3d(
                                 kTurretOffsetX.in(Meters), kTurretOffsetY.in(Meters), kTurretOffsetZ.in(Meters)),
                         new edu.wpi.first.math.geometry.Rotation3d());
-        public static final edu.wpi.first.units.measure.Angle kHardLimitMax =
-                edu.wpi.first.units.Units.Degrees.of(180);
-        public static final edu.wpi.first.units.measure.Angle kHardLimitMin =
-                edu.wpi.first.units.Units.Degrees.of(-180);
-        public static final edu.wpi.first.units.measure.Angle kSoftLimitMax =
-                edu.wpi.first.units.Units.Degrees.of(170);
-        public static final edu.wpi.first.units.measure.Angle kSoftLimitMin =
-                edu.wpi.first.units.Units.Degrees.of(-170);
-        public static final edu.wpi.first.units.measure.Angle kStartingPosition =
-                edu.wpi.first.units.Units.Degrees.of(0);
+        public static final Angle kHardLimitMax = Degrees.of(180);
+        public static final Angle kHardLimitMin = Degrees.of(-180);
+        public static final Angle kSoftLimitMax = Degrees.of(170);
+        public static final Angle kSoftLimitMin = Degrees.of(-170);
+        public static final Angle kStartingPosition = Degrees.of(0);
         /** Allowed absolute position error for turret angle comparisons (degrees). */
-        public static final edu.wpi.first.units.measure.Angle kPositionTolerance =
-                edu.wpi.first.units.Units.Degrees.of(1.0);
+        public static final Angle kPositionTolerance = Degrees.of(1.0);
 
         public static final Distance kMinShootingDistance = Meters.of(1.5);
         public static final Distance kMaxShootingDistance = Meters.of(12.0);
-        public static final edu.wpi.first.units.measure.LinearVelocity kBaseVel =
-                edu.wpi.first.units.Units.InchesPerSecond.of(300);
+        public static final LinearVelocity kBaseVel = InchesPerSecond.of(300);
         public static final double kVelMultiplier = 0.5;
         public static final double kVelPower = 1.2;
         public static final Distance kDistanceAboveFunnel = Inches.of(12.0);
@@ -268,11 +262,9 @@ public final class ShooterConstants {
         public static final int kTurretMotorDriverTeeth = 10;
 
         /** Mechanism search range for EasyCRT (rotations) */
-        public static final edu.wpi.first.units.measure.Angle kEasyCrtMechanismRangeMin =
-                edu.wpi.first.units.Units.Rotations.of(0.0);
+        public static final Angle kEasyCrtMechanismRangeMin = Rotations.of(0.0);
 
-        public static final edu.wpi.first.units.measure.Angle kEasyCrtMechanismRangeMax =
-                edu.wpi.first.units.Units.Rotations.of(1.2);
+        public static final Angle kEasyCrtMechanismRangeMax = Rotations.of(1.2);
 
         /** Absolute encoder inversion flags used by EasyCRT */
         public static final boolean kEasyCrtAbs1Inverted = false;

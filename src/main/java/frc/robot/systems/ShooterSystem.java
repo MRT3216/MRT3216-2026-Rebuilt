@@ -307,7 +307,8 @@ public class ShooterSystem {
                             double maxDeg =
                                     frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMax.in(Degrees);
                             double clampedDeg = Math.max(minDeg, Math.min(maxDeg, newDeg));
-                            hood.setTarget(Degrees.of(clampedDeg));
+                            // Update the mechanism setpoint immediately via the subsystem helper
+                            hood.setPositionImmediate(Degrees.of(clampedDeg));
                         },
                         hood)
                 .withName("HoodAdjustSys");

@@ -64,9 +64,6 @@ public class HoodSubsystem extends SubsystemBase {
     // endregion
 
     // region Target tracking
-    /** Current commanded target for the hood; used by the default hold command. */
-    private volatile Angle currentTarget;
-
     /* Debug / verbose logging intentionally removed from this file. Use the centralized
      * Logger.processInputs(...) calls already present in periodic() for telemetry. */
     // endregion
@@ -99,12 +96,13 @@ public class HoodSubsystem extends SubsystemBase {
 
         hood = new Arm(hoodConfig);
 
-        // Initialize the commanded target to a clamped starting angle to avoid
-        // commanding outside the configured soft limits at startup.
+        // Initialize the mechanism commanded setpoint to a clamped starting angle to avoid
+        // commanding outside the configured soft limits at startup. Use the SmartMotorController
+        // setPosition API so the mechanism's internal setpoint is consistent and observable.
         double startMeasuredDeg = hood.getAngle().in(Degrees);
         double clampedStartDeg =
                 Math.max(kSoftLimitMin.in(Degrees), Math.min(kSoftLimitMax.in(Degrees), startMeasuredDeg));
-        currentTarget = Degrees.of(clampedStartDeg);
+        smartMotor.setPosition(Degrees.of(clampedStartDeg));
         // Optimize CAN update frequency for the signals we use (centralized default)
         BaseStatusSignal.setUpdateFrequencyForAll(
                 Constants.CommsConstants.DEFAULT_TELEMETRY_HZ, positionSignal, referenceSignal);
@@ -132,26 +130,18 @@ public class HoodSubsystem extends SubsystemBase {
         return inputs.angle;
     }
 
-    /** Returns the current commanded target for the hood. */
+    /**
+     * Returns the current commanded target for the hood.
+     *
+     * <p>Reads the mechanism's stored setpoint (if present) and falls back to the measured position
+     * when no setpoint is available.
+     */
     public Angle getTarget() {
-        return currentTarget;
+        return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
 
-    /**
-     * Set the tracked commanded target directly (clamped to soft limits).
-     *
-     * <p>This method does not schedule any commands; it only updates the internal tracked target that
-     * the default hold command will use.
-     *
-     * @param target the desired hood angle; it will be clamped to configured soft limits
-     */
-    public void setTarget(Angle target) {
-        double requestedDeg = target.in(Degrees);
-        double minDeg = kSoftLimitMin.in(Degrees);
-        double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
-        currentTarget = Degrees.of(clampedDeg);
-    }
+    // Note: explicit tracked `currentTarget` removed in favor of the mechanism's own setpoint.
+    // Use `setAngle(...)` factories to command the mechanism (they will clamp to soft limits).
 
     @Override
     public void simulationPeriodic() {
@@ -193,7 +183,7 @@ public class HoodSubsystem extends SubsystemBase {
      */
     public Command setAngle(Supplier<Angle> angle) {
         // Wrap the supplier so the Arm command evaluates the supplier at execution-time.
-        return hood.setAngle(() -> angle.get());
+        return hood.setAngle(angle);
     }
 
     /**
@@ -209,8 +199,23 @@ public class HoodSubsystem extends SubsystemBase {
         return hood.set(dutyCycle);
     }
 
+    /**
+     * Immediately write a clamped position setpoint to the mechanism (SmartMotorController).
+     *
+     * <p>This updates the SmartMotorController's stored setpoint directly (no Command is scheduled).
+     * Callers that want a Command-based movement should use {@link #setAngle(Angle)}.
+     *
+     * @param target the desired hood Angle; it will be clamped to configured soft limits
+     */
+    public void setPositionImmediate(Angle target) {
+        double requestedDeg = target.in(Degrees);
+        double minDeg = kSoftLimitMin.in(Degrees);
+        double maxDeg = kSoftLimitMax.in(Degrees);
+        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
+        smartMotor.setPosition(Degrees.of(clampedDeg));
+    }
+
     // endregion
-    // file-based sim logging removed
 
     /** Trigger active when the hood is within the configured position tolerance of the setpoint. */
     public final Trigger atSetpoint =
@@ -229,5 +234,6 @@ public class HoodSubsystem extends SubsystemBase {
 
         hood.updateTelemetry();
     }
+
     // endregion
 }

@@ -6,6 +6,7 @@ import static frc.robot.constants.ShooterConstants.KickerConstants.*;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -274,8 +275,13 @@ public class ShooterSystem {
     }
 
     /** Factory helper: returns a command that bumps the hood by the provided delta. */
-    public Command hoodBumpCommand(edu.wpi.first.units.measure.Angle delta) {
+    public Command hoodBumpCommand(Angle delta) {
         return hood.bumpCommand(delta);
+    }
+
+    /** Legacy delegator that uses the subsystem's scheduling helper. */
+    public void hoodBumpBy(Angle delta) {
+        hood.bumpBy(delta);
     }
 
     /**

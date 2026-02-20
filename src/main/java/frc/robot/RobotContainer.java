@@ -35,7 +35,6 @@ import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
-import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -46,7 +45,6 @@ import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
-import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.FuelSim;
 import frc.robot.util.RobotMapValidator;
@@ -70,7 +68,7 @@ public class RobotContainer {
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
-    private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
+    // private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
     public FuelSim fuelSim;
 
@@ -83,8 +81,8 @@ public class RobotContainer {
             new ShooterSystem(
                     flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem, hoodSubsystem);
 
-    private final IntakeSystem intakeSystem =
-            new IntakeSystem(rollersSubsystem, intakePivotSubsystem);
+    // private final IntakeSystem intakeSystem =
+    //         new IntakeSystem(rollersSubsystem, intakePivotSubsystem);
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -99,89 +97,96 @@ public class RobotContainer {
         RobotMapValidator.validate();
         switch (Constants.currentMode) {
             case REAL:
-                // Real robot, instantiate hardware IO implementations
-                drive =
-                        new DriveSubsystem(
-                                new GyroIOPigeon2(),
-                                new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                                new ModuleIOTalonFX(TunerConstants.FrontRight),
-                                new ModuleIOTalonFX(TunerConstants.BackLeft),
-                                new ModuleIOTalonFX(TunerConstants.BackRight));
+                {
+                    // Real robot, instantiate hardware IO implementations
+                    drive =
+                            new DriveSubsystem(
+                                    new GyroIOPigeon2(),
+                                    new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                                    new ModuleIOTalonFX(TunerConstants.FrontRight),
+                                    new ModuleIOTalonFX(TunerConstants.BackLeft),
+                                    new ModuleIOTalonFX(TunerConstants.BackRight));
 
-                vision =
-                        new Vision(
-                                drive::addVisionMeasurement,
-                                new VisionIOPhotonVision(
-                                        VisionConstants.cameraFrontName, VisionConstants.robotToCameraLeft),
-                                new VisionIOPhotonVision(
-                                        VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
-                                new VisionIOPhotonVision(
-                                        VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
-                break;
-
+                    vision =
+                            new Vision(
+                                    drive::addVisionMeasurement,
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraFrontName, VisionConstants.robotToCameraLeft),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
+                    break;
+                }
             case TUNING:
-                // TUNING mode: instantiate real hardware IO so tuning runs on the real robot.
-                drive =
-                        new DriveSubsystem(
-                                new GyroIOPigeon2(),
-                                new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                                new ModuleIOTalonFX(TunerConstants.FrontRight),
-                                new ModuleIOTalonFX(TunerConstants.BackLeft),
-                                new ModuleIOTalonFX(TunerConstants.BackRight));
+                {
+                    // TUNING mode: instantiate real hardware IO so tuning runs on the real robot.
+                    drive =
+                            new DriveSubsystem(
+                                    new GyroIOPigeon2(),
+                                    new ModuleIOTalonFX(TunerConstants.FrontLeft),
+                                    new ModuleIOTalonFX(TunerConstants.FrontRight),
+                                    new ModuleIOTalonFX(TunerConstants.BackLeft),
+                                    new ModuleIOTalonFX(TunerConstants.BackRight));
 
-                vision =
-                        new Vision(
-                                drive::addVisionMeasurement,
-                                new VisionIOPhotonVision(
-                                        VisionConstants.cameraFrontName, VisionConstants.robotToCameraLeft),
-                                new VisionIOPhotonVision(
-                                        VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
-                                new VisionIOPhotonVision(
-                                        VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
+                    vision =
+                            new Vision(
+                                    drive::addVisionMeasurement,
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraFrontName, VisionConstants.robotToCameraLeft),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
 
-                break;
+                    break;
+                }
 
             case SIM:
-                // Sim robot, instantiate physics sim IO implementations
-                drive =
-                        new DriveSubsystem(
-                                new GyroIOPigeon2() {},
-                                new ModuleIOSim(TunerConstants.FrontLeft),
-                                new ModuleIOSim(TunerConstants.FrontRight),
-                                new ModuleIOSim(TunerConstants.BackLeft),
-                                new ModuleIOSim(TunerConstants.BackRight));
-                // Sim robot, instantiate physics sim IO implementations
-                vision =
-                        new Vision(
-                                drive::addVisionMeasurement,
-                                new VisionIOPhotonVisionSim(
-                                        VisionConstants.cameraFrontName,
-                                        VisionConstants.robotToCameraLeft,
-                                        drive::getPose),
-                                new VisionIOPhotonVisionSim(
-                                        VisionConstants.cameraRightName,
-                                        VisionConstants.robotToCameraRight,
-                                        drive::getPose),
-                                new VisionIOPhotonVisionSim(
-                                        VisionConstants.cameraBackName,
-                                        VisionConstants.robotToCameraBack,
-                                        drive::getPose));
+                {
+                    // Sim robot, instantiate physics sim IO implementations
+                    drive =
+                            new DriveSubsystem(
+                                    new GyroIOPigeon2() {},
+                                    new ModuleIOSim(TunerConstants.FrontLeft),
+                                    new ModuleIOSim(TunerConstants.FrontRight),
+                                    new ModuleIOSim(TunerConstants.BackLeft),
+                                    new ModuleIOSim(TunerConstants.BackRight));
+                    // Sim robot, instantiate physics sim IO implementations
+                    vision =
+                            new Vision(
+                                    drive::addVisionMeasurement,
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraFrontName,
+                                            VisionConstants.robotToCameraLeft,
+                                            drive::getPose),
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraRightName,
+                                            VisionConstants.robotToCameraRight,
+                                            drive::getPose),
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraBackName,
+                                            VisionConstants.robotToCameraBack,
+                                            drive::getPose));
 
-                break;
+                    break;
+                }
 
             default:
-                // Replayed robot, disable IO implementations
-                drive =
-                        new DriveSubsystem(
-                                new GyroIO() {},
-                                new ModuleIO() {},
-                                new ModuleIO() {},
-                                new ModuleIO() {},
-                                new ModuleIO() {});
+                {
+                    // Replayed robot, disable IO implementations
+                    drive =
+                            new DriveSubsystem(
+                                    new GyroIO() {},
+                                    new ModuleIO() {},
+                                    new ModuleIO() {},
+                                    new ModuleIO() {},
+                                    new ModuleIO() {});
 
-                // (Use same number of dummy implementations as the real robot)
-                vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
-                break;
+                    // (Use same number of dummy implementations as the real robot)
+                    vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+                    break;
+                }
         }
 
         // Set up auto routines
@@ -301,6 +306,7 @@ public class RobotContainer {
                     controller.y().onTrue(shooterSystem.stopShooting());
                     break;
                 }
+
             case SIM:
             case TUNING:
                 {
@@ -308,12 +314,21 @@ public class RobotContainer {
                     // Right trigger: hold to run the simple shoot routine (clear-while-spin-up + feed)
                     controller.rightTrigger(0.1).whileTrue(shooterSystem.shoot());
 
-                    // Hood: left/right bumper adjust by -/+1 degree per press. Use a one-shot
-                    // command that calls a helper on the subsystem to avoid supplier/command
-                    // construction timing issues.
-                    controller.leftBumper().onTrue(shooterSystem.hoodBumpCommand(Degrees.of(-1.0)));
+                    // Hood: left/right bumper adjust by -/+1 degree per press.
+                    // Use Commands.defer(...) to lazily construct a fresh bump command when the
+                    // trigger transitions (avoids capturing a pre-built Command instance or
+                    // calling the scheduler directly).
+                    controller
+                            .leftBumper()
+                            .onTrue(
+                                    Commands.runOnce(() -> shooterSystem.hoodBumpBy(Degrees.of(-1.0)), hoodSubsystem)
+                                            .ignoringDisable(true));
 
-                    controller.rightBumper().onTrue(shooterSystem.hoodBumpCommand(Degrees.of(1.0)));
+                    controller
+                            .rightBumper()
+                            .onTrue(
+                                    Commands.runOnce(() -> shooterSystem.hoodBumpBy(Degrees.of(1.0)), hoodSubsystem)
+                                            .ignoringDisable(true));
 
                     // X / Y: decrease/increase tuning RPM by 100
                     controller
@@ -344,17 +359,16 @@ public class RobotContainer {
                     controller.a().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
                     controller.b().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
 
-                    controller.povUp().onTrue(intakeSystem.intake());
-                    controller.povDown().onTrue(intakeSystem.stow());
-
                     break;
                 }
+
             default:
                 {
                     // Default (REPLAY/unknown) — no SIM-specific bindings here.
                     break;
                 }
         }
+
         // Reset gyro to 0° when Back button is pressed (available in both REAL and SIM)
         controller
                 .back()

@@ -37,7 +37,7 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
  * (Inputs) are separated from software commands (Outputs).
  */
 public class IntakeRollersSubsystem extends SubsystemBase {
-
+    // region Inputs & telemetry
     /**
      * IO inputs for the Intake Rollers. AutoLogged to provide synchronized data for AdvantageScope
      * and log replay.
@@ -56,16 +56,20 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     private final IntakeRollersInputsAutoLogged intakeRollersInputs =
             new IntakeRollersInputsAutoLogged();
+    // endregion
 
     // Explicit Phoenix refreshes are required for telemetry; call directly.
 
+    // region Hardware & signals
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
+    // endregion
 
+    // region Controller configuration / mechanism
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
@@ -76,6 +80,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     private final FlyWheelConfig intakeRollersConfig;
 
     private final FlyWheel intakeRollers;
+    // endregion
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals

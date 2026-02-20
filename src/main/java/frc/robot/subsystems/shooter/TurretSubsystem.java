@@ -39,6 +39,7 @@ import yams.units.EasyCRTConfig;
  * (Inputs) are separated from software commands (Outputs).
  */
 public class TurretSubsystem extends SubsystemBase {
+    // region Inputs & telemetry
 
     /**
      * Inputs for AdvantageKit recording for the turret pivot. Public fields are populated from the
@@ -61,8 +62,16 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
 
+    // endregion
+
+    // region Hardware & signals
+
     private final SparkFlex pivotMotor =
             new SparkFlex(RobotMap.Shooter.Turret.kMotorId, SparkFlex.MotorType.kBrushless);
+
+    // endregion
+
+    // region Controller configuration / mechanism
 
     private final SmartMotorControllerConfig motorConfig;
 
@@ -73,6 +82,10 @@ public class TurretSubsystem extends SubsystemBase {
     private final PivotConfig turretConfig;
 
     private final Pivot turret;
+
+    // endregion
+
+    // region EasyCRT / initialization helpers
 
     // Track whether EasyCRT has been run to avoid re-seeding accidentally
     private boolean easyCrtInitialized = false;
@@ -87,6 +100,10 @@ public class TurretSubsystem extends SubsystemBase {
     // position
     private final DutyCycleEncoder turretPwmEncoder =
             new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
+
+    // endregion
+
+    // region Lifecycle / periodic
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals

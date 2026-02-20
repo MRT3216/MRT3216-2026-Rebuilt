@@ -29,11 +29,17 @@ import java.util.function.Supplier;
  * higher-level commands that coordinate them (e.g. shooting routines).
  */
 public class ShooterSystem {
+    // region Subsystems
+
     public final FlywheelSubsystem flywheel;
     public final KickerSubsystem kicker;
     public final SpindexerSubsystem spindexer;
     public final TurretSubsystem turret;
     public final HoodSubsystem hood;
+
+    // endregion
+
+    // region Construction
 
     public ShooterSystem(
             FlywheelSubsystem flywheel,
@@ -47,6 +53,10 @@ public class ShooterSystem {
         this.turret = turret;
         this.hood = hood;
     }
+
+    // endregion
+
+    // region High-level commands
 
     /** High-level shoot command: clear, spin kicker, and feed spindexer. */
     public Command shoot() {
@@ -292,6 +302,9 @@ public class ShooterSystem {
                         hood)
                 .withName("HoodAdjustSys");
     }
+    // endregion
+
+    // region Utilities / private helpers
 
     /**
      * Stops any active shooting pipeline by taking the required subsystems briefly (thus interrupting
@@ -303,4 +316,6 @@ public class ShooterSystem {
         // take over immediately.
         return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood);
     }
+
+    // endregion
 }

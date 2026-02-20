@@ -37,7 +37,7 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
  * maintains a tracked commanded target used by the default hold command.
  */
 public class HoodSubsystem extends SubsystemBase {
-
+    // region Inputs & telemetry
     @AutoLog
     public static class HoodInputs {
         public Angle angle = Degrees.of(0);
@@ -47,24 +47,29 @@ public class HoodSubsystem extends SubsystemBase {
     }
 
     private final HoodInputsAutoLogged inputs = new HoodInputsAutoLogged();
+    // endregion
 
-    /* Hardware */
+    // region Hardware & signals
     private final TalonFX motor = new TalonFX(RobotMap.Shooter.Hood.kMotorId);
 
-    /* Signals */
     private final StatusSignal<Angle> positionSignal = motor.getPosition();
     private final StatusSignal<Double> referenceSignal = motor.getClosedLoopReference();
+    // endregion
 
-    /* Controller config */
+    // region Controller configuration / mechanism
     private final SmartMotorControllerConfig motorConfig;
     private final SmartMotorController smartMotor;
     private final ArmConfig hoodConfig;
     private final Arm hood;
+    // endregion
+
+    // region Target tracking
     /** Current commanded target for the hood; used by the default hold command. */
     private volatile Angle currentTarget;
 
     /* Debug / verbose logging intentionally removed from this file. Use the centralized
      * Logger.processInputs(...) calls already present in periodic() for telemetry. */
+    // endregion
 
     public HoodSubsystem() {
         motorConfig =
@@ -106,6 +111,8 @@ public class HoodSubsystem extends SubsystemBase {
         motor.getVelocity().setUpdateFrequency(0);
     }
 
+    // region Lifecycle / periodic
+
     private void updateInputs() {
         // Refresh Phoenix signals so logged telemetry is time-aligned with hardware.
         BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
@@ -118,29 +125,6 @@ public class HoodSubsystem extends SubsystemBase {
 
     public Angle getPosition() {
         return inputs.angle;
-    }
-
-    public Command setAngle(Angle angle) {
-        // Clamp requested angle to configured soft limits
-        double requestedDeg = angle.in(Degrees);
-        double minDeg = kSoftLimitMin.in(Degrees);
-        double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
-        Angle clamped = Degrees.of(clampedDeg);
-        // If requested setpoint was outside soft limits, it was clamped to the allowed range.
-        return hood.setAngle(clamped);
-    }
-
-    public Command setDutyCycle(double dutyCycle) {
-        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied via ArmConfig
-        return hood.set(dutyCycle);
-    }
-
-    public Command setAngle(Supplier<Angle> angle) {
-        // Preserve previous behavior: wrap the supplier so the Arm command
-        // evaluates it at execution time. This avoids accidental capture or
-        // aliasing of mutable state when callers construct commands.
-        return hood.setAngle(() -> angle.get());
     }
 
     /** Returns the current commanded target for the hood. */
@@ -169,6 +153,32 @@ public class HoodSubsystem extends SubsystemBase {
         hood.simIterate();
     }
 
+    // endregion
+
+    // region Public API - queries & commands
+
+    /* ----- Positioning command factories (grouped) ----- */
+    public Command setAngle(Angle angle) {
+        // Clamp requested angle to configured soft limits
+        double requestedDeg = angle.in(Degrees);
+        double minDeg = kSoftLimitMin.in(Degrees);
+        double maxDeg = kSoftLimitMax.in(Degrees);
+        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
+        Angle clamped = Degrees.of(clampedDeg);
+        // If requested setpoint was outside soft limits, it was clamped to the allowed range.
+        return hood.setAngle(clamped);
+    }
+
+    public Command setAngle(Supplier<Angle> angle) {
+        // Wrap the supplier so the Arm command evaluates the supplier at execution-time.
+        return hood.setAngle(() -> angle.get());
+    }
+
+    public Command setDutyCycle(double dutyCycle) {
+        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied via ArmConfig
+        return hood.set(dutyCycle);
+    }
+    // endregion
     // file-based sim logging removed
 
     /** Trigger active when the hood is within the configured position tolerance of the setpoint. */
@@ -188,4 +198,5 @@ public class HoodSubsystem extends SubsystemBase {
 
         hood.updateTelemetry();
     }
+    // endregion
 }

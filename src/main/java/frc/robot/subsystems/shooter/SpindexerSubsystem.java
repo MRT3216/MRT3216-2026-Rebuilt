@@ -35,7 +35,7 @@ import yams.motorcontrollers.local.SparkWrapper;
  * separated from software commands (Outputs).
  */
 public class SpindexerSubsystem extends SubsystemBase {
-
+    // region Inputs & telemetry
     /**
      * IO inputs for the Spindexer. AutoLogged to provide synchronized data for AdvantageScope and log
      * replay.
@@ -53,6 +53,9 @@ public class SpindexerSubsystem extends SubsystemBase {
     }
 
     private final SpindexerInputsAutoLogged spindexerInputs = new SpindexerInputsAutoLogged();
+    // endregion
+
+    // region Hardware & controller
 
     /* Hardware Objects */
     private final SparkFlex motorController =
@@ -65,9 +68,11 @@ public class SpindexerSubsystem extends SubsystemBase {
     private final SmartMotorController motor;
 
     /* High-level mechanism configuration */
+
     private final FlyWheelConfig spindexerConfig;
 
     private final FlyWheel spindexer;
+    // endregion
 
     /**
      * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry

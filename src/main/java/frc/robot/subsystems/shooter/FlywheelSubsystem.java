@@ -41,7 +41,7 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
  * <p>Subsystem controlling the flywheel shooter motor and related telemetry.
  */
 public class FlywheelSubsystem extends SubsystemBase {
-
+    // region Inputs & telemetry
     /**
      * AdvantageKit-visible inputs for the Flywheel subsystem. These fields are updated each loop from
      * hardware and are intended to be logged/serialized for replay.
@@ -62,14 +62,18 @@ public class FlywheelSubsystem extends SubsystemBase {
     }
 
     private final FlywheelInputsAutoLogged flywheelInputs = new FlywheelInputsAutoLogged();
+    // endregion
 
+    // region Hardware & signals
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
+    // endregion
 
+    // region Controller configuration / mechanism
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
@@ -80,6 +84,7 @@ public class FlywheelSubsystem extends SubsystemBase {
     private final FlyWheelConfig flywheelConfig;
 
     private final FlyWheel flywheel;
+    // endregion
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals

@@ -33,6 +33,8 @@ import yams.motorcontrollers.local.SparkWrapper;
  * kicker intake/outtake mechanism.
  */
 public class KickerSubsystem extends SubsystemBase {
+    // region Inputs & telemetry
+
     /**
      * AdvantageKit-visible inputs for the kicker mechanism. Updated each loop from the motor
      * controller and intended for replay/logging.
@@ -54,6 +56,10 @@ public class KickerSubsystem extends SubsystemBase {
 
     private final KickerInputsAutoLogged kickerInputs = new KickerInputsAutoLogged();
 
+    // endregion
+
+    // region Hardware & controller
+
     private final SparkFlex motorController =
             new SparkFlex(RobotMap.Shooter.Kicker.kMotorId, SparkFlex.MotorType.kBrushless);
 
@@ -64,6 +70,10 @@ public class KickerSubsystem extends SubsystemBase {
     private final FlyWheelConfig kickerConfig;
 
     private final FlyWheel kicker;
+
+    // endregion
+
+    // region Lifecycle / periodic
 
     /** Update the AdvantageKit "inputs" (data coming from the SMC) */
     private void updateInputs() {

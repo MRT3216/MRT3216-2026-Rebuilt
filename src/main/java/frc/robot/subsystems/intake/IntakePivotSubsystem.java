@@ -36,6 +36,7 @@ import yams.motorcontrollers.local.SparkWrapper;
  * states (Inputs) are separated from software commands (Outputs).
  */
 public class IntakePivotSubsystem extends SubsystemBase {
+    // region Inputs & telemetry
 
     /**
      * IO inputs for the Intake Pivot. AutoLogged to provide synchronized data for AdvantageScope and
@@ -55,11 +56,18 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     private final IntakePivotInputsAutoLogged intakePivotInputs = new IntakePivotInputsAutoLogged();
 
+    // endregion
+
+    // region Hardware & controllers
+
     /* Hardware controllers (left master, right follower) */
     private final SparkFlex leftPivotMotor =
             new SparkFlex(RobotMap.Intake.Pivot.kLeftMotorId, SparkFlex.MotorType.kBrushless);
     private final SparkFlex rightPivotMotor =
             new SparkFlex(RobotMap.Intake.Pivot.kRightMotorId, SparkFlex.MotorType.kBrushless);
+    // endregion
+
+    // region Controller configuration / mechanism
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
@@ -70,6 +78,10 @@ public class IntakePivotSubsystem extends SubsystemBase {
     private final ArmConfig intakePivotConfig;
 
     private final Arm intakePivot;
+
+    // endregion
+
+    // region Lifecycle / periodic
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals

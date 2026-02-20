@@ -320,15 +320,11 @@ public class RobotContainer {
                     // calling the scheduler directly).
                     controller
                             .leftBumper()
-                            .onTrue(
-                                    Commands.runOnce(() -> shooterSystem.hoodBumpBy(Degrees.of(-1.0)), hoodSubsystem)
-                                            .ignoringDisable(true));
+                            .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(-1.0)).ignoringDisable(true));
 
                     controller
                             .rightBumper()
-                            .onTrue(
-                                    Commands.runOnce(() -> shooterSystem.hoodBumpBy(Degrees.of(1.0)), hoodSubsystem)
-                                            .ignoringDisable(true));
+                            .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(1.0)).ignoringDisable(true));
 
                     // X / Y: decrease/increase tuning RPM by 100
                     controller

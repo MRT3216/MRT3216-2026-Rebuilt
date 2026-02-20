@@ -1,5 +1,6 @@
 package frc.robot.systems;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.constants.ShooterConstants.KickerConstants.*;
 
@@ -274,14 +275,22 @@ public class ShooterSystem {
                 .alongWith(clearDuringSpin);
     }
 
-    /** Factory helper: returns a command that bumps the hood by the provided delta. */
-    public Command hoodBumpCommand(Angle delta) {
-        return hood.bumpCommand(delta);
-    }
-
-    /** Legacy delegator that uses the subsystem's scheduling helper. */
-    public void hoodBumpBy(Angle delta) {
-        hood.bumpBy(delta);
+    /** Delegator: return a command that adjusts the hood by the provided delta. */
+    public Command hoodAdjustCommand(Angle delta) {
+        // Create the Algae-style command here so the factory lives at the system level.
+        return Commands.runOnce(
+                        () -> {
+                            double prevDeg = hood.getTarget().in(Degrees);
+                            double newDeg = prevDeg + delta.in(Degrees);
+                            double minDeg =
+                                    frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMin.in(Degrees);
+                            double maxDeg =
+                                    frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMax.in(Degrees);
+                            double clampedDeg = Math.max(minDeg, Math.min(maxDeg, newDeg));
+                            hood.setTarget(Degrees.of(clampedDeg));
+                        },
+                        hood)
+                .withName("HoodAdjustSys");
     }
 
     /**

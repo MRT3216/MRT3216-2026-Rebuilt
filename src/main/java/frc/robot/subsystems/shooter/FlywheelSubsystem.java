@@ -84,6 +84,7 @@ public class FlywheelSubsystem extends SubsystemBase {
     private final FlyWheelConfig flywheelConfig;
 
     private final FlyWheel flywheel;
+
     // endregion
 
     /**

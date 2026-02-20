@@ -22,7 +22,12 @@ public class IntakeSystem {
         Deployed
     }
 
-    /** Constructs a new IntakeSystem with the given subsystems. */
+    /**
+     * Constructs a new IntakeSystem with the given subsystems.
+     *
+     * @param intakeRoller the rollers subsystem used for intaking/feeding
+     * @param intakeArm the pivot subsystem that deploys/stows the intake
+     */
     public IntakeSystem(IntakeRollersSubsystem intakeRoller, IntakePivotSubsystem intakeArm) {
         this.intakeRoller = intakeRoller;
         this.intakeArm = intakeArm;
@@ -43,6 +48,11 @@ public class IntakeSystem {
         return null;
     }
 
+    /**
+     * Deploy and run the intake rollers (or run rollers if already deployed).
+     *
+     * @return a command to perform the intake action
+     */
     public Command deploy() {
         if (currentState == IntakeStates.Stowed) {
             currentState = IntakeStates.Deployed;
@@ -51,6 +61,11 @@ public class IntakeSystem {
         return null;
     }
 
+    /**
+     * Deploy the intake arm if currently stowed.
+     *
+     * @return a command to move the intake to the deployed angle, or null if already deployed
+     */
     public Command stow() {
         if (currentState == IntakeStates.Deployed) {
             currentState = IntakeStates.Stowed;
@@ -59,7 +74,14 @@ public class IntakeSystem {
         return null;
     }
 
+    /**
+     * Stow the intake arm if currently deployed.
+     *
+     * @return a command to move the intake to the stowed angle, or null if already stowed
+     */
     public IntakeStates getCurrentState() {
         return currentState;
     }
+
+    /** Returns the current intake state (Stowed or Deployed). */
 }

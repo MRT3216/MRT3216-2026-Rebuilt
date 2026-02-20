@@ -58,7 +58,13 @@ public class ShooterSystem {
 
     // region High-level commands
 
-    /** High-level shoot command: clear, spin kicker, and feed spindexer. */
+    /**
+     * High-level shoot command: spin the flywheel to the configured target, run a short clearing
+     * routine, then feed balls using the kicker and spindexer.
+     *
+     * @return a composed command that owns the shooter subsystems while executing the shooting
+     *     pipeline
+     */
     public Command shoot() {
         // Targets — chosen as safe defaults for testing. Adjust as needed.
         final AngularVelocity flywheelTarget =
@@ -86,7 +92,11 @@ public class ShooterSystem {
         return spin.alongWith(clearThenFeed);
     }
 
-    /** Clear the shooter (spin backwards and reverse spindexer briefly). */
+    /**
+     * Clear the shooter: run the kicker and spindexer briefly in reverse to remove jams.
+     *
+     * @return a command that executes the clear routine
+     */
     public Command clear() {
         // Use small negative closed-loop velocities to clear any jammed balls. Closed-loop
         // ensures repeatable behavior across real and sim.

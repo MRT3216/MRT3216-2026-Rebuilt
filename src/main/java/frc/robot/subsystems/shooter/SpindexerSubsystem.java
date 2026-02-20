@@ -72,6 +72,7 @@ public class SpindexerSubsystem extends SubsystemBase {
     private final FlyWheelConfig spindexerConfig;
 
     private final FlyWheel spindexer;
+
     // endregion
 
     /**

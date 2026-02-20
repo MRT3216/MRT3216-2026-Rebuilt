@@ -123,6 +123,11 @@ public class HoodSubsystem extends SubsystemBase {
         inputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
     }
 
+    /**
+     * Gets the current measured hood angle.
+     *
+     * @return the current hood Angle measured by the mechanism/encoder
+     */
     public Angle getPosition() {
         return inputs.angle;
     }
@@ -158,6 +163,14 @@ public class HoodSubsystem extends SubsystemBase {
     // region Public API - queries & commands
 
     /* ----- Positioning command factories (grouped) ----- */
+    /**
+     * Creates a command that sets the hood to a fixed angle.
+     *
+     * <p>The requested angle will be clamped to the configured soft limits before being commanded.
+     *
+     * @param angle the desired hood Angle
+     * @return a Command which, when scheduled, will move the hood to the requested angle
+     */
     public Command setAngle(Angle angle) {
         // Clamp requested angle to configured soft limits
         double requestedDeg = angle.in(Degrees);
@@ -169,15 +182,33 @@ public class HoodSubsystem extends SubsystemBase {
         return hood.setAngle(clamped);
     }
 
+    /**
+     * Creates a command that sets the hood angle from a dynamic supplier.
+     *
+     * <p>The supplier will be evaluated at execution-time so callers can provide live targets (for
+     * example, from a vision pipeline).
+     *
+     * @param angle supplier that provides the desired hood Angle at runtime
+     * @return a Command which will track the supplier-provided angle while active
+     */
     public Command setAngle(Supplier<Angle> angle) {
         // Wrap the supplier so the Arm command evaluates the supplier at execution-time.
         return hood.setAngle(() -> angle.get());
     }
 
+    /**
+     * Creates a command that runs the hood motor in open-loop at the requested duty cycle.
+     *
+     * <p>Mechanism-level hard/soft limits configured in {@code ArmConfig} still apply.
+     *
+     * @param dutyCycle output percentage in the range [-1.0, 1.0]
+     * @return a Command which will drive the hood motor in open-loop while active
+     */
     public Command setDutyCycle(double dutyCycle) {
         // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied via ArmConfig
         return hood.set(dutyCycle);
     }
+
     // endregion
     // file-based sim logging removed
 

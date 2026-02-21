@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.IntakeConstants.Pivot.*;
 
 import com.revrobotics.spark.SparkFlex;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -160,10 +161,20 @@ public class IntakePivotSubsystem extends SubsystemBase {
         double requestedDeg = angle.in(Degrees);
         double minDeg = kSoftLimitMin.in(Degrees);
         double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
+        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
         Angle clamped = Degrees.of(clampedDeg);
         // If requested setpoint was outside soft limits, it was clamped to the allowed range.
         return intakePivot.setAngle(clamped);
+    }
+
+    /**
+     * Supplier-backed overload for dynamic angle targets (e.g., live tuning or vision).
+     *
+     * @param angle supplier providing the desired Angle
+     * @return a Command that follows the supplier while active
+     */
+    public Command setAngle(java.util.function.Supplier<Angle> angle) {
+        return intakePivot.setAngle(angle);
     }
 
     /**

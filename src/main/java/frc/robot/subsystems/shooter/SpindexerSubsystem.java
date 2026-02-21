@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -132,6 +133,16 @@ public class SpindexerSubsystem extends SubsystemBase {
      * @return A command to set and maintain the requested speed.
      */
     public Command setVelocity(AngularVelocity speed) {
+        return spindexer.setSpeed(speed);
+    }
+
+    /**
+     * Supplier-backed overload for dynamic velocities (e.g., live tuning or vision-based targets).
+     *
+     * @param speed supplier providing the desired AngularVelocity
+     * @return a Command that tracks the supplied velocity while active
+     */
+    public Command setVelocity(Supplier<AngularVelocity> speed) {
         return spindexer.setSpeed(speed);
     }
 

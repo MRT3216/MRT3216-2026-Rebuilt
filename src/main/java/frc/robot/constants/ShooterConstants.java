@@ -176,11 +176,11 @@ public final class ShooterConstants {
         public static final AngularAcceleration kMaxAccelDegPerSec2 =
                 DegreesPerSecondPerSecond.of(180.0);
 
-        public static final Angle kHardLimitMax = Degrees.of(90);
-        public static final Angle kHardLimitMin = Degrees.of(0);
-        public static final Angle kSoftLimitMax = Degrees.of(85);
-        public static final Angle kSoftLimitMin = Degrees.of(5);
-        public static final Angle kStartingPosition = Degrees.of(0);
+        public static final Angle kHardLimitMax = Degrees.of(56);
+        public static final Angle kHardLimitMin = Degrees.of(23);
+        public static final Angle kSoftLimitMax = Degrees.of(54);
+        public static final Angle kSoftLimitMin = Degrees.of(25);
+        public static final Angle kStartingPosition = Degrees.of(25);
 
         public static final String kHoodMotorTelemetry = "HoodMotor";
         public static final String kHoodMechTelemetry = "HoodMech";

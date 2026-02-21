@@ -1,8 +1,10 @@
 package frc.robot.systems;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Seconds;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs;
 import static frc.robot.constants.ShooterConstants.KickerConstants.*;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSpindexerClearAngularVelocity;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSpindexerTargetAngularVelocity;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -72,8 +74,7 @@ public class ShooterSystem {
 
         // Start spinning the flywheel to target velocity
         Command spin = flywheel.setVelocity(flywheelTarget);
-        Command clearTimed =
-                clear().withTimeout(Seconds.of(ShooterConstants.FlywheelConstants.kClearDurationSecs));
+        Command clearTimed = clear().withTimeout(Seconds.of(kClearDurationSecs));
 
         // Run spin and clear in parallel. After the clear timeout completes, begin feeding.
         // We run the spin (long-running) and a short sequence (clearTimed -> feedCore) in
@@ -82,10 +83,7 @@ public class ShooterSystem {
         Command feedCore =
                 kicker
                         .setVelocity(kKickerTargetAngularVelocity)
-                        .alongWith(
-                                spindexer.setVelocity(
-                                        frc.robot.constants.ShooterConstants.SpindexerConstants
-                                                .kSpindexerTargetAngularVelocity));
+                        .alongWith(spindexer.setVelocity(kSpindexerTargetAngularVelocity));
 
         Command clearThenFeed = clearTimed.andThen(feedCore);
 
@@ -102,10 +100,7 @@ public class ShooterSystem {
         // ensures repeatable behavior across real and sim.
         return kicker
                 .setVelocity(kKickerClearAngularVelocity)
-                .alongWith(
-                        spindexer.setVelocity(
-                                frc.robot.constants.ShooterConstants.SpindexerConstants
-                                        .kSpindexerClearAngularVelocity));
+                .alongWith(spindexer.setVelocity(kSpindexerClearAngularVelocity));
     }
 
     /**
@@ -178,10 +173,7 @@ public class ShooterSystem {
         Command feed =
                 kicker
                         .setVelocity(kKickerTargetAngularVelocity)
-                        .alongWith(
-                                spindexer.setVelocity(
-                                        frc.robot.constants.ShooterConstants.SpindexerConstants
-                                                .kSpindexerTargetAngularVelocity))
+                        .alongWith(spindexer.setVelocity(kSpindexerTargetAngularVelocity))
                         .withTimeout(Seconds.of(2));
 
         // Run the compute loop and the flywheel tracker in parallel until the flywheel is at
@@ -297,22 +289,12 @@ public class ShooterSystem {
 
     /** Delegator: return a command that adjusts the hood by the provided delta. */
     public Command hoodAdjustCommand(Angle delta) {
-        // Create the Algae-style command here so the factory lives at the system level.
-        return Commands.runOnce(
-                        () -> {
-                            double prevDeg = hood.getTarget().in(Degrees);
-                            double newDeg = prevDeg + delta.in(Degrees);
-                            double minDeg =
-                                    frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMin.in(Degrees);
-                            double maxDeg =
-                                    frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMax.in(Degrees);
-                            double clampedDeg = Math.max(minDeg, Math.min(maxDeg, newDeg));
-                            // Update the mechanism setpoint immediately via the subsystem helper
-                            hood.setPositionImmediate(Degrees.of(clampedDeg));
-                        },
-                        hood)
-                .withName("HoodAdjustSys");
+        // Keep the command factory at the system level but delegate the bump operation
+        // to the HoodSubsystem to centralize clamping/telemetry. This keeps ownership
+        // of the factory in the system while ensuring the subsystem enforces limits.
+        return hood.bumpBy(delta).withName("HoodAdjustSys");
     }
+
     // endregion
 
     // region Utilities / private helpers

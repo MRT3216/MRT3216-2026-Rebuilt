@@ -1,6 +1,7 @@
 package frc.robot.systems;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.IntakeConstants;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
@@ -41,11 +42,13 @@ public class IntakeSystem {
     public Command intake() {
         switch (currentState) {
             case Stowed:
-                return this.deploy().andThen(intakeRoller.setDutyCycle(0.5));
+                // Deploy then run rollers. deploy() is side-effect free and returns a Command.
+                return deploy().andThen(intakeRoller.setDutyCycle(0.5));
             case Deployed:
                 return intakeRoller.setDutyCycle(0.5);
+            default:
+                return Commands.none();
         }
-        return null;
     }
 
     /**
@@ -55,10 +58,11 @@ public class IntakeSystem {
      */
     public Command deploy() {
         if (currentState == IntakeStates.Stowed) {
-            currentState = IntakeStates.Deployed;
-            return intakeArm.setAngle(IntakeConstants.Pivot.kDeployedAngle);
+            // Return a command that updates the system state when executed, then moves the arm.
+            return Commands.runOnce(() -> currentState = IntakeStates.Deployed)
+                    .andThen(intakeArm.setAngle(IntakeConstants.Pivot.kDeployedAngle));
         }
-        return null;
+        return Commands.none();
     }
 
     /**
@@ -68,10 +72,11 @@ public class IntakeSystem {
      */
     public Command stow() {
         if (currentState == IntakeStates.Deployed) {
-            currentState = IntakeStates.Stowed;
-            return intakeArm.setAngle(IntakeConstants.Pivot.kStowedAngle);
+            // Return a command that updates the system state when executed, then moves the arm.
+            return Commands.runOnce(() -> currentState = IntakeStates.Stowed)
+                    .andThen(intakeArm.setAngle(IntakeConstants.Pivot.kStowedAngle));
         }
-        return null;
+        return Commands.none();
     }
 
     /**

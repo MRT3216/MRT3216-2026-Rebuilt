@@ -14,6 +14,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
@@ -35,6 +36,17 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
  * <p>Modeled as a positional arm using the YAMS {@code Arm} abstraction and a TalonFX motor
  * controller. This subsystem exposes small command factories (wrapping the YAMS commands) and
  * maintains a tracked commanded target used by the default hold command.
+ *
+ * <p>Provenance & references:
+ *
+ * <ul>
+ *   <li>YAMS (Yet Another Mechanical System) used for the Arm abstraction — credit: BroncBotz /
+ *       nstrike. If you need YAMS docs or examples, check the team's resources and the YASS
+ *       tutorial videos linked in project docs.
+ *   <li>Command-based best-practices: Oblarg / ChiefDelphi thread; BoVLB's "FRC Tips" guide; and
+ *       WPILib command-based docs. These influenced the command-factory + trigger design used here
+ *       (factories on subsystems/systems, triggers for state).
+ * </ul>
  */
 public class HoodSubsystem extends SubsystemBase {
     // region Inputs & telemetry
@@ -213,6 +225,30 @@ public class HoodSubsystem extends SubsystemBase {
         double maxDeg = kSoftLimitMax.in(Degrees);
         double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         smartMotor.setPosition(Degrees.of(clampedDeg));
+    }
+
+    /**
+     * Immediately bump the current commanded hood setpoint by the provided delta.
+     *
+     * <p>This reads the mechanism's current stored setpoint (or measured position if none), adds the
+     * provided delta, and writes the resulting setpoint via {@link #setPositionImmediate(Angle)} so
+     * clamping and telemetry behaviour remain centralized.
+     *
+     * @param delta offset to apply to the current setpoint (positive raises the hood)
+     */
+    public void bumpPositionImmediate(Angle delta) {
+        double prevDeg = getTarget().in(Degrees);
+        double newDeg = prevDeg + delta.in(Degrees);
+        // Delegate to setPositionImmediate so clamping and telemetry remain centralized.
+        setPositionImmediate(Degrees.of(newDeg));
+    }
+
+    /**
+     * Command factory: returns a short run-once command that bumps the hood setpoint by {@code
+     * delta}. The returned command requires this subsystem.
+     */
+    public Command bumpBy(Angle delta) {
+        return Commands.runOnce(() -> bumpPositionImmediate(delta), this).withName("Hood.bumpBy");
     }
 
     // endregion

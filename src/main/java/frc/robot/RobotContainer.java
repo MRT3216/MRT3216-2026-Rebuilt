@@ -286,7 +286,7 @@ public class RobotContainer {
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
         // Have hood hold its current commanded target using the positional controller
         // (we track a commanded target so button bumps are applied relative to it).
-        hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(() -> hoodSubsystem.getTarget()));
+        hoodSubsystem.setDefaultCommand(hoodSubsystem.moveToAngle(() -> hoodSubsystem.getTarget()));
 
         // Bind X to a different command depending on runtime mode: SIM uses a
         // simplified routine,

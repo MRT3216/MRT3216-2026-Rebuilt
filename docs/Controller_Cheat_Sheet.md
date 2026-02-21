@@ -7,7 +7,7 @@ This cheat-sheet summarizes the Xbox controller bindings used in SIM mode for th
 - Flywheel default: `flywheelSubsystem.setVelocity(RPM.of(0))` — keep flywheel commanded to 0 RPM.
 - Kicker default: `kickerSubsystem.setVelocity(RPM.of(0))` — keep kicker stopped.
 - Spindexer default: `spindexerSubsystem.setVelocity(RPM.of(0))` — keep spindexer stopped.
-- Hood default: `hoodSubsystem.setAngle(() -> hoodSubsystem.getPosition())` — hold current hood position.
+ - Hood default: `hoodSubsystem.moveToAngle(() -> hoodSubsystem.getPosition())` — hold current hood position.
 
 ## Buttons (SIM mappings)
 
@@ -29,19 +29,19 @@ This cheat-sheet summarizes the Xbox controller bindings used in SIM mode for th
 
 - Left bumper (on press)
   - Action: Hood preset to 15°.
-  - Effect: `hoodSubsystem.setAngle(Degrees.of(15))`.
+  - Effect: `hoodSubsystem.moveToAngle(Degrees.of(15))`.
 
 - Right bumper (on press)
   - Action: Hood preset to 45°.
-  - Effect: `hoodSubsystem.setAngle(Degrees.of(45))`.
+  - Effect: `hoodSubsystem.moveToAngle(Degrees.of(45))`.
 
 - Left trigger (threshold 0.1) (while held)
   - Action: Decrease hood target angle while held (fine adjust).
-  - Effect: Supplier-backed `setAngle` computing (current hood angle - leftTrigger * 2°).
+  - Effect: Supplier-backed `moveToAngle` computing (current hood angle - leftTrigger * 2°).
 
 - Right trigger (threshold 0.1) (while held)
   - Action: Increase hood target angle while held (fine adjust).
-  - Effect: Supplier-backed `setAngle` computing (current hood angle + rightTrigger * 2°).
+  - Effect: Supplier-backed `moveToAngle` computing (current hood angle + rightTrigger * 2°).
 
 - START (while held)
   - Action: Run shooter clear routine (reverse/clear kicker + spindexer).

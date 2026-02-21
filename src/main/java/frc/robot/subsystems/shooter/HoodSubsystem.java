@@ -8,6 +8,7 @@ import static frc.robot.constants.ShooterConstants.HoodConstants.*;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -113,7 +114,7 @@ public class HoodSubsystem extends SubsystemBase {
         // setPosition API so the mechanism's internal setpoint is consistent and observable.
         double startMeasuredDeg = hood.getAngle().in(Degrees);
         double clampedStartDeg =
-                Math.max(kSoftLimitMin.in(Degrees), Math.min(kSoftLimitMax.in(Degrees), startMeasuredDeg));
+                MathUtil.clamp(startMeasuredDeg, kSoftLimitMin.in(Degrees), kSoftLimitMax.in(Degrees));
         smartMotor.setPosition(Degrees.of(clampedStartDeg));
         // Optimize CAN update frequency for the signals we use (centralized default)
         BaseStatusSignal.setUpdateFrequencyForAll(
@@ -153,7 +154,7 @@ public class HoodSubsystem extends SubsystemBase {
     }
 
     // Note: explicit tracked `currentTarget` removed in favor of the mechanism's own setpoint.
-    // Use `setAngle(...)` factories to command the mechanism (they will clamp to soft limits).
+    // Use `moveToAngle(...)` factories to command the mechanism (they will clamp to soft limits).
 
     @Override
     public void simulationPeriodic() {
@@ -173,28 +174,30 @@ public class HoodSubsystem extends SubsystemBase {
      * @param angle the desired hood Angle
      * @return a Command which, when scheduled, will move the hood to the requested angle
      */
-    public Command setAngle(Angle angle) {
-        // Clamp requested angle to configured soft limits
+    // Note: use the clearer moveToAngle(...) factories below. Original setAngle
+    // methods have been removed to avoid ambiguous naming.
+
+    /**
+     * Alias / clearer name for {@link #setAngle(Angle)}.
+     *
+     * <p>Returns a Command that, when scheduled, will move the hood to the requested angle and
+     * maintain it while the command is active. Prefer this factory for scheduled motion.
+     */
+    public Command moveToAngle(Angle angle) {
+        // Clamp requested angle to configured soft limits and return the Arm command
         double requestedDeg = angle.in(Degrees);
         double minDeg = kSoftLimitMin.in(Degrees);
         double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
-        Angle clamped = Degrees.of(clampedDeg);
-        // If requested setpoint was outside soft limits, it was clamped to the allowed range.
-        return hood.setAngle(clamped);
+        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
+        return hood.setAngle(Degrees.of(clampedDeg));
     }
 
     /**
-     * Creates a command that sets the hood angle from a dynamic supplier.
+     * Alias / clearer name for the supplier-backed factory {@link #setAngle(Supplier)}.
      *
-     * <p>The supplier will be evaluated at execution-time so callers can provide live targets (for
-     * example, from a vision pipeline).
-     *
-     * @param angle supplier that provides the desired hood Angle at runtime
-     * @return a Command which will track the supplier-provided angle while active
+     * <p>Useful when callers prefer a self-documenting method name.
      */
-    public Command setAngle(Supplier<Angle> angle) {
-        // Wrap the supplier so the Arm command evaluates the supplier at execution-time.
+    public Command moveToAngle(Supplier<Angle> angle) {
         return hood.setAngle(angle);
     }
 
@@ -212,46 +215,48 @@ public class HoodSubsystem extends SubsystemBase {
     }
 
     /**
-     * Immediately write a clamped position setpoint to the mechanism (SmartMotorController).
+     * Immediately write a clamped position setpoint to the mechanism (YAMS Arm).
      *
-     * <p>This updates the SmartMotorController's stored setpoint directly (no Command is scheduled).
-     * Callers that want a Command-based movement should use {@link #setAngle(Angle)}.
+     * <p>This updates the mechanism's stored setpoint directly (no Command is scheduled). It clamps
+     * to the configured soft limits before writing via the Arm API so the mechanism remains the
+     * single source of truth for commanded setpoints.
      *
      * @param target the desired hood Angle; it will be clamped to configured soft limits
      */
-    public void setPositionImmediate(Angle target) {
+    public void writeSetpointImmediate(Angle target) {
         double requestedDeg = target.in(Degrees);
         double minDeg = kSoftLimitMin.in(Degrees);
         double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
-        smartMotor.setPosition(Degrees.of(clampedDeg));
+        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
+        hood.setMechanismPositionSetpoint(Degrees.of(clampedDeg));
     }
 
     /**
-     * Immediately bump the current commanded hood setpoint by the provided delta.
+     * Applies an immediate, clamped offset to the currently commanded setpoint.
      *
-     * <p>This reads the mechanism's current stored setpoint (or measured position if none), adds the
-     * provided delta, and writes the resulting setpoint via {@link #setPositionImmediate(Angle)} so
-     * clamping and telemetry behaviour remain centralized.
+     * <p>The method reads the latest commanded setpoint from the SmartMotorController when available
+     * (falls back to the measured position), adds {@code delta}, clamps the result, and writes it via
+     * {@link #writeSetpointImmediate(Angle)} so clamping and telemetry remain centralized.
      *
      * @param delta offset to apply to the current setpoint (positive raises the hood)
      */
-    public void bumpPositionImmediate(Angle delta) {
-        double prevDeg = getTarget().in(Degrees);
-        double newDeg = prevDeg + delta.in(Degrees);
-        // Delegate to setPositionImmediate so clamping and telemetry remain centralized.
-        setPositionImmediate(Degrees.of(newDeg));
+    public void bumpSetpointImmediate(Angle delta) {
+        Angle prevDeg = smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
+        Angle newDeg = prevDeg.plus(delta);
+        writeSetpointImmediate(newDeg);
     }
 
     /**
-     * Command factory: returns a short run-once command that bumps the hood setpoint by {@code
-     * delta}. The returned command requires this subsystem.
+     * Command factory: returns a short run-once Command that bumps the mechanism setpoint by {@code
+     * delta} when scheduled. The returned command requires this subsystem.
      */
-    public Command bumpBy(Angle delta) {
-        return Commands.runOnce(() -> bumpPositionImmediate(delta), this).withName("Hood.bumpBy");
+    public Command bumpSetpoint(Angle delta) {
+        return Commands.runOnce(() -> bumpSetpointImmediate(delta), this).withName("Hood.bumpSetpoint");
     }
 
     // endregion
+
+    // region Triggers & periodic
 
     /** Trigger active when the hood is within the configured position tolerance of the setpoint. */
     public final Trigger atSetpoint =

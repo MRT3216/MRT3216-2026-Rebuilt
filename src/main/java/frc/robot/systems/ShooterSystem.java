@@ -156,7 +156,7 @@ public class ShooterSystem {
                             return s != null ? s.turretAzimuth() : turret.getPosition();
                         });
         Command aimHood =
-                hood.setAngle(
+                hood.moveToAngle(
                         () -> {
                             var s = shotRef.get();
                             return s != null ? s.hoodAngle() : hood.getPosition();
@@ -258,7 +258,7 @@ public class ShooterSystem {
                             return s != null ? s.turretAzimuth() : turret.getPosition();
                         });
         Command aimHood =
-                hood.setAngle(
+                hood.moveToAngle(
                         () -> {
                             var s = shotRef.get();
                             return s != null ? s.hoodAngle() : hood.getPosition();
@@ -292,7 +292,7 @@ public class ShooterSystem {
         // Keep the command factory at the system level but delegate the bump operation
         // to the HoodSubsystem to centralize clamping/telemetry. This keeps ownership
         // of the factory in the system while ensuring the subsystem enforces limits.
-        return hood.bumpBy(delta).withName("HoodAdjustSys");
+        return hood.bumpSetpoint(delta).withName("HoodAdjustSys");
     }
 
     // endregion

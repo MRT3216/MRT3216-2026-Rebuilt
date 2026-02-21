@@ -51,6 +51,7 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
  */
 public class HoodSubsystem extends SubsystemBase {
     // region Inputs & telemetry
+
     @AutoLog
     public static class HoodInputs {
         public Angle angle = Degrees.of(0);
@@ -60,25 +61,32 @@ public class HoodSubsystem extends SubsystemBase {
     }
 
     private final HoodInputsAutoLogged inputs = new HoodInputsAutoLogged();
+
     // endregion
 
     // region Hardware & signals
+
     private final TalonFX motor = new TalonFX(RobotMap.Shooter.Hood.kMotorId);
 
     private final StatusSignal<Angle> positionSignal = motor.getPosition();
     private final StatusSignal<Double> referenceSignal = motor.getClosedLoopReference();
+
     // endregion
 
     // region Controller configuration / mechanism
+
     private final SmartMotorControllerConfig motorConfig;
     private final SmartMotorController smartMotor;
     private final ArmConfig hoodConfig;
     private final Arm hood;
+
     // endregion
 
     // region Target tracking
+
     /* Debug / verbose logging intentionally removed from this file. Use the centralized
      * Logger.processInputs(...) calls already present in periodic() for telemetry. */
+
     // endregion
 
     public HoodSubsystem() {
@@ -223,7 +231,7 @@ public class HoodSubsystem extends SubsystemBase {
      *
      * @param target the desired hood Angle; it will be clamped to configured soft limits
      */
-    public void writeSetpointImmediate(Angle target) {
+    private void writeSetpointImmediate(Angle target) {
         double requestedDeg = target.in(Degrees);
         double minDeg = kSoftLimitMin.in(Degrees);
         double maxDeg = kSoftLimitMax.in(Degrees);

@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.TurretConstants.*;
 
 import com.revrobotics.spark.SparkFlex;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -264,7 +265,8 @@ public class TurretSubsystem extends SubsystemBase {
         double requestedDeg = angle.in(Degrees);
         double minDeg = kSoftLimitMin.in(Degrees);
         double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
+        // double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
+        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
         Angle clamped = Degrees.of(clampedDeg);
         return turret.setAngle(clamped);
     }

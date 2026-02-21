@@ -57,6 +57,15 @@ public class SpindexerSubsystem extends SubsystemBase {
     // endregion
 
     // region Hardware & controller
+    /*
+     * Note: This subsystem uses a REV Spark (SparkFlex) wrapped by the YAMS
+     * SmartMotorController (SparkWrapper). It does NOT use CTRE Phoenix
+     * devices, so there are no Phoenix `StatusSignal<?>` fields and no
+     * `PhoenixUtil.refresh(...)` calls are needed. Telemetry for this
+     * subsystem is provided via the YAMS wrapper/getters (e.g.:
+     * `motor.getVoltage()`, `motor.getStatorCurrent()`, `spindexer.getSpeed()`),
+     * which are populated in `updateInputs()` and auto-logged.
+     */
 
     /* Hardware Objects */
     private final SparkFlex motorController =

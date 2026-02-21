@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -90,7 +91,8 @@ public class IntakeRollersSubsystem extends SubsystemBase {
      */
     private void updateInputs() {
         // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
-        BaseStatusSignal.refreshAll(velocitySignal, referenceSignal);
+        // Use the centralized helper for consistency with other subsystems.
+        PhoenixUtil.refresh(velocitySignal, referenceSignal);
 
         intakeRollersInputs.velocity = intakeRollers.getSpeed();
         intakeRollersInputs.volts = motor.getVoltage();

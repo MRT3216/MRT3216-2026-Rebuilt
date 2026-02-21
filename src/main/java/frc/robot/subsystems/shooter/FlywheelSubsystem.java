@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import frc.robot.util.PhoenixUtil;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -93,7 +94,7 @@ public class FlywheelSubsystem extends SubsystemBase {
      */
     private void updateInputs() {
         // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
-        BaseStatusSignal.refreshAll(velocitySignal, referenceSignal);
+        PhoenixUtil.refresh(velocitySignal, referenceSignal);
 
         flywheelInputs.velocity = flywheel.getSpeed();
         flywheelInputs.volts = motor.getVoltage();

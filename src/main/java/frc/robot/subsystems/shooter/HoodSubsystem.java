@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -134,7 +135,7 @@ public class HoodSubsystem extends SubsystemBase {
 
     private void updateInputs() {
         // Refresh Phoenix signals so logged telemetry is time-aligned with hardware.
-        BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
+        PhoenixUtil.refresh(positionSignal, referenceSignal);
 
         inputs.angle = hood.getAngle();
         inputs.volts = smartMotor.getVoltage();

@@ -74,15 +74,7 @@ public class KickerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
-
-    /** Update the AdvantageKit "inputs" (data coming from the SMC) */
-    private void updateInputs() {
-        kickerInputs.velocity = kicker.getSpeed();
-        kickerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-        kickerInputs.volts = motor.getVoltage();
-        kickerInputs.current = motor.getStatorCurrent();
-    }
+    // region Initialization helpers
 
     /** Construct the KickerSubsystem and configure motor/telemetry settings. */
     public KickerSubsystem() {
@@ -117,6 +109,36 @@ public class KickerSubsystem extends SubsystemBase {
 
         kicker = new FlyWheel(kickerConfig);
     }
+
+    // endregion
+
+    // region Lifecycle / periodic
+
+    /** Update the AdvantageKit "inputs" (data coming from the SMC) */
+    private void updateInputs() {
+        kickerInputs.velocity = kicker.getSpeed();
+        kickerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
+        kickerInputs.volts = motor.getVoltage();
+        kickerInputs.current = motor.getStatorCurrent();
+    }
+
+    // endregion
+
+    /** Advance the kicker simulation model by one simulation tick. */
+    @Override
+    public void simulationPeriodic() {
+        kicker.simIterate();
+    }
+
+    @Override
+    public void periodic() {
+        // Pull inputs, publish to AdvantageKit, and update mechanism telemetry
+        updateInputs();
+        Logger.processInputs("Kicker", kickerInputs);
+        kicker.updateTelemetry();
+    }
+
+    // region Public API (queries & commands)
 
     /**
      * Gets the current velocity of the kicker.
@@ -154,22 +176,10 @@ public class KickerSubsystem extends SubsystemBase {
      * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
      */
     public Command setDutyCycle(double dutyCycle) {
-        // Duty cycle recorded via mechanism telemetry; removed per-invocation telemetry to reduce
-        // noise.
+
         return kicker.set(dutyCycle);
     }
 
-    /** Advance the kicker simulation model by one simulation tick. */
-    @Override
-    public void simulationPeriodic() {
-        kicker.simIterate();
-    }
+    // endregion
 
-    @Override
-    public void periodic() {
-        // Pull inputs, publish to AdvantageKit, and update mechanism telemetry
-        updateInputs();
-        Logger.processInputs("Kicker", kickerInputs);
-        kicker.updateTelemetry();
-    }
 }

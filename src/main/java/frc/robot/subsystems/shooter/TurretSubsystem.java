@@ -245,6 +245,36 @@ public class TurretSubsystem extends SubsystemBase {
         }
     }
 
+    /** Advance the turret simulation model by one simulation tick. */
+    @Override
+    public void simulationPeriodic() {
+        turret.simIterate();
+    }
+
+    @Override
+    public void periodic() {
+        // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a
+        // few
+        // times with a small spacing between attempts in case absolute encoders are not
+        // ready
+        // immediately after construction (cold-power-up behavior).
+        if (!easyCrtInitialized && easyCrtAttempts < EASY_CRT_MAX_ATTEMPTS) {
+            easyCrtPeriodicCounter++;
+            // try roughly every 10 periodic cycles (~0.2s at 50Hz)
+            if (easyCrtPeriodicCounter >= 10) {
+                easyCrtPeriodicCounter = 0;
+                easyCrtAttempts++;
+                initializeEasyCRT();
+            }
+        }
+
+        updateInputs();
+        Logger.processInputs("Shooter/Turret", turretInputs);
+        turret.updateTelemetry();
+    }
+
+    // region Public API - queries & commands
+
     /**
      * Gets the current angle of the turret.
      *
@@ -265,7 +295,6 @@ public class TurretSubsystem extends SubsystemBase {
         double requestedDeg = angle.in(Degrees);
         double minDeg = kSoftLimitMin.in(Degrees);
         double maxDeg = kSoftLimitMax.in(Degrees);
-        // double clampedDeg = Math.max(minDeg, Math.min(maxDeg, requestedDeg));
         double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
         Angle clamped = Degrees.of(clampedDeg);
         return turret.setAngle(clamped);
@@ -293,11 +322,9 @@ public class TurretSubsystem extends SubsystemBase {
         return turret.setAngle(angle);
     }
 
-    /** Advance the turret simulation model by one simulation tick. */
-    @Override
-    public void simulationPeriodic() {
-        turret.simIterate();
-    }
+    // endregion
+
+    // region Triggers & events
 
     /**
      * Public Trigger active when the turret is within the configured position tolerance of the
@@ -311,25 +338,6 @@ public class TurretSubsystem extends SubsystemBase {
                         return diff <= kPositionTolerance.in(Degrees);
                     });
 
-    @Override
-    public void periodic() {
-        // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a
-        // few
-        // times with a small spacing between attempts in case absolute encoders are not
-        // ready
-        // immediately after construction (cold-power-up behavior).
-        if (!easyCrtInitialized && easyCrtAttempts < EASY_CRT_MAX_ATTEMPTS) {
-            easyCrtPeriodicCounter++;
-            // try roughly every 10 periodic cycles (~0.2s at 50Hz)
-            if (easyCrtPeriodicCounter >= 10) {
-                easyCrtPeriodicCounter = 0;
-                easyCrtAttempts++;
-                initializeEasyCRT();
-            }
-        }
+    // endregion
 
-        updateInputs();
-        Logger.processInputs("Shooter/Turret", turretInputs);
-        turret.updateTelemetry();
-    }
 }

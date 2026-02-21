@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  * higher-level commands that coordinate them (e.g. shooting routines).
  */
 public class ShooterSystem {
-    // region Subsystems
+    // region Hardware & signals
 
     public final FlywheelSubsystem flywheel;
     public final KickerSubsystem kicker;
@@ -41,7 +41,7 @@ public class ShooterSystem {
 
     // endregion
 
-    // region Construction
+    // region Initialization helpers
 
     public ShooterSystem(
             FlywheelSubsystem flywheel,
@@ -58,7 +58,7 @@ public class ShooterSystem {
 
     // endregion
 
-    // region High-level commands
+    // region Public API (queries & commands)
 
     /**
      * High-level shoot command: spin the flywheel to the configured target, run a short clearing
@@ -297,7 +297,13 @@ public class ShooterSystem {
 
     // endregion
 
-    // region Utilities / private helpers
+    // region Triggers & events
+
+    // Trigger declarations and ephemeral event-based commands for the shooter system live here.
+
+    // endregion
+
+    // region Private helpers
 
     /**
      * Stops any active shooting pipeline by taking the required subsystems briefly (thus interrupting

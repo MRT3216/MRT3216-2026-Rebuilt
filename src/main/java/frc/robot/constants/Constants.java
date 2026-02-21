@@ -214,9 +214,4 @@ public final class Constants {
 
     // endregion
 
-    // ---------------------------------------------------------------------
-    // Note: PhysicsConstants were removed earlier — reintroduce subsystem-scoped
-    // simulator defaults if and when they're needed.
-    // ---------------------------------------------------------------------
-
 }

@@ -85,9 +85,6 @@ public class HoodSubsystem extends SubsystemBase {
 
     // region Target tracking
 
-    /* Debug / verbose logging intentionally removed from this file. Use the centralized
-     * Logger.processInputs(...) calls already present in periodic() for telemetry. */
-
     // endregion
 
     public HoodSubsystem() {
@@ -143,6 +140,14 @@ public class HoodSubsystem extends SubsystemBase {
         inputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
     }
 
+    @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Hood", inputs);
+
+        hood.updateTelemetry();
+    }
+
     /**
      * Gets the current measured hood angle.
      *
@@ -162,7 +167,6 @@ public class HoodSubsystem extends SubsystemBase {
         return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
 
-    // Note: explicit tracked `currentTarget` removed in favor of the mechanism's own setpoint.
     // Use `moveToAngle(...)` factories to command the mechanism (they will clamp to soft limits).
 
     @Override
@@ -183,8 +187,6 @@ public class HoodSubsystem extends SubsystemBase {
      * @param angle the desired hood Angle
      * @return a Command which, when scheduled, will move the hood to the requested angle
      */
-    // Note: use the clearer moveToAngle(...) factories below. Original setAngle
-    // methods have been removed to avoid ambiguous naming.
 
     /**
      * Alias / clearer name for {@link #setAngle(Angle)}.
@@ -265,7 +267,7 @@ public class HoodSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Triggers & periodic
+    // region Triggers & events
 
     /** Trigger active when the hood is within the configured position tolerance of the setpoint. */
     public final Trigger atSetpoint =
@@ -276,14 +278,7 @@ public class HoodSubsystem extends SubsystemBase {
                         return diff <= kPositionTolerance.in(Degrees);
                     });
 
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Hood", inputs);
-        // (removed short-lived trace samples)
-
-        hood.updateTelemetry();
-    }
-
     // endregion
+
+    // (Lifecycle / periodic handled above)
 }

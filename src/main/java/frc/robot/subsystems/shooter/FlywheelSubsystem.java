@@ -43,6 +43,7 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
  */
 public class FlywheelSubsystem extends SubsystemBase {
     // region Inputs & telemetry
+
     /**
      * AdvantageKit-visible inputs for the Flywheel subsystem. These fields are updated each loop from
      * hardware and are intended to be logged/serialized for replay.
@@ -63,18 +64,22 @@ public class FlywheelSubsystem extends SubsystemBase {
     }
 
     private final FlywheelInputsAutoLogged flywheelInputs = new FlywheelInputsAutoLogged();
+
     // endregion
 
     // region Hardware & signals
+
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
+
     // endregion
 
     // region Controller configuration / mechanism
+
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
@@ -92,17 +97,7 @@ public class FlywheelSubsystem extends SubsystemBase {
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
      * to ensure telemetry is time-aligned.
      */
-    private void updateInputs() {
-        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
-        PhoenixUtil.refresh(velocitySignal, referenceSignal);
-
-        flywheelInputs.velocity = flywheel.getSpeed();
-        flywheelInputs.volts = motor.getVoltage();
-        flywheelInputs.current = motor.getStatorCurrent();
-
-        // Sets the setpoint input based on the current SMC state
-        flywheelInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-    }
+    // region Initialization helpers
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public FlywheelSubsystem() {
@@ -141,6 +136,45 @@ public class FlywheelSubsystem extends SubsystemBase {
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);
     }
+
+    // endregion
+
+    // region Lifecycle / periodic
+
+    private void updateInputs() {
+        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
+        PhoenixUtil.refresh(velocitySignal, referenceSignal);
+
+        flywheelInputs.velocity = flywheel.getSpeed();
+        flywheelInputs.volts = motor.getVoltage();
+        flywheelInputs.current = motor.getStatorCurrent();
+
+        // Sets the setpoint input based on the current SMC state
+        flywheelInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
+    }
+
+    /**
+     * Run the flywheel physics simulation step when the robot is in simulation. This advances the
+     * internal mechanism model by one simulation tick.
+     */
+    @Override
+    public void simulationPeriodic() {
+        flywheel.simIterate();
+    }
+
+    @Override
+    public void periodic() {
+        updateInputs();
+        // Record flywheel inputs under a distinct path to avoid colliding with other
+        // shooter subcomponents (e.g., Turret). This organizes telemetry as
+        // Shooter/Flywheel which matches other subsystem telemetry keys.
+        Logger.processInputs("Shooter/Flywheel", flywheelInputs);
+        flywheel.updateTelemetry();
+    }
+
+    // endregion
+
+    // region Public API (queries & commands)
 
     /**
      * Gets the current velocity of the flywheel.
@@ -184,24 +218,9 @@ public class FlywheelSubsystem extends SubsystemBase {
         return flywheel.set(dutyCycle);
     }
 
-    /**
-     * Run the flywheel physics simulation step when the robot is in simulation. This advances the
-     * internal mechanism model by one simulation tick.
-     */
-    @Override
-    public void simulationPeriodic() {
-        flywheel.simIterate();
-    }
+    // endregion
 
-    @Override
-    public void periodic() {
-        updateInputs();
-        // Record flywheel inputs under a distinct path to avoid colliding with other
-        // shooter subcomponents (e.g., Turret). This organizes telemetry as
-        // Shooter/Flywheel which matches other subsystem telemetry keys.
-        Logger.processInputs("Shooter/Flywheel", flywheelInputs);
-        flywheel.updateTelemetry();
-    }
+    // region Triggers & events
 
     /**
      * Returns a Trigger that is active when the flywheel is within the configured error margin of the
@@ -230,4 +249,6 @@ public class FlywheelSubsystem extends SubsystemBase {
                         return tgtRpm > 0
                                 && Math.abs(getVelocity().in(RPM) - tgtRpm) <= kFlywheelAtSpeedError * tgtRpm;
                     });
+
+    // endregion
 }

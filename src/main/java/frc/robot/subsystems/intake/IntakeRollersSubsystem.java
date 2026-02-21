@@ -40,6 +40,7 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
  */
 public class IntakeRollersSubsystem extends SubsystemBase {
     // region Inputs & telemetry
+
     /**
      * IO inputs for the Intake Rollers. AutoLogged to provide synchronized data for AdvantageScope
      * and log replay.
@@ -58,20 +59,24 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     private final IntakeRollersInputsAutoLogged intakeRollersInputs =
             new IntakeRollersInputsAutoLogged();
+
     // endregion
 
     // Explicit Phoenix refreshes are required for telemetry; call directly.
 
     // region Hardware & signals
+
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
+
     // endregion
 
     // region Controller configuration / mechanism
+
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
@@ -85,22 +90,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    /**
-     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
-     * to ensure telemetry is time-aligned.
-     */
-    private void updateInputs() {
-        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
-        // Use the centralized helper for consistency with other subsystems.
-        PhoenixUtil.refresh(velocitySignal, referenceSignal);
-
-        intakeRollersInputs.velocity = intakeRollers.getSpeed();
-        intakeRollersInputs.volts = motor.getVoltage();
-        intakeRollersInputs.current = motor.getStatorCurrent();
-
-        // Sets the setpoint input based on the current SMC state
-        intakeRollersInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-    }
+    // region Initialization helpers
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public IntakeRollersSubsystem() {
@@ -138,6 +128,43 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);
     }
+
+    // endregion
+
+    // region Lifecycle / periodic
+
+    /**
+     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
+     * to ensure telemetry is time-aligned.
+     */
+    private void updateInputs() {
+        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
+        // Use the centralized helper for consistency with other subsystems.
+        PhoenixUtil.refresh(velocitySignal, referenceSignal);
+
+        intakeRollersInputs.velocity = intakeRollers.getSpeed();
+        intakeRollersInputs.volts = motor.getVoltage();
+        intakeRollersInputs.current = motor.getStatorCurrent();
+
+        // Sets the setpoint input based on the current SMC state
+        intakeRollersInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        intakeRollers.simIterate();
+    }
+
+    @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Intake/Rollers", intakeRollersInputs);
+        intakeRollers.updateTelemetry();
+    }
+
+    // endregion
+
+    // region Public API (queries & commands)
 
     /**
      * Gets the current velocity of the intake rollers.
@@ -178,15 +205,11 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.set(dutyCycle);
     }
 
-    @Override
-    public void simulationPeriodic() {
-        intakeRollers.simIterate();
-    }
+    // endregion
 
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Intake/Rollers", intakeRollersInputs);
-        intakeRollers.updateTelemetry();
-    }
+    // region Triggers & events
+
+    // (none yet) — triggers can be added here during wiring in RobotContainer/Systems
+
+    // endregion
 }

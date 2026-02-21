@@ -42,6 +42,8 @@ public class LEDSubsystem extends SubsystemBase {
         led.start();
     }
 
+    // region Lifecycle / periodic
+
     @Override
     public void periodic() {
         // Select LED mode
@@ -82,6 +84,10 @@ public class LEDSubsystem extends SubsystemBase {
         // Update LEDs
         led.setData(ledBuffer);
     }
+
+    // endregion
+
+    // region Private helpers
 
     private void setRGBValue(int r, int g, int b) {
         for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
@@ -142,7 +148,9 @@ public class LEDSubsystem extends SubsystemBase {
         return hopperFull;
     }
 
-    // #region Command Factories
+    // endregion
+
+    // region Public API - command factories
 
     public Command setHubLEDCommand(BooleanSupplier on) {
         return this.runOnce(
@@ -179,7 +187,7 @@ public class LEDSubsystem extends SubsystemBase {
         climbing = false;
     }
 
-    // #endregion
+    // endregion
 
     public static LEDSubsystem getInstance() {
         if (instance == null) {

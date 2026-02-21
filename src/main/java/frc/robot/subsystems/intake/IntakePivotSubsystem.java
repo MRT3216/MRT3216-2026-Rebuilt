@@ -82,20 +82,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
-
-    /**
-     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
-     * to ensure telemetry is time-aligned.
-     */
-    private void updateInputs() {
-        intakePivotInputs.angle = intakePivot.getAngle();
-        intakePivotInputs.volts = smartMotor.getVoltage();
-        intakePivotInputs.current = smartMotor.getStatorCurrent();
-
-        // Sets the setpoint input based on the current SMC state
-        intakePivotInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
-    }
+    // region Initialization helpers
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public IntakePivotSubsystem() {
@@ -141,11 +128,38 @@ public class IntakePivotSubsystem extends SubsystemBase {
         // No Phoenix status signals to configure for SparkFlex here.
     }
 
+    // endregion
+
+    // region Lifecycle / periodic
+
     /**
-     * Gets the current angle of the intake arm.
-     *
-     * @return The current Angle measured by the encoder.
+     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
+     * to ensure telemetry is time-aligned.
      */
+    private void updateInputs() {
+        intakePivotInputs.angle = intakePivot.getAngle();
+        intakePivotInputs.volts = smartMotor.getVoltage();
+        intakePivotInputs.current = smartMotor.getStatorCurrent();
+
+        // Sets the setpoint input based on the current SMC state
+        intakePivotInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        intakePivot.simIterate();
+    }
+
+    @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Intake/Pivot", intakePivotInputs);
+        intakePivot.updateTelemetry();
+    }
+    // endregion
+
+    // region Public API (queries & commands)
+
     public Angle getPosition() {
         return intakePivotInputs.angle;
     }
@@ -188,15 +202,11 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.set(dutyCycle);
     }
 
-    @Override
-    public void simulationPeriodic() {
-        intakePivot.simIterate();
-    }
+    // endregion
 
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Intake/Pivot", intakePivotInputs);
-        intakePivot.updateTelemetry();
-    }
+    // region Triggers & events
+
+    // (none yet) — trigger wiring is done in RobotContainer/Systems
+
+    // endregion
 }

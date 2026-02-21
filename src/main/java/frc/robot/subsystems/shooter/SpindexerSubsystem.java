@@ -37,6 +37,7 @@ import yams.motorcontrollers.local.SparkWrapper;
  */
 public class SpindexerSubsystem extends SubsystemBase {
     // region Inputs & telemetry
+
     /**
      * IO inputs for the Spindexer. AutoLogged to provide synchronized data for AdvantageScope and log
      * replay.
@@ -54,9 +55,11 @@ public class SpindexerSubsystem extends SubsystemBase {
     }
 
     private final SpindexerInputsAutoLogged spindexerInputs = new SpindexerInputsAutoLogged();
+
     // endregion
 
     // region Hardware & controller
+
     /*
      * Note: This subsystem uses a REV Spark (SparkFlex) wrapped by the YAMS
      * SmartMotorController (SparkWrapper). It does NOT use CTRE Phoenix
@@ -85,16 +88,7 @@ public class SpindexerSubsystem extends SubsystemBase {
 
     // endregion
 
-    /**
-     * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry
-     * for log replay.
-     */
-    private void updateInputs() {
-        spindexerInputs.velocity = spindexer.getSpeed();
-        spindexerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-        spindexerInputs.volts = motor.getVoltage();
-        spindexerInputs.current = motor.getStatorCurrent();
-    }
+    // region Initialization helpers
 
     /** Initializes the subsystem and configures the motor controller with constants. */
     public SpindexerSubsystem() {
@@ -125,6 +119,39 @@ public class SpindexerSubsystem extends SubsystemBase {
 
         spindexer = new FlyWheel(spindexerConfig);
     }
+
+    // endregion
+
+    // region Lifecycle / periodic
+
+    /**
+     * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry
+     * for log replay.
+     */
+    private void updateInputs() {
+        spindexerInputs.velocity = spindexer.getSpeed();
+        spindexerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
+        spindexerInputs.volts = motor.getVoltage();
+        spindexerInputs.current = motor.getStatorCurrent();
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        spindexer.simIterate();
+    }
+
+    // region Lifecycle / periodic (continued)
+
+    @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Spindexer", spindexerInputs);
+        spindexer.updateTelemetry();
+    }
+
+    // endregion
+
+    // region Public API (queries & commands)
 
     /**
      * Gets the current velocity of the spindexer.
@@ -165,15 +192,5 @@ public class SpindexerSubsystem extends SubsystemBase {
         return spindexer.set(dutyCycle);
     }
 
-    @Override
-    public void simulationPeriodic() {
-        spindexer.simIterate();
-    }
-
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Spindexer", spindexerInputs);
-        spindexer.updateTelemetry();
-    }
+    // endregion
 }

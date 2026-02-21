@@ -400,15 +400,6 @@ public class FuelSim {
                                         FIELD_LENGTH - 0.076 - 0.152 * j, 2.09 - 0.076 - 0.152 * i, FUEL_RADIUS)));
             }
         }
-
-        // DEBUG: Log XZ lines
-        // Translation3d[][] lines = new Translation3d[FIELD_XZ_LINE_STARTS.length][2];
-        // for (int i = 0; i < FIELD_XZ_LINE_STARTS.length; i++) {
-        //     lines[i][0] = FIELD_XZ_LINE_STARTS[i];
-        //     lines[i][1] = FIELD_XZ_LINE_ENDS[i];
-        // }
-
-        // Logger.recordOutput("Fuel Simulation/Lines (debug)", lines);
     }
 
     protected StructArrayPublisher<Translation3d> fuelPublisher;

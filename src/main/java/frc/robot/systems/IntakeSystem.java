@@ -8,7 +8,7 @@ import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 
 /** Aggregated intake system (high-level grouping of intake subsystems). */
 public class IntakeSystem {
-    // region Subsystems & state
+    // region Hardware & signals
 
     public final IntakeRollersSubsystem intakeRoller;
     public final IntakePivotSubsystem intakeArm;
@@ -16,7 +16,7 @@ public class IntakeSystem {
 
     // endregion
 
-    // region Construction
+    // region Initialization helpers
 
     public enum IntakeStates {
         Stowed,
@@ -37,7 +37,7 @@ public class IntakeSystem {
 
     // endregion
 
-    // region Public API
+    // region Public API (queries & commands)
 
     public Command intake() {
         switch (currentState) {

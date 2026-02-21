@@ -271,6 +271,21 @@ public final class ShooterConstants {
 
         public static final boolean kEasyCrtAbs2Inverted = false;
 
+        /** Match tolerance for EasyCRT (rotations). Tune during bring-up. */
+        public static final Angle kEasyCrtMatchTolerance = Rotations.of(0.06);
+
+        /* EasyCRT bring-up tuning knobs */
+        public static final int kEasyCrtMaxAttempts = 10;
+        /** Periodic cycles between EasyCRT attempts (e.g., 10 at 50Hz ≈ 0.2s). */
+        public static final int kEasyCrtPeriodicSpacing = 10;
+
+        /* EasyCRT telemetry keys */
+        public static final String kEasyCrtStatusKey = "EasyCRT/Status";
+        public static final String kEasyCrtLastErrorRotKey = "EasyCRT/LastErrorRot";
+        public static final String kEasyCrtIterationsKey = "EasyCRT/Iterations";
+        public static final String kEasyCrtRecPairKey = "EasyCRT/RecPair";
+        public static final String kEasyCrtCoverageKey = "EasyCRT/UniqueCoverage";
+
         // Simulation-only CRT gear recommender constraints
         public static final double kCrtGearRecCoverage = 1.2;
         public static final int kCrtGearRecMinTeeth = 15;

@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.TurretConstants.*;
 
@@ -19,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import frc.robot.constants.ShooterConstants;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -94,7 +96,7 @@ public class TurretSubsystem extends SubsystemBase {
     // Retry counters for periodic auto-initialization (avoid blocking in
     // constructor)
     private int easyCrtAttempts = 0;
-    private static final int EASY_CRT_MAX_ATTEMPTS = 10; // total attempts before giving up
+    // EASY_CRT_MAX_ATTEMPTS moved to ShooterConstants.TurretConstants.kEasyCrtMaxAttempts
     private int easyCrtPeriodicCounter = 0; // counts periodic loops between attempts
 
     // PWM duty-cycle absolute encoder wired to the RoboRIO for turret absolute
@@ -177,15 +179,16 @@ public class TurretSubsystem extends SubsystemBase {
             double raw = pivotMotor.getAbsoluteEncoder().getPosition();
             // Basic sanity check: ensure we don't propagate NaN/Infinity into the solver
             if (!Double.isFinite(raw)) {
-                Logger.recordOutput("EasyCRT/Status", "SparkAbsReadInvalid");
+                Logger.recordOutput(kEasyCrtStatusKey, "SparkAbsReadInvalid");
                 return;
             }
-            abs1 = Degrees.of(raw * 360.0);
+            // Spark absolute returns rotations (0..1) — use Rotations for clarity
+            abs1 = Rotations.of(raw);
         } catch (RuntimeException e) {
             // Narrow catch to runtime issues (missing device, API problem). Avoid catching
             // Errors (e.g. linkage issues) which should surface during development.
             Logger.recordOutput(
-                    "EasyCRT/Status",
+                    kEasyCrtStatusKey,
                     "SparkAbsReadFailure:" + e.getClass().getSimpleName() + ":" + e.getMessage());
             return;
         }
@@ -194,13 +197,13 @@ public class TurretSubsystem extends SubsystemBase {
         try {
             double rawPwm = this.turretPwmEncoder.get(); // returns duty-cycle fraction 0..1
             if (!Double.isFinite(rawPwm)) {
-                Logger.recordOutput("EasyCRT/Status", "PWMAbsReadInvalid");
+                Logger.recordOutput(kEasyCrtStatusKey, "PWMAbsReadInvalid");
                 return;
             }
-            abs2 = Degrees.of(rawPwm * 360.0);
+            abs2 = Rotations.of(rawPwm);
         } catch (RuntimeException e) {
             Logger.recordOutput(
-                    "EasyCRT/Status",
+                    kEasyCrtStatusKey,
                     "PWMAbsReadFailure:" + e.getClass().getSimpleName() + ":" + e.getMessage());
             return;
         }
@@ -218,7 +221,8 @@ public class TurretSubsystem extends SubsystemBase {
                         .withAbsoluteEncoder1Gearing(kEasyCrtEncoder1DriverTeeth, kTurretDrivenTeeth)
                         .withAbsoluteEncoder2Gearing(kTurretMotorDriverTeeth, kTurretDrivenTeeth)
                         .withMechanismRange(kEasyCrtMechanismRangeMin, kEasyCrtMechanismRangeMax)
-                        .withAbsoluteEncoderInversions(kEasyCrtAbs1Inverted, kEasyCrtAbs2Inverted);
+                        .withAbsoluteEncoderInversions(kEasyCrtAbs1Inverted, kEasyCrtAbs2Inverted)
+                        .withMatchTolerance(ShooterConstants.TurretConstants.kEasyCrtMatchTolerance);
 
         // Optionally run the gear recommender in simulation to propose pinion pairs.
         if (RobotBase.isSimulation()) {
@@ -227,6 +231,13 @@ public class TurretSubsystem extends SubsystemBase {
                     kCrtGearRecMinTeeth,
                     kCrtGearRecMaxTeeth,
                     kCrtGearRecMaxCompoundTeeth);
+            // In simulation, log recommended gear pairs and unique coverage to aid tuning
+            config
+                    .getRecommendedCrtGearPair()
+                    .ifPresent(pair -> Logger.recordOutput("EasyCRT/RecPair", pair.toString()));
+            config
+                    .getUniqueCoverage()
+                    .ifPresent(cov -> Logger.recordOutput("EasyCRT/UniqueCoverage", cov));
         }
 
         EasyCRT solver = new EasyCRT(config);
@@ -237,6 +248,8 @@ public class TurretSubsystem extends SubsystemBase {
             // absolute angle
             smartMotor.setEncoderPosition(mechAngle);
             Logger.recordOutput("EasyCRT/Status", "OK");
+            Logger.recordOutput("EasyCRT/Iterations", solver.getLastIterations());
+            Logger.recordOutput("EasyCRT/LastErrorRot", solver.getLastErrorRotations());
             easyCrtInitialized = true;
         } else {
             Logger.recordOutput("EasyCRT/Status", solver.getLastStatus().toString());
@@ -254,14 +267,12 @@ public class TurretSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a
-        // few
-        // times with a small spacing between attempts in case absolute encoders are not
-        // ready
-        // immediately after construction (cold-power-up behavior).
-        if (!easyCrtInitialized && easyCrtAttempts < EASY_CRT_MAX_ATTEMPTS) {
+        // few times with a small spacing between attempts in case absolute encoders are not
+        // ready immediately after construction (cold-power-up behavior).
+        if (!easyCrtInitialized && easyCrtAttempts < kEasyCrtMaxAttempts) {
             easyCrtPeriodicCounter++;
-            // try roughly every 10 periodic cycles (~0.2s at 50Hz)
-            if (easyCrtPeriodicCounter >= 10) {
+            // try roughly every kEasyCrtPeriodicSpacing cycles (~0.2s at 50Hz)
+            if (easyCrtPeriodicCounter >= kEasyCrtPeriodicSpacing) {
                 easyCrtPeriodicCounter = 0;
                 easyCrtAttempts++;
                 initializeEasyCRT();
@@ -282,6 +293,16 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public Angle getPosition() {
         return turretInputs.angle;
+    }
+
+    /**
+     * Returns the current commanded target for the turret.
+     *
+     * <p>Reads the mechanism's stored setpoint (if present) and falls back to the measured position
+     * when no setpoint is available.
+     */
+    public Angle getTarget() {
+        return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
 
     /**
@@ -320,6 +341,16 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public Command setAngle(Supplier<Angle> angle) {
         return turret.setAngle(angle);
+    }
+
+    /** Alias / clearer name for {@link #setAngle(Angle)}. */
+    public Command moveToAngle(Angle angle) {
+        return setAngle(angle);
+    }
+
+    /** Alias / clearer name for the supplier-backed factory {@link #setAngle(Supplier)}. */
+    public Command moveToAngle(Supplier<Angle> angle) {
+        return setAngle(angle);
     }
 
     // endregion

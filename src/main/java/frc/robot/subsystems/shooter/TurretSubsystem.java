@@ -247,14 +247,19 @@ public class TurretSubsystem extends SubsystemBase {
             // Seed the SmartMotorController so closed-loop control starts at the correct
             // absolute angle
             smartMotor.setEncoderPosition(mechAngle);
-            Logger.recordOutput("EasyCRT/Status", "OK");
-            Logger.recordOutput("EasyCRT/Iterations", solver.getLastIterations());
-            Logger.recordOutput("EasyCRT/LastErrorRot", solver.getLastErrorRotations());
+            Logger.recordOutput(kEasyCrtStatusKey, "OK");
+            // Record the solved mechanism angle for replay/telemetry
+            Logger.recordOutput(kEasyCrtSolvedAngleKey, mechAngle);
+            // Optionally record solver internals on success when tuning
+            if (kEasyCrtLogOnSuccess) {
+                Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
+                Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
+            }
             easyCrtInitialized = true;
         } else {
-            Logger.recordOutput("EasyCRT/Status", solver.getLastStatus().toString());
-            Logger.recordOutput("EasyCRT/LastErrorRot", solver.getLastErrorRotations());
-            Logger.recordOutput("EasyCRT/Iterations", solver.getLastIterations());
+            Logger.recordOutput(kEasyCrtStatusKey, solver.getLastStatus().toString());
+            Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
+            Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
         }
     }
 

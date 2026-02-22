@@ -285,6 +285,13 @@ public final class ShooterConstants {
         public static final String kEasyCrtIterationsKey = "EasyCRT/Iterations";
         public static final String kEasyCrtRecPairKey = "EasyCRT/RecPair";
         public static final String kEasyCrtCoverageKey = "EasyCRT/UniqueCoverage";
+        /** Telemetry key for the final solved mechanism angle when EasyCRT succeeds. */
+        public static final String kEasyCrtSolvedAngleKey = "EasyCRT/SolvedAngle";
+
+        /**
+         * When true, log solver iterations and last-error on successful solves. Useful during tuning.
+         */
+        public static final boolean kEasyCrtLogOnSuccess = true;
 
         // Simulation-only CRT gear recommender constraints
         public static final double kCrtGearRecCoverage = 1.2;

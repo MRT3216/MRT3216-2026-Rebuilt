@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.*;
 
@@ -143,6 +144,12 @@ public class FlywheelSubsystem extends SubsystemBase {
     private void updateInputs() {
         // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
+
+        // Phoenix-signal logging for plotting/debug (measured vs closed-loop reference)
+        Logger.recordOutput("Flywheel/FX/VelocityRPM", velocitySignal.getValue().in(RPM));
+        Logger.recordOutput(
+                "Flywheel/FX/ReferenceRPM",
+                RPM.convertFrom(referenceSignal.getValue(), RotationsPerSecond));
 
         flywheelInputs.velocity = flywheel.getSpeed();
         flywheelInputs.volts = motor.getVoltage();

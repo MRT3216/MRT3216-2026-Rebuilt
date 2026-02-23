@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.HoodConstants.*;
 
@@ -136,6 +137,11 @@ public class HoodSubsystem extends SubsystemBase {
         // Refresh Phoenix signals so logged telemetry is time-aligned with hardware.
         PhoenixUtil.refresh(positionSignal, referenceSignal);
 
+        // Record raw Phoenix signals (helpful for Phoenix Tuner / AdvantageScope plots)
+        Logger.recordOutput("Hood/FX/PositionDegrees", positionSignal.getValue().in(Degrees));
+        Logger.recordOutput(
+                "Hood/FX/ReferenceDegrees", Degrees.convertFrom(referenceSignal.getValue(), Rotations));
+
         inputs.angle = hood.getAngle();
         inputs.volts = smartMotor.getVoltage();
         inputs.current = smartMotor.getStatorCurrent();
@@ -146,7 +152,6 @@ public class HoodSubsystem extends SubsystemBase {
     public void periodic() {
         updateInputs();
         Logger.processInputs("Hood", inputs);
-
         hood.updateTelemetry();
     }
 

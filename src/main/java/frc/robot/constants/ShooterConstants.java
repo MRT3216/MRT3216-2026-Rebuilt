@@ -40,21 +40,21 @@ public final class ShooterConstants {
         // Electrical / limits
         public static final Current kStatorCurrentLimit = Amps.of(80);
 
-        // PID (velocity)
-        public static final double kP = 1.0;
+        // PID (velocity) - set to 0.0 for initial tuning
+        public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
-        // Feedforward
-        public static final double kS = 0.15;
-        public static final double kV = 0.00207;
-        public static final double kA = 0.0001;
+        // Feedforward - set to 0.0 for initial tuning
+        public static final double kS = 0.0;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
 
-        // Simulation overrides (tuned for smoother/less-friction simulation)
-        public static final double kS_sim = 0.10;
-        public static final double kV_sim = 0.0018;
-        public static final double kA_sim = 0.00008;
-        public static final double kP_sim = 0.6;
+        // Simulation overrides - start at 0.0 until tuned
+        public static final double kS_sim = 0.0;
+        public static final double kV_sim = 0.0;
+        public static final double kA_sim = 0.0;
+        public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
@@ -255,12 +255,12 @@ public final class ShooterConstants {
          * ArmFeedforward(ks, kg, kv) to match arm semantics.
          */
         public static ArmFeedforward armFeedforward() {
-            return new ArmFeedforward(kS, kG, kV);
+            return new ArmFeedforward(kS, kG, kV, kA);
         }
 
         /** Simulation variant of the Hood arm feedforward. */
         public static ArmFeedforward armFeedforwardSim() {
-            return new ArmFeedforward(kS_sim, kG_sim, kV_sim);
+            return new ArmFeedforward(kS_sim, kG_sim, kV_sim, kA_sim);
         }
     }
 
@@ -277,26 +277,26 @@ public final class ShooterConstants {
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.0502269403);
 
         // PID
-        public static final double kP = 1.0;
+        public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
         // Motion limits
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
         public static final AngularAcceleration kMaxAccelDegPerSec2 =
-                DegreesPerSecondPerSecond.of(45.0);
+                DegreesPerSecondPerSecond.of(90.0);
 
         // Feedforward
-        public static final double kS = 0.1;
-        public static final double kV = 0.12;
-        public static final double kA = 0.01;
+        public static final double kS = 0.0;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
 
         // Simulation-specific feedforward / PID defaults (tuned for sim)
-        public static final double kS_sim = 2.0;
+        public static final double kS_sim = 0.0;
         public static final double kV_sim = 0.0;
         public static final double kA_sim = 0.0;
         /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
-        public static final double kG_sim = 0.0;
+        public static final double kG_sim = 0.234;
         // Simulation-tuned PID defaults (reduced to avoid oscillation in sim)
         public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;

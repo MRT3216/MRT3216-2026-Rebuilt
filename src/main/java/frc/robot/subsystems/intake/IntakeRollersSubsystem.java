@@ -2,6 +2,7 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.IntakeConstants.Rollers.*;
 
@@ -140,6 +141,12 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
         // Use the centralized helper for consistency with other subsystems.
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
+
+        // Phoenix-signal logging for plotting/debug (measured vs closed-loop reference)
+        Logger.recordOutput("IntakeRollers/FX/VelocityRPM", velocitySignal.getValue().in(RPM));
+        Logger.recordOutput(
+                "IntakeRollers/FX/ReferenceRPM",
+                RPM.convertFrom(referenceSignal.getValue(), RotationsPerSecond));
 
         intakeRollersInputs.velocity = intakeRollers.getSpeed();
         intakeRollersInputs.volts = motor.getVoltage();

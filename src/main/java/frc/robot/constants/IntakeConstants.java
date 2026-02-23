@@ -34,21 +34,21 @@ public final class IntakeConstants {
         // Electrical / limits
         public static final Current kStatorCurrentLimit = Amps.of(80);
 
-        // PID (velocity loop)
-        public static final double kP = 0.5;
+        // PID (velocity loop) - zeroed for tuning
+        public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
-        // Feedforward
-        public static final double kS = 0.15;
-        public static final double kV = 0.00207;
-        public static final double kA = 0.0001;
+        // Feedforward - zeroed for tuning
+        public static final double kS = 0.0;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
 
-        // Simulation overrides (tuned for sim: reduce P and feedforward a bit)
-        public static final double kS_sim = 0.12;
-        public static final double kV_sim = 0.001656;
-        public static final double kA_sim = 0.00008;
-        public static final double kP_sim = 0.35;
+        // Simulation overrides (zeroed for tuning)
+        public static final double kS_sim = 0.0;
+        public static final double kV_sim = 0.0;
+        public static final double kA_sim = 0.0;
+        public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
@@ -83,17 +83,17 @@ public final class IntakeConstants {
         public static final Current kStatorCurrentLimit = Amps.of(60);
 
         // PID / motion limits
-        public static final double kP = 10.0;
+        public static final double kP = 0.0;
         public static final double kI = 0.0;
-        public static final double kD = 2.0;
+        public static final double kD = 0.0;
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(20.0);
         public static final AngularAcceleration kMaxAccelDegPerSec2 =
                 DegreesPerSecondPerSecond.of(20.0);
 
-        // Feedforward
-        public static final double kS = 0.1;
-        public static final double kV = 0.12;
-        public static final double kA = 0.01;
+        // Feedforward - zeroed for tuning
+        public static final double kS = 0.0;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
 
         /**
          * Gravity/feedforward constant used by arm-style feedforward (ArmFeedforward). Default 0.0
@@ -101,13 +101,13 @@ public final class IntakeConstants {
          */
         public static final double kG = 0.0;
 
-        // Simulation overrides (tuned for sim)
-        public static final double kS_sim = 0.05;
-        public static final double kV_sim = 0.09;
-        public static final double kA_sim = 0.008;
-        public static final double kP_sim = 6.0;
+        // Simulation overrides (zeroed for tuning)
+        public static final double kS_sim = 0.0;
+        public static final double kV_sim = 0.0;
+        public static final double kA_sim = 0.0;
+        public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
-        public static final double kD_sim = 1.0;
+        public static final double kD_sim = 0.0;
         /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
         public static final double kG_sim = 0.0;
 

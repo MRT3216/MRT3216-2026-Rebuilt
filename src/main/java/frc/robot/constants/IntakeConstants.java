@@ -7,6 +7,8 @@ import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Pounds;
 
+import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -53,6 +55,16 @@ public final class IntakeConstants {
         // Telemetry keys
         public static final String kIntakeRollersMotorTelemetry = "IntakeRollersMotor";
         public static final String kIntakeRollersMechTelemetry = "IntakeRollersMech";
+
+        /** Returns a preconfigured SimpleMotorFeedforward for the intake rollers. */
+        public static SimpleMotorFeedforward motorFeedforward() {
+            return new SimpleMotorFeedforward(kS, kV, kA);
+        }
+
+        /** Simulation variant of the intake rollers feedforward. */
+        public static SimpleMotorFeedforward motorFeedforwardSim() {
+            return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
+        }
     }
 
     /**
@@ -83,6 +95,12 @@ public final class IntakeConstants {
         public static final double kV = 0.12;
         public static final double kA = 0.01;
 
+        /**
+         * Gravity/feedforward constant used by arm-style feedforward (ArmFeedforward). Default 0.0
+         * until tuned on robot; units: volts-equivalent gravity term.
+         */
+        public static final double kG = 0.0;
+
         // Simulation overrides (tuned for sim)
         public static final double kS_sim = 0.05;
         public static final double kV_sim = 0.09;
@@ -90,6 +108,8 @@ public final class IntakeConstants {
         public static final double kP_sim = 6.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 1.0;
+        /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
+        public static final double kG_sim = 0.0;
 
         // Limits / presets
         public static final Angle kHardLimitMax = Degrees.of(360);
@@ -108,5 +128,15 @@ public final class IntakeConstants {
         // Arm position presets
         public static final Angle kStowedAngle = Degrees.of(140);
         public static final Angle kDeployedAngle = Degrees.of(0);
+
+        /** Returns a preconfigured ArmFeedforward for the intake pivot (ks, kg, kv). */
+        public static ArmFeedforward armFeedforward() {
+            return new ArmFeedforward(kS, kG, kV);
+        }
+
+        /** Simulation variant for the intake pivot arm feedforward. */
+        public static ArmFeedforward armFeedforwardSim() {
+            return new ArmFeedforward(kS_sim, kG_sim, kV_sim);
+        }
     }
 }

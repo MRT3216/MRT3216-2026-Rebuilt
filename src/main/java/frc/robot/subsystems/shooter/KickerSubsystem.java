@@ -7,7 +7,6 @@ import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.KickerConstants.*;
 
 import com.revrobotics.spark.SparkFlex;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -85,9 +84,9 @@ public class KickerSubsystem extends SubsystemBase {
                         // Feedback Constants (PID Constants)
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants
-                        .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
-                        .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
+                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
+                        .withFeedforward(motorFeedforward())
+                        .withSimFeedforward(motorFeedforwardSim())
                         // Telemetry name and verbosity level
                         .withTelemetry(kKickerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))

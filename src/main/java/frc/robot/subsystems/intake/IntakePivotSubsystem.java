@@ -8,7 +8,6 @@ import static frc.robot.constants.IntakeConstants.Pivot.*;
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
-import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
@@ -92,10 +91,10 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
                         .withClosedLoopController(kP, kI, kD)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants
-                        .withFeedforward(new ArmFeedforward(kS, kV, kA))
-                        .withSimFeedforward(new ArmFeedforward(kS_sim, kV_sim, kA_sim))
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccelDegPerSec2)
+                        // Use centralized intake pivot arm feedforward factory
+                        .withFeedforward(armFeedforward())
+                        .withSimFeedforward(armFeedforwardSim())
                         // Telemetry
                         .withTelemetry(kIntakeArmMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)

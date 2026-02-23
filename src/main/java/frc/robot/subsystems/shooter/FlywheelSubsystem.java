@@ -9,7 +9,6 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.Pair;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -108,9 +107,9 @@ public class FlywheelSubsystem extends SubsystemBase {
                         // Feedback Constants (PID Constants)
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants
-                        .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
-                        .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
+                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
+                        .withFeedforward(motorFeedforward())
+                        .withSimFeedforward(motorFeedforwardSim())
                         // Telemetry
                         .withTelemetry(kFlywheelMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))

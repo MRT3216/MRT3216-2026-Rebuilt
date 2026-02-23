@@ -14,6 +14,8 @@ import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Rotations;
 
+import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -75,6 +77,19 @@ public final class ShooterConstants {
 
         /** Duration to run the clear routine while the flywheel spins up (seconds). */
         public static final double kClearDurationSecs = 0.5;
+
+        /**
+         * Returns a preconfigured SimpleMotorFeedforward suitable for flywheel/feedforward use in
+         * controllers. Keeps constructor semantics centralized to avoid copy/paste errors.
+         */
+        public static SimpleMotorFeedforward motorFeedforward() {
+            return new SimpleMotorFeedforward(kS, kV, kA);
+        }
+
+        /** Simulation variant of the motor feedforward. */
+        public static SimpleMotorFeedforward motorFeedforwardSim() {
+            return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
+        }
     }
 
     public static final class SpindexerConstants {
@@ -118,6 +133,16 @@ public final class ShooterConstants {
         public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(2000.0);
         // Default clear velocity (negative to reverse) used to clear jams
         public static final AngularVelocity kSpindexerClearAngularVelocity = RPM.of(-100.0);
+
+        /** Returns a preconfigured SimpleMotorFeedforward for the spindexer. */
+        public static SimpleMotorFeedforward motorFeedforward() {
+            return new SimpleMotorFeedforward(kS, kV, kA);
+        }
+
+        /** Simulation variant of the spindexer feedforward. */
+        public static SimpleMotorFeedforward motorFeedforwardSim() {
+            return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
+        }
     }
 
     public static final class KickerConstants {
@@ -155,6 +180,16 @@ public final class ShooterConstants {
         // Recommended velocities
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2000.0);
         public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
+
+        /** Returns a preconfigured SimpleMotorFeedforward for the kicker. */
+        public static SimpleMotorFeedforward motorFeedforward() {
+            return new SimpleMotorFeedforward(kS, kV, kA);
+        }
+
+        /** Simulation variant of the kicker feedforward. */
+        public static SimpleMotorFeedforward motorFeedforwardSim() {
+            return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
+        }
     }
 
     public static final class HoodConstants {
@@ -183,10 +218,16 @@ public final class ShooterConstants {
         public static final double kV = 0.12;
         public static final double kA = 0.01;
 
+        /** Gravity/feedforward constant used by arm-style feedforward (ArmFeedforward). */
+        public static final double kG = 0.0;
+
         // Simulation-specific feedforward / PID defaults for Hood (tuned for sim)
         public static final double kS_sim = 0.03;
         public static final double kV_sim = 0.09;
         public static final double kA_sim = 0.008;
+        /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
+        public static final double kG_sim = 0.0;
+
         public static final double kP_sim = 4.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.5;
@@ -208,6 +249,19 @@ public final class ShooterConstants {
         public static final String kHoodMechTelemetry = "HoodMech";
         /** Allowed absolute position error for hood angle comparisons (degrees). */
         public static final Angle kPositionTolerance = Degrees.of(1.0);
+
+        /**
+         * Returns a preconfigured ArmFeedforward instance for the Hood arm. Uses the ordering
+         * ArmFeedforward(ks, kg, kv) to match arm semantics.
+         */
+        public static ArmFeedforward armFeedforward() {
+            return new ArmFeedforward(kS, kG, kV);
+        }
+
+        /** Simulation variant of the Hood arm feedforward. */
+        public static ArmFeedforward armFeedforwardSim() {
+            return new ArmFeedforward(kS_sim, kG_sim, kV_sim);
+        }
     }
 
     public static final class TurretConstants {
@@ -241,6 +295,8 @@ public final class ShooterConstants {
         public static final double kS_sim = 2.0;
         public static final double kV_sim = 0.0;
         public static final double kA_sim = 0.0;
+        /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
+        public static final double kG_sim = 0.0;
         // Simulation-tuned PID defaults (reduced to avoid oscillation in sim)
         public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
@@ -338,5 +394,15 @@ public final class ShooterConstants {
         public static final int kCrtGearRecMinTeeth = 15;
         public static final int kCrtGearRecMaxTeeth = 45;
         public static final int kCrtGearRecMaxCompoundTeeth = 30;
+
+        /** Returns a SimpleMotorFeedforward configured for turret controllers. */
+        public static SimpleMotorFeedforward motorFeedforward() {
+            return new SimpleMotorFeedforward(kS, kV, kA);
+        }
+
+        /** Simulation variant of the turret feedforward. */
+        public static SimpleMotorFeedforward motorFeedforwardSim() {
+            return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
+        }
     }
 }

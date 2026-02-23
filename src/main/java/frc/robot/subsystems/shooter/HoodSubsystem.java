@@ -2,8 +2,6 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.HoodConstants.*;
 
@@ -11,7 +9,6 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
@@ -94,10 +91,10 @@ public class HoodSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         .withClosedLoopController(kP, kI, kD)
-                        .withSimClosedLoopController(
-                                kP_sim, kI_sim, kD_sim, DegreesPerSecond.of(180), DegreesPerSecondPerSecond.of(90))
-                        .withFeedforward(new ArmFeedforward(kS, kV, kA))
-                        .withSimFeedforward(new ArmFeedforward(kS_sim, kV_sim, kA_sim))
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccelDegPerSec2)
+                        // Use centralized Hood feedforward factory
+                        .withFeedforward(armFeedforward())
+                        .withSimFeedforward(armFeedforwardSim())
                         .withTelemetry(kHoodMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)

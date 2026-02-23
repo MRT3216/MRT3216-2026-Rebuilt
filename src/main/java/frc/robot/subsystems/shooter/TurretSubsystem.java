@@ -8,7 +8,6 @@ import static frc.robot.constants.ShooterConstants.TurretConstants.*;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
@@ -131,10 +130,10 @@ public class TurretSubsystem extends SubsystemBase {
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         // Feedback Constants (PID Constants)
                         .withClosedLoopController(kP, kI, kD)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants
-                        .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
-                        .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccelDegPerSec2)
+                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
+                        .withFeedforward(motorFeedforward())
+                        .withSimFeedforward(motorFeedforwardSim())
                         // Telemetry
                         .withTelemetry(kTurretMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)

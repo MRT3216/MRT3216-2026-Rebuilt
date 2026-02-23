@@ -7,7 +7,6 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
@@ -21,7 +20,6 @@ import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.units.measure.MomentOfInertia;
 
@@ -209,26 +207,26 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(30);
 
         // PID
-        public static final double kP = 6.0;
+        public static final double kP = 0.0;
         public static final double kI = 0.0;
-        public static final double kD = 1.0;
+        public static final double kD = 0.0;
 
         // Feedforward (Arm-style)
-        public static final double kS = 0.05;
-        public static final double kV = 0.12;
-        public static final double kA = 0.01;
+        public static final double kS = 0.0;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
 
         /** Gravity/feedforward constant used by arm-style feedforward (ArmFeedforward). */
         public static final double kG = 0.0;
 
         // Simulation-specific feedforward / PID defaults for Hood (tuned for sim)
-        public static final double kS_sim = 0.03;
-        public static final double kV_sim = 0.09;
-        public static final double kA_sim = 0.008;
+        public static final double kS_sim = 0.0;
+        public static final double kV_sim = 0.0;
+        public static final double kA_sim = 0.0;
         /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
         public static final double kG_sim = 0.0;
 
-        public static final double kP_sim = 4.0;
+        public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.5;
 
@@ -293,12 +291,10 @@ public final class ShooterConstants {
 
         // Simulation-specific feedforward / PID defaults (tuned for sim)
         public static final double kS_sim = 0.0;
-        public static final double kV_sim = 0.0;
-        public static final double kA_sim = 0.0;
-        /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
-        public static final double kG_sim = 0.234;
+        public static final double kV_sim = 2;
+        public static final double kA_sim = 0.2;
         // Simulation-tuned PID defaults (reduced to avoid oscillation in sim)
-        public static final double kP_sim = 0.0;
+        public static final double kP_sim = 2.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
@@ -315,21 +311,21 @@ public final class ShooterConstants {
         // Limits / presets
         public static final Angle kHardLimitMax = Degrees.of(180);
         public static final Angle kHardLimitMin = Degrees.of(-180);
-        public static final Angle kSoftLimitMax = Degrees.of(170);
-        public static final Angle kSoftLimitMin = Degrees.of(-170);
+        public static final Angle kSoftLimitMax = Degrees.of(90);
+        public static final Angle kSoftLimitMin = Degrees.of(-90);
         public static final Angle kStartingPosition = Degrees.of(0);
         /** Allowed absolute position error for turret angle comparisons (degrees). */
         public static final Angle kPositionTolerance = Degrees.of(1.0);
 
         // Shooting helpers
-        public static final Distance kMinShootingDistance = Meters.of(1.5);
-        public static final Distance kMaxShootingDistance = Meters.of(12.0);
-        public static final LinearVelocity kBaseVel = InchesPerSecond.of(300);
-        public static final double kVelMultiplier = 0.5;
-        public static final double kVelPower = 1.2;
-        public static final Distance kDistanceAboveFunnel = Inches.of(12.0);
-        public static final Distance kFunnelRadius = Inches.of(24.0);
-        public static final Distance kFunnelHeight = Inches.of(104.0);
+        // public static final Distance kMinShootingDistance = Meters.of(1.5);
+        // public static final Distance kMaxShootingDistance = Meters.of(12.0);
+        // public static final LinearVelocity kBaseVel = InchesPerSecond.of(300);
+        // public static final double kVelMultiplier = 0.5;
+        // public static final double kVelPower = 1.2;
+        // public static final Distance kDistanceAboveFunnel = Inches.of(12.0);
+        // public static final Distance kFunnelRadius = Inches.of(24.0);
+        // public static final Distance kFunnelHeight = Inches.of(104.0);
 
         // Telemetry
         public static final String kTurretMotorTelemetry = "TurretMotor";

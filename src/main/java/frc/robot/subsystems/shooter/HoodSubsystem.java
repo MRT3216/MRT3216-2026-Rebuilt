@@ -2,6 +2,8 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.HoodConstants.*;
 
@@ -92,7 +94,8 @@ public class HoodSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         .withClosedLoopController(kP, kI, kD)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        .withSimClosedLoopController(
+                                kP_sim, kI_sim, kD_sim, DegreesPerSecond.of(180), DegreesPerSecondPerSecond.of(90))
                         .withFeedforward(new ArmFeedforward(kS, kV, kA))
                         .withSimFeedforward(new ArmFeedforward(kS_sim, kV_sim, kA_sim))
                         .withTelemetry(kHoodMotorTelemetry, Constants.telemetryVerbosity())
@@ -115,9 +118,11 @@ public class HoodSubsystem extends SubsystemBase {
 
         hood = new Arm(hoodConfig);
 
-        // Initialize the mechanism commanded setpoint to a clamped starting angle to avoid
-        // commanding outside the configured soft limits at startup. Use the SmartMotorController
-        // setPosition API so the mechanism's internal setpoint is consistent and observable.
+        // Initialize the mechanism commanded setpoint to a clamped starting angle to
+        // avoid commanding outside the configured soft limits at startup. Use the
+        // SmartMotorController setPosition API so the mechanism's internal setpoint is
+        // consistent and
+        // observable.
         double startMeasuredDeg = hood.getAngle().in(Degrees);
         double clampedStartDeg =
                 MathUtil.clamp(startMeasuredDeg, kSoftLimitMin.in(Degrees), kSoftLimitMax.in(Degrees));
@@ -167,7 +172,8 @@ public class HoodSubsystem extends SubsystemBase {
         return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
 
-    // Use `moveToAngle(...)` factories to command the mechanism (they will clamp to soft limits).
+    // Use `moveToAngle(...)` factories to command the mechanism (they will clamp to
+    // soft limits).
 
     @Override
     public void simulationPeriodic() {
@@ -221,7 +227,8 @@ public class HoodSubsystem extends SubsystemBase {
      * @return a Command which will drive the hood motor in open-loop while active
      */
     public Command setDutyCycle(double dutyCycle) {
-        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied via ArmConfig
+        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied
+        // via ArmConfig
         return hood.set(dutyCycle);
     }
 

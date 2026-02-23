@@ -24,25 +24,33 @@ public final class IntakeConstants {
     /** Grouped roller constants to keep intake-related values organized. */
     public static final class Rollers {
         private Rollers() {}
-
+        // Mechanical
         public static final Distance kWheelDiameter = Inches.of(3.5);
         public static final Mass kWheelMass = Pounds.of(2);
         public static final double kGearReduction = 1.0;
+
+        // Electrical / limits
         public static final Current kStatorCurrentLimit = Amps.of(80);
+
+        // PID (velocity loop)
         public static final double kP = 0.5;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
+
+        // Feedforward
         public static final double kS = 0.15;
         public static final double kV = 0.00207;
         public static final double kA = 0.0001;
 
-        // SIM variants (tuned for sim: reduce P and feedforward a bit)
+        // Simulation overrides (tuned for sim: reduce P and feedforward a bit)
         public static final double kS_sim = 0.12;
         public static final double kV_sim = 0.001656;
         public static final double kA_sim = 0.00008;
         public static final double kP_sim = 0.35;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
+
+        // Telemetry keys
         public static final String kIntakeRollersMotorTelemetry = "IntakeRollersMotor";
         public static final String kIntakeRollersMechTelemetry = "IntakeRollersMech";
     }
@@ -53,35 +61,47 @@ public final class IntakeConstants {
      */
     public static final class Pivot {
         private Pivot() {}
-
+        // Mechanical
         public static final double kGearing = 30.0;
-        public static final Distance kLength = Inches.of(11.5);
+        public static final Distance kLength = Inches.of(13);
         public static final Mass kMass = Pounds.of(6.4);
+
+        // Motor wiring
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(60);
+
+        // PID / motion limits
         public static final double kP = 10.0;
         public static final double kI = 0.0;
         public static final double kD = 2.0;
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(20.0);
         public static final AngularAcceleration kMaxAccelDegPerSec2 =
                 DegreesPerSecondPerSecond.of(20.0);
+
+        // Feedforward
         public static final double kS = 0.1;
         public static final double kV = 0.12;
         public static final double kA = 0.01;
-        // SIM variants (tuned for sim)
+
+        // Simulation overrides (tuned for sim)
         public static final double kS_sim = 0.05;
         public static final double kV_sim = 0.09;
         public static final double kA_sim = 0.008;
         public static final double kP_sim = 6.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 1.0;
+
+        // Limits / presets
         public static final Angle kHardLimitMax = Degrees.of(360);
         public static final Angle kHardLimitMin = Degrees.of(0);
         public static final Angle kSoftLimitMax = Degrees.of(350);
         public static final Angle kSoftLimitMin = Degrees.of(10);
         public static final Angle kStartingPosition = Degrees.of(0);
+
+        // Telemetry keys
         public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
         public static final String kIntakeArmMechTelemetry = "IntakeArmMech";
+
         /** Gearing used specifically for external encoder wiring (motor:mechanism). */
         public static final double kEncoderGearing = 1.0;
 

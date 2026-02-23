@@ -20,7 +20,6 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
@@ -218,12 +217,12 @@ public class RobotContainer {
 
         // If we're in TUNING mode, schedule a long-running supplier-backed flywheel command
         // that follows the `tuningFlywheel` AtomicReference.
-        if (Constants.currentMode == Constants.Mode.TUNING) {
-            var tuningCommand = flywheelSubsystem.setVelocity(() -> tuningFlywheel.get());
-            // Schedule so it runs until we leave TUNING (it requires the flywheel subsystem).
-            CommandScheduler.getInstance().schedule(tuningCommand);
-            SmartDashboard.putNumber("Tuning/FlywheelRPM", tuningFlywheel.get().in(RPM));
-        }
+        // if (Constants.currentMode == Constants.Mode.TUNING) {
+        //     var tuningCommand = flywheelSubsystem.setVelocity(() -> tuningFlywheel.get());
+        //     // Schedule so it runs until we leave TUNING (it requires the flywheel subsystem).
+        //     CommandScheduler.getInstance().schedule(tuningCommand);
+        //     SmartDashboard.putNumber("Tuning/FlywheelRPM", tuningFlywheel.get().in(RPM));
+        // }
 
         // Configure fuel sim (sim only)
         if (Constants.currentMode == Constants.Mode.SIM) {

@@ -47,12 +47,12 @@ public final class ShooterConstants {
         public static final double kS = 0.0;
         public static final double kV = 0.0;
         public static final double kA = 0.0;
-
+                                                                                                                                                                                                                                                                                                                                                                         
         // Simulation overrides - start at 0.0 until tuned
         public static final double kS_sim = 0.0;
-        public static final double kV_sim = 0.0;
-        public static final double kA_sim = 0.0;
-        public static final double kP_sim = 0.0;
+        public static final double kV_sim = 0.124;
+        public static final double kA_sim = 0.1;
+        public static final double kP_sim = 0.1;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
@@ -309,8 +309,8 @@ public final class ShooterConstants {
                         new edu.wpi.first.math.geometry.Rotation3d());
 
         // Limits / presets
-        public static final Angle kHardLimitMax = Degrees.of(180);
-        public static final Angle kHardLimitMin = Degrees.of(-180);
+        public static final Angle kHardLimitMax = Degrees.of(120);
+        public static final Angle kHardLimitMin = Degrees.of(-120);
         public static final Angle kSoftLimitMax = Degrees.of(90);
         public static final Angle kSoftLimitMin = Degrees.of(-90);
         public static final Angle kStartingPosition = Degrees.of(0);

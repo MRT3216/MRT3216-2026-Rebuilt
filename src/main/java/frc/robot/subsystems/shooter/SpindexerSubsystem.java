@@ -114,7 +114,9 @@ public class SpindexerSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(kWheelDiameter)
                         .withMass(kWheelMass)
-                        .withTelemetry(kSpindexerMechTelemetry, Constants.telemetryVerbosity());
+                        .withTelemetry(kSpindexerMechTelemetry, Constants.telemetryVerbosity())
+                        .withUpperSoftLimit(kSoftLimitMax)
+                        .withLowerSoftLimit(kSoftLimitMin);
 
         spindexer = new FlyWheel(spindexerConfig);
     }

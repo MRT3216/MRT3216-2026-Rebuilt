@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -186,7 +187,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * @param angle supplier providing the desired Angle
      * @return a Command that follows the supplier while active
      */
-    public Command setAngle(java.util.function.Supplier<Angle> angle) {
+    public Command setAngle(Supplier<Angle> angle) {
         return intakePivot.setAngle(angle);
     }
 

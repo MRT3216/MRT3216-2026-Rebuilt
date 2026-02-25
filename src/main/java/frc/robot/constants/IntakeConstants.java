@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Pounds;
+import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -65,6 +66,14 @@ public final class IntakeConstants {
         public static SimpleMotorFeedforward motorFeedforwardSim() {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
+
+        /**
+         * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
+         * robot.
+         */
+        public static final AngularVelocity kSoftLimitMax = RPM.of(3000.0);
+
+        public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
     }
 
     /**
@@ -89,6 +98,7 @@ public final class IntakeConstants {
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(20.0);
         public static final AngularAcceleration kMaxAccelDegPerSec2 =
                 DegreesPerSecondPerSecond.of(20.0);
+        // (Pivot uses hard/soft angle limits in degrees; velocity soft-limits are not needed.)
 
         // Feedforward - zeroed for tuning
         public static final double kS = 0.0;

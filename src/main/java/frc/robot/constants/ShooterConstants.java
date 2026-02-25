@@ -47,7 +47,7 @@ public final class ShooterConstants {
         public static final double kS = 0.0;
         public static final double kV = 0.0;
         public static final double kA = 0.0;
-                                                                                                                                                                                                                                                                                                                                                                         
+
         // Simulation overrides - start at 0.0 until tuned
         public static final double kS_sim = 0.0;
         public static final double kV_sim = 0.124;
@@ -68,13 +68,21 @@ public final class ShooterConstants {
         public static final double kFlywheelAtSpeedError = 0.02;
 
         /**
+         * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
+         * robot.
+         */
+        public static final AngularVelocity kSoftLimitMax = RPM.of(4500.0);
+
+        public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
+
+        /**
          * Early-exit threshold (meters). If iterative refinement changes lead distance by less than
          * this amount between passes, stop iterating early.
          */
         public static final Distance kRefinementConvergenceEpsilon = Meters.of(0.01); // 1 cm
 
         /** Duration to run the clear routine while the flywheel spins up (seconds). */
-        public static final double kClearDurationSecs = 0.5;
+        public static final double kClearDurationSecs = 2;
 
         /**
          * Returns a preconfigured SimpleMotorFeedforward suitable for flywheel/feedforward use in
@@ -108,18 +116,18 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(30);
 
         // PID / Feedforward
-        public static final double kP = 0.5;
+        public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
-        public static final double kS = 0.05;
-        public static final double kV = 0.01;
+        public static final double kS = 0.0;
+        public static final double kV = 0.0;
         public static final double kA = 0.0;
 
         // Simulation-specific feedforward / PID defaults for Spindexer
-        public static final double kS_sim = 0.03;
-        public static final double kV_sim = 0.008;
-        public static final double kA_sim = kA;
-        public static final double kP_sim = 0.35;
+        public static final double kS_sim = 0.0;
+        public static final double kV_sim = 0.0;
+        public static final double kA_sim = 0.0;
+        public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
@@ -130,7 +138,15 @@ public final class ShooterConstants {
         // Recommended / helper velocities
         public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(2000.0);
         // Default clear velocity (negative to reverse) used to clear jams
-        public static final AngularVelocity kSpindexerClearAngularVelocity = RPM.of(-100.0);
+        public static final AngularVelocity kSpindexerClearAngularVelocity = RPM.of(-10.0);
+
+        /**
+         * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
+         * robot.
+         */
+        public static final AngularVelocity kSoftLimitMax = RPM.of(3000.0);
+
+        public static final AngularVelocity kSoftLimitMin = RPM.of(-500.0);
 
         /** Returns a preconfigured SimpleMotorFeedforward for the spindexer. */
         public static SimpleMotorFeedforward motorFeedforward() {
@@ -154,22 +170,22 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID
-        public static final double kP = 1.0;
+        public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
         // Feedforward
-        public static final double kS = 0.05;
-        public static final double kV = 0.001;
-        public static final double kA = 0.0001;
+        public static final double kS = 0.0;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
 
         // Simulation variants
-        public static final double kS_sim = kS;
-        public static final double kV_sim = kV;
-        public static final double kA_sim = kA;
-        public static final double kP_sim = kP;
-        public static final double kI_sim = kI;
-        public static final double kD_sim = kD;
+        public static final double kS_sim = 0;
+        public static final double kV_sim = 0;
+        public static final double kA_sim = 0;
+        public static final double kP_sim = 0;
+        public static final double kI_sim = 0;
+        public static final double kD_sim = 0;
 
         // Telemetry
         public static final String kKickerMotorTelemetry = "KickerMotor";
@@ -178,6 +194,14 @@ public final class ShooterConstants {
         // Recommended velocities
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2000.0);
         public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
+
+        /**
+         * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
+         * robot.
+         */
+        public static final AngularVelocity kSoftLimitMax = RPM.of(4000.0);
+
+        public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
         /** Returns a preconfigured SimpleMotorFeedforward for the kicker. */
         public static SimpleMotorFeedforward motorFeedforward() {

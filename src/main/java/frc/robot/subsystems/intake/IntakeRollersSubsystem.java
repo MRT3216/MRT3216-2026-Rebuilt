@@ -117,6 +117,8 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(kWheelDiameter)
                         .withMass(kWheelMass)
+                        .withUpperSoftLimit(kSoftLimitMax)
+                        .withLowerSoftLimit(kSoftLimitMin)
                         .withTelemetry(kIntakeRollersMechTelemetry, Constants.telemetryVerbosity());
 
         intakeRollers = new FlyWheel(intakeRollersConfig);

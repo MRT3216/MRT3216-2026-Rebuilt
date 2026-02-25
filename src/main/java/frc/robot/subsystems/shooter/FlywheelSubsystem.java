@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
+import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -125,7 +126,9 @@ public class FlywheelSubsystem extends SubsystemBase {
                 new FlyWheelConfig(motor)
                         .withDiameter(kWheelDiameter)
                         .withMass(kWheelMass)
-                        .withTelemetry(kFlywheelMechTelemetry, Constants.telemetryVerbosity());
+                        .withTelemetry(kFlywheelMechTelemetry, Constants.telemetryVerbosity())
+                        .withUpperSoftLimit(kSoftLimitMax)
+                        .withLowerSoftLimit(kSoftLimitMin);
 
         flywheel = new FlyWheel(flywheelConfig);
 
@@ -206,12 +209,8 @@ public class FlywheelSubsystem extends SubsystemBase {
      * This is intended for use as a long-running command that owns the flywheel subsystem and updates
      * the closed-loop target each loop without creating/scheduling commands repeatedly.
      */
-    public Command setVelocity(java.util.function.Supplier<AngularVelocity> speed) {
-        return flywheel.setSpeed(
-                () -> {
-                    AngularVelocity v = speed.get();
-                    return v;
-                });
+    public Command setVelocity(Supplier<AngularVelocity> speed) {
+        return flywheel.setSpeed(speed);
     }
 
     /**

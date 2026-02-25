@@ -87,7 +87,7 @@ public class KickerSubsystem extends SubsystemBase {
                         // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
-                        // Telemetry name and verbosity level
+                        // Telemetry name and verbosity levelP
                         .withTelemetry(kKickerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
@@ -102,8 +102,9 @@ public class KickerSubsystem extends SubsystemBase {
                         .withDiameter(kWheelDiameter)
                         // Mass of the kicker.
                         .withMass(kWheelMass)
-                        // Maximum speed of the shooter.
-                        // .withUpperSoftLimit(RPM.of(4000))
+                        // Configure soft limits via YAMS so the mechanism enforces them
+                        .withUpperSoftLimit(kSoftLimitMax)
+                        .withLowerSoftLimit(kSoftLimitMin)
                         .withTelemetry(kKickerMechTelemetry, Constants.telemetryVerbosity());
 
         kicker = new FlyWheel(kickerConfig);

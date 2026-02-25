@@ -2,6 +2,7 @@ package frc.robot.systems;
 
 import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity;
 import static frc.robot.constants.ShooterConstants.KickerConstants.*;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSpindexerClearAngularVelocity;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSpindexerTargetAngularVelocity;
@@ -10,7 +11,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.ShooterConstants;
@@ -68,26 +68,22 @@ public class ShooterSystem {
      *     pipeline
      */
     public Command shoot() {
-        // Targets — chosen as safe defaults for testing. Adjust as needed.
-        final AngularVelocity flywheelTarget =
-                ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity;
 
         // Start spinning the flywheel to target velocity
-        Command spin = flywheel.setVelocity(flywheelTarget);
+        Command spin = flywheel.setVelocity(kFlywheelTargetAngularVelocity);
         Command clearTimed = clear().withTimeout(Seconds.of(kClearDurationSecs));
 
         // Run spin and clear in parallel. After the clear timeout completes, begin feeding.
         // We run the spin (long-running) and a short sequence (clearTimed -> feedCore) in
         // parallel so the flywheel spins up while the clear runs; once the clear finishes the
         // feed will start and continue until cancelled by the operator.
-        Command feedCore =
-                kicker
-                        .setVelocity(kKickerTargetAngularVelocity)
-                        .alongWith(spindexer.setVelocity(kSpindexerTargetAngularVelocity));
+        Command feedCore = kicker.setVelocity(kKickerTargetAngularVelocity);
+        // .alongWith(spindexer.setVelocity(kSpindexerTargetAngularVelocity));
 
         Command clearThenFeed = clearTimed.andThen(feedCore);
 
-        return spin.alongWith(clearThenFeed);
+        // return spin.alongWith(clearThenFeed);
+        return clear().withTimeout(Seconds.of(kClearDurationSecs));
     }
 
     /**

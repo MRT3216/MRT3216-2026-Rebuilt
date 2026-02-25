@@ -231,6 +231,8 @@ public class RobotContainer {
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
+        // Ensure intake rollers default to stopped when no command is running
+        rollersSubsystem.setDefaultCommand(rollersSubsystem.setDutyCycle(0));
         // Have hood hold its current commanded target using the positional controller
         // (we track a commanded target so button bumps are applied relative to it).
         hoodSubsystem.setDefaultCommand(hoodSubsystem.moveToAngle(() -> hoodSubsystem.getTarget()));

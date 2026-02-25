@@ -38,7 +38,7 @@ public final class RobotMap {
         }
 
         public final class Roller {
-            public static final int kMotorId = 63;
+            public static final int kMotorId = 60;
         }
     }
 

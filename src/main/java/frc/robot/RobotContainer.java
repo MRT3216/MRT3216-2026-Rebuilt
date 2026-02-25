@@ -12,7 +12,6 @@ import static edu.wpi.first.units.Units.Degrees;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -21,15 +20,17 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
+import frc.robot.constants.IntakeConstants;
 import frc.robot.constants.ShooterConstants;
 import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.drive.DriveSubsystem;
+import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
+import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -40,10 +41,10 @@ import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
+import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.ShootingLookupTable;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -55,7 +56,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RobotContainer {
     // Subsystems
-    private final DriveSubsystem drive;
+    private final Drive drive;
     private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
@@ -63,19 +64,15 @@ public class RobotContainer {
     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
-    // private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
-
-    // Tuning state (only used when running in TUNING mode)
-    private final AtomicReference<AngularVelocity> tuningFlywheel =
-            new AtomicReference<>(ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity);
+    private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
 
     // Aggregated shooter system
     private final ShooterSystem shooterSystem =
             new ShooterSystem(
                     flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem, hoodSubsystem);
 
-    // private final IntakeSystem intakeSystem =
-    //         new IntakeSystem(rollersSubsystem, intakePivotSubsystem);
+    private final IntakeSystem intakeSystem =
+            new IntakeSystem(rollersSubsystem, intakePivotSubsystem);
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -93,7 +90,7 @@ public class RobotContainer {
                 {
                     // Real robot, instantiate hardware IO implementations
                     drive =
-                            new DriveSubsystem(
+                            new Drive(
                                     new GyroIOPigeon2(),
                                     new ModuleIOTalonFX(TunerConstants.FrontLeft),
                                     new ModuleIOTalonFX(TunerConstants.FrontRight),
@@ -116,8 +113,8 @@ public class RobotContainer {
                 {
                     // TUNING mode: instantiate real hardware IO so tuning runs on the real robot.
                     drive =
-                            new DriveSubsystem(
-                                    new GyroIOPigeon2(),
+                            new Drive(
+                                    new GyroIO() {},
                                     new ModuleIOTalonFX(TunerConstants.FrontLeft),
                                     new ModuleIOTalonFX(TunerConstants.FrontRight),
                                     new ModuleIOTalonFX(TunerConstants.BackLeft),
@@ -140,8 +137,8 @@ public class RobotContainer {
                 {
                     // Sim robot, instantiate physics sim IO implementations
                     drive =
-                            new DriveSubsystem(
-                                    new GyroIOPigeon2() {},
+                            new Drive(
+                                    new GyroIO() {},
                                     new ModuleIOSim(TunerConstants.FrontLeft),
                                     new ModuleIOSim(TunerConstants.FrontRight),
                                     new ModuleIOSim(TunerConstants.BackLeft),
@@ -170,7 +167,7 @@ public class RobotContainer {
                 {
                     // Replayed robot, disable IO implementations
                     drive =
-                            new DriveSubsystem(
+                            new Drive(
                                     new GyroIO() {},
                                     new ModuleIO() {},
                                     new ModuleIO() {},
@@ -273,9 +270,38 @@ public class RobotContainer {
                             .rightBumper()
                             .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(1.0)).ignoringDisable(true));
 
-                    // A/B: snap turret to +90/-90 degrees
-                    controller.a().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
-                    controller.b().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+                    // A/B/X/Y: quick run buttons for velocity subsystems (TUNING/SIM)
+                    // X -> Intake Rollers
+                    controller
+                            .x()
+                            .whileTrue(
+                                    rollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
+
+                    // Y -> Spindexer
+                    controller
+                            .y()
+                            .whileTrue(
+                                    spindexerSubsystem.setVelocity(
+                                            ShooterConstants.SpindexerConstants.kSpindexerTargetAngularVelocity));
+
+                    // A -> Kicker
+                    controller
+                            .a()
+                            .whileTrue(
+                                    kickerSubsystem.setVelocity(
+                                            ShooterConstants.KickerConstants.kKickerTargetAngularVelocity));
+
+                    // B -> Flywheel
+                    controller
+                            .b()
+                            .whileTrue(
+                                    flywheelSubsystem.setVelocity(
+                                            ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity));
+
+                    // Previously we snapped the turret on A/B in SIM/TUNING; keep the commands
+                    // commented out here in case we want to re-enable that behavior later.
+                    // controller.a().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
+                    // controller.b().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
 
                     break;
                 }

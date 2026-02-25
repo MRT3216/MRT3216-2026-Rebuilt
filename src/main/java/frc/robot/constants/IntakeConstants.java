@@ -79,6 +79,9 @@ public final class IntakeConstants {
         public static final AngularVelocity kMaxVelocity = RPM.of(3000.0);
         // Acceleration used for trapezoidal profiling. Units: deg/s^2
         public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(1800.0);
+
+        // Recommended / helper target velocity for button-driven checks
+        public static final AngularVelocity kTargetAngularVelocity = RPM.of(2000.0);
     }
 
     /**

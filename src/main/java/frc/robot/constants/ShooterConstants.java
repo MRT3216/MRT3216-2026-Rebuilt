@@ -82,6 +82,11 @@ public final class ShooterConstants {
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
+        // Motion limits for trajectory generation (used by closed-loop/trapezoidal profiles)
+        public static final AngularVelocity kMaxVelocity = RPM.of(5000.0);
+        // Acceleration used for trapezoidal profiling. Units: deg/s^2 (DegreesPerSecondPerSecond)
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(6000.0);
+
         /**
          * Early-exit threshold (meters). If iterative refinement changes lead distance by less than
          * this amount between passes, stop iterating early.
@@ -155,6 +160,11 @@ public final class ShooterConstants {
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(-500.0);
 
+        // Motion limits for trajectory generation
+        public static final AngularVelocity kMaxVelocity = RPM.of(3000.0);
+        // Acceleration used for trapezoidal profiling. Units: deg/s^2
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(1800.0);
+
         /** Returns a preconfigured SimpleMotorFeedforward for the spindexer. */
         public static SimpleMotorFeedforward motorFeedforward() {
             return new SimpleMotorFeedforward(kS, kV, kA);
@@ -210,6 +220,11 @@ public final class ShooterConstants {
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
+        // Motion limits for trajectory generation
+        public static final AngularVelocity kMaxVelocity = RPM.of(4000.0);
+        // Acceleration used for trapezoidal profiling. Units: deg/s^2
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(2400.0);
+
         /** Returns a preconfigured SimpleMotorFeedforward for the kicker. */
         public static SimpleMotorFeedforward motorFeedforward() {
             return new SimpleMotorFeedforward(kS, kV, kA);
@@ -263,8 +278,8 @@ public final class ShooterConstants {
 
         // Motion limits
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
-        public static final AngularAcceleration kMaxAccelDegPerSec2 =
-                DegreesPerSecondPerSecond.of(180.0);
+        // Acceleration used for trapezoidal profiling (deg/s^2)
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(90.0);
 
         // Limits / presets
         public static final Angle kHardLimitMax = Degrees.of(56);
@@ -312,8 +327,8 @@ public final class ShooterConstants {
 
         // Motion limits
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
-        public static final AngularAcceleration kMaxAccelDegPerSec2 =
-                DegreesPerSecondPerSecond.of(90.0);
+        // Acceleration used for trapezoidal profiling (deg/s^2)
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(90.0);
 
         // Feedforward
         public static final double kS = 0.0;

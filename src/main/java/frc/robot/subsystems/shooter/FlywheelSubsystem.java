@@ -106,7 +106,8 @@ public class FlywheelSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants)
+                        // Feedback Constants (PID Constants). Flywheel is velocity-controlled
+                        // and uses PID+feedforward; do not enable position motion-profiling here.
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)

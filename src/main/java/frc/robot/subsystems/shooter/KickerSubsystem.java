@@ -81,7 +81,8 @@ public class KickerSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants)
+                        // Feedback Constants (PID Constants). Kicker is velocity-controlled
+                        // — use PID+feedforward rather than positional motion profiling.
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)

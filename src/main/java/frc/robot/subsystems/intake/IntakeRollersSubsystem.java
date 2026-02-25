@@ -98,7 +98,8 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants)
+                        // Feedback Constants (PID Constants). Intake rollers are velocity-controlled
+                        // devices — use PID+feedforward rather than positional motion-profiles.
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)

@@ -74,6 +74,11 @@ public final class IntakeConstants {
         public static final AngularVelocity kSoftLimitMax = RPM.of(3000.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
+
+        // Motion limits for trajectory generation (used by trapezoidal profiles)
+        public static final AngularVelocity kMaxVelocity = RPM.of(3000.0);
+        // Acceleration used for trapezoidal profiling. Units: deg/s^2
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(1800.0);
     }
 
     /**
@@ -95,9 +100,9 @@ public final class IntakeConstants {
         public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
-        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(20.0);
-        public static final AngularAcceleration kMaxAccelDegPerSec2 =
-                DegreesPerSecondPerSecond.of(20.0);
+        // Increased initial limits per request: use 90 deg/s and 90 deg/s^2 for pivot
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(90.0);
         // (Pivot uses hard/soft angle limits in degrees; velocity soft-limits are not needed.)
 
         // Feedforward - zeroed for tuning

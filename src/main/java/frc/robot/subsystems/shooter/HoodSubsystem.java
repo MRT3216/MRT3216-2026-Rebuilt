@@ -91,8 +91,8 @@ public class HoodSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(kP, kI, kD)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccelDegPerSec2)
+                        .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
                         // Use centralized Hood feedforward factory
                         .withFeedforward(armFeedforward())
                         .withSimFeedforward(armFeedforwardSim())

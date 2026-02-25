@@ -34,6 +34,7 @@ public class ShooterSystem {
     // region Hardware & signals
 
     public final FlywheelSubsystem flywheel;
+
     public final KickerSubsystem kicker;
     public final SpindexerSubsystem spindexer;
     public final TurretSubsystem turret;
@@ -126,7 +127,7 @@ public class ShooterSystem {
                                                 fieldSpeeds.get(),
                                                 targetSupplier.get(),
                                                 refinementIterations,
-                                                ShooterConstants.FlywheelConstants.kRefinementConvergenceEpsilon,
+                                                ShooterConstants.kRefinementConvergenceEpsilon,
                                                 table);
                                 shotRef.set(sol);
                             } catch (Exception ex) {
@@ -232,7 +233,7 @@ public class ShooterSystem {
                                                 fieldSpeeds.get(),
                                                 targetSupplier.get(),
                                                 refinementIterations,
-                                                ShooterConstants.FlywheelConstants.kRefinementConvergenceEpsilon,
+                                                ShooterConstants.kRefinementConvergenceEpsilon,
                                                 table);
                                 shotRef.set(sol);
                             } catch (Exception ex) {

@@ -27,6 +27,13 @@ import edu.wpi.first.units.measure.MomentOfInertia;
 public final class ShooterConstants {
     private ShooterConstants() {}
 
+    /**
+     * Convergence threshold (meters) used by shot-refinement logic. Placed at the ShooterConstants
+     * level because the refinement is a system-level concern that may be referenced from multiple
+     * shooter-related classes.
+     */
+    public static final Distance kRefinementConvergenceEpsilon = Meters.of(0.01); // 1 cm
+
     // Group flywheel-specific constants under a Flywheel section to improve organization.
     public static final class FlywheelConstants {
         private FlywheelConstants() {}

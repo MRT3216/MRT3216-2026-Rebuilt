@@ -165,7 +165,7 @@ public final class Constants {
         // Default telemetry frequency (Hz) used for pushed Phoenix/status signals.
         // Kept here as the single source of truth to avoid duplication.
         public static final int DEFAULT_TELEMETRY_HZ = 50;
-        public static final int HIGH_TELEMETRY_HZ = 1000;
+        public static final int HIGH_TELEMETRY_HZ = 500;
         // Backwards-compatible double-valued alias used by older callers that expect a
         // floating-point value (preserves previous API shape).
         public static final double kDefaultStatusSignalHz = DEFAULT_TELEMETRY_HZ;

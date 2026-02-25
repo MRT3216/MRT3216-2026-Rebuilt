@@ -8,9 +8,6 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -18,7 +15,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -45,7 +41,6 @@ import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.ShooterSystem;
-import frc.robot.util.FuelSim;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.ShootingLookupTable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -67,9 +62,8 @@ public class RobotContainer {
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
-    // private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
-    public FuelSim fuelSim;
+    // private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
 
     // Tuning state (only used when running in TUNING mode)
     private final AtomicReference<AngularVelocity> tuningFlywheel =
@@ -115,6 +109,7 @@ public class RobotContainer {
                                             VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
                                     new VisionIOPhotonVision(
                                             VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
+
                     break;
                 }
             case TUNING:
@@ -184,6 +179,7 @@ public class RobotContainer {
 
                     // (Use same number of dummy implementations as the real robot)
                     vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+
                     break;
                 }
         }
@@ -215,50 +211,6 @@ public class RobotContainer {
         // Configure the button bindings
         configureButtonBindings();
 
-        // If we're in TUNING mode, schedule a long-running supplier-backed flywheel command
-        // that follows the `tuningFlywheel` AtomicReference.
-        // if (Constants.currentMode == Constants.Mode.TUNING) {
-        //     var tuningCommand = flywheelSubsystem.setVelocity(() -> tuningFlywheel.get());
-        //     // Schedule so it runs until we leave TUNING (it requires the flywheel subsystem).
-        //     CommandScheduler.getInstance().schedule(tuningCommand);
-        //     SmartDashboard.putNumber("Tuning/FlywheelRPM", tuningFlywheel.get().in(RPM));
-        // }
-
-        // Configure fuel sim (sim only)
-        if (Constants.currentMode == Constants.Mode.SIM) {
-            // configureFuelSim();
-            // configureFuelSimRobot();
-        }
-    }
-
-    private void configureFuelSim() {
-        fuelSim = new FuelSim();
-        fuelSim.spawnStartingFuel();
-
-        fuelSim.start();
-        SmartDashboard.putData(
-                Commands.runOnce(
-                                () -> {
-                                    fuelSim.clearFuel();
-                                    fuelSim.spawnStartingFuel();
-                                })
-                        .withName("Reset Fuel")
-                        .ignoringDisable(true));
-    }
-
-    private void configureFuelSimRobot() {
-        fuelSim.registerRobot(
-                Inches.of(34.625).in(Meters),
-                Inches.of(34.625).in(Meters),
-                Inches.of(5.125).in(Meters),
-                drive::getPose,
-                drive::getChassisSpeeds);
-        fuelSim.registerIntake(
-                -Inches.of(34.625).div(2.0).plus(Inches.of(11.475556)).in(Meters),
-                -Inches.of(34.625).div(2.0).in(Meters),
-                -Inches.of(34.625).div(2.0).in(Meters),
-                Inches.of(34.625).div(2.0).in(Meters),
-                () -> true);
     }
 
     /**
@@ -314,9 +266,6 @@ public class RobotContainer {
                     controller.rightTrigger(0.1).whileTrue(shooterSystem.shoot());
 
                     // Hood: left/right bumper adjust by -/+1 degree per press.
-                    // Use Commands.defer(...) to lazily construct a fresh bump command when the
-                    // trigger transitions (avoids capturing a pre-built Command instance or
-                    // calling the scheduler directly).
                     controller
                             .leftBumper()
                             .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(-1.0)).ignoringDisable(true));
@@ -324,31 +273,6 @@ public class RobotContainer {
                     controller
                             .rightBumper()
                             .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(1.0)).ignoringDisable(true));
-
-                    // X / Y: decrease/increase tuning RPM by 100
-                    controller
-                            .x()
-                            .onTrue(
-                                    Commands.runOnce(
-                                                    () -> {
-                                                        tuningFlywheel.updateAndGet(prev -> RPM.of(prev.in(RPM) - 100.0));
-                                                        SmartDashboard.putNumber(
-                                                                "Tuning/FlywheelRPM", tuningFlywheel.get().in(RPM));
-                                                    },
-                                                    flywheelSubsystem)
-                                            .ignoringDisable(true));
-
-                    controller
-                            .y()
-                            .onTrue(
-                                    Commands.runOnce(
-                                                    () -> {
-                                                        tuningFlywheel.updateAndGet(prev -> RPM.of(prev.in(RPM) + 100.0));
-                                                        SmartDashboard.putNumber(
-                                                                "Tuning/FlywheelRPM", tuningFlywheel.get().in(RPM));
-                                                    },
-                                                    flywheelSubsystem)
-                                            .ignoringDisable(true));
 
                     // A/B: snap turret to +90/-90 degrees
                     controller.a().onTrue(turretSubsystem.setAngle(Degrees.of(90)));

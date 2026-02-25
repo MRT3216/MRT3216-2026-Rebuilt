@@ -28,16 +28,16 @@ public final class IntakeConstants {
     public static final class Rollers {
         private Rollers() {}
         // Mechanical
-        public static final Distance kWheelDiameter = Inches.of(3.5);
-        public static final Mass kWheelMass = Pounds.of(2);
-        public static final double kGearReduction = 1.0;
+        public static final Distance kWheelDiameter = Inches.of(1);
+        public static final Mass kWheelMass = Pounds.of(0.5);
+        public static final double kGearReduction = 2.0;
 
         // Electrical / limits
-        public static final Current kStatorCurrentLimit = Amps.of(80);
+        public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID (velocity loop) - zeroed for tuning
         public static final double kP = 0.0;
-        public static final double kI = 0.0;
+        public static final double kI = 0.01;
         public static final double kD = 0.0;
 
         // Feedforward - zeroed for tuning
@@ -47,9 +47,9 @@ public final class IntakeConstants {
 
         // Simulation overrides (zeroed for tuning)
         public static final double kS_sim = 0.0;
-        public static final double kV_sim = 0.0;
+        public static final double kV_sim = 0.2477;
         public static final double kA_sim = 0.0;
-        public static final double kP_sim = 0.0;
+        public static final double kP_sim = 0.01;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
@@ -71,17 +71,12 @@ public final class IntakeConstants {
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
          * robot.
          */
-        public static final AngularVelocity kSoftLimitMax = RPM.of(3000.0);
+        public static final AngularVelocity kSoftLimitMax = RPM.of(2500.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
-        // Motion limits for trajectory generation (used by trapezoidal profiles)
-        public static final AngularVelocity kMaxVelocity = RPM.of(3000.0);
-        // Acceleration used for trapezoidal profiling. Units: deg/s^2
-        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(1800.0);
-
         // Recommended / helper target velocity for button-driven checks
-        public static final AngularVelocity kTargetAngularVelocity = RPM.of(2000.0);
+        public static final AngularVelocity kTargetAngularVelocity = RPM.of(1250.0);
     }
 
     /**

@@ -113,19 +113,17 @@ public final class ShooterConstants {
     public static final class SpindexerConstants {
         private SpindexerConstants() {}
         // Mechanical
-        public static final double kGearing = 5.0;
-        /** Backwards-compatible alias used by some subsystems. */
-        public static final double kGearReduction = kGearing;
+        public static final double kGearReduction = 5.0;
 
         /** Roller physical size used by FlyWheel configs. */
-        public static final Distance kWheelDiameter = Inches.of(2);
+        public static final Distance kWheelDiameter = Inches.of(4);
 
         /** Roller mass used by FlyWheel configs. */
         public static final Mass kWheelMass = Pounds.of(0.5);
 
         // Motor wiring / limits
         public static final boolean kMotorInverted = false;
-        public static final Current kStatorCurrentLimit = Amps.of(30);
+        public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID / Feedforward
         public static final double kP = 0.0;
@@ -137,9 +135,9 @@ public final class ShooterConstants {
 
         // Simulation-specific feedforward / PID defaults for Spindexer
         public static final double kS_sim = 0.0;
-        public static final double kV_sim = 0.0;
+        public static final double kV_sim = 0.624;
         public static final double kA_sim = 0.0;
-        public static final double kP_sim = 0.0;
+        public static final double kP_sim = 0.01;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
@@ -148,7 +146,7 @@ public final class ShooterConstants {
         public static final String kSpindexerMechTelemetry = "SpindexerMech";
 
         // Recommended / helper velocities
-        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(2000.0);
+        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(600.0);
         // Default clear velocity (negative to reverse) used to clear jams
         public static final AngularVelocity kSpindexerClearAngularVelocity = RPM.of(-10.0);
 
@@ -156,14 +154,9 @@ public final class ShooterConstants {
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
          * robot.
          */
-        public static final AngularVelocity kSoftLimitMax = RPM.of(3000.0);
+        public static final AngularVelocity kSoftLimitMax = RPM.of(1000.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(-500.0);
-
-        // Motion limits for trajectory generation
-        public static final AngularVelocity kMaxVelocity = RPM.of(3000.0);
-        // Acceleration used for trapezoidal profiling. Units: deg/s^2
-        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(1800.0);
 
         /** Returns a preconfigured SimpleMotorFeedforward for the spindexer. */
         public static SimpleMotorFeedforward motorFeedforward() {
@@ -198,9 +191,9 @@ public final class ShooterConstants {
 
         // Simulation variants
         public static final double kS_sim = 0;
-        public static final double kV_sim = 0;
+        public static final double kV_sim = 0.1045;
         public static final double kA_sim = 0;
-        public static final double kP_sim = 0;
+        public static final double kP_sim = 0.001;
         public static final double kI_sim = 0;
         public static final double kD_sim = 0;
 

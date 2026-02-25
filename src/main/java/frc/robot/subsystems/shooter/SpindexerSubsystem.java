@@ -106,6 +106,12 @@ public class SpindexerSubsystem extends SubsystemBase {
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
+                        // Enable 12V voltage compensation for REV/Spark controllers. This helps
+                        // closed-loop controllers remain consistent when battery voltage sags
+                        // (common during matches). Note: CTRE/Phoenix TalonFX devices do not
+                        // expose the same YAMS voltage-compensation API, so we only enable this
+                        // for REV-driven SmartMotorController instances.
+                        .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new SparkWrapper(motorController, DCMotor.getNEO(1), motorConfig);

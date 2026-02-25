@@ -101,6 +101,11 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
+                        // Enable REV voltage compensation (12V) so the arm's closed-loop
+                        // performance stays consistent across battery voltage swings. CTRE's
+                        // TalonFX controllers don't expose the same YAMS voltage-compensation
+                        // integration, so we don't enable it for Phoenix-backed controllers.
+                        .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit)
                         // Configure the REV ThroughBore absolute encoder plugged into the right pivot motor
                         .withExternalEncoder(rightPivotMotor.getAbsoluteEncoder())
@@ -109,6 +114,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                                 new MechanismGearing(GearBox.fromReductionStages(kEncoderGearing)))
                         .withUseExternalFeedbackEncoder(true)
                         .withExternalEncoderZeroOffset(kStartingPosition)
+                        .withVoltageCompensation(Volts.of(12))
                         .withFollowers(Pair.of(rightPivotMotor, true));
 
         smartMotor = new SparkWrapper(leftPivotMotor, DCMotor.getNeoVortex(1), motorConfig);

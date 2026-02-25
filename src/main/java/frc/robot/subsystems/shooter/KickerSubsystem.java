@@ -92,6 +92,12 @@ public class KickerSubsystem extends SubsystemBase {
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
                         .withIdleMode(MotorMode.COAST)
+                        // Enable 12V voltage compensation for REV/Spark controllers so
+                        // closed-loop velocity control behaves consistently as battery
+                        // voltage changes. CTRE TalonFX devices don't support the same
+                        // YAMS voltage-compensation API, so this call is only applied to
+                        // REV-driven SmartMotorController configurations.
+                        .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new SparkWrapper(motorController, DCMotor.getNeoVortex(1), motorConfig);

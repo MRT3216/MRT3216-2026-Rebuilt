@@ -100,6 +100,10 @@ public class HoodSubsystem extends SubsystemBase {
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
+                        // NOTE: This subsystem uses a TalonFX (CTRE Phoenix). The Phoenix
+                        // library doesn't provide a YAMS-accessible `.withVoltageCompensation(...)`
+                        // method like REV SmartMotorController wrappers do, so we don't enable
+                        // voltage compensation here.
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         smartMotor = new TalonFXWrapper(motor, DCMotor.getKrakenX44Foc(1), motorConfig);

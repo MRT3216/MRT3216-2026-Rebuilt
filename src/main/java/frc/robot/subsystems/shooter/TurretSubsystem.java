@@ -140,6 +140,12 @@ public class TurretSubsystem extends SubsystemBase {
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
+                        // Voltage compensation (12V) enabled on REV/Spark controllers to
+                        // stabilize positional control under varying battery voltage. The
+                        // Phoenix TalonFX family doesn't provide a matching YAMS API for
+                        // voltage compensation, so TalonFX-based subsystems don't call
+                        // `.withVoltageCompensation(...)`.
+                        .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);

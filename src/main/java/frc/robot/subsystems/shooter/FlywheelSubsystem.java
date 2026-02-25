@@ -117,6 +117,10 @@ public class FlywheelSubsystem extends SubsystemBase {
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
+                        // NOTE: Phoenix/TalonFX devices (used here) do not currently have
+                        // a YAMS-mapped voltage-compensation API we can call (unlike REV
+                        // SmartMotorController wrappers). Therefore we do not call
+                        // `.withVoltageCompensation(...)` for TalonFX-backed configs.
                         .withStatorCurrentLimit(kStatorCurrentLimit)
                         .withFollowers(Pair.of(new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId), true));
 
@@ -134,7 +138,7 @@ public class FlywheelSubsystem extends SubsystemBase {
 
         // High-frequency updates for PID tuning (use centralized telemetry constant)
         BaseStatusSignal.setUpdateFrequencyForAll(
-                Constants.CommsConstants.DEFAULT_TELEMETRY_HZ, velocitySignal, referenceSignal);
+                Constants.CommsConstants.HIGH_TELEMETRY_HZ, velocitySignal, referenceSignal);
 
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);

@@ -109,6 +109,10 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
                         .withIdleMode(MotorMode.COAST)
+                        // NOTE: TalonFX (Phoenix) controllers used here don't expose the
+                        // same YAMS voltage-compensation builder method available for the
+                        // REV SmartMotorController wrappers. Voltage compensation is therefore
+                        // not configured here.
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);

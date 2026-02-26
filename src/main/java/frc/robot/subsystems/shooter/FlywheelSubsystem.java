@@ -233,28 +233,14 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     /**
      * Returns a Trigger that is active when the flywheel is within the configured error margin of the
-     * canonical shooter target (ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity).
-     * The Trigger evaluates the current measured velocity each time it is sampled.
+     * canonical shooter target speed. The Trigger evaluates the current measured velocity each time
+     * it is sampled.
      */
     /** Public Trigger active when the flywheel is within error of the canonical target. */
-    public final Trigger atSpeed =
+    public final Trigger atPrepSpeed =
             new Trigger(
                     () -> {
-                        double tgtRpm = kFlywheelTargetAngularVelocity.in(RPM);
-                        return tgtRpm > 0
-                                && Math.abs(getVelocity().in(RPM) - tgtRpm) <= kFlywheelAtSpeedError * tgtRpm;
-                    });
-
-    /**
-     * Trigger that's active when the flywheel is within the configured error margin of the currently
-     * commanded setpoint. Useful for dynamic shot targets where the setpoint changes at runtime (e.g.
-     * `aimAndShoot`).
-     */
-    /** Public Trigger active when the flywheel is within error of the current setpoint. */
-    public final Trigger atSetpoint =
-            new Trigger(
-                    () -> {
-                        double tgtRpm = flywheelInputs.setpoint.in(RPM);
+                        double tgtRpm = kFlywheelPrepAngularVelocity.in(RPM);
                         return tgtRpm > 0
                                 && Math.abs(getVelocity().in(RPM) - tgtRpm) <= kFlywheelAtSpeedError * tgtRpm;
                     });

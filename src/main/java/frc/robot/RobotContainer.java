@@ -11,15 +11,12 @@ import static edu.wpi.first.units.Units.Degrees;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
-import frc.robot.constants.FieldConstants;
 import frc.robot.constants.IntakeConstants;
 import frc.robot.constants.ShooterConstants;
 import frc.robot.generated.TunerConstants;
@@ -44,7 +41,6 @@ import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.RobotMapValidator;
-import frc.robot.util.ShootingLookupTable;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -243,17 +239,17 @@ public class RobotContainer {
         switch (Constants.currentMode) {
             case REAL:
                 {
-                    // Start/stop buttons: X starts the long-running shoot pipeline; Y stops it.
-                    Command start =
-                            shooterSystem.startShooting(
-                                    () -> new Pose2d(),
-                                    () -> new ChassisSpeeds(0.0, 0.0, 0.0),
-                                    () -> FieldConstants.Hub.innerCenterPoint,
-                                    3,
-                                    ShootingLookupTable.Mode.HUB);
-                    controller.x().onTrue(start);
-                    controller.y().onTrue(shooterSystem.stopShooting());
-                    break;
+                    // // Start/stop buttons: X starts the long-running shoot pipeline; Y stops it.
+                    // Command start =
+                    //         shooterSystem.startShooting(
+                    //                 () -> new Pose2d(),
+                    //                 () -> new ChassisSpeeds(0.0, 0.0, 0.0),
+                    //                 () -> FieldConstants.Hub.innerCenterPoint,
+                    //                 3,
+                    //                 ShootingLookupTable.Mode.HUB);
+                    // controller.x().onTrue(start);
+                    // controller.y().onTrue(shooterSystem.stopShooting());
+                    // break;
                 }
 
             case SIM:
@@ -261,7 +257,8 @@ public class RobotContainer {
                 {
                     // TUNING-mode: simple tuning bindings
                     // Right trigger: hold to run the simple shoot routine (clear-while-spin-up + feed)
-                    controller.rightTrigger(0.1).whileTrue(shooterSystem.shoot());
+                    controller.rightTrigger().onTrue(shooterSystem.shootForTuning());
+                    controller.leftTrigger().onTrue(shooterSystem.stopShooting());
 
                     // Hood: left/right bumper adjust by -/+1 degree per press.
                     controller
@@ -298,7 +295,7 @@ public class RobotContainer {
                             .b()
                             .whileTrue(
                                     flywheelSubsystem.setVelocity(
-                                            ShooterConstants.FlywheelConstants.kFlywheelTargetAngularVelocity));
+                                            ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity));
 
                     // Previously we snapped the turret on A/B in SIM/TUNING; keep the commands
                     // commented out here in case we want to re-enable that behavior later.

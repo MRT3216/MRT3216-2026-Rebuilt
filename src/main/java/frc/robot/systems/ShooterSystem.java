@@ -95,7 +95,18 @@ public class ShooterSystem {
      * The flywheel continues running after the clear completes.
      */
     private Command prepShooterWithClear() {
-        return prepShooter().alongWith(clearKicker().until(flywheel.atPrepSpeed));
+        // Schedule the long-running flywheel spin independently so it remains running
+        // after the clear routine finishes or the button is released. The clear
+        // routine will end when the flywheel reaches prep speed or when the
+        // configured timeout elapses (safety).
+        var spin = prepShooter();
+        return Commands.runOnce(
+                        () -> edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance().schedule(spin))
+                .andThen(
+                        clearKicker()
+                                .withTimeout(
+                                        frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs)
+                                .until(flywheel.atPrepSpeed));
     }
 
     /**

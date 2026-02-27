@@ -221,8 +221,12 @@ public class RobotContainer {
                         () -> -controller.getRightX()));
 
         // Default commands now use closed-loop controllers (PID) instead of open-loop
-        // duty
-        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.setDutyCycle(0));
+        // duty. Flywheel default will re-apply the currently applied setpoint each loop
+        // so
+        // the PID controller remains active; callers manually clear or change the
+        // setpoint.
+        // flywheelSubsystem.setDefaultCommand(
+        // flywheelSubsystem.setVelocity(() -> flywheelSubsystem.getAppliedSetpoint()));
         kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
@@ -241,12 +245,12 @@ public class RobotContainer {
                 {
                     // // Start/stop buttons: X starts the long-running shoot pipeline; Y stops it.
                     // Command start =
-                    //         shooterSystem.startShooting(
-                    //                 () -> new Pose2d(),
-                    //                 () -> new ChassisSpeeds(0.0, 0.0, 0.0),
-                    //                 () -> FieldConstants.Hub.innerCenterPoint,
-                    //                 3,
-                    //                 ShootingLookupTable.Mode.HUB);
+                    // shooterSystem.startShooting(
+                    // () -> new Pose2d(),
+                    // () -> new ChassisSpeeds(0.0, 0.0, 0.0),
+                    // () -> FieldConstants.Hub.innerCenterPoint,
+                    // 3,
+                    // ShootingLookupTable.Mode.HUB);
                     // controller.x().onTrue(start);
                     // controller.y().onTrue(shooterSystem.stopShooting());
                     // break;
@@ -256,8 +260,8 @@ public class RobotContainer {
             case TUNING:
                 {
                     // TUNING-mode: simple tuning bindings
-                    // Right trigger: hold to run the simple shoot routine (clear-while-spin-up + feed)
-                    controller.rightTrigger().onTrue(shooterSystem.shootForTuning());
+                    // Right trigger: press to start the shooting pipeline (fixed prep speed)
+                    controller.rightTrigger().onTrue(shooterSystem.startShooting());
                     controller.leftTrigger().onTrue(shooterSystem.stopShooting());
 
                     // Hood: left/right bumper adjust by -/+1 degree per press.
@@ -295,7 +299,8 @@ public class RobotContainer {
                             .b()
                             .whileTrue(
                                     flywheelSubsystem.setVelocity(
-                                            ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity));
+                                            ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity))
+                            .whileFalse(flywheelSubsystem.stopFlywheel());
 
                     // Previously we snapped the turret on A/B in SIM/TUNING; keep the commands
                     // commented out here in case we want to re-enable that behavior later.

@@ -12,6 +12,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -85,7 +86,8 @@ public class KickerSubsystem extends SubsystemBase {
                         // — use PID+feedforward rather than positional motion profiling.
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
+                        // Feedforward Constants (use centralized factory to avoid parameter-order
+                        // mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
                         // Telemetry name and verbosity levelP
@@ -177,6 +179,15 @@ public class KickerSubsystem extends SubsystemBase {
     }
 
     /**
+     * Convenience helper: run the kicker at the configured shooter feed velocity.
+     *
+     * @return a Command that sets the kicker to the shooter feed speed
+     */
+    public Command feedShooter() {
+        return setVelocity(kKickerTargetAngularVelocity);
+    }
+
+    /**
      * Set the dutycycle of the kicker.
      *
      * @param dutyCycle DutyCycle to set.
@@ -187,6 +198,24 @@ public class KickerSubsystem extends SubsystemBase {
         return kicker.set(dutyCycle);
     }
 
-    // endregion
+    /**
+     * Convenience: stop the kicker via a closed-loop zero-speed command (holds zero while scheduled).
+     */
+    public Command stopHold() {
+        return setVelocity(RPM.of(0));
+    }
 
+    /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. Use for init/tests. */
+    public void applySetpoint(AngularVelocity speed) {
+        kicker.setMechanismVelocitySetpoint(speed);
+    }
+
+    /**
+     * Short one-shot command that imperatively applies a zero velocity setpoint and finishes. Useful
+     * in sequences where we want to stop the mechanism immediately and allow the sequence to proceed
+     * (non-blocking).
+     */
+    public Command stopNow() {
+        return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("KickerStopNow");
+    }
 }

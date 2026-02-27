@@ -4,7 +4,22 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.*;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD_sim;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelMechTelemetry;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelMotorTelemetry;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kGearReduction;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI_sim;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kP;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kP_sim;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMax;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMin;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelDiameter;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelMass;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforward;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforwardSim;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -15,8 +30,8 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
@@ -27,40 +42,23 @@ import yams.gearing.GearBox;
 import yams.gearing.MechanismGearing;
 import yams.mechanisms.config.FlyWheelConfig;
 import yams.mechanisms.velocity.FlyWheel;
-import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /**
- * AdvantageKit-ready Flywheel Subsystem for MRT 3216.
- *
- * <p>This subsystem manages a dual-Kraken flywheel using the YAMS library and Phoenix 6. It
- * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
- * (Inputs) are separated from software commands (Outputs).
- *
- * <p>Subsystem controlling the flywheel shooter motor and related telemetry.
+ * Minimal Flywheel subsystem: callers/commands own desired setpoints. The subsystem exposes the
+ * minimal YAMS-backed commands to run closed-loop velocity from an AngularVelocity or a
+ * Supplier<AngularVelocity>, an open-loop duty command, and helpers to observe applied state.
  */
 public class FlywheelSubsystem extends SubsystemBase {
     // region Inputs & telemetry
-
-    /**
-     * AdvantageKit-visible inputs for the Flywheel subsystem. These fields are updated each loop from
-     * hardware and are intended to be logged/serialized for replay.
-     */
     @AutoLog
     public static class FlywheelInputs {
-        /** Actual velocity of the flywheel mechanism. */
         public AngularVelocity velocity = RPM.of(0);
-
-        /** Current target velocity requested from the motor controller. */
         public AngularVelocity setpoint = RPM.of(0);
-
-        /** Applied voltage across the master motor. */
         public Voltage volts = Volts.of(0);
-
-        /** Stator current draw of the master motor (useful for identifying jams). */
         public Current current = Amps.of(0);
     }
 
@@ -68,59 +66,36 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & signals
-
-    /* Hardware Objects */
+    // region Hardware & controller
     private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
-
-    /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
 
-    // endregion
-
-    // region Controller configuration / mechanism
-
-    /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
-
-    /** The SmartMotorController abstraction that allows for hardware/sim parity. */
-    private final SmartMotorController motor;
-
-    /* High-level mechanism configuration */
+    private final TalonFXWrapper motor;
     private final FlyWheelConfig flywheelConfig;
-
     private final FlyWheel flywheel;
 
     // endregion
 
-    /**
-     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
-     * to ensure telemetry is time-aligned.
-     */
+    // NOTE: We intentionally avoid persisting supplier/requested-velocity state here.
+    // Callers should use the YAMS primitives directly: setMechanismVelocitySetpoint(),
+    // run(...), and runTo(...).
+
     // region Initialization helpers
 
-    /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public FlywheelSubsystem() {
-        // Initialize motor controller config in constructor to avoid object-escape
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants)
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
-                        // Telemetry
                         .withTelemetry(kFlywheelMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
-                        // NOTE: Phoenix/TalonFX devices (used here) do not currently have
-                        // a YAMS-mapped voltage-compensation API we can call (unlike REV
-                        // SmartMotorController wrappers). Therefore we do not call
-                        // `.withVoltageCompensation(...)` for TalonFX-backed configs.
                         .withStatorCurrentLimit(kStatorCurrentLimit)
                         .withFollowers(Pair.of(new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId), true));
 
@@ -136,11 +111,8 @@ public class FlywheelSubsystem extends SubsystemBase {
 
         flywheel = new FlyWheel(flywheelConfig);
 
-        // High-frequency updates for PID tuning (use centralized telemetry constant)
         BaseStatusSignal.setUpdateFrequencyForAll(
                 Constants.CommsConstants.HIGH_TELEMETRY_HZ, velocitySignal, referenceSignal);
-
-        // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);
     }
 
@@ -149,10 +121,7 @@ public class FlywheelSubsystem extends SubsystemBase {
     // region Lifecycle / periodic
 
     private void updateInputs() {
-        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
-
-        // Phoenix-signal logging for plotting/debug (measured vs closed-loop reference)
         Logger.recordOutput("Flywheel/FX/VelocityRPM", velocitySignal.getValue().in(RPM));
         Logger.recordOutput(
                 "Flywheel/FX/ReferenceRPM",
@@ -161,15 +130,9 @@ public class FlywheelSubsystem extends SubsystemBase {
         flywheelInputs.velocity = flywheel.getSpeed();
         flywheelInputs.volts = motor.getVoltage();
         flywheelInputs.current = motor.getStatorCurrent();
-
-        // Sets the setpoint input based on the current SMC state
         flywheelInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
     }
 
-    /**
-     * Run the flywheel physics simulation step when the robot is in simulation. This advances the
-     * internal mechanism model by one simulation tick.
-     */
     @Override
     public void simulationPeriodic() {
         flywheel.simIterate();
@@ -178,11 +141,7 @@ public class FlywheelSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         updateInputs();
-        // Record flywheel inputs under a distinct path to avoid colliding with other
-        // shooter subcomponents (e.g., Turret). This organizes telemetry as
-        // Shooter/Flywheel which matches other subsystem telemetry keys.
         Logger.processInputs("Shooter/Flywheel", flywheelInputs);
-        flywheel.updateTelemetry();
     }
 
     // endregion
@@ -190,60 +149,61 @@ public class FlywheelSubsystem extends SubsystemBase {
     // region Public API (queries & commands)
 
     /**
-     * Gets the current velocity of the flywheel.
+     * Returns the last-measured velocity for the flywheel.
      *
-     * @return The current AngularVelocity measured by the encoder.
+     * @return measured AngularVelocity of the flywheel
      */
     public AngularVelocity getVelocity() {
         return flywheelInputs.velocity;
     }
 
     /**
-     * Sets the target velocity for the flywheel.
-     *
-     * @param speed The target AngularVelocity.
-     * @return A command to set and maintain the requested speed.
+     * Command-returning API: set the flywheel closed-loop velocity while the returned Command is
+     * scheduled. Prefer this for command-based flows and button bindings.
      */
     public Command setVelocity(AngularVelocity speed) {
         return flywheel.setSpeed(speed);
     }
 
-    /**
-     * Returns a command that continuously applies the provided supplier as the flywheel setpoint.
-     * This is intended for use as a long-running command that owns the flywheel subsystem and updates
-     * the closed-loop target each loop without creating/scheduling commands repeatedly.
-     */
-    public Command setVelocity(Supplier<AngularVelocity> speed) {
-        return flywheel.setSpeed(speed);
+    /** Supplier-backed overload for dynamic/tunable speeds. */
+    public Command setVelocity(Supplier<AngularVelocity> supplier) {
+        return flywheel.setSpeed(supplier);
     }
 
     /**
-     * Sets the duty cycle (percent output) for the flywheel.
+     * Imperative API: immediately apply a mechanism velocity setpoint via YAMS.
      *
-     * @param dutyCycle The output percentage (-1.0 to 1.0).
-     * @return A command to run the flywheel at the specified duty cycle.
+     * <p>Use this only for initialization or non-Command-driven cases. Ownership: the caller is
+     * responsible for lifecycle; this does not return a Command and will not be automatically cleared
+     * when a Command ends.
      */
-    public Command setDutyCycle(double dutyCycle) {
-        return flywheel.set(dutyCycle);
+    public void applySetpoint(AngularVelocity speed) {
+        flywheel.setMechanismVelocitySetpoint(speed);
     }
 
-    // endregion
+    /**
+     * Convenience: stop the flywheel via a closed-loop zero-speed command (holds zero while
+     * scheduled).
+     */
+    public Command stopFlywheel() {
+        return flywheel.setSpeed(RPM.of(0));
+    }
 
-    // region Triggers & events
+    /** Standardized alias to stop the mechanism via closed-loop zero speed (hold). */
+    public Command stopHold() {
+        return stopFlywheel();
+    }
 
     /**
-     * Returns a Trigger that is active when the flywheel is within the configured error margin of the
-     * canonical shooter target speed. The Trigger evaluates the current measured velocity each time
-     * it is sampled.
+     * Short one-shot command that imperatively applies a zero velocity setpoint and finishes. Useful
+     * in sequences where an immediate non-blocking stop is required.
      */
-    /** Public Trigger active when the flywheel is within error of the canonical target. */
-    public final Trigger atPrepSpeed =
-            new Trigger(
-                    () -> {
-                        double tgtRpm = kFlywheelPrepAngularVelocity.in(RPM);
-                        return tgtRpm > 0
-                                && Math.abs(getVelocity().in(RPM) - tgtRpm) <= kFlywheelAtSpeedError * tgtRpm;
-                    });
+    public Command stopNow() {
+        return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("FlywheelStopNow");
+    }
 
-    // endregion
+    /** Return applied setpoint (used by default command to re-apply active setpoint). */
+    public AngularVelocity getAppliedSetpoint() {
+        return motor.getMechanismSetpointVelocity().orElse(flywheelInputs.setpoint);
+    }
 }

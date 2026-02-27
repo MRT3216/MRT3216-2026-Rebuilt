@@ -1,5 +1,6 @@
 package frc.robot.systems;
 
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
 
@@ -7,6 +8,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
@@ -61,7 +63,34 @@ public class ShooterSystem {
      *     pipeline
      */
     public Command shootForTuning() {
-        return prepShooterWithClear();
+        return feedAndShoot();
+    }
+
+    /**
+     * Start shooting with a dynamic velocity supplier. The returned command schedules the closed-loop
+     * flywheel velocity command in parallel with a clear->feed sequence. The flywheel command will
+     * remain active until interrupted (so it continues to adjust while feeding).
+     */
+    public Command startShooting(Supplier<AngularVelocity> velocitySupplier) {
+        var flywheelCmd = flywheel.setVelocity(velocitySupplier);
+        var feedSeq =
+                Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()));
+        return Commands.parallel(flywheelCmd, feedSeq).withName("StartShooting");
+    }
+
+    /** Start shooting at the canonical prep velocity (fixed-speed convenience overload). */
+    public Command startShooting() {
+        return startShooting(() -> kFlywheelPrepAngularVelocity);
+    }
+
+    private Command feedAndShoot() {
+        // Start the flywheel closed-loop controller (YAMS run), run the short
+        // clear routine, then start feeding immediately after the clear completes.
+        // We intentionally do not wait for the flywheel to reach speed.
+        return flywheel
+                .setVelocity(kFlywheelPrepAngularVelocity)
+                .andThen(clearKicker())
+                .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()));
     }
 
     /**
@@ -72,7 +101,14 @@ public class ShooterSystem {
     private Command clearKicker() {
         // Use small negative closed-loop velocities to clear any jammed balls.
         // Closed-loop ensures repeatable behavior across real and sim.
-        return kicker.setVelocity(kKickerClearAngularVelocity);
+        return kicker
+                .setVelocity(kKickerClearAngularVelocity)
+                .withTimeout(kClearDurationSecs)
+                // After the clear completes, stop the kicker using closed-loop velocity = 0
+                // After the clear completes, set the kicker setpoint to zero imperatively
+                // using a short one-shot provided by the subsystem so the sequence can
+                // progress to feeding without being blocked by a long-running zero command.
+                .andThen(kicker.stopNow());
     }
 
     /**
@@ -88,25 +124,13 @@ public class ShooterSystem {
     public Command prepShooter() {
         return flywheel.setVelocity(kFlywheelPrepAngularVelocity);
     }
-
     /**
      * This composed helper is a small convenience for operator bindings: it starts the flywheel
      * spinning to the canonical target and concurrently runs the brief reverse-kicker clear routine.
      * The flywheel continues running after the clear completes.
      */
     private Command prepShooterWithClear() {
-        // Schedule the long-running flywheel spin independently so it remains running
-        // after the clear routine finishes or the button is released. The clear
-        // routine will end when the flywheel reaches prep speed or when the
-        // configured timeout elapses (safety).
-        var spin = prepShooter();
-        return Commands.runOnce(
-                        () -> edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance().schedule(spin))
-                .andThen(
-                        clearKicker()
-                                .withTimeout(
-                                        frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs)
-                                .until(flywheel.atPrepSpeed));
+        return prepShooter().alongWith(clearKicker());
     }
 
     /**
@@ -156,12 +180,18 @@ public class ShooterSystem {
      * long-running shooting commands) and allowing subsystem defaults to resume.
      */
     public Command stopShooting() {
-        // A no-op runOnce that requires the shooter subsystems will interrupt running
-        // shooting
-        // commands and then finish; subsystem default commands (which set duty to zero)
-        // will
-        // take over immediately.
-        return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood);
+        // Clear any persistent flywheel request so the default command returns to
+        // idle, and require relevant subsystems briefly to interrupt running
+        // shooting pipelines.
+        // Interrupt any running shooting pipelines by briefly taking their subsystems,
+        // then stop the flywheel motor output so the mechanism returns to idle.
+        // Briefly require the shooter subsystems to interrupt any active shooting
+        // pipelines, then ensure all mechanisms stop via PID-set velocities (zero).
+        return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood)
+                // Immediately apply zero setpoints imperatively so the stop finishes quickly.
+                .andThen(flywheel.stopNow())
+                .andThen(spindexer.stopNow())
+                .andThen(kicker.stopNow());
     }
 
     // endregion

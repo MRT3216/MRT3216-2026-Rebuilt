@@ -11,6 +11,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -148,7 +149,7 @@ public class SpindexerSubsystem extends SubsystemBase {
         spindexer.simIterate();
     }
 
-    // region Lifecycle / periodic (continued)
+    // region Lifecycle / periodic
 
     @Override
     public void periodic() {
@@ -191,6 +192,15 @@ public class SpindexerSubsystem extends SubsystemBase {
     }
 
     /**
+     * Convenience helper: run the spindexer at the configured shooter feed velocity.
+     *
+     * @return a Command that sets the spindexer to the shooter feed speed
+     */
+    public Command feedShooter() {
+        return setVelocity(kSpindexerTargetAngularVelocity);
+    }
+
+    /**
      * Sets the duty cycle (percent output) for the spindexer.
      *
      * @param dutyCycle The output percentage (-1.0 to 1.0).
@@ -198,6 +208,28 @@ public class SpindexerSubsystem extends SubsystemBase {
      */
     public Command setDutyCycle(double dutyCycle) {
         return spindexer.set(dutyCycle);
+    }
+
+    /**
+     * Convenience: stop the spindexer via a closed-loop zero-speed command (holds zero while
+     * scheduled).
+     */
+    public Command stopHold() {
+        return setVelocity(RPM.of(0));
+    }
+
+    /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. Use for init/tests. */
+    public void applySetpoint(AngularVelocity speed) {
+        spindexer.setMechanismVelocitySetpoint(speed);
+    }
+
+    /**
+     * Short one-shot command that imperatively applies a zero velocity setpoint and finishes. Useful
+     * when sequences need to stop the spindexer immediately without holding a long-running zero-speed
+     * command.
+     */
+    public Command stopNow() {
+        return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("SpindexerStopNow");
     }
 
     // endregion

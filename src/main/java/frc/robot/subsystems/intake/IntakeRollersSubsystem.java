@@ -14,6 +14,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -64,7 +65,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // Explicit Phoenix refreshes are required for telemetry; call directly.
 
-    // region Hardware & signals
+    // region Hardware & controller
 
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kMotorId);
@@ -75,7 +76,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Controller configuration / mechanism
+    // region Initialization helpers
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -168,6 +169,8 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         intakeRollers.simIterate();
     }
 
+    // region Lifecycle / periodic
+
     @Override
     public void periodic() {
         updateInputs();
@@ -218,8 +221,26 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.set(dutyCycle);
     }
 
-    // endregion
+    /**
+     * Convenience: stop the intake rollers via a closed-loop zero-speed command (holds zero while
+     * scheduled).
+     */
+    public Command stopHold() {
+        return setVelocity(RPM.of(0));
+    }
 
+    /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. */
+    public void applySetpoint(AngularVelocity speed) {
+        intakeRollers.setMechanismVelocitySetpoint(speed);
+    }
+
+    /**
+     * One-shot: imperatively apply zero velocity and finish. Use in sequences to stop immediately
+     * without blocking subsequent steps.
+     */
+    public Command stopNow() {
+        return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("IntakeRollersStopNow");
+    }
     // region Triggers & events
 
     // (none yet) — triggers can be added here during wiring in RobotContainer/Systems

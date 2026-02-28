@@ -215,11 +215,11 @@ public class SpindexerSubsystem extends SubsystemBase {
      * scheduled).
      */
     public Command stopHold() {
-        return setVelocity(RPM.of(0));
+        return setVelocity(RPM.of(0)).withName("SpindexerStopHold");
     }
 
     /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. Use for init/tests. */
-    public void applySetpoint(AngularVelocity speed) {
+    private void applySetpoint(AngularVelocity speed) {
         spindexer.setMechanismVelocitySetpoint(speed);
     }
 

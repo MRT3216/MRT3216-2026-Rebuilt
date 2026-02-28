@@ -226,11 +226,11 @@ public class IntakeRollersSubsystem extends SubsystemBase {
      * scheduled).
      */
     public Command stopHold() {
-        return setVelocity(RPM.of(0));
+        return setVelocity(RPM.of(0)).withName("IntakeRollersStopHold");
     }
 
     /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. */
-    public void applySetpoint(AngularVelocity speed) {
+    private void applySetpoint(AngularVelocity speed) {
         intakeRollers.setMechanismVelocitySetpoint(speed);
     }
 

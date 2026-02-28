@@ -44,7 +44,10 @@ public class Zones {
         }
 
         protected boolean containsPoint(Translation2d point) {
-            return point.getX() >= xMin && point.getX() <= xMax && point.getY() >= yMin && point.getY() <= yMax;
+            return point.getX() >= xMin
+                    && point.getX() <= xMax
+                    && point.getY() >= yMin
+                    && point.getY() <= yMax;
         }
 
         public BaseZone mirroredX() {
@@ -89,8 +92,10 @@ public class Zones {
         }
 
         @Override
-        public Trigger willContain(Supplier<Pose2d> pose, Supplier<ChassisSpeeds> fieldSpeeds, Time dt) {
-            return new Trigger(() -> willContainPoint(pose.get().getTranslation(), fieldSpeeds.get(), dt));
+        public Trigger willContain(
+                Supplier<Pose2d> pose, Supplier<ChassisSpeeds> fieldSpeeds, Time dt) {
+            return new Trigger(
+                    () -> willContainPoint(pose.get().getTranslation(), fieldSpeeds.get(), dt));
         }
 
         protected boolean willContainPoint(Translation2d point, ChassisSpeeds fieldSpeeds, Time dt) {
@@ -138,7 +143,8 @@ public class Zones {
         }
 
         @Override
-        public Trigger willContain(Supplier<Pose2d> pose, Supplier<ChassisSpeeds> fieldSpeeds, Time dt) {
+        public Trigger willContain(
+                Supplier<Pose2d> pose, Supplier<ChassisSpeeds> fieldSpeeds, Time dt) {
             Trigger combined = new Trigger(() -> false);
 
             for (Zone zone : zones) {
@@ -149,47 +155,59 @@ public class Zones {
         }
     }
 
-    private static final PredictiveXBaseZone BLUE_BOTTOM_TRENCH = new PredictiveXBaseZone(
-            FieldConstants.TRENCH_BUMP_X
-                    .minus(FieldConstants.TRENCH_BUMP_LENGTH.div(2))
-                    .minus(Dimensions.FULL_LENGTH.div(2)),
-            FieldConstants.TRENCH_BUMP_X
-                    .plus(FieldConstants.TRENCH_BUMP_LENGTH.div(2))
-                    .plus(Dimensions.FULL_LENGTH.div(2)),
-            Meters.of(0),
-            FieldConstants.TRENCH_WIDTH);
+    private static final PredictiveXBaseZone BLUE_BOTTOM_TRENCH =
+            new PredictiveXBaseZone(
+                    FieldConstants.TRENCH_BUMP_X
+                            .minus(FieldConstants.TRENCH_BUMP_LENGTH.div(2))
+                            .minus(Dimensions.FULL_LENGTH.div(2)),
+                    FieldConstants.TRENCH_BUMP_X
+                            .plus(FieldConstants.TRENCH_BUMP_LENGTH.div(2))
+                            .plus(Dimensions.FULL_LENGTH.div(2)),
+                    Meters.of(0),
+                    FieldConstants.TRENCH_WIDTH);
     private static final PredictiveXBaseZone BLUE_TOP_TRENCH = BLUE_BOTTOM_TRENCH.mirroredY();
     private static final PredictiveXBaseZone RED_BOTTOM_TRENCH = BLUE_BOTTOM_TRENCH.mirroredX();
     private static final PredictiveXBaseZone RED_TOP_TRENCH = BLUE_TOP_TRENCH.mirroredX();
 
     public static final PredictiveXZoneCollection TRENCH_ZONES =
-            new PredictiveXZoneCollection(BLUE_BOTTOM_TRENCH, BLUE_TOP_TRENCH, RED_BOTTOM_TRENCH, RED_TOP_TRENCH);
+            new PredictiveXZoneCollection(
+                    BLUE_BOTTOM_TRENCH, BLUE_TOP_TRENCH, RED_BOTTOM_TRENCH, RED_TOP_TRENCH);
 
-    private static final PredictiveXBaseZone BLUE_BOTTOM_TRENCH_DUCK = new PredictiveXBaseZone(
-            FieldConstants.TRENCH_BUMP_X
-                    .minus(FieldConstants.TRENCH_BAR_WIDTH.div(2))
-                    .minus(HoodConstants.EXTRA_DUCK_DISTANCE),
-            FieldConstants.TRENCH_BUMP_X
-                    .plus(FieldConstants.TRENCH_BAR_WIDTH.div(2))
-                    .plus(HoodConstants.EXTRA_DUCK_DISTANCE),
-            Meters.of(0),
-            FieldConstants.TRENCH_WIDTH);
-    private static final PredictiveXBaseZone BLUE_TOP_TRENCH_DUCK = BLUE_BOTTOM_TRENCH_DUCK.mirroredY();
-    private static final PredictiveXBaseZone RED_BOTTOM_TRENCH_DUCK = BLUE_BOTTOM_TRENCH_DUCK.mirroredX();
+    private static final PredictiveXBaseZone BLUE_BOTTOM_TRENCH_DUCK =
+            new PredictiveXBaseZone(
+                    FieldConstants.TRENCH_BUMP_X
+                            .minus(FieldConstants.TRENCH_BAR_WIDTH.div(2))
+                            .minus(HoodConstants.EXTRA_DUCK_DISTANCE),
+                    FieldConstants.TRENCH_BUMP_X
+                            .plus(FieldConstants.TRENCH_BAR_WIDTH.div(2))
+                            .plus(HoodConstants.EXTRA_DUCK_DISTANCE),
+                    Meters.of(0),
+                    FieldConstants.TRENCH_WIDTH);
+    private static final PredictiveXBaseZone BLUE_TOP_TRENCH_DUCK =
+            BLUE_BOTTOM_TRENCH_DUCK.mirroredY();
+    private static final PredictiveXBaseZone RED_BOTTOM_TRENCH_DUCK =
+            BLUE_BOTTOM_TRENCH_DUCK.mirroredX();
     private static final PredictiveXBaseZone RED_TOP_TRENCH_DUCK = BLUE_TOP_TRENCH_DUCK.mirroredX();
 
-    public static final PredictiveXZoneCollection TRENCH_DUCK_ZONES = new PredictiveXZoneCollection(
-            BLUE_BOTTOM_TRENCH_DUCK, BLUE_TOP_TRENCH_DUCK, RED_BOTTOM_TRENCH_DUCK, RED_TOP_TRENCH_DUCK);
+    public static final PredictiveXZoneCollection TRENCH_DUCK_ZONES =
+            new PredictiveXZoneCollection(
+                    BLUE_BOTTOM_TRENCH_DUCK,
+                    BLUE_TOP_TRENCH_DUCK,
+                    RED_BOTTOM_TRENCH_DUCK,
+                    RED_TOP_TRENCH_DUCK);
 
-    private static final PredictiveXBaseZone BLUE_BOTTOM_BUMP = new PredictiveXBaseZone(
-            FieldConstants.TRENCH_BUMP_X
-                    .minus(FieldConstants.TRENCH_BUMP_LENGTH.div(2))
-                    .minus(Dimensions.FULL_LENGTH.div(2)),
-            FieldConstants.TRENCH_BUMP_X
-                    .plus(FieldConstants.TRENCH_BUMP_LENGTH.div(2))
-                    .plus(Dimensions.FULL_LENGTH.div(2)),
-            FieldConstants.TRENCH_WIDTH.plus(FieldConstants.TRENCH_BLOCK_WIDTH),
-            FieldConstants.TRENCH_WIDTH.plus(FieldConstants.TRENCH_BLOCK_WIDTH).plus(FieldConstants.BUMP_WIDTH));
+    private static final PredictiveXBaseZone BLUE_BOTTOM_BUMP =
+            new PredictiveXBaseZone(
+                    FieldConstants.TRENCH_BUMP_X
+                            .minus(FieldConstants.TRENCH_BUMP_LENGTH.div(2))
+                            .minus(Dimensions.FULL_LENGTH.div(2)),
+                    FieldConstants.TRENCH_BUMP_X
+                            .plus(FieldConstants.TRENCH_BUMP_LENGTH.div(2))
+                            .plus(Dimensions.FULL_LENGTH.div(2)),
+                    FieldConstants.TRENCH_WIDTH.plus(FieldConstants.TRENCH_BLOCK_WIDTH),
+                    FieldConstants.TRENCH_WIDTH
+                            .plus(FieldConstants.TRENCH_BLOCK_WIDTH)
+                            .plus(FieldConstants.BUMP_WIDTH));
     private static final PredictiveXBaseZone BLUE_TOP_BUMP = BLUE_BOTTOM_BUMP.mirroredY();
     private static final PredictiveXBaseZone RED_BOTTOM_BUMP = BLUE_BOTTOM_BUMP.mirroredX();
     private static final PredictiveXBaseZone RED_TOP_BUMP = BLUE_TOP_BUMP.mirroredX();

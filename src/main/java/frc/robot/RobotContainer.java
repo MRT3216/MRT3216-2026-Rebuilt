@@ -220,17 +220,12 @@ public class RobotContainer {
                         () -> -controller.getLeftX(),
                         () -> -controller.getRightX()));
 
-        // Default commands now use closed-loop controllers (PID) instead of open-loop
-        // duty. Flywheel default will re-apply the currently applied setpoint each loop
-        // so
-        // the PID controller remains active; callers manually clear or change the
-        // setpoint.
-        // flywheelSubsystem.setDefaultCommand(
-        // flywheelSubsystem.setVelocity(() -> flywheelSubsystem.getAppliedSetpoint()));
         kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
+        // Ensure flywheel holds zero when no one owns it so releasing buttons returns it to idle
+        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
         // Ensure intake rollers default to stopped when no command is running
         rollersSubsystem.setDefaultCommand(rollersSubsystem.setDutyCycle(0));
         // Have hood hold its current commanded target using the positional controller
@@ -243,25 +238,34 @@ public class RobotContainer {
         switch (Constants.currentMode) {
             case REAL:
                 {
-                    // // Start/stop buttons: X starts the long-running shoot pipeline; Y stops it.
-                    // Command start =
-                    // shooterSystem.startShooting(
-                    // () -> new Pose2d(),
-                    // () -> new ChassisSpeeds(0.0, 0.0, 0.0),
-                    // () -> FieldConstants.Hub.innerCenterPoint,
-                    // 3,
-                    // ShootingLookupTable.Mode.HUB);
-                    // controller.x().onTrue(start);
-                    // controller.y().onTrue(shooterSystem.stopShooting());
-                    // break;
+                    // REAL mode: right trigger starts the auto-aim+shoot pipeline using live odometry
+                    // and the hub center as the target. Left trigger stops shooting.
+                    // Right trigger: hold to aim+shoot in REAL mode
+                    controller
+                            .rightTrigger()
+                            .whileTrue(
+                                    shooterSystem.aimAndShoot(
+                                            () -> drive.getPose(),
+                                            () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
+                                            () -> frc.robot.constants.FieldConstants.Hub.innerCenterPoint,
+                                            3,
+                                            frc.robot.util.ShootingLookupTable.Mode.HUB));
+
+                    // Left trigger remains a manual stop if needed
+                    controller.leftTrigger().onTrue(shooterSystem.stopShooting());
+
+                    break;
                 }
 
             case SIM:
             case TUNING:
                 {
                     // TUNING-mode: simple tuning bindings
-                    // Right trigger: press to start the shooting pipeline (fixed prep speed)
-                    controller.rightTrigger().onTrue(shooterSystem.startShooting());
+                    // Right trigger: press to start the shooting pipeline using the adjustable
+                    // system-owned target so A/B bumps take effect while running.
+                    // TUNING: hold right trigger to run adjustable-target shooting (bumps apply live)
+                    controller.rightTrigger().whileTrue(shooterSystem.startShootingWithAdjustableTarget());
+
                     controller.leftTrigger().onTrue(shooterSystem.stopShooting());
 
                     // Hood: left/right bumper adjust by -/+1 degree per press.
@@ -287,25 +291,15 @@ public class RobotContainer {
                                     spindexerSubsystem.setVelocity(
                                             ShooterConstants.SpindexerConstants.kSpindexerTargetAngularVelocity));
 
-                    // A -> Kicker
-                    controller
-                            .a()
-                            .whileTrue(
-                                    kickerSubsystem.setVelocity(
-                                            ShooterConstants.KickerConstants.kKickerTargetAngularVelocity));
+                    // A/B: small RPM bumps for tuning (do not require subsystems so they
+                    // won't interrupt running shooting pipelines). Use onTrue so a single
+                    // press performs a one-shot bump.
+                    controller.a().onTrue(shooterSystem.bumpFlywheelDown(50));
+                    controller.b().onTrue(shooterSystem.bumpFlywheelUp(50));
 
-                    // B -> Flywheel
-                    controller
-                            .b()
-                            .whileTrue(
-                                    flywheelSubsystem.setVelocity(
-                                            ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity))
-                            .whileFalse(flywheelSubsystem.stopFlywheel());
-
-                    // Previously we snapped the turret on A/B in SIM/TUNING; keep the commands
-                    // commented out here in case we want to re-enable that behavior later.
-                    // controller.a().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
-                    // controller.b().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+                    controller.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
+                    controller.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
+                    controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
 
                     break;
                 }

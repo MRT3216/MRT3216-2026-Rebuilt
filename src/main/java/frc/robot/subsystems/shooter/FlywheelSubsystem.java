@@ -54,6 +54,7 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
  */
 public class FlywheelSubsystem extends SubsystemBase {
     // region Inputs & telemetry
+
     @AutoLog
     public static class FlywheelInputs {
         public AngularVelocity velocity = RPM.of(0);
@@ -67,6 +68,7 @@ public class FlywheelSubsystem extends SubsystemBase {
     // endregion
 
     // region Hardware & controller
+
     private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
@@ -77,10 +79,6 @@ public class FlywheelSubsystem extends SubsystemBase {
     private final FlyWheel flywheel;
 
     // endregion
-
-    // NOTE: We intentionally avoid persisting supplier/requested-velocity state here.
-    // Callers should use the YAMS primitives directly: setMechanismVelocitySetpoint(),
-    // run(...), and runTo(...).
 
     // region Initialization helpers
 
@@ -171,13 +169,21 @@ public class FlywheelSubsystem extends SubsystemBase {
     }
 
     /**
+     * Repeatedly reapplies the provided supplier's value imperatively while the returned command is
+     * scheduled. This is useful when the underlying YAMS command does not re-evaluate a Supplier
+     * after scheduling and we need a running re-applier for live tuning.
+     */
+    public Command followTarget(Supplier<AngularVelocity> supplier) {
+        return Commands.run(() -> applySetpoint(supplier.get()), this).withName("FlywheelFollowTarget");
+    }
+
+    /**
      * Imperative API: immediately apply a mechanism velocity setpoint via YAMS.
      *
-     * <p>Use this only for initialization or non-Command-driven cases. Ownership: the caller is
-     * responsible for lifecycle; this does not return a Command and will not be automatically cleared
-     * when a Command ends.
+     * <p>Use only internally for short one-shot helpers (e.g., {@link #stopNow()}) or for tests. This
+     * is intentionally private to avoid exposing imperative ownership in the public API.
      */
-    public void applySetpoint(AngularVelocity speed) {
+    private void applySetpoint(AngularVelocity speed) {
         flywheel.setMechanismVelocitySetpoint(speed);
     }
 
@@ -185,13 +191,8 @@ public class FlywheelSubsystem extends SubsystemBase {
      * Convenience: stop the flywheel via a closed-loop zero-speed command (holds zero while
      * scheduled).
      */
-    public Command stopFlywheel() {
-        return flywheel.setSpeed(RPM.of(0));
-    }
-
-    /** Standardized alias to stop the mechanism via closed-loop zero speed (hold). */
     public Command stopHold() {
-        return stopFlywheel();
+        return flywheel.setSpeed(RPM.of(0)).withName("FlywheelStopHold");
     }
 
     /**

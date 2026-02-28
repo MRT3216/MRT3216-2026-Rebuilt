@@ -442,5 +442,4 @@ public final class ShooterConstants {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
     }
-
 }

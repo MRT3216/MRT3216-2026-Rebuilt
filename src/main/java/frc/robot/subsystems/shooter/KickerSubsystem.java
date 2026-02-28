@@ -202,11 +202,11 @@ public class KickerSubsystem extends SubsystemBase {
      * Convenience: stop the kicker via a closed-loop zero-speed command (holds zero while scheduled).
      */
     public Command stopHold() {
-        return setVelocity(RPM.of(0));
+        return setVelocity(RPM.of(0)).withName("KickerStopHold");
     }
 
     /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. Use for init/tests. */
-    public void applySetpoint(AngularVelocity speed) {
+    private void applySetpoint(AngularVelocity speed) {
         kicker.setMechanismVelocitySetpoint(speed);
     }
 

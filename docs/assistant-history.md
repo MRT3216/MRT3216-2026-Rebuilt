@@ -9,7 +9,7 @@ Note: this file contains a cleaned, near-complete transcript of the user ↔ ass
 
 Conversation (user and assistant messages only, cleaned and organized):
 
-1) User: Asked about YAMS setSpeed semantics and whether to prefer a YAMS-first, command-returning API vs imperative setMechanismVelocitySetpoint. 
+1) User: Asked about YAMS setSpeed semantics and whether to prefer a YAMS-first, command-returning API vs imperative setMechanismVelocitySetpoint.
 
 Assistant: Recommended YAMS-first approach: expose command-returning helpers like `setVelocity(AngularVelocity)` and `setVelocity(Supplier<AngularVelocity>)` and keep short imperative helpers private for special uses. Suggested stop semantics with two forms: long-hold `stopHold()` (closed-loop zero while scheduled) and one-shot `stopNow()` (imperative, non-blocking for sequences).
 
@@ -17,17 +17,17 @@ Assistant: Recommended YAMS-first approach: expose command-returning helpers lik
 
 Assistant: Reviewed `FlywheelSubsystem`, `KickerSubsystem`, `SpindexerSubsystem`, `IntakeRollersSubsystem`, `ShooterSystem`, and `RobotContainer`. Proposed standardized public APIs and stop semantics; recommended `applySetpoint(...)` be private and added a `followTarget(...)` re-applier for live supplier updates when YAMS's supplier-based Command did not re-evaluate live.
 
-3) User: Asked to implement changes. Assistant iteratively applied edits across the repo to: 
-- Add command-returning `setVelocity(...)` overloads. 
-- Add `stopNow()` and `stopHold()` semantics. 
-- Make `applySetpoint(...)` private. 
+3) User: Asked to implement changes. Assistant iteratively applied edits across the repo to:
+- Add command-returning `setVelocity(...)` overloads.
+- Add `stopNow()` and `stopHold()` semantics.
+- Make `applySetpoint(...)` private.
 - Add `followTarget(...)` to FlywheelSubsystem to reapply supplier values each tick for live tuning.
 
 4) Assistant: Updated `ShooterSystem` to own an `AtomicReference<AngularVelocity> flywheelTarget` for adjustable tuning, added `bumpFlywheelTarget(...)`, `bumpFlywheelUp/Down(...)`, `startShootingWithAdjustableTarget()` (uses `followTarget(...)`), and refactored `aimAndShoot(...)` to use `HybridTurretUtil.computeMovingShot(...)`.
 
-5) Assistant: Updated `RobotContainer` button bindings: 
-- Made Right Trigger `whileTrue(...)` for shooting in TUNING and REAL modes. 
-- Wired A/B to bump up/down temporarily. 
+5) Assistant: Updated `RobotContainer` button bindings:
+- Made Right Trigger `whileTrue(...)` for shooting in TUNING and REAL modes.
+- Wired A/B to bump up/down temporarily.
 - Replaced problematic B `.whileFalse(flywheel.stopHold())` (which scheduled a stop when B was released) with one-shot bump commands so bumps don't interrupt running pipelines.
 
 6) User: Reported that pressing B while holding right trigger caused turret to stop and flywheel wouldn't stop on trigger release.
@@ -64,7 +64,7 @@ Assistant: Investigated and fixed conflicts by rebinding A/B and later setting f
 ---
 
 Redactions & omissions
-- Removed detailed internal tool outputs, raw terminal command outputs, and specific runtime JVM debug lines. 
+- Removed detailed internal tool outputs, raw terminal command outputs, and specific runtime JVM debug lines.
 - No secrets detected by the assistant in the visible conversation. If you want stricter redaction (e.g., remove all absolute file paths or developer tool logs), tell me which patterns to redact and I will update the file.
 
 How to pull this on another machine

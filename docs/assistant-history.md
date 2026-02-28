@@ -273,3 +273,31 @@ Assistant note: I avoided including internal tool outputs and terminal debug tra
 ---
 
 If you'd like me to proceed with *raw verbatim* append (option 1) or *automated redact* append (option 2), reply with `1` or `2`. If you want further custom redaction rules, provide regex patterns or examples and I will apply them.
+
+---
+
+Command-based best practices (session recap & Oblarg-style guidance)
+
+Below are concise, practical recommendations that were discussed in this session plus a short set of Oblarg-style best practices for working with the WPILib command framework.
+
+High-level rules we applied here
+- Prefer command-returning APIs for mechanism setpoints (YAMS-first): public methods return Commands such as `setVelocity(AngularVelocity)` and `setVelocity(Supplier<AngularVelocity>)`. This makes wiring to triggers and scheduler composition simpler and composable.
+- Two stop semantics: provide both `stopHold()` (a long-running default command that holds closed-loop zero) and `stopNow()` (an Instant/one-shot that immediately sets outputs off for sequences). Use `stopHold()` as a subsystem default.
+- Avoid scheduling stops with `.whileFalse(...)` — that can schedule undesired stop commands while other buttons are pressed. Prefer explicit `onTrue`/`onFalse` bindings and default commands for safe baseline states.
+- Use supplier-backed commands for tunable setpoints, and add a re-applier (e.g., `followTarget(Supplier)`) when the supplier must be re-evaluated while a command is active (the scheduler's supplier-backed command may not re-run updates every tick depending on the wrapper used).
+- Minimize subsystem requirements for small utility commands (like 'bump' commands). Make bumps runOnce / InstantCommands that mutate a shared AtomicReference target, rather than require and interrupt the subsystem's default command.
+- Name composed commands with `withName(...)` for better runtime observability in logs and dashboards.
+
+Oblarg-style practical tips (short)
+- Keep commands small and single-purpose. Prefer composition (SequentialCommandGroup / ParallelCommandGroup) over giant monolithic commands.
+- Use default commands to represent stable idle behaviour for subsystems (e.g., drive resting behavior, flywheel hold at zero). That prevents accidental motor outputs when buttons are released.
+- Use InstantCommand for firing small side-effect actions (bump, latch/unlatch, toggle boolean) and avoid requiring subsystems if the action can be modeled as a shared state update.
+- Add clear names to commands and command groups. Tests and telemetry become much easier when commands show up with meaningful names in the scheduler logs.
+- Prefer supplier-based targets for setpoints when tuning (use Shuffleboard/SmartDashboard or AtomicReferences to hold user-adjustable values). If the scheduler's built-in supplier-based command doesn't re-evaluate as you expect, add a lightweight re-applier that calls the same apply-setpoint method periodically.
+- Avoid using `whileFalse` or inverted bindings to schedule behavior; they often produce surprising scheduler interactions. Bind explicit `onTrue`, `onFalse`, and `whileTrue` with clear intent.
+
+Edge cases & caveats
+- If a command manipulates a shared target (AtomicReference), ensure bump limits & clamping are applied to avoid runaway values.
+- Long-running blocking operations should be avoided inside commands — prefer non-blocking control or run blocking work on a separate thread with clear cancellation semantics.
+
+If you want, I can also add a short example snippet (3-8 line) showing the recommended `setVelocity(Supplier)` usage plus a `followTarget()` re-applier example in `FlywheelSubsystem` — would you like that added to the file now? If yes, reply `add snippet` and I'll append it and push.

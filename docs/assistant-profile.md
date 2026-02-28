@@ -1,69 +1,88 @@
-# Assistant Profile — MRT3216 Command-Based + YAMS Conventions
+## Assistant Profile — MRT3216 Command-Based + YAMS Conventions (Expanded)
 
 Purpose
 -------
-This file captures the distilled programming conventions, command-based patterns, and YAMS-specific best practices used in this repository. Keep this file in the repo so the assistant and team members can quickly rehydrate the same expectations on any machine.
+This file captures an actionable, medium-length summary of the project's command-based & YAMS usage patterns so the assistant and contributors can restore the same conventions on any machine.
 
-How to use
-----------
-- Copy the "Starter prompt" section below into an assistant session to resume the same conventions.
-- Refer to the "Quick snippets" section when asking the assistant to make edits or run checks.
+What this contains
+- Key design decisions and rationale
+- Practical examples you can paste into code
+- Important repo locations to check first when making changes
+- A reusable starter prompt to paste into assistant sessions
 
-Design philosophy (short)
--------------------------
-- Prefer YAMS-first, command-returning APIs for mechanisms. Expose methods like `setVelocity(AngularVelocity)` and `setVelocity(Supplier<AngularVelocity>)` which return WPILib Commands.
-- Keep imperative helpers private and short (e.g., `applySetpoint(...)`) and provide one-shot helpers for sequence use (e.g., `stopNow()`).
-- Two-stop semantics:
-  - `stopHold()`: closed-loop zero-speed command that holds while scheduled (use as default command or when an operator wants to hold idle state).
-  - `stopNow()`: one-shot, imperative stop used in sequences to quickly apply zero and continue.
-- Use `followTarget(Supplier<AngularVelocity>)` when a YAMS supplier-backed command doesn't re-evaluate live; implement an imperatively re-applier that writes the supplier value each scheduler tick for tuning workflows.
-- Keep subsystem ownership clear: commands that alter persistent behavior should generally be created by systems or containers (caller-owns pattern). Short, localized runOnce actions are acceptable from many places.
+Core design decisions (concise)
+------------------------------
+- YAMS-first APIs: expose command-returning methods for mechanisms (e.g., `setVelocity(AngularVelocity)` and `setVelocity(Supplier<AngularVelocity>)`). Commands should own closed-loop behavior.
+- Imperative helpers: keep them private and short (e.g., `applySetpoint(...)`). Provide `stopNow()` one-shot commands for sequences where an immediate non-blocking stop is required.
+- Two-stop semantics: `stopHold()` (long-running closed-loop hold zero) vs `stopNow()` (one-shot imperative zero).
+- Live tuning: YAMS supplier-backed commands may not re-evaluate a Supplier after scheduling — provide `followTarget(Supplier<AngularVelocity>)` (imperative re-applier) for tuning flows.
+- Command ownership: callers (systems/containers) should create longer-lived commands. Keep bump and transient actions as runOnce/no-requirements commands to avoid interrupting pipelines.
 
-Naming & observability
-----------------------
-- Use `withName("MeaningfulName")` on composed commands (e.g., `StartShooting`, `FeedAndShoot`, `AimAndShoot`) to improve Scheduler logs and AdvantageKit traces.
-- Publish minimal dashboard keys for quick debugging (optional): `Shooter/RequestedRPM`, `Shooter/AppliedRPM`, `Shooter/TurretErrorDeg`, `Shooter/HoodErrorDeg`.
-- Rely on YAMS + AdvantageKit telemetry for detailed mechanism state; add a few NetworkTables values for operator-facing widgets.
+Why these conventions
+- Predictability: command-returning APIs align with WPILib scheduler ownership expectations.
+- Safety: one-shot stops avoid deadlocking sequences that need to progress; `stopHold()` provides a stable idle state.
+- Tuning ergonomics: follow-target re-appliers and no-requirements bumps let operators adjust without interrupting feeding/aiming.
 
-Operator ergonomics
--------------------
-- Bump commands should be one-shot and not require subsystems. That lets the operator adjust targets while a feed pipeline is running without interrupting it.
-- Trigger-driven shooting: prefer `whileTrue(...)` bindings to run a composed shooting pipeline while the operator holds a trigger and automatically cancel on release.
+Key files & where to look (quick map)
+- Shooter high-level: `src/main/java/frc/robot/systems/ShooterSystem.java`
+- Flywheel: `src/main/java/frc/robot/subsystems/shooter/FlywheelSubsystem.java`
+- Kicker/Spindexer: `src/main/java/frc/robot/subsystems/shooter/KickerSubsystem.java` and `SpindexerSubsystem.java`
+- Turret & Hood: `src/main/java/frc/robot/subsystems/shooter/TurretSubsystem.java` and `HoodSubsystem.java`
+- Controller wiring: `src/main/java/frc/robot/RobotContainer.java`
+- YAMS docs & vendordep: `docs/YAMS.md` and `vendordeps/yams.json`
+- Telemetry notes: `docs/TELEMETRY.md`
+
+Practical code examples
+-----------------------
+- Named composed shooting pipeline:
+```java
+return Commands.parallel(
+    flywheel.setVelocity(target),
+    Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()))
+).withName("FeedAndShoot");
+```
+
+- One-shot bump that doesn't require subsystems:
+```java
+public Command bumpFlywheelTarget(AngularVelocity delta) {
+  return Commands.runOnce(() -> {
+    // update atomic target
+  }).withName("BumpFlywheelSys");
+}
+```
+
+- Follow-target re-applier used for tuning:
+```java
+public Command followTarget(Supplier<AngularVelocity> supplier) {
+  return Commands.run(() -> applySetpoint(supplier.get()), this).withName("FlywheelFollowTarget");
+}
+```
 
 Starter prompt (paste to assistant)
------------------------------------
-Use this exact block to rehydrate assistant behavior. It summarizes the repo's conventions and desired behavior for edits.
+----------------------------------
+Copy this exact block into a new assistant session to rehydrate behavior and expectations:
 
-"Project assistant profile: MRT3216 repo. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning when supplier-backed YAMS commands do not re-evaluate. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. When making edits, update the `docs/assistant-profile.md` if conventions change and run `./gradlew.bat build` to validate. If you are unsure, ask for clarification."
+"Project assistant profile: MRT3216 repo. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning when supplier-backed YAMS commands do not re-evaluate. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
 
-Quick snippets
---------------
-- Add a named composed command:
-  - `return Commands.parallel(a, b).withName("MeaningfulName");`
-- Create a one-shot bump that doesn't require subsystems:
-  - `return Commands.runOnce(() -> { /* update atomic ref */ }).withName("BumpFlywheelSys");`
-- Default command to hold zero:
-  - `flywheel.setDefaultCommand(flywheel.stopHold());`
-- Follow-target re-applier:
-  - `return Commands.run(() -> applySetpoint(supplier.get()), this).withName("FlywheelFollowTarget");`
+Useful local references (already in repo)
+- `docs/YAMS.md` — vendor install, links to YAMS docs, and licensing notes.
+- `docs/TELEMETRY.md` — AdvantageKit and telemetry guidance used by this project.
+- `docs/assistant-history-2026-02-27.md` — conversation backup created on 2026-02-27 (timestamped archive).
 
-Privacy & secrets
------------------
-- Do not commit secrets (API keys, service tokens). If a conversation contains a secret, redact it before committing.
-- This file is safe to commit; remove or redact any sensitive lines before adding additional chat transcripts.
+Backup & transcript policy
+-------------------------
+- Prefer appending user+assistant transcripts to `docs/assistant-history.md` when requested. Avoid committing secrets — redact before committing or instruct the assistant to redact automatically.
+- If you want per-session archives, use timestamped files `docs/assistant-history-YYYY-MM-DD.md` (already used).
 
-Commit policy for assistant backups
------------------------------------
-- Prefer a single ongoing file `docs/assistant-history.md` for day-to-day append-only backups, or timestamped files for archives. Keep backups private if needed.
+Suggested next improvements (optional)
+- Add small JUnit-style integration tests that validate bump commands are non-requiring and triggers start/stop pipelines correctly.
+- Add a small `scripts/verify-commands.sh` that runs `./gradlew build` and greps for `withName("` uses to ensure command naming coverage.
+- Publish the starter prompt into repository-level VS Code snippets for convenience.
 
-Append policy (how I will append)
----------------------------------
-- When requested, the assistant will append the verbatim user+assistant transcript (or the user/assistant subset) to `docs/assistant-history.md` under a timestamped header. It will never push unredacted secrets unless you explicitly instruct it to.
-
-Contact & maintenance
----------------------
-- If you change the repo's conventions (e.g., decide to gate feeding only when at-speed), update this profile so the assistant uses the new rules.
+Maintenance
+-----------
+If you change important conventions (e.g., switch to gating feeding only when at-speed), update this profile and consider adding a migration note in the changelog.
 
 ---
 
-*Generated on 2026-02-27 — commit pushed to `mechanisms` by automation on user request.*
+*Last edited: 2026-02-27 — pushed to `mechanisms`.*

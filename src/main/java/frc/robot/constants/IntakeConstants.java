@@ -125,11 +125,11 @@ public final class IntakeConstants {
         public static final double kG_sim = 0.0;
 
         // Limits / presets
-        public static final Angle kHardLimitMax = Degrees.of(360);
-        public static final Angle kHardLimitMin = Degrees.of(0);
-        public static final Angle kSoftLimitMax = Degrees.of(350);
-        public static final Angle kSoftLimitMin = Degrees.of(10);
-        public static final Angle kStartingPosition = Degrees.of(0);
+        public static final Angle kHardLimitMax = Degrees.of(130);
+        public static final Angle kHardLimitMin = Degrees.of(-5);
+        public static final Angle kSoftLimitMax = Degrees.of(125);
+        public static final Angle kSoftLimitMin = Degrees.of(0);
+        public static final Angle kEncoderOffset = Degrees.of(125);
 
         // Telemetry keys
         public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
@@ -139,7 +139,7 @@ public final class IntakeConstants {
         public static final double kEncoderGearing = 1.0;
 
         // Arm position presets
-        public static final Angle kStowedAngle = Degrees.of(140);
+        public static final Angle kStowedAngle = Degrees.of(125);
         public static final Angle kDeployedAngle = Degrees.of(0);
 
         /** Returns a preconfigured ArmFeedforward for the intake pivot (ks, kg, kv). */

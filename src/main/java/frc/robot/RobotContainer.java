@@ -9,10 +9,12 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
 
+import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
@@ -41,6 +43,7 @@ import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.RobotMapValidator;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -73,8 +76,8 @@ public class RobotContainer {
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
 
-    // Dashboard inputs
-    // private final LoggedDashboardChooser<Command> autoChooser;
+    // Dashboard inputs (initialized by setupAutoChooser when enabled)
+    private LoggedDashboardChooser<Command> autoChooser;
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
@@ -105,6 +108,7 @@ public class RobotContainer {
 
                     break;
                 }
+
             case TUNING:
                 {
                     // TUNING mode: instantiate real hardware IO so tuning runs on the real robot.
@@ -176,32 +180,6 @@ public class RobotContainer {
                     break;
                 }
         }
-
-        // Set up auto routines
-        // autoChooser = new LoggedDashboardChooser<>("Auto Choices",
-        // AutoBuilder.buildAutoChooser());
-
-        // // // Set up SysId routines
-        // autoChooser.addOption(
-        // "Drive Wheel Radius Characterization",
-        // DriveCommands.wheelRadiusCharacterization(drive));
-        // autoChooser.addOption(
-        // "Drive Simple FF Characterization",
-        // DriveCommands.feedforwardCharacterization(drive));
-        // autoChooser.addOption(
-        // "Drive SysId (Quasistatic Forward)",
-        // drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
-        // autoChooser.addOption(
-        // "Drive SysId (Quasistatic Reverse)",
-        // drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-        // autoChooser.addOption(
-        // "Drive SysId (Dynamic Forward)",
-        // drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
-        // autoChooser.addOption(
-        // "Drive SysId (Dynamic Reverse)",
-        // drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
-
-        // Configure the button bindings
         configureButtonBindings();
     }
 
@@ -228,6 +206,10 @@ public class RobotContainer {
         flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
         // Ensure intake rollers default to stopped when no command is running
         rollersSubsystem.setDefaultCommand(rollersSubsystem.setDutyCycle(0));
+        // Ensure intake pivot holds its commanded setpoint when no one owns it so
+        // live tuning and dashboard writes persist.
+        intakePivotSubsystem.setDefaultCommand(
+                intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getTarget()));
         // Have hood hold its current commanded target using the positional controller
         // (we track a commanded target so button bumps are applied relative to it).
         hoodSubsystem.setDefaultCommand(hoodSubsystem.moveToAngle(() -> hoodSubsystem.getTarget()));
@@ -238,9 +220,7 @@ public class RobotContainer {
         switch (Constants.currentMode) {
             case REAL:
                 {
-                    // REAL mode: right trigger starts the auto-aim+shoot pipeline using live odometry
-                    // and the hub center as the target. Left trigger stops shooting.
-                    // Right trigger: hold to aim+shoot in REAL mode
+                    // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
                     controller
                             .rightTrigger()
                             .whileTrue(
@@ -260,10 +240,7 @@ public class RobotContainer {
             case SIM:
             case TUNING:
                 {
-                    // TUNING-mode: simple tuning bindings
-                    // Right trigger: press to start the shooting pipeline using the adjustable
-                    // system-owned target so A/B bumps take effect while running.
-                    // TUNING: hold right trigger to run adjustable-target shooting (bumps apply live)
+                    // TUNING/SIM: hold right trigger to run adjustable-target shooting (A/B bumps apply live)
                     controller.rightTrigger().whileTrue(shooterSystem.startShootingWithAdjustableTarget());
 
                     controller.leftTrigger().onTrue(shooterSystem.stopShooting());
@@ -335,5 +312,49 @@ public class RobotContainer {
                                             drive)
                                     .ignoringDisable(true));
         }
+    }
+
+    /**
+     * SysId helper: registers SysId routines on the dashboard.
+     *
+     * <p>Disabled by default. To enable SysId options, call {@code setupSysid()} from the constructor
+     * and uncomment the implementation inside this method.
+     */
+    @SuppressWarnings("unused")
+    private void setupSysid() {
+        // Set up SysId routines
+        autoChooser.addOption(
+                "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
+        autoChooser.addOption(
+                "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
+        autoChooser.addOption(
+                "Drive SysId (Quasistatic Forward)",
+                drive.sysIdQuasistatic(
+                        edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward));
+        autoChooser.addOption(
+                "Drive SysId (Quasistatic Reverse)",
+                drive.sysIdQuasistatic(
+                        edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse));
+        autoChooser.addOption(
+                "Drive SysId (Dynamic Forward)",
+                drive.sysIdDynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward));
+        autoChooser.addOption(
+                "Drive SysId (Dynamic Reverse)",
+                drive.sysIdDynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse));
+    }
+
+    /**
+     * AutoChooser helper: creates the dashboard auto chooser.
+     *
+     * <p>Disabled by default. To enable, call {@code setupAutoChooser()} from the constructor and
+     * uncomment the implementation below.
+     */
+    @SuppressWarnings("unused")
+    private void setupAutoChooser() {
+        // Set up auto routines using AdvantageKit's LoggedDashboardChooser backed by
+        // an AutoBuilder. This mirrors the original project behavior.
+        // Note: This method is intentionally not called by default. Call it from
+        // the constructor to enable the auto chooser at runtime.
+        autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
     }
 }

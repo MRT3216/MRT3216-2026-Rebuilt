@@ -12,6 +12,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
@@ -66,6 +67,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
             new SparkFlex(RobotMap.Intake.Pivot.kLeftMotorId, SparkFlex.MotorType.kBrushless);
     private final SparkFlex rightPivotMotor =
             new SparkFlex(RobotMap.Intake.Pivot.kRightMotorId, SparkFlex.MotorType.kBrushless);
+
     // endregion
 
     // region Controller configuration / mechanism
@@ -108,13 +110,12 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit)
                         // Configure the REV ThroughBore absolute encoder plugged into the right pivot motor
-                        .withExternalEncoder(rightPivotMotor.getAbsoluteEncoder())
-                        .withExternalEncoderInverted(false)
-                        .withExternalEncoderGearing(
-                                new MechanismGearing(GearBox.fromReductionStages(kEncoderGearing)))
-                        .withUseExternalFeedbackEncoder(true)
-                        .withExternalEncoderZeroOffset(kStartingPosition)
-                        .withVoltageCompensation(Volts.of(12))
+                        // .withExternalEncoder(rightPivotMotor.getAbsoluteEncoder())
+                        // .withExternalEncoderInverted(false)
+                        // .withExternalEncoderGearing(
+                        //         new MechanismGearing(GearBox.fromReductionStages(kEncoderGearing)))
+                        // .withUseExternalFeedbackEncoder(true)
+                        // .withExternalEncoderZeroOffset(kEncoderOffset)
                         .withFollowers(Pair.of(rightPivotMotor, true));
 
         smartMotor = new SparkWrapper(leftPivotMotor, DCMotor.getNeoVortex(1), motorConfig);
@@ -125,11 +126,19 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withLength(kLength)
                         .withTelemetry(kIntakeArmMechTelemetry, Constants.telemetryVerbosity())
                         // Provide a starting position so the Arm has a known initial angle
-                        .withStartingPosition(kStartingPosition)
+                        .withStartingPosition(kEncoderOffset)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
                         .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         intakePivot = new Arm(intakePivotConfig);
+        // Initialize the mechanism commanded setpoint to a clamped starting angle to
+        // avoid commanding outside the configured soft limits at startup. Use the
+        // SmartMotorController setPosition API so the mechanism's internal setpoint is
+        // consistent and observable.
+        double startMeasuredDeg = intakePivot.getAngle().in(Degrees);
+        double clampedStartDeg =
+                MathUtil.clamp(startMeasuredDeg, kSoftLimitMin.in(Degrees), kSoftLimitMax.in(Degrees));
+        smartMotor.setPosition(Degrees.of(clampedStartDeg));
 
         // No Phoenix status signals to configure for SparkFlex here.
     }
@@ -206,6 +215,33 @@ public class IntakePivotSubsystem extends SubsystemBase {
     public Command setDutyCycle(double dutyCycle) {
         // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied via ArmConfig
         return intakePivot.set(dutyCycle);
+    }
+
+    /**
+     * Returns the current commanded target for the intake pivot.
+     *
+     * <p>Reads the mechanism's stored setpoint (if present) and falls back to the measured position
+     * when no setpoint is available.
+     */
+    public Angle getTarget() {
+        return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
+    }
+
+    /**
+     * Immediately write a clamped position setpoint to the mechanism (YAMS Arm).
+     *
+     * <p>This updates the mechanism's stored setpoint directly (no Command is scheduled). It clamps
+     * to the configured soft limits before writing via the Arm API so the mechanism remains the
+     * single source of truth for commanded setpoints.
+     *
+     * @param target the desired Angle; it will be clamped to configured soft limits
+     */
+    public void writeSetpointImmediate(Angle target) {
+        double requestedDeg = target.in(Degrees);
+        double minDeg = kSoftLimitMin.in(Degrees);
+        double maxDeg = kSoftLimitMax.in(Degrees);
+        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
+        intakePivot.setMechanismPositionSetpoint(Degrees.of(clampedDeg));
     }
 
     // endregion

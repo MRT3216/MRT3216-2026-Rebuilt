@@ -202,7 +202,12 @@ public class Robot extends LoggedRobot {
 
     /** This function is called once when the robot is first started up. */
     @Override
-    public void simulationInit() {}
+    public void simulationInit() {
+        // Ensure the simulator starts on Blue1 by default. This runs when the
+        // simulation session begins which avoids UI/initialization ordering issues.
+        DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
+        DriverStationSim.notifyNewData();
+    }
 
     /** This function is called periodically whilst in simulation. */
     @Override

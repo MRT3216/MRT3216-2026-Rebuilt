@@ -267,7 +267,7 @@ public final class ShooterConstants {
 
         public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
-        public static final double kD_sim = 0.5;
+        public static final double kD_sim = 0.0;
 
         // Motion limits
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
@@ -285,7 +285,7 @@ public final class ShooterConstants {
         public static final String kHoodMotorTelemetry = "HoodMotor";
         public static final String kHoodMechTelemetry = "HoodMech";
         /** Allowed absolute position error for hood angle comparisons (degrees). */
-        public static final Angle kPositionTolerance = Degrees.of(1.0);
+        public static final Angle kPositionTolerance = Degrees.of(0.5);
 
         /**
          * Returns a preconfigured ArmFeedforward instance for the Hood arm. Uses the ordering

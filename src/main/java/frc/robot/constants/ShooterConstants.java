@@ -243,7 +243,7 @@ public final class ShooterConstants {
 
         // Motor wiring
         public static final boolean kMotorInverted = false;
-        public static final Current kStatorCurrentLimit = Amps.of(30);
+        public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID
         public static final double kP = 0.0;
@@ -260,14 +260,14 @@ public final class ShooterConstants {
 
         // Simulation-specific feedforward / PID defaults for Hood (tuned for sim)
         public static final double kS_sim = 0.0;
-        public static final double kV_sim = 0.0;
+        public static final double kV_sim = 3.7;
         public static final double kA_sim = 0.0;
         /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
-        public static final double kG_sim = 0.0;
+        public static final double kG_sim = 0.233;
 
-        public static final double kP_sim = 0.0;
+        public static final double kP_sim = 5.0;
         public static final double kI_sim = 0.0;
-        public static final double kD_sim = 0.0;
+        public static final double kD_sim = 0.3;
 
         // Motion limits
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);

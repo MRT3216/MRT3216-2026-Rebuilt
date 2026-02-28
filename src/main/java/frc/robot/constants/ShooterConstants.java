@@ -299,6 +299,8 @@ public final class ShooterConstants {
         public static ArmFeedforward armFeedforwardSim() {
             return new ArmFeedforward(kS_sim, kG_sim, kV_sim, kA_sim);
         }
+
+        public static final Distance EXTRA_DUCK_DISTANCE = Inches.of(12.0); // inches
     }
 
     public static final class TurretConstants {
@@ -440,4 +442,5 @@ public final class ShooterConstants {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
     }
+
 }

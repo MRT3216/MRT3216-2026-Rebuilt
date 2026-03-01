@@ -35,11 +35,6 @@ import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
-import frc.robot.subsystems.vision.Vision;
-import frc.robot.subsystems.vision.VisionConstants;
-import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOPhotonVision;
-import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.RobotMapValidator;
@@ -56,7 +51,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
     // Subsystems
     private final Drive drive;
-    private final Vision vision;
+    // private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
@@ -96,15 +91,18 @@ public class RobotContainer {
                                     new ModuleIOTalonFX(TunerConstants.BackLeft),
                                     new ModuleIOTalonFX(TunerConstants.BackRight));
 
-                    vision =
-                            new Vision(
-                                    drive::addVisionMeasurement,
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraFrontName, VisionConstants.robotToCameraLeft),
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
+                    //     vision =
+                    //             new Vision(
+                    //                     drive::addVisionMeasurement,
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraFrontName,
+                    // VisionConstants.robotToCameraLeft),
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraRightName,
+                    // VisionConstants.robotToCameraRight),
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraBackName,
+                    // VisionConstants.robotToCameraBack));
 
                     break;
                 }
@@ -120,15 +118,18 @@ public class RobotContainer {
                                     new ModuleIOTalonFX(TunerConstants.BackLeft),
                                     new ModuleIOTalonFX(TunerConstants.BackRight));
 
-                    vision =
-                            new Vision(
-                                    drive::addVisionMeasurement,
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraFrontName, VisionConstants.robotToCameraLeft),
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
+                    //     vision =
+                    //             new Vision(
+                    //                     drive::addVisionMeasurement,
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraFrontName,
+                    // VisionConstants.robotToCameraLeft),
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraRightName,
+                    // VisionConstants.robotToCameraRight),
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraBackName,
+                    // VisionConstants.robotToCameraBack));
 
                     break;
                 }
@@ -144,21 +145,21 @@ public class RobotContainer {
                                     new ModuleIOSim(TunerConstants.BackLeft),
                                     new ModuleIOSim(TunerConstants.BackRight));
                     // Sim robot, instantiate physics sim IO implementations
-                    vision =
-                            new Vision(
-                                    drive::addVisionMeasurement,
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraFrontName,
-                                            VisionConstants.robotToCameraLeft,
-                                            drive::getPose),
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraRightName,
-                                            VisionConstants.robotToCameraRight,
-                                            drive::getPose),
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraBackName,
-                                            VisionConstants.robotToCameraBack,
-                                            drive::getPose));
+                    //     vision =
+                    //             new Vision(
+                    //                     drive::addVisionMeasurement,
+                    //                     new VisionIOPhotonVisionSim(
+                    //                             VisionConstants.cameraFrontName,
+                    //                             VisionConstants.robotToCameraLeft,
+                    //                             drive::getPose),
+                    //                     new VisionIOPhotonVisionSim(
+                    //                             VisionConstants.cameraRightName,
+                    //                             VisionConstants.robotToCameraRight,
+                    //                             drive::getPose),
+                    //                     new VisionIOPhotonVisionSim(
+                    //                             VisionConstants.cameraBackName,
+                    //                             VisionConstants.robotToCameraBack,
+                    //                             drive::getPose));
 
                     break;
                 }
@@ -175,7 +176,7 @@ public class RobotContainer {
                                     new ModuleIO() {});
 
                     // (Use same number of dummy implementations as the real robot)
-                    vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+                    // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
 
                     break;
                 }

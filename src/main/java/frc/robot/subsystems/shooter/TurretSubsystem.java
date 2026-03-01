@@ -6,7 +6,7 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.TurretConstants.*;
 
-import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
@@ -68,8 +68,8 @@ public class TurretSubsystem extends SubsystemBase {
 
     // region Hardware & signals
 
-    private final SparkFlex pivotMotor =
-            new SparkFlex(RobotMap.Shooter.Turret.kMotorId, SparkFlex.MotorType.kBrushless);
+    private final SparkMax pivotMotor =
+            new SparkMax(RobotMap.Shooter.Turret.kMotorId, SparkMax.MotorType.kBrushless);
 
     // endregion
 

@@ -34,6 +34,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import frc.robot.generated.TunerConstants;
 import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -69,7 +70,8 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // region Hardware & controller
 
-    private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
+    private final TalonFX leftMotor =
+            new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId, TunerConstants.kCANBus);
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
 
@@ -95,7 +97,10 @@ public class FlywheelSubsystem extends SubsystemBase {
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
                         .withStatorCurrentLimit(kStatorCurrentLimit)
-                        .withFollowers(Pair.of(new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId), true));
+                        .withFollowers(
+                                Pair.of(
+                                        new TalonFX(RobotMap.Shooter.Flywheel.kRightMotorId, TunerConstants.kCANBus),
+                                        true));
 
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
 

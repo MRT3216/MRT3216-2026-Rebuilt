@@ -116,7 +116,8 @@ public final class IntakeConstants {
 
         // Simulation overrides (zeroed for tuning)
         public static final double kS_sim = 0.0;
-        // ! The kV is not finely tuned. I (William) went up to about 24 decimals before accidentally deleting it and giving up. -_-
+        // ! The kV is not finely tuned. I (William) went up to about 24 decimals before accidentally
+        // deleting it and giving up. -_-
         public static final double kV_sim = 28;
         public static final double kA_sim = 0.0;
         public static final double kP_sim = 0.0;

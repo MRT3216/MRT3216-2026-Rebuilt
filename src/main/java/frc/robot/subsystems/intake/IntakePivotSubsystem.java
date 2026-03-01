@@ -108,10 +108,10 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withStatorCurrentLimit(kStatorCurrentLimit)
                         // Configure the REV ThroughBore absolute encoder plugged into the right pivot motor
                         // .withExternalEncoder(rightPivotMotor.getAbsoluteEncoder())
-                        // .withExternalEncoderInverted(false)
+                        // withExternalEncoderInverted(false)
                         // .withExternalEncoderGearing(
                         //         new MechanismGearing(GearBox.fromReductionStages(kEncoderGearing)))
-                        // .withUseExternalFeedbackEncoder(true)
+                        .withUseExternalFeedbackEncoder(false)
                         // .withExternalEncoderZeroOffset(kEncoderOffset)
                         .withFollowers(Pair.of(rightPivotMotor, true));
 

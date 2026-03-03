@@ -19,8 +19,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
+import frc.robot.constants.Constants.Mode;
 import frc.robot.constants.IntakeConstants;
-import frc.robot.constants.ShooterConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -30,13 +30,8 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
-import frc.robot.subsystems.shooter.FlywheelSubsystem;
-import frc.robot.subsystems.shooter.HoodSubsystem;
-import frc.robot.subsystems.shooter.KickerSubsystem;
-import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.systems.IntakeSystem;
-import frc.robot.systems.ShooterSystem;
 import frc.robot.util.RobotMapValidator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -52,18 +47,19 @@ public class RobotContainer {
     // Subsystems
     private final Drive drive;
     // private final Vision vision;
-    private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
-    private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
+    //     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
+    //     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
-    private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
-    private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
+    //     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
+    //     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
     private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
 
     // Aggregated shooter system
-    private final ShooterSystem shooterSystem =
-            new ShooterSystem(
-                    flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem, hoodSubsystem);
+    //     private final ShooterSystem shooterSystem =
+    //             new ShooterSystem(
+    //                     flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem,
+    // hoodSubsystem);
 
     private final IntakeSystem intakeSystem =
             new IntakeSystem(rollersSubsystem, intakePivotSubsystem);
@@ -91,49 +87,21 @@ public class RobotContainer {
                                     new ModuleIOTalonFX(TunerConstants.BackLeft),
                                     new ModuleIOTalonFX(TunerConstants.BackRight));
 
-                    //     vision =
-                    //             new Vision(
-                    //                     drive::addVisionMeasurement,
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraFrontName,
+                    // vision =
+                    // new Vision(
+                    // drive::addVisionMeasurement,
+                    // new VisionIOPhotonVision(
+                    // VisionConstants.cameraFrontName,
                     // VisionConstants.robotToCameraLeft),
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraRightName,
+                    // new VisionIOPhotonVision(
+                    // VisionConstants.cameraRightName,
                     // VisionConstants.robotToCameraRight),
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraBackName,
+                    // new VisionIOPhotonVision(
+                    // VisionConstants.cameraBackName,
                     // VisionConstants.robotToCameraBack));
 
                     break;
                 }
-
-            case TUNING:
-                {
-                    // TUNING mode: instantiate real hardware IO so tuning runs on the real robot.
-                    drive =
-                            new Drive(
-                                    new GyroIO() {},
-                                    new ModuleIOTalonFX(TunerConstants.FrontLeft),
-                                    new ModuleIOTalonFX(TunerConstants.FrontRight),
-                                    new ModuleIOTalonFX(TunerConstants.BackLeft),
-                                    new ModuleIOTalonFX(TunerConstants.BackRight));
-
-                    //     vision =
-                    //             new Vision(
-                    //                     drive::addVisionMeasurement,
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraFrontName,
-                    // VisionConstants.robotToCameraLeft),
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraRightName,
-                    // VisionConstants.robotToCameraRight),
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraBackName,
-                    // VisionConstants.robotToCameraBack));
-
-                    break;
-                }
-
             case SIM:
                 {
                     // Sim robot, instantiate physics sim IO implementations
@@ -145,21 +113,21 @@ public class RobotContainer {
                                     new ModuleIOSim(TunerConstants.BackLeft),
                                     new ModuleIOSim(TunerConstants.BackRight));
                     // Sim robot, instantiate physics sim IO implementations
-                    //     vision =
-                    //             new Vision(
-                    //                     drive::addVisionMeasurement,
-                    //                     new VisionIOPhotonVisionSim(
-                    //                             VisionConstants.cameraFrontName,
-                    //                             VisionConstants.robotToCameraLeft,
-                    //                             drive::getPose),
-                    //                     new VisionIOPhotonVisionSim(
-                    //                             VisionConstants.cameraRightName,
-                    //                             VisionConstants.robotToCameraRight,
-                    //                             drive::getPose),
-                    //                     new VisionIOPhotonVisionSim(
-                    //                             VisionConstants.cameraBackName,
-                    //                             VisionConstants.robotToCameraBack,
-                    //                             drive::getPose));
+                    // vision =
+                    // new Vision(
+                    // drive::addVisionMeasurement,
+                    // new VisionIOPhotonVisionSim(
+                    // VisionConstants.cameraFrontName,
+                    // VisionConstants.robotToCameraLeft,
+                    // drive::getPose),
+                    // new VisionIOPhotonVisionSim(
+                    // VisionConstants.cameraRightName,
+                    // VisionConstants.robotToCameraRight,
+                    // drive::getPose),
+                    // new VisionIOPhotonVisionSim(
+                    // VisionConstants.cameraBackName,
+                    // VisionConstants.robotToCameraBack,
+                    // drive::getPose));
 
                     break;
                 }
@@ -176,7 +144,8 @@ public class RobotContainer {
                                     new ModuleIO() {});
 
                     // (Use same number of dummy implementations as the real robot)
-                    // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+                    // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new
+                    // VisionIO() {});
 
                     break;
                 }
@@ -199,12 +168,13 @@ public class RobotContainer {
                         () -> -controller.getLeftX(),
                         () -> -controller.getRightX()));
 
-        kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
+        // kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-        spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
-        // Ensure flywheel holds zero when no one owns it so releasing buttons returns it to idle
-        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
+        // spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
+        // Ensure flywheel holds zero when no one owns it so releasing buttons returns
+        // it to idle
+        // flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
         // Ensure intake rollers default to stopped when no command is running
         rollersSubsystem.setDefaultCommand(rollersSubsystem.setDutyCycle(0));
         // Ensure intake pivot holds its commanded setpoint when no one owns it so
@@ -213,80 +183,76 @@ public class RobotContainer {
                 intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getTarget()));
         // Have hood hold its current commanded target using the positional controller
         // (we track a commanded target so button bumps are applied relative to it).
-        hoodSubsystem.setDefaultCommand(hoodSubsystem.moveToAngle(() -> hoodSubsystem.getTarget()));
+        // hoodSubsystem.setDefaultCommand(hoodSubsystem.moveToAngle(() -> hoodSubsystem.getTarget()));
 
         // Bind X to a different command depending on runtime mode: SIM uses a
         // simplified routine,
         // REAL uses the dynamic aim-and-shoot routine (requires pose/vision suppliers).
-        switch (Constants.currentMode) {
-            case REAL:
-                {
-                    // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
-                    controller
-                            .rightTrigger()
-                            .whileTrue(
-                                    shooterSystem.aimAndShoot(
-                                            () -> drive.getPose(),
-                                            () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
-                                            () -> frc.robot.constants.FieldConstants.Hub.innerCenterPoint,
-                                            3,
-                                            frc.robot.util.ShootingLookupTable.Mode.HUB));
 
-                    // Left trigger remains a manual stop if needed
-                    controller.leftTrigger().onTrue(shooterSystem.stopShooting());
+        if (Constants.currentMode == Mode.SIM || Constants.tuningMode) {
 
-                    break;
-                }
+            // TUNING/SIM: hold right trigger to run adjustable-target shooting (A/B bumps
+            // apply live)
+            // controller.rightTrigger().whileTrue(shooterSystem.startShootingWithAdjustableTarget());
 
-            case SIM:
-            case TUNING:
-                {
-                    // TUNING/SIM: hold right trigger to run adjustable-target shooting (A/B bumps apply live)
-                    controller.rightTrigger().whileTrue(shooterSystem.startShootingWithAdjustableTarget());
+            // controller.leftTrigger().onTrue(shooterSystem.stopShooting());
 
-                    controller.leftTrigger().onTrue(shooterSystem.stopShooting());
+            // Hood: left/right bumper adjust by -/+1 degree per press.
+            //     controller
+            //             .leftBumper()
+            //
+            // .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(-1.0)).ignoringDisable(true));
 
-                    // Hood: left/right bumper adjust by -/+1 degree per press.
-                    controller
-                            .leftBumper()
-                            .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(-1.0)).ignoringDisable(true));
+            //     controller
+            //             .rightBumper()
+            //
+            // .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(1.0)).ignoringDisable(true));
 
-                    controller
-                            .rightBumper()
-                            .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(1.0)).ignoringDisable(true));
+            // A/B/X/Y: quick run buttons for velocity subsystems (TUNING/SIM)
+            // X -> Intake Rollers
+            controller
+                    .x()
+                    .whileTrue(rollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
 
-                    // A/B/X/Y: quick run buttons for velocity subsystems (TUNING/SIM)
-                    // X -> Intake Rollers
-                    controller
-                            .x()
-                            .whileTrue(
-                                    rollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
+            // Y -> Spindexer
+            //     controller
+            //             .y()
+            //             .whileTrue(
+            //                     spindexerSubsystem.setVelocity(
+            //
+            // ShooterConstants.SpindexerConstants.kSpindexerTargetAngularVelocity));
 
-                    // Y -> Spindexer
-                    controller
-                            .y()
-                            .whileTrue(
-                                    spindexerSubsystem.setVelocity(
-                                            ShooterConstants.SpindexerConstants.kSpindexerTargetAngularVelocity));
+            // A/B: small RPM bumps for tuning (do not require subsystems so they
+            // won't interrupt running shooting pipelines). Use onTrue so a single
+            // press performs a one-shot bump.
+            // controller.a().onTrue(shooterSystem.bumpFlywheelDown(50));
+            controller.a().whileTrue(turretSubsystem.setDutyCycle(0.7));
+            // controller.b().onTrue(shooterSystem.bumpFlywheelUp(50));
+            controller.b().whileTrue(turretSubsystem.setDutyCycle(-0.7));
 
-                    // A/B: small RPM bumps for tuning (do not require subsystems so they
-                    // won't interrupt running shooting pipelines). Use onTrue so a single
-                    // press performs a one-shot bump.
-                    controller.a().onTrue(shooterSystem.bumpFlywheelDown(50));
-                    controller.b().onTrue(shooterSystem.bumpFlywheelUp(50));
+            controller.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
+            controller.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
+            controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
 
-                    controller.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
-                    controller.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
-                    controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+        } else if (Constants.currentMode == Mode.REAL) {
 
-                    break;
-                }
+            // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
+            //     controller
+            //             .rightTrigger()
+            //             .whileTrue(
+            //                     shooterSystem.aimAndShoot(
+            //                             () -> drive.getPose(),
+            //                             () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0,
+            // 0.0),
+            //                             () -> frc.robot.constants.FieldConstants.Hub.innerCenterPoint,
+            //                             3,
+            //                             frc.robot.util.ShootingLookupTable.Mode.HUB));
 
-            default:
-                {
-                    // Default (REPLAY/unknown) — no SIM-specific bindings here.
-                    break;
-                }
+            //     // Left trigger remains a manual stop if needed
+            //     controller.leftTrigger().onTrue(shooterSystem.stopShooting());
+        } else {
+            // Default (REPLAY/unknown) — no SIM-specific bindings here.
+
         }
 
         // Reset gyro to 0° when Back button is pressed (available in both REAL and SIM)
@@ -301,8 +267,8 @@ public class RobotContainer {
                                 .ignoringDisable(true));
 
         // START button resets gyro when running on the real robot or in TUNING mode.
-        if (Constants.currentMode == Constants.Mode.REAL
-                || Constants.currentMode == Constants.Mode.TUNING) {
+        if (Constants.currentMode == Constants.Mode.REAL) {
+
             controller
                     .start()
                     .onTrue(

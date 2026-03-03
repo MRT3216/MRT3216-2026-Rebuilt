@@ -33,22 +33,15 @@ public final class Constants {
     /** Watchdog period for loop monitoring (seconds). */
     public static final double loopPeriodWatchdogSecs = 0.2;
 
-    /** Force-mode override for tests/CI; null means infer from WPILib. */
-    public static final Mode FORCE_MODE = null; // set to Mode.SIM or Mode.REAL to override
-
-    // Mode selection precedence (highest -> lowest):
-    //  1) FORCE_MODE (compile-time override)
     //  2) Inferred from WPILib (RobotBase.isReal())
-    public static final Mode currentMode =
-            (FORCE_MODE != null) ? FORCE_MODE : (RobotBase.isReal() ? Mode.REAL : Mode.SIM);
+    public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.SIM;
 
     /** Whether the project is running in tuning mode (inferred from the active Mode). */
-    public static final boolean tuningMode = (currentMode == Mode.TUNING);
+    public static final boolean tuningMode = true;
 
     /** Operation modes for the robot (simulation, real robot, etc.). */
     public enum Mode {
         REAL,
-        TUNING,
         SIM,
         REPLAY
     }
@@ -66,7 +59,6 @@ public final class Constants {
     public static TelemetryVerbosity telemetryVerbosity() {
         switch (currentMode) {
             case REAL:
-            case TUNING:
             case SIM:
             case REPLAY:
             default:

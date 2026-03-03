@@ -7,6 +7,7 @@ import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Rotations;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -28,6 +29,7 @@ public final class IntakeConstants {
     public static final class Rollers {
         private Rollers() {}
         // Mechanical
+        public static final boolean kMotorInverted = true;
         public static final Distance kWheelDiameter = Inches.of(1);
         public static final Mass kWheelMass = Pounds.of(0.5);
         public static final double kGearReduction = 2.0;
@@ -36,13 +38,13 @@ public final class IntakeConstants {
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID (velocity loop) - zeroed for tuning
-        public static final double kP = 0.0;
-        public static final double kI = 0.01;
+        public static final double kP = 0.5;
+        public static final double kI = 0.0;
         public static final double kD = 0.0;
 
         // Feedforward - zeroed for tuning
-        public static final double kS = 0.0;
-        public static final double kV = 0.0;
+        public static final double kS = 0.39;
+        public static final double kV = 0.24;
         public static final double kA = 0.0;
 
         // Simulation overrides (zeroed for tuning)
@@ -76,7 +78,7 @@ public final class IntakeConstants {
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
         // Recommended / helper target velocity for button-driven checks
-        public static final AngularVelocity kTargetAngularVelocity = RPM.of(1250.0);
+        public static final AngularVelocity kTargetAngularVelocity = RPM.of(2000.0);
     }
 
     /**
@@ -131,7 +133,7 @@ public final class IntakeConstants {
         public static final Angle kHardLimitMin = Degrees.of(-5);
         public static final Angle kSoftLimitMax = Degrees.of(125);
         public static final Angle kSoftLimitMin = Degrees.of(0);
-        public static final Angle kEncoderOffset = Degrees.of(125);
+        public static final Angle kEncoderOffset = Rotations.of(0);
 
         // Telemetry keys
         public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";

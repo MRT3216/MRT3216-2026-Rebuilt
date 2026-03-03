@@ -13,13 +13,11 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-import frc.robot.constants.ShooterConstants;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -30,8 +28,6 @@ import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.local.SparkWrapper;
-import yams.units.EasyCRT;
-import yams.units.EasyCRTConfig;
 
 /**
  * AdvantageKit-ready Turret Subsystem for MRT 3216.
@@ -157,8 +153,9 @@ public class TurretSubsystem extends SubsystemBase {
                         // Provide a starting position so the Pivot has a known angle at init (required
                         // by YAMS)
                         .withStartingPosition(kStartingPosition)
-                        .withHardLimit(kHardLimitMin, kHardLimitMax)
-                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
+        // .withHardLimit(kHardLimitMin, kHardLimitMax)
+        // .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
+        ;
 
         turret = new Pivot(turretConfig);
 
@@ -214,59 +211,59 @@ public class TurretSubsystem extends SubsystemBase {
             return;
         }
 
-        // Wrap snapshot values in suppliers so EasyCRT sees a consistent pair
-        Supplier<Angle> s1 = () -> abs1;
-        Supplier<Angle> s2 = () -> abs2;
+        // // Wrap snapshot values in suppliers so EasyCRT sees a consistent pair
+        // Supplier<Angle> s1 = () -> abs1;
+        // Supplier<Angle> s2 = () -> abs2;
 
-        // Build the EasyCRT config using the requested builder-style API: supply the
-        // two
-        // absolute-encoder snapshots and then configure gearing, mechanism range, and
-        // inversion flags. This mirrors the user's preferred example.
-        EasyCRTConfig config =
-                new EasyCRTConfig(s1, s2)
-                        .withAbsoluteEncoder1Gearing(kEasyCrtEncoder1DriverTeeth, kTurretDrivenTeeth)
-                        .withAbsoluteEncoder2Gearing(kTurretMotorDriverTeeth, kTurretDrivenTeeth)
-                        .withMechanismRange(kEasyCrtMechanismRangeMin, kEasyCrtMechanismRangeMax)
-                        .withAbsoluteEncoderInversions(kEasyCrtAbs1Inverted, kEasyCrtAbs2Inverted)
-                        .withMatchTolerance(ShooterConstants.TurretConstants.kEasyCrtMatchTolerance);
+        // // Build the EasyCRT config using the requested builder-style API: supply the
+        // // two
+        // // absolute-encoder snapshots and then configure gearing, mechanism range, and
+        // // inversion flags. This mirrors the user's preferred example.
+        // EasyCRTConfig config =
+        //         new EasyCRTConfig(s1, s2)
+        //                 .withAbsoluteEncoder1Gearing(kEasyCrtEncoder1DriverTeeth, kTurretDrivenTeeth)
+        //                 .withAbsoluteEncoder2Gearing(kTurretMotorDriverTeeth, kTurretDrivenTeeth)
+        //                 .withMechanismRange(kEasyCrtMechanismRangeMin, kEasyCrtMechanismRangeMax)
+        //                 .withAbsoluteEncoderInversions(kEasyCrtAbs1Inverted, kEasyCrtAbs2Inverted)
+        //                 .withMatchTolerance(ShooterConstants.TurretConstants.kEasyCrtMatchTolerance);
 
-        // Optionally run the gear recommender in simulation to propose pinion pairs.
-        if (RobotBase.isSimulation()) {
-            config.withCrtGearRecommendationConstraints(
-                    kCrtGearRecCoverage,
-                    kCrtGearRecMinTeeth,
-                    kCrtGearRecMaxTeeth,
-                    kCrtGearRecMaxCompoundTeeth);
-            // In simulation, log recommended gear pairs and unique coverage to aid tuning
-            config
-                    .getRecommendedCrtGearPair()
-                    .ifPresent(pair -> Logger.recordOutput("EasyCRT/RecPair", pair.toString()));
-            config
-                    .getUniqueCoverage()
-                    .ifPresent(cov -> Logger.recordOutput("EasyCRT/UniqueCoverage", cov));
-        }
+        // // Optionally run the gear recommender in simulation to propose pinion pairs.
+        // if (RobotBase.isSimulation()) {
+        //     config.withCrtGearRecommendationConstraints(
+        //             kCrtGearRecCoverage,
+        //             kCrtGearRecMinTeeth,
+        //             kCrtGearRecMaxTeeth,
+        //             kCrtGearRecMaxCompoundTeeth);
+        //     // In simulation, log recommended gear pairs and unique coverage to aid tuning
+        //     config
+        //             .getRecommendedCrtGearPair()
+        //             .ifPresent(pair -> Logger.recordOutput("EasyCRT/RecPair", pair.toString()));
+        //     config
+        //             .getUniqueCoverage()
+        //             .ifPresent(cov -> Logger.recordOutput("EasyCRT/UniqueCoverage", cov));
+        // }
 
-        EasyCRT solver = new EasyCRT(config);
-        var opt = solver.getAngleOptional();
-        if (opt.isPresent()) {
-            Angle mechAngle = opt.get();
-            // Seed the SmartMotorController so closed-loop control starts at the correct
-            // absolute angle
-            smartMotor.setEncoderPosition(mechAngle);
-            Logger.recordOutput(kEasyCrtStatusKey, "OK");
-            // Record the solved mechanism angle for replay/telemetry
-            Logger.recordOutput(kEasyCrtSolvedAngleKey, mechAngle);
-            // Optionally record solver internals on success when tuning
-            if (kEasyCrtLogOnSuccess) {
-                Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
-                Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
-            }
-            easyCrtInitialized = true;
-        } else {
-            Logger.recordOutput(kEasyCrtStatusKey, solver.getLastStatus().toString());
-            Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
-            Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
-        }
+        // EasyCRT solver = new EasyCRT(config);
+        // var opt = solver.getAngleOptional();
+        // if (opt.isPresent()) {
+        //     Angle mechAngle = opt.get();
+        //     // Seed the SmartMotorController so closed-loop control starts at the correct
+        //     // absolute angle
+        //     smartMotor.setEncoderPosition(mechAngle);
+        //     Logger.recordOutput(kEasyCrtStatusKey, "OK");
+        //     // Record the solved mechanism angle for replay/telemetry
+        //     Logger.recordOutput(kEasyCrtSolvedAngleKey, mechAngle);
+        //     // Optionally record solver internals on success when tuning
+        //     if (kEasyCrtLogOnSuccess) {
+        //         Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
+        //         Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
+        //     }
+        //     easyCrtInitialized = true;
+        // } else {
+        //     Logger.recordOutput(kEasyCrtStatusKey, solver.getLastStatus().toString());
+        //     Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
+        //     Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
+        // }
     }
 
     /** Advance the turret simulation model by one simulation tick. */
@@ -280,15 +277,15 @@ public class TurretSubsystem extends SubsystemBase {
         // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a
         // few times with a small spacing between attempts in case absolute encoders are not
         // ready immediately after construction (cold-power-up behavior).
-        if (!easyCrtInitialized && easyCrtAttempts < kEasyCrtMaxAttempts) {
-            easyCrtPeriodicCounter++;
-            // try roughly every kEasyCrtPeriodicSpacing cycles (~0.2s at 50Hz)
-            if (easyCrtPeriodicCounter >= kEasyCrtPeriodicSpacing) {
-                easyCrtPeriodicCounter = 0;
-                easyCrtAttempts++;
-                initializeEasyCRT();
-            }
-        }
+        // if (!easyCrtInitialized && easyCrtAttempts < kEasyCrtMaxAttempts) {
+        //     easyCrtPeriodicCounter++;
+        //     // try roughly every kEasyCrtPeriodicSpacing cycles (~0.2s at 50Hz)
+        //     if (easyCrtPeriodicCounter >= kEasyCrtPeriodicSpacing) {
+        //         easyCrtPeriodicCounter = 0;
+        //         easyCrtAttempts++;
+        //         initializeEasyCRT();
+        //     }
+        // }
 
         updateInputs();
         Logger.processInputs("Shooter/Turret", turretInputs);

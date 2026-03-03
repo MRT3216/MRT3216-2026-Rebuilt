@@ -99,6 +99,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
+                        .withMotorInverted(kMotorInverted)
                         // Feedback Constants (PID Constants). Intake rollers are velocity-controlled
                         // devices — use PID+feedforward rather than positional motion-profiles.
                         .withClosedLoopController(kP, kI, kD)
@@ -109,7 +110,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         // Telemetry
                         .withTelemetry(kIntakeRollersMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
-                        .withMotorInverted(false)
+                        .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
                         // NOTE: TalonFX (Phoenix) controllers used here don't expose the
                         // same YAMS voltage-compensation builder method available for the

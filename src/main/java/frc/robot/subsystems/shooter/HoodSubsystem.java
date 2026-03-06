@@ -178,9 +178,6 @@ public class HoodSubsystem extends SubsystemBase {
         return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
 
-    // Use `moveToAngle(...)` factories to command the mechanism (they will clamp to
-    // soft limits).
-
     @Override
     public void simulationPeriodic() {
         hood.simIterate();
@@ -201,13 +198,10 @@ public class HoodSubsystem extends SubsystemBase {
      */
 
     /**
-     * Alias / clearer name for {@link #setAngle(Angle)}.
-     *
-     * <p>Returns a Command that, when scheduled, will move the hood to the requested angle and
-     * maintain it while the command is active. Prefer this factory for scheduled motion.
+     * /** Sets the hood to a fixed angle. The requested angle will be clamped to configured soft
+     * limits before being commanded.
      */
-    public Command moveToAngle(Angle angle) {
-        // Clamp requested angle to configured soft limits and return the Arm command
+    public Command setAngle(Angle angle) {
         double requestedDeg = angle.in(Degrees);
         double minDeg = kSoftLimitMin.in(Degrees);
         double maxDeg = kSoftLimitMax.in(Degrees);
@@ -215,12 +209,8 @@ public class HoodSubsystem extends SubsystemBase {
         return hood.setAngle(Degrees.of(clampedDeg));
     }
 
-    /**
-     * Alias / clearer name for the supplier-backed factory {@link #setAngle(Supplier)}.
-     *
-     * <p>Useful when callers prefer a self-documenting method name.
-     */
-    public Command moveToAngle(Supplier<Angle> angle) {
+    /** Supplier-backed overload for dynamic angles. */
+    public Command setAngle(Supplier<Angle> angle) {
         return hood.setAngle(angle);
     }
 

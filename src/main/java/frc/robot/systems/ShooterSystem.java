@@ -3,10 +3,10 @@ package frc.robot.systems;
 import static edu.wpi.first.units.Units.RPM;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kRefinementConvergenceEpsilon;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMax;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMin;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
+import static frc.robot.constants.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -231,7 +231,7 @@ public class ShooterSystem {
 
         // Commands to track dynamic targets for turret and hood.
         var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
-        var hoodCmd = hood.moveToAngle(() -> solutionSupplier.get().hoodAngle());
+        var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
 
         // Flywheel re-applier follows the computed flywheel speed continuously.
         var flywheelFollow = flywheel.followTarget(() -> solutionSupplier.get().flywheelSpeed());

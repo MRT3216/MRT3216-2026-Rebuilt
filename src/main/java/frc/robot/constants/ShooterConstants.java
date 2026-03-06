@@ -81,7 +81,7 @@ public final class ShooterConstants {
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
          * robot.
          */
-        public static final AngularVelocity kSoftLimitMax = RPM.of(6000.0);
+        public static final AngularVelocity kSoftLimitMax = RPM.of(5000.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
@@ -89,12 +89,6 @@ public final class ShooterConstants {
         // public static final AngularVelocity kMaxVelocity = RPM.of(5000.0);
         // Acceleration used for trapezoidal profiling. Units: deg/s^2 (DegreesPerSecondPerSecond)
         // public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(6000.0);
-
-        /**
-         * Early-exit threshold (meters). If iterative refinement changes lead distance by less than
-         * this amount between passes, stop iterating early.
-         */
-        public static final Distance kRefinementConvergenceEpsilon = Meters.of(0.01); // 1 cm
 
         /** Duration to run the clear routine while the flywheel spins up (seconds). */
         public static final double kClearDurationSecs = 0.25;
@@ -401,6 +395,9 @@ public final class ShooterConstants {
         public static final int kEasyCrtMaxAttempts = 10;
         /** Periodic cycles between EasyCRT attempts (e.g., 10 at 50Hz ≈ 0.2s). */
         public static final int kEasyCrtPeriodicSpacing = 10;
+
+        /** When true, record solver internals (iterations / last error) on successful CRT solves. */
+        public static final boolean kEasyCrtLogOnSuccess = false;
 
         /* EasyCRT telemetry keys */
         public static final String kEasyCrtStatusKey = "EasyCRT/Status";

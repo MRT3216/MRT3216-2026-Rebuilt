@@ -15,6 +15,9 @@ import static edu.wpi.first.units.Units.Rotations;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -306,7 +309,7 @@ public final class ShooterConstants {
     public static final class TurretConstants {
         private TurretConstants() {}
         // Mechanical
-        public static final double kGearing = 32.4;
+        public static final double kGearing = 27;
 
         // Motor wiring
         public static final boolean kMotorInverted = false;
@@ -343,37 +346,24 @@ public final class ShooterConstants {
         public static final Distance kTurretOffsetX = Inches.of(0.0);
         public static final Distance kTurretOffsetY = Inches.of(0.0);
         public static final Distance kTurretOffsetZ = Inches.of(18.5);
-        public static final edu.wpi.first.math.geometry.Transform3d kRobotToTurretTransform =
-                new edu.wpi.first.math.geometry.Transform3d(
-                        new edu.wpi.first.math.geometry.Translation3d(
+        public static final Transform3d kRobotToTurretTransform =
+                new Transform3d(
+                        new Translation3d(
                                 kTurretOffsetX.in(Meters), kTurretOffsetY.in(Meters), kTurretOffsetZ.in(Meters)),
-                        new edu.wpi.first.math.geometry.Rotation3d());
+                        new Rotation3d());
 
         // Limits / presets
-        public static final Angle kHardLimitMax = Degrees.of(120);
-        public static final Angle kHardLimitMin = Degrees.of(-120);
-        public static final Angle kSoftLimitMax = Degrees.of(90);
-        public static final Angle kSoftLimitMin = Degrees.of(-90);
+        public static final Angle kHardLimitMax = Degrees.of(360);
+        public static final Angle kHardLimitMin = Degrees.of(0);
+        public static final Angle kSoftLimitMax = Degrees.of(360);
+        public static final Angle kSoftLimitMin = Degrees.of(0);
         public static final Angle kStartingPosition = Degrees.of(0);
         /** Allowed absolute position error for turret angle comparisons (degrees). */
         public static final Angle kPositionTolerance = Degrees.of(1.0);
 
-        // Shooting helpers
-        // public static final Distance kMinShootingDistance = Meters.of(1.5);
-        // public static final Distance kMaxShootingDistance = Meters.of(12.0);
-        // public static final LinearVelocity kBaseVel = InchesPerSecond.of(300);
-        // public static final double kVelMultiplier = 0.5;
-        // public static final double kVelPower = 1.2;
-        // public static final Distance kDistanceAboveFunnel = Inches.of(12.0);
-        // public static final Distance kFunnelRadius = Inches.of(24.0);
-        // public static final Distance kFunnelHeight = Inches.of(104.0);
-
         // Telemetry
         public static final String kTurretMotorTelemetry = "TurretMotor";
         public static final String kTurretMechTelemetry = "TurretMech";
-
-        /** Gearing used specifically for external encoder wiring (motor:mechanism). */
-        public static final double kEncoderGearing = 1.0;
 
         /**
          * Encoder ratios for EasyCRT / external-encoder wiring. These represent encoder rotations per
@@ -420,11 +410,6 @@ public final class ShooterConstants {
         public static final String kEasyCrtCoverageKey = "EasyCRT/UniqueCoverage";
         /** Telemetry key for the final solved mechanism angle when EasyCRT succeeds. */
         public static final String kEasyCrtSolvedAngleKey = "EasyCRT/SolvedAngle";
-
-        /**
-         * When true, log solver iterations and last-error on successful solves. Useful during tuning.
-         */
-        public static final boolean kEasyCrtLogOnSuccess = true;
 
         // Simulation-only CRT gear recommender constraints
         public static final double kCrtGearRecCoverage = 1.2;

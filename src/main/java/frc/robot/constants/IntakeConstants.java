@@ -7,7 +7,6 @@ import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
-import static edu.wpi.first.units.Units.Rotations;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -28,6 +27,7 @@ public final class IntakeConstants {
     /** Grouped roller constants to keep intake-related values organized. */
     public static final class Rollers {
         private Rollers() {}
+
         // Mechanical
         public static final boolean kMotorInverted = true;
         public static final Distance kWheelDiameter = Inches.of(1);
@@ -87,53 +87,48 @@ public final class IntakeConstants {
      */
     public static final class Pivot {
         private Pivot() {}
+
         // Mechanical
         public static final double kGearing = 30.0;
-        public static final Distance kLength = Inches.of(13);
+        public static final Distance kLength = Inches.of(11);
         public static final Mass kMass = Pounds.of(6.4);
 
         // Motor wiring
-        public static final boolean kMotorInverted = false;
-        public static final Current kStatorCurrentLimit = Amps.of(60);
+        public static final boolean kMotorInverted = true;
+        public static final Current kStatorCurrentLimit = Amps.of(40);
+
+        // Feedforward - zeroed for tuning
+        public static final double kG = 0.21;
+        public static final double kS = 0.11;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
 
         // PID / motion limits
         public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
+
         // Increased initial limits per request: use 90 deg/s and 90 deg/s^2 for pivot
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
         public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(90.0);
-        // (Pivot uses hard/soft angle limits in degrees; velocity soft-limits are not needed.)
-
-        // Feedforward - zeroed for tuning
-        public static final double kS = 0.0;
-        public static final double kV = 0.0;
-        public static final double kA = 0.0;
-
-        /**
-         * Gravity/feedforward constant used by arm-style feedforward (ArmFeedforward). Default 0.0
-         * until tuned on robot; units: volts-equivalent gravity term.
-         */
-        public static final double kG = 0.0;
 
         // Simulation overrides (zeroed for tuning)
+        public static final double kG_sim = 0;
         public static final double kS_sim = 0.0;
-        // ! The kV is not finely tuned. I (William) went up to about 24 decimals before accidentally
-        // deleting it and giving up. -_-
-        public static final double kV_sim = 28;
+        public static final double kV_sim = 0.0;
         public static final double kA_sim = 0.0;
+
         public static final double kP_sim = 0.0;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
-        /** Simulation gravity/feedforward term for ArmFeedforward in sim. */
-        public static final double kG_sim = 0.3791;
 
         // Limits / presets
-        public static final Angle kHardLimitMax = Degrees.of(130);
-        public static final Angle kHardLimitMin = Degrees.of(-5);
-        public static final Angle kSoftLimitMax = Degrees.of(125);
+        public static final Angle kHardLimitMax = Degrees.of(360);
+        public static final Angle kHardLimitMin = Degrees.of(0);
+        public static final Angle kSoftLimitMax = Degrees.of(360);
         public static final Angle kSoftLimitMin = Degrees.of(0);
-        public static final Angle kEncoderOffset = Rotations.of(0);
+
+        // public static final Angle kEncoderOffset = Rotation.of(0.65784466);
 
         // Telemetry keys
         public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
@@ -145,6 +140,8 @@ public final class IntakeConstants {
         // Arm position presets
         public static final Angle kStowedAngle = Degrees.of(125);
         public static final Angle kDeployedAngle = Degrees.of(0);
+
+        public static final Angle kTolerance = Degrees.of(1);
 
         /** Returns a preconfigured ArmFeedforward for the intake pivot (ks, kg, kv). */
         public static ArmFeedforward armFeedforward() {

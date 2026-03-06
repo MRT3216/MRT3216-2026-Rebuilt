@@ -78,15 +78,4 @@ public class IntakeSystem {
         }
         return Commands.none();
     }
-
-    /**
-     * Stow the intake arm if currently deployed.
-     *
-     * @return a command to move the intake to the stowed angle, or null if already stowed
-     */
-    public IntakeStates getCurrentState() {
-        return currentState;
-    }
-
-    /** Returns the current intake state (Stowed or Deployed). */
 }

@@ -91,7 +91,8 @@ public class TurretSubsystem extends SubsystemBase {
     // Retry counters for periodic auto-initialization (avoid blocking in
     // constructor)
     private int easyCrtAttempts = 0;
-    // EASY_CRT_MAX_ATTEMPTS moved to ShooterConstants.TurretConstants.kEasyCrtMaxAttempts
+    // EASY_CRT_MAX_ATTEMPTS moved to
+    // ShooterConstants.TurretConstants.kEasyCrtMaxAttempts
     private int easyCrtPeriodicCounter = 0; // counts periodic loops between attempts
 
     // PWM duty-cycle absolute encoder wired to the RoboRIO for turret absolute
@@ -127,7 +128,8 @@ public class TurretSubsystem extends SubsystemBase {
                         // Feedback Constants (PID Constants) + motion limits for trapezoidal profiles
                         .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
-                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
+                        // Feedforward Constants (use centralized factory to avoid parameter-order
+                        // mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
                         // Telemetry
@@ -137,10 +139,7 @@ public class TurretSubsystem extends SubsystemBase {
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
                         // Voltage compensation (12V) enabled on REV/Spark controllers to
-                        // stabilize positional control under varying battery voltage. The
-                        // Phoenix TalonFX family doesn't provide a matching YAMS API for
-                        // voltage compensation, so TalonFX-based subsystems don't call
-                        // `.withVoltageCompensation(...)`.
+                        // stabilize positional control under varying battery voltage.
                         .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
@@ -148,14 +147,12 @@ public class TurretSubsystem extends SubsystemBase {
 
         turretConfig =
                 new PivotConfig(smartMotor)
-                        .withMOI(kMOI)
-                        .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
-                        // Provide a starting position so the Pivot has a known angle at init (required
-                        // by YAMS)
                         .withStartingPosition(kStartingPosition)
-        // .withHardLimit(kHardLimitMin, kHardLimitMax)
-        // .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
-        ;
+                        .withWrapping(Degrees.of(0), Degrees.of(360))
+                        .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
+                        .withMOI(kMOI)
+                        .withHardLimit(kHardLimitMin, kHardLimitMax)
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         turret = new Pivot(turretConfig);
 
@@ -217,52 +214,54 @@ public class TurretSubsystem extends SubsystemBase {
 
         // // Build the EasyCRT config using the requested builder-style API: supply the
         // // two
-        // // absolute-encoder snapshots and then configure gearing, mechanism range, and
+        // // absolute-encoder snapshots and then configure gearing, mechanism range,
+        // and
         // // inversion flags. This mirrors the user's preferred example.
         // EasyCRTConfig config =
-        //         new EasyCRTConfig(s1, s2)
-        //                 .withAbsoluteEncoder1Gearing(kEasyCrtEncoder1DriverTeeth, kTurretDrivenTeeth)
-        //                 .withAbsoluteEncoder2Gearing(kTurretMotorDriverTeeth, kTurretDrivenTeeth)
-        //                 .withMechanismRange(kEasyCrtMechanismRangeMin, kEasyCrtMechanismRangeMax)
-        //                 .withAbsoluteEncoderInversions(kEasyCrtAbs1Inverted, kEasyCrtAbs2Inverted)
-        //                 .withMatchTolerance(ShooterConstants.TurretConstants.kEasyCrtMatchTolerance);
+        // new EasyCRTConfig(s1, s2)
+        // .withAbsoluteEncoder1Gearing(kEasyCrtEncoder1DriverTeeth, kTurretDrivenTeeth)
+        // .withAbsoluteEncoder2Gearing(kTurretMotorDriverTeeth, kTurretDrivenTeeth)
+        // .withMechanismRange(kEasyCrtMechanismRangeMin, kEasyCrtMechanismRangeMax)
+        // .withAbsoluteEncoderInversions(kEasyCrtAbs1Inverted, kEasyCrtAbs2Inverted)
+        // .withMatchTolerance(ShooterConstants.TurretConstants.kEasyCrtMatchTolerance);
 
         // // Optionally run the gear recommender in simulation to propose pinion pairs.
         // if (RobotBase.isSimulation()) {
-        //     config.withCrtGearRecommendationConstraints(
-        //             kCrtGearRecCoverage,
-        //             kCrtGearRecMinTeeth,
-        //             kCrtGearRecMaxTeeth,
-        //             kCrtGearRecMaxCompoundTeeth);
-        //     // In simulation, log recommended gear pairs and unique coverage to aid tuning
-        //     config
-        //             .getRecommendedCrtGearPair()
-        //             .ifPresent(pair -> Logger.recordOutput("EasyCRT/RecPair", pair.toString()));
-        //     config
-        //             .getUniqueCoverage()
-        //             .ifPresent(cov -> Logger.recordOutput("EasyCRT/UniqueCoverage", cov));
+        // config.withCrtGearRecommendationConstraints(
+        // kCrtGearRecCoverage,
+        // kCrtGearRecMinTeeth,
+        // kCrtGearRecMaxTeeth,
+        // kCrtGearRecMaxCompoundTeeth);
+        // // In simulation, log recommended gear pairs and unique coverage to aid
+        // tuning
+        // config
+        // .getRecommendedCrtGearPair()
+        // .ifPresent(pair -> Logger.recordOutput("EasyCRT/RecPair", pair.toString()));
+        // config
+        // .getUniqueCoverage()
+        // .ifPresent(cov -> Logger.recordOutput("EasyCRT/UniqueCoverage", cov));
         // }
 
         // EasyCRT solver = new EasyCRT(config);
         // var opt = solver.getAngleOptional();
         // if (opt.isPresent()) {
-        //     Angle mechAngle = opt.get();
-        //     // Seed the SmartMotorController so closed-loop control starts at the correct
-        //     // absolute angle
-        //     smartMotor.setEncoderPosition(mechAngle);
-        //     Logger.recordOutput(kEasyCrtStatusKey, "OK");
-        //     // Record the solved mechanism angle for replay/telemetry
-        //     Logger.recordOutput(kEasyCrtSolvedAngleKey, mechAngle);
-        //     // Optionally record solver internals on success when tuning
-        //     if (kEasyCrtLogOnSuccess) {
-        //         Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
-        //         Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
-        //     }
-        //     easyCrtInitialized = true;
+        // Angle mechAngle = opt.get();
+        // // Seed the SmartMotorController so closed-loop control starts at the correct
+        // // absolute angle
+        // smartMotor.setEncoderPosition(mechAngle);
+        // Logger.recordOutput(kEasyCrtStatusKey, "OK");
+        // // Record the solved mechanism angle for replay/telemetry
+        // Logger.recordOutput(kEasyCrtSolvedAngleKey, mechAngle);
+        // // Optionally record solver internals on success when tuning
+        // if (kEasyCrtLogOnSuccess) {
+        // Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
+        // Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
+        // }
+        // easyCrtInitialized = true;
         // } else {
-        //     Logger.recordOutput(kEasyCrtStatusKey, solver.getLastStatus().toString());
-        //     Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
-        //     Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
+        // Logger.recordOutput(kEasyCrtStatusKey, solver.getLastStatus().toString());
+        // Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
+        // Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
         // }
     }
 
@@ -275,16 +274,17 @@ public class TurretSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a
-        // few times with a small spacing between attempts in case absolute encoders are not
+        // few times with a small spacing between attempts in case absolute encoders are
+        // not
         // ready immediately after construction (cold-power-up behavior).
         // if (!easyCrtInitialized && easyCrtAttempts < kEasyCrtMaxAttempts) {
-        //     easyCrtPeriodicCounter++;
-        //     // try roughly every kEasyCrtPeriodicSpacing cycles (~0.2s at 50Hz)
-        //     if (easyCrtPeriodicCounter >= kEasyCrtPeriodicSpacing) {
-        //         easyCrtPeriodicCounter = 0;
-        //         easyCrtAttempts++;
-        //         initializeEasyCRT();
-        //     }
+        // easyCrtPeriodicCounter++;
+        // // try roughly every kEasyCrtPeriodicSpacing cycles (~0.2s at 50Hz)
+        // if (easyCrtPeriodicCounter >= kEasyCrtPeriodicSpacing) {
+        // easyCrtPeriodicCounter = 0;
+        // easyCrtAttempts++;
+        // initializeEasyCRT();
+        // }
         // }
 
         updateInputs();

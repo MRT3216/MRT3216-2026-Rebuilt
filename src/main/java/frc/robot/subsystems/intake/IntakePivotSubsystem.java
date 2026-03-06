@@ -2,14 +2,17 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.IntakeConstants.Pivot.*;
 
 import com.revrobotics.spark.SparkFlex;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -19,8 +22,6 @@ import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import yams.gearing.GearBox;
-import yams.gearing.MechanismGearing;
 import yams.mechanisms.config.ArmConfig;
 import yams.mechanisms.positional.Arm;
 import yams.motorcontrollers.SmartMotorController;
@@ -47,6 +48,8 @@ public class IntakePivotSubsystem extends SubsystemBase {
     public static class IntakePivotInputs {
         /** Actual angle of the intake arm. */
         public Angle angle = Degrees.of(0);
+        /** Actual angular velocity of the intake arm. */
+        public AngularVelocity velocity = DegreesPerSecond.of(0);
         /** Current target angle requested from the motor controller. */
         public Angle setpoint = Degrees.of(0);
         /** Applied voltage across the motor. */
@@ -70,6 +73,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
     // endregion
 
     // region Controller configuration / mechanism
+
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
 
@@ -91,30 +95,21 @@ public class IntakePivotSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants) + motion limits for trapezoidal profiles
                         .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
-                        // Use centralized intake pivot arm feedforward factory
-                        .withFeedforward(armFeedforward())
-                        .withSimFeedforward(armFeedforwardSim())
-                        // Telemetry
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)//, kMaxVelocity, kMaxAccel)
+                        // .withFeedforward(armFeedforward())
+                        // .withSimFeedforward(armFeedforwardSim())
                         .withTelemetry(kIntakeArmMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        // Enable REV voltage compensation (12V) so the arm's closed-loop
-                        // performance stays consistent across battery voltage swings. CTRE's
-                        // TalonFX controllers don't expose the same YAMS voltage-compensation
-                        // integration, so we don't enable it for Phoenix-backed controllers.
-                        .withVoltageCompensation(Volts.of(12))
+                        // .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit)
-                        // Configure the REV ThsroughBore absolute encoder plugged into the right pivot
-                        // motor
-                        .withExternalEncoder(leftPivotMotor.getAbsoluteEncoder())
-                        .withExternalEncoderInverted(false)
-                        .withUseExternalFeedbackEncoder(true)
-                        .withExternalEncoderGearing(new MechanismGearing(GearBox.fromStages("1:1")))
-                        .withExternalEncoderZeroOffset(kEncoderOffset)
+                        // .withExternalEncoder(leftPivotMotor.getAbsoluteEncoder())
+                        // .withExternalEncoderInverted(false)
+                        // .withUseExternalFeedbackEncoder(true)
+                        // .withExternalEncoderGearing(new MechanismGearing(GearBox.fromStages("1:1")))
+                        // .withExternalEncoderZeroOffset(kEncoderOffset)
                         .withFollowers(Pair.of(rightPivotMotor, true));
 
         smartMotor = new SparkWrapper(leftPivotMotor, DCMotor.getNeoVortex(2), motorConfig);
@@ -124,22 +119,11 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withMass(kMass)
                         .withLength(kLength)
                         .withTelemetry(kIntakeArmMechTelemetry, Constants.telemetryVerbosity())
-                        // Provide a starting position so the Arm has a known initial angle
-                        .withStartingPosition(kEncoderOffset)
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
-                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
+                        .withStartingPosition(Degrees.of(0));
 
         intakePivot = new Arm(intakePivotConfig);
-        // Initialize the mechanism commanded setpoint to a clamped starting angle to
-        // avoid commanding outside the configured soft limits at startup. Use the
-        // SmartMotorController setPosition API so the mechanism's internal setpoint is
-        // consistent and observable.
-        double startMeasuredDeg = intakePivot.getAngle().in(Degrees);
-        double clampedStartDeg =
-                MathUtil.clamp(startMeasuredDeg, kSoftLimitMin.in(Degrees), kSoftLimitMax.in(Degrees));
-        smartMotor.setPosition(Degrees.of(clampedStartDeg));
-
-        // No Phoenix status signals to configure for SparkFlex here.
     }
 
     // endregion
@@ -154,8 +138,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
         intakePivotInputs.angle = intakePivot.getAngle();
         intakePivotInputs.volts = smartMotor.getVoltage();
         intakePivotInputs.current = smartMotor.getStatorCurrent();
-
-        // Sets the setpoint input based on the current SMC state
         intakePivotInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
     }
 
@@ -178,6 +160,10 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivotInputs.angle;
     }
 
+    public Angle getSetpoint() {
+        return intakePivotInputs.setpoint;
+    }
+
     /**
      * Sets the target angle for the intake arm.
      *
@@ -185,25 +171,22 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        // Enforce configured soft limits before commanding the mechanism
-        double requestedDeg = angle.in(Degrees);
-        double minDeg = kSoftLimitMin.in(Degrees);
-        double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
-        Angle clamped = Degrees.of(clampedDeg);
-        // If requested setpoint was outside soft limits, it was clamped to the allowed
-        // range.
-        return intakePivot.setAngle(clamped);
+
+        return intakePivot.run(angle);
     }
 
     /**
-     * Supplier-backed overload for dynamic angle targets (e.g., live tuning or vision).
+     * Supplier-backed overload for dynamic angle targets (e.g., live tuning).
      *
      * @param angle supplier providing the desired Angle
      * @return a Command that follows the supplier while active
      */
     public Command setAngle(Supplier<Angle> angle) {
-        return intakePivot.setAngle(angle);
+        return intakePivot.run(angle);
+    }
+
+    public Command setAngleAndStop(Angle angle) {
+        return intakePivot.runTo(angle, kTolerance);
     }
 
     /**
@@ -212,40 +195,15 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * @param dutyCycle The output percentage (-1.0 to 1.0).
      * @return A command to run the intake arm at the specified duty cycle.
      */
-    public Command setDutyCycle(double dutyCycle) {
-        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied
-        // via ArmConfig
+    public Command set(double dutyCycle) {
         return intakePivot.set(dutyCycle);
     }
 
-    /**
-     * Returns the current commanded target for the intake pivot.
-     *
-     * <p>Reads the mechanism's stored setpoint (if present) and falls back to the measured position
-     * when no setpoint is available.
-     */
-    public Angle getTarget() {
-        return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
+    public Command sysId() {
+        return intakePivot.sysId(Volts.of(7), Volts.of(2).per(Second), Seconds.of(4));
     }
 
-    /**
-     * Immediately write a clamped position setpoint to the mechanism (YAMS Arm).
-     *
-     * <p>This updates the mechanism's stored setpoint directly (no Command is scheduled). It clamps
-     * to the configured soft limits before writing via the Arm API so the mechanism remains the
-     * single source of truth for commanded setpoints.
-     *
-     * @param target the desired Angle; it will be clamped to configured soft limits
-     */
-    public void writeSetpointImmediate(Angle target) {
-        double requestedDeg = target.in(Degrees);
-        double minDeg = kSoftLimitMin.in(Degrees);
-        double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
-        intakePivot.setMechanismPositionSetpoint(Degrees.of(clampedDeg));
-    }
-
-    // endregion
+    // endregi`on
 
     // region Triggers & events
 

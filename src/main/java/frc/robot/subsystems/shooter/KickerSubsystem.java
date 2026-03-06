@@ -95,11 +95,6 @@ public class KickerSubsystem extends SubsystemBase {
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
                         .withIdleMode(MotorMode.COAST)
-                        // Enable 12V voltage compensation for REV/Spark controllers so
-                        // closed-loop velocity control behaves consistently as battery
-                        // voltage changes. CTRE TalonFX devices don't support the same
-                        // YAMS voltage-compensation API, so this call is only applied to
-                        // REV-driven SmartMotorController configurations.
                         .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
@@ -169,16 +164,6 @@ public class KickerSubsystem extends SubsystemBase {
     }
 
     /**
-     * Supplier-backed overload for dynamic velocities (e.g., live tuning or vision-based targets).
-     *
-     * @param speed supplier providing the desired AngularVelocity
-     * @return a Command that tracks the supplied velocity while active
-     */
-    public Command setVelocity(Supplier<AngularVelocity> speed) {
-        return kicker.setSpeed(speed);
-    }
-
-    /**
      * Convenience helper: run the kicker at the configured shooter feed velocity.
      *
      * @return a Command that sets the kicker to the shooter feed speed
@@ -194,16 +179,9 @@ public class KickerSubsystem extends SubsystemBase {
      * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
      */
     public Command setDutyCycle(double dutyCycle) {
-
         return kicker.set(dutyCycle);
     }
 
-    /**
-     * Convenience: stop the kicker via a closed-loop zero-speed command (holds zero while scheduled).
-     */
-    public Command stopHold() {
-        return setVelocity(RPM.of(0)).withName("KickerStopHold");
-    }
 
     /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. Use for init/tests. */
     private void applySetpoint(AngularVelocity speed) {

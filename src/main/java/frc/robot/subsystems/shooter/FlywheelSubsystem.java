@@ -112,6 +112,7 @@ public class FlywheelSubsystem extends SubsystemBase {
 
         BaseStatusSignal.setUpdateFrequencyForAll(
                 Constants.CommsConstants.HIGH_TELEMETRY_HZ, velocitySignal, referenceSignal);
+
         leftMotor.getPosition().setUpdateFrequency(0);
     }
 
@@ -189,23 +190,10 @@ public class FlywheelSubsystem extends SubsystemBase {
     }
 
     /**
-     * Convenience: stop the flywheel via a closed-loop zero-speed command (holds zero while
-     * scheduled).
-     */
-    public Command stopHold() {
-        return flywheel.setSpeed(RPM.of(0)).withName("FlywheelStopHold");
-    }
-
-    /**
      * Short one-shot command that imperatively applies a zero velocity setpoint and finishes. Useful
      * in sequences where an immediate non-blocking stop is required.
      */
     public Command stopNow() {
         return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("FlywheelStopNow");
-    }
-
-    /** Return applied setpoint (used by default command to re-apply active setpoint). */
-    public AngularVelocity getAppliedSetpoint() {
-        return motor.getMechanismSetpointVelocity().orElse(flywheelInputs.setpoint);
     }
 }

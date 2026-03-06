@@ -96,7 +96,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)//, kMaxVelocity, kMaxAccel)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
                         // .withFeedforward(armFeedforward())
                         // .withSimFeedforward(armFeedforwardSim())
                         .withTelemetry(kIntakeArmMotorTelemetry, Constants.telemetryVerbosity())
@@ -109,7 +109,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         // .withExternalEncoderInverted(false)
                         // .withUseExternalFeedbackEncoder(true)
                         // .withExternalEncoderGearing(new MechanismGearing(GearBox.fromStages("1:1")))
-                        // .withExternalEncoderZeroOffset(kEncoderOffset)
                         .withFollowers(Pair.of(rightPivotMotor, true));
 
         smartMotor = new SparkWrapper(leftPivotMotor, DCMotor.getNeoVortex(2), motorConfig);
@@ -136,6 +135,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
      */
     private void updateInputs() {
         intakePivotInputs.angle = intakePivot.getAngle();
+        intakePivotInputs.velocity = smartMotor.getMechanismVelocity();
         intakePivotInputs.volts = smartMotor.getVoltage();
         intakePivotInputs.current = smartMotor.getStatorCurrent();
         intakePivotInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));

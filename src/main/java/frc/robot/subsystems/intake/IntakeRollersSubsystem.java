@@ -14,7 +14,6 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -100,22 +99,14 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
                         .withMotorInverted(kMotorInverted)
-                        // Feedback Constants (PID Constants). Intake rollers are velocity-controlled
-                        // devices — use PID+feedforward rather than positional motion-profiles.
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
-                        // Telemetry
                         .withTelemetry(kIntakeRollersMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
-                        // NOTE: TalonFX (Phoenix) controllers used here don't expose the
-                        // same YAMS voltage-compensation builder method available for the
-                        // REV SmartMotorController wrappers. Voltage compensation is therefore
-                        // not configured here.
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
@@ -222,26 +213,6 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.set(dutyCycle);
     }
 
-    /**
-     * Convenience: stop the intake rollers via a closed-loop zero-speed command (holds zero while
-     * scheduled).
-     */
-    public Command stopHold() {
-        return setVelocity(RPM.of(0)).withName("IntakeRollersStopHold");
-    }
-
-    /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. */
-    private void applySetpoint(AngularVelocity speed) {
-        intakeRollers.setMechanismVelocitySetpoint(speed);
-    }
-
-    /**
-     * One-shot: imperatively apply zero velocity and finish. Use in sequences to stop immediately
-     * without blocking subsequent steps.
-     */
-    public Command stopNow() {
-        return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("IntakeRollersStopNow");
-    }
     // region Triggers & events
 
     // (none yet) — triggers can be added here during wiring in RobotContainer/Systems

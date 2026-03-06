@@ -16,7 +16,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -181,7 +180,6 @@ public class KickerSubsystem extends SubsystemBase {
     public Command setDutyCycle(double dutyCycle) {
         return kicker.set(dutyCycle);
     }
-
 
     /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. Use for init/tests. */
     private void applySetpoint(AngularVelocity speed) {

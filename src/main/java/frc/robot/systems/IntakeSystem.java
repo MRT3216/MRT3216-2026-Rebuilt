@@ -43,9 +43,10 @@ public class IntakeSystem {
         switch (currentState) {
             case Stowed:
                 // Deploy then run rollers. deploy() is side-effect free and returns a Command.
-                return deploy().andThen(intakeRoller.setDutyCycle(0.5));
+                return deploy()
+                        .andThen(intakeRoller.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
             case Deployed:
-                return intakeRoller.setDutyCycle(0.5);
+                return intakeRoller.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity);
             default:
                 return Commands.none();
         }

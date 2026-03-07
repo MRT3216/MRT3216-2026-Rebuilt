@@ -36,6 +36,7 @@ import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.systems.IntakeSystem;
+import frc.robot.systems.ShooterSystem;
 import frc.robot.util.RobotMapValidator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -57,19 +58,19 @@ public class RobotContainer {
     private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
-    private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
+    private final IntakeRollersSubsystem intakeRollersSubsystem = new IntakeRollersSubsystem();
 
     // Aggregated shooter system
-    // private final ShooterSystem shooterSystem =
-    // new ShooterSystem(
-    // flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem,
-    // hoodSubsystem);
+    private final ShooterSystem shooterSystem =
+            new ShooterSystem(
+                    flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem, hoodSubsystem);
 
     private final IntakeSystem intakeSystem =
-            new IntakeSystem(rollersSubsystem, intakePivotSubsystem);
+            new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
 
     // Controller
-    private final CommandXboxController controller = new CommandXboxController(0);
+    private final CommandXboxController driverController = new CommandXboxController(0);
+    private final CommandXboxController operatorController = new CommandXboxController(1);
 
     // Dashboard inputs (initialized by setupAutoChooser when enabled)
     private LoggedDashboardChooser<Command> autoChooser;
@@ -168,9 +169,9 @@ public class RobotContainer {
         drive.setDefaultCommand(
                 DriveCommands.joystickDrive(
                         drive,
-                        () -> -controller.getLeftY(),
-                        () -> -controller.getLeftX(),
-                        () -> -controller.getRightX()));
+                        () -> -driverController.getLeftY(),
+                        () -> -driverController.getLeftX(),
+                        () -> -driverController.getRightX()));
 
         kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
         turretSubsystem.setDefaultCommand(
@@ -178,81 +179,52 @@ public class RobotContainer {
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
         // Ensure flywheel holds zero when no one owns it so releasing buttons returns
         // it to idle
-        // flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
+        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopNow());
+
         // Ensure intake rollers default to stopped when no command is running
-        rollersSubsystem.setDefaultCommand(rollersSubsystem.setDutyCycle(0));
+        intakeRollersSubsystem.setDefaultCommand(intakeRollersSubsystem.setDutyCycle(0));
+
         // Ensure intake pivot holds its commanded setpoint when no one owns it so
         // live tuning and dashboard writes persist.
         intakePivotSubsystem.setDefaultCommand(
-                intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getSetpoint()));
+                // intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getPosition()));
+                intakePivotSubsystem.set(0));
+
         // Have hood hold its current commanded target using the positional controller
         // (we track a commanded target so button bumps are applied relative to it).
-        // hoodSubsystem.setDefaultCommand(hoodSubsystem.moveToAngle(() ->
-        // hoodSubsystem.getTarget()));
-
-        // Bind X to a different command depending on runtime mode: SIM uses a
-        // simplified routine,
-        // REAL uses the dynamic aim-and-shoot routine (requires pose/vision suppliers).
+        hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(hoodSubsystem.getPosition()));
 
         if (Constants.currentMode == Mode.SIM || Constants.tuningMode) {
 
             // TUNING/SIM: hold right trigger to run adjustable-target shooting (A/B bumps
             // apply live)
-            // controller
-            // .rightTrigger()
-            // // .whileTrue(
-            // // flywheelSubsystem.setVelocity(
-            // //
-            // ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity))
-            // // .whileFalse(
-            // // flywheelSubsystem.stopNow()); //
-            // .whileTrue(shooterSystem.startShootingWithAdjustableTarget());
+            driverController.rightTrigger().whileTrue(shooterSystem.startShootingWithAdjustableTarget());
 
-            // controller.leftTrigger().onTrue(shooterSystem.stopShooting());
+            driverController
+                    .leftTrigger()
+                    .whileTrue(
+                            intakeRollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
 
             // Hood: left/right bumper adjust by -/+1 degree per press.
             // controller
             // .leftBumper()
-            //
             // .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(-1.0)).ignoringDisable(true));
 
             // controller
             // .rightBumper()
-            //
             // .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(1.0)).ignoringDisable(true));
 
-            // A/B/X/Y: quick run buttons for velocity subsystems (TUNING/SIM)
-            // X -> Intake Rollers
-            controller
-                    .x()
-                    .whileTrue(rollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
+            operatorController.rightTrigger().whileTrue(hoodSubsystem.setDutyCycle(0.10));
+            operatorController.leftTrigger().whileTrue(hoodSubsystem.setDutyCycle(-0.10));
 
-            // Y -> Spindexer
-            // controller
-            // .y()
-            // .whileTrue(
-            // spindexerSubsystem.setVelocity(
-            //
-            // ShooterConstants.SpindexerConstants.kSpindexerTargetAngularVelocity));
+            operatorController.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
+            operatorController.povUpLeft().onTrue(turretSubsystem.setAngle(Degrees.of(45)));
+            operatorController.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
+            operatorController.povUpRight().onTrue(turretSubsystem.setAngle(Degrees.of(-45)));
+            operatorController.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
 
-            // A/B: small RPM bumps for tuning (do not require subsystems so they
-            // won't interrupt running shooting pipelines). Use onTrue so a single
-            // controller.a().onTrue(shooterSystem.bumpFlywheelDown(50));
-            controller.a().whileTrue(intakePivotSubsystem.set(0.05)); //
-            // turretSubsystem.setDutyCycle(0.2));
-            // controller.b().onTrue(shooterSystem.bumpFlywheelUp(50));
-            controller.b().whileTrue(intakePivotSubsystem.set(-0.05)); //
-            // turretSubsystem.setDutyCycle(-0.2));
-
-            // controller.povLeft().onTrue(intakePivotSubsystem.setAngle(Degrees.of(15)));
-            // controller.povUp().onTrue(intakePivotSubsystem.setAngle(Degrees.of(45)));
-            // controller.povRight().onTrue(intakePivotSubsystem.setAngle(Degrees.of(75)));
-            // controller.povDown().onTrue(intakePivotSubsystem.setAngle(Degrees.of(90)));
-
-            controller.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(30)));
-            controller.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
-            controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-30)));
-            // controller.povDown().onTrue(turretSubsystem.setAngle(Degrees.of(270)));
+            operatorController.a().whileTrue(intakePivotSubsystem.set(-0.10));
+            operatorController.b().whileTrue(intakePivotSubsystem.set(0.10));
 
         } else if (Constants.currentMode == Mode.REAL) {
 
@@ -276,7 +248,7 @@ public class RobotContainer {
         }
 
         // Reset gyro to 0° when Back button is pressed (available in both REAL and SIM)
-        controller
+        driverController
                 .back()
                 .onTrue(
                         Commands.runOnce(
@@ -289,7 +261,7 @@ public class RobotContainer {
         // START button resets gyro when running on the real robot or in TUNING mode.
         if (Constants.currentMode == Constants.Mode.REAL) {
 
-            controller
+            driverController
                     .start()
                     .onTrue(
                             Commands.runOnce(

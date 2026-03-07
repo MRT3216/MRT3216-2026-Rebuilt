@@ -71,7 +71,7 @@ public final class ShooterConstants {
         public static final String kFlywheelMechTelemetry = "FlywheelMech";
 
         // Recommended target velocities / helper constants
-        public static final AngularVelocity kFlywheelPrepAngularVelocity = RPM.of(4000);
+        public static final AngularVelocity kFlywheelPrepAngularVelocity = RPM.of(3000);
         /** A lower spin-up/test velocity used for button-driven quick checks. */
         // public static final AngularVelocity kFlywheelLowSpinAngularVelocity =
         // RPM.of(1000.0);
@@ -205,7 +205,7 @@ public final class ShooterConstants {
         public static final String kKickerMechTelemetry = "KickerMech";
 
         // Recommended velocities
-        public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(4000.0);
+        public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2500.0);
         public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
 
         /**

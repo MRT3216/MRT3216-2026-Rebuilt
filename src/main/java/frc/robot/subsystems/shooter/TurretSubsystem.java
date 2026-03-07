@@ -2,25 +2,18 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.TurretConstants.*;
 
 import com.revrobotics.spark.SparkMax;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.DutyCycleEncoder;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-import frc.robot.constants.ShooterConstants;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -31,8 +24,6 @@ import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.local.SparkWrapper;
-import yams.units.EasyCRT;
-import yams.units.EasyCRTConfig;
 
 /**
  * AdvantageKit-ready Turret Subsystem for MRT 3216.
@@ -55,9 +46,6 @@ public class TurretSubsystem extends SubsystemBase {
 
         /** Target setpoint angle (degrees) if any. */
         public Angle setpoint = Degrees.of(0);
-
-        /** Whether a mechanism setpoint is currently stored in the controller. */
-        public boolean hasSetpoint = false;
 
         /** Applied voltage across the motor. */
         public Voltage volts = Volts.of(0);
@@ -84,28 +72,7 @@ public class TurretSubsystem extends SubsystemBase {
     /** The SmartMotorController abstraction that allows for hardware/sim parity. */
     private final SmartMotorController smartMotor;
 
-    /* High-level mechanism configuration */
-    private final PivotConfig turretConfig;
-
     private final Pivot turret;
-
-    // endregion
-
-    // region EasyCRT / initialization helpers
-
-    // Track whether EasyCRT has been run to avoid re-seeding accidentally
-    private boolean easyCrtInitialized = false;
-
-    // Retry counters for periodic auto-initialization (avoid blocking in
-    // constructor)
-    private int easyCrtAttempts = 0;
-    private int easyCrtPeriodicCounter = 0; // counts periodic loops between attempts
-    // Local toggle moved to TurretConstants so it can be tuned without editing this class
-
-    // PWM duty-cycle absolute encoder wired to the RoboRIO for turret absolute
-    // position
-    private final DutyCycleEncoder turretPwmEncoder =
-            new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
 
     // endregion
 
@@ -116,16 +83,10 @@ public class TurretSubsystem extends SubsystemBase {
      * to ensure telemetry is time-aligned.
      */
     private void updateInputs() {
-        // Update turret inputs from mechanism (hardware signals are handled by the SMC
-        // wrapper)
         turretInputs.angle = turret.getAngle();
         turretInputs.volts = smartMotor.getVoltage();
         turretInputs.current = smartMotor.getStatorCurrent();
-
-        // Sets the setpoint input based on the current SMC state and record presence
-        var opt = smartMotor.getMechanismPositionSetpoint();
-        turretInputs.hasSetpoint = opt.isPresent();
-        turretInputs.setpoint = opt.orElse(Degrees.of(0));
+        turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
     }
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
@@ -134,153 +95,27 @@ public class TurretSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants) + motion limits for trapezoidal profiles
-                        .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
-                        // Feedforward Constants (use centralized factory to avoid parameter-order
-                        // mistakes)
-                        .withFeedforward(motorFeedforward())
-                        .withSimFeedforward(motorFeedforwardSim())
-                        // Telemetry
+                        // .withClosedLoopController(kP, kI, kD)
+                        // .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         .withTelemetry(kTurretMotorTelemetry, Constants.telemetryVerbosity())
-                        .withStartingPosition(Degrees.of(0))
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        // Voltage compensation (12V) enabled on REV/Spark controllers to
-                        // stabilize positional control under varying battery voltage.
                         .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);
 
-        turretConfig =
+        PivotConfig turretConfig =
                 new PivotConfig(smartMotor)
                         .withStartingPosition(kStartingPosition)
-                        .withWrapping(Degrees.of(0), Degrees.of(360))
+                        // .withWrapping(Degrees.of(0), Degrees.of(360))
                         .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
                         .withMOI(kMOI)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
                         .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         turret = new Pivot(turretConfig);
-
-        // Build the atSetpoint trigger now that motor/controller/mechanism are initialized
-        this.atSetpoint =
-                new Trigger(
-                        () ->
-                                smartMotor
-                                        .getMechanismPositionSetpoint()
-                                        .map(
-                                                tgt ->
-                                                        Math.abs(getPosition().in(Degrees) - tgt.in(Degrees))
-                                                                <= kPositionTolerance.in(Degrees))
-                                        .orElse(false));
-    }
-
-    /**
-     * Run EasyCRT once to resolve absolute mechanism angle from two absolute encoders and seed the
-     * SmartMotorController / YAMS pivot with the resolved mechanism angle.
-     *
-     * <p>Call this once at startup (after sensors are ready). The PWM supplier should return the
-     * RoboRIO-connected absolute encoder reading in rotations (0..1) as an {@link Angle}.
-     */
-    public void initializeEasyCRT() {
-        if (easyCrtInitialized) {
-            return;
-        }
-
-        // Snapshot the two absolute encoders immediately to avoid latency between
-        // reads.
-        Angle abs1;
-        try {
-            // REV/Spark absolute encoder on the SparkFlex returns rotations (0..1).
-            double raw = pivotMotor.getAbsoluteEncoder().getPosition();
-            // Basic sanity check: ensure we don't propagate NaN/Infinity into the solver
-            if (!Double.isFinite(raw)) {
-                Logger.recordOutput(kEasyCrtStatusKey, "SparkAbsReadInvalid");
-                return;
-            }
-            // Spark absolute returns rotations (0..1) — use Rotations for clarity
-            abs1 = Rotations.of(raw);
-        } catch (RuntimeException e) {
-            // Narrow catch to runtime issues (missing device, API problem). Avoid catching
-            // Errors (e.g. linkage issues) which should surface during development.
-            Logger.recordOutput(
-                    kEasyCrtStatusKey,
-                    "SparkAbsReadFailure:" + e.getClass().getSimpleName() + ":" + e.getMessage());
-            return;
-        }
-
-        final Angle abs2;
-        try {
-            double rawPwm = this.turretPwmEncoder.get(); // returns duty-cycle fraction 0..1
-            if (!Double.isFinite(rawPwm)) {
-                Logger.recordOutput(kEasyCrtStatusKey, "PWMAbsReadInvalid");
-                return;
-            }
-            abs2 = Rotations.of(rawPwm);
-        } catch (RuntimeException e) {
-            Logger.recordOutput(
-                    kEasyCrtStatusKey,
-                    "PWMAbsReadFailure:" + e.getClass().getSimpleName() + ":" + e.getMessage());
-            return;
-        }
-
-        // // Wrap snapshot values in suppliers so EasyCRT sees a consistent pair
-        Supplier<Angle> s1 = () -> abs1;
-        Supplier<Angle> s2 = () -> abs2;
-
-        // Build the EasyCRT config using the requested builder-style API: supply the
-        // two
-        // absolute-encoder snapshots and then configure gearing, mechanism range,
-        // and
-        EasyCRTConfig config =
-                new EasyCRTConfig(s1, s2)
-                        .withAbsoluteEncoder1Gearing(kEasyCrtEncoder1DriverTeeth, kTurretDrivenTeeth)
-                        .withAbsoluteEncoder2Gearing(kTurretMotorDriverTeeth, kTurretDrivenTeeth)
-                        .withMechanismRange(kEasyCrtMechanismRangeMin, kEasyCrtMechanismRangeMax)
-                        .withAbsoluteEncoderInversions(kEasyCrtAbs1Inverted, kEasyCrtAbs2Inverted)
-                        .withMatchTolerance(ShooterConstants.TurretConstants.kEasyCrtMatchTolerance);
-
-        // Optionally run the gear recommender in simulation to propose pinion pairs.
-        if (RobotBase.isSimulation()) {
-            config.withCrtGearRecommendationConstraints(
-                    kCrtGearRecCoverage,
-                    kCrtGearRecMinTeeth,
-                    kCrtGearRecMaxTeeth,
-                    kCrtGearRecMaxCompoundTeeth);
-            // In simulation, log recommended gear pairs and unique coverage to aid
-            // tuning
-            config
-                    .getRecommendedCrtGearPair()
-                    .ifPresent(pair -> Logger.recordOutput("EasyCRT/RecPair", pair.toString()));
-            config
-                    .getUniqueCoverage()
-                    .ifPresent(cov -> Logger.recordOutput("EasyCRT/UniqueCoverage", cov));
-        }
-
-        EasyCRT solver = new EasyCRT(config);
-        var opt = solver.getAngleOptional();
-        if (opt.isPresent()) {
-            Angle mechAngle = opt.get();
-            // Seed the SmartMotorController so closed-loop control starts at the correct
-            // absolute angle
-            smartMotor.setEncoderPosition(mechAngle);
-            Logger.recordOutput(kEasyCrtStatusKey, "OK");
-            // Record the solved mechanism angle for replay/telemetry
-            Logger.recordOutput(kEasyCrtSolvedAngleKey, mechAngle);
-            // Optionally record solver internals on success when tuning
-            if (ShooterConstants.TurretConstants.kEasyCrtLogOnSuccess) {
-                Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
-                Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
-            }
-            easyCrtInitialized = true;
-        } else {
-            Logger.recordOutput(kEasyCrtStatusKey, solver.getLastStatus().toString());
-            Logger.recordOutput(kEasyCrtLastErrorRotKey, solver.getLastErrorRotations());
-            Logger.recordOutput(kEasyCrtIterationsKey, solver.getLastIterations());
-        }
     }
 
     /** Advance the turret simulation model by one simulation tick. */
@@ -291,20 +126,6 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Attempt a one-shot EasyCRT initialization from the turret itself. We retry a
-        // few times with a small spacing between attempts in case absolute encoders are
-        // not
-        // ready immediately after construction (cold-power-up behavior).
-        if (!easyCrtInitialized && easyCrtAttempts < kEasyCrtMaxAttempts) {
-            easyCrtPeriodicCounter++;
-            // try roughly every kEasyCrtPeriodicSpacing cycles (~0.2s at 50Hz)
-            if (easyCrtPeriodicCounter >= kEasyCrtPeriodicSpacing) {
-                easyCrtPeriodicCounter = 0;
-                easyCrtAttempts++;
-                initializeEasyCRT();
-            }
-        }
-
         updateInputs();
         Logger.processInputs("Shooter/Turret", turretInputs);
         turret.updateTelemetry();
@@ -331,31 +152,10 @@ public class TurretSubsystem extends SubsystemBase {
         return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
 
-    /** Immediately write a clamped position setpoint to the turret mechanism (no Command). */
-    private void writeSetpointImmediate(Angle target) {
-        double requestedDeg = target.in(Degrees);
-        double minDeg = kSoftLimitMin.in(Degrees);
-        double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
-        // Pivot exposes the mechanism-level API for writing stored setpoints
-        turret.setMechanismPositionSetpoint(Degrees.of(clampedDeg));
-    }
-
     /** Convenience: long-running closed-loop hold of the current stored target (use as default). */
     public Command stopHold() {
         return setAngle(() -> getTarget()).withName("TurretStopHold");
     }
-
-    /**
-     * One-shot immediate stop: capture current position as a stored setpoint so controller holds it.
-     */
-    public Command stopNow() {
-        return Commands.runOnce(() -> writeSetpointImmediate(getPosition()), this)
-                .withName("TurretStopNow");
-    }
-
-    // easyCrt reset helper removed — EasyCRT lifecycle is managed internally. If a manual
-    // retry hook is desired later it can be reintroduced as a well-documented API.
 
     /**
      * Sets the target angle for the turret.
@@ -364,13 +164,7 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        // Clamp requested angle to configured soft limits
-        double requestedDeg = angle.in(Degrees);
-        double minDeg = kSoftLimitMin.in(Degrees);
-        double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
-        Angle clamped = Degrees.of(clampedDeg);
-        return turret.setAngle(clamped);
+        return turret.setAngle(angle);
     }
 
     /**
@@ -395,17 +189,9 @@ public class TurretSubsystem extends SubsystemBase {
         return turret.setAngle(angle);
     }
 
-    // Aliases removed: prefer canonical `setAngle(...)` overloads for clarity and consistency.
-
     // endregion
 
     // region Triggers & events
-
-    /**
-     * /** Public Trigger active when the turret is within the configured position tolerance of the
-     * current setpoint. Assigned in constructor so it can reference initialized fields.
-     */
-    public final Trigger atSetpoint;
 
     // endregion
 

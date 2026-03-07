@@ -7,7 +7,6 @@ import static frc.robot.constants.ShooterConstants.SpindexerConstants.*;
 
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkMax;
-
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;

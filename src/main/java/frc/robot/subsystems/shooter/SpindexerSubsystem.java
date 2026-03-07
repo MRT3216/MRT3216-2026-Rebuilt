@@ -6,6 +6,8 @@ import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.*;
 
 import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkMax;
+
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -71,8 +73,8 @@ public class SpindexerSubsystem extends SubsystemBase {
      */
 
     /* Hardware Objects */
-    private final SparkFlex motorController =
-            new SparkFlex(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
+    private final SparkMax motorController =
+            new SparkMax(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;

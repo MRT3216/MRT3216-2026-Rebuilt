@@ -24,8 +24,8 @@ import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import yams.mechanisms.config.ArmConfig;
-import yams.mechanisms.positional.Arm;
+import yams.mechanisms.config.PivotConfig;
+import yams.mechanisms.positional.Pivot;
 import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
@@ -78,8 +78,8 @@ public class HoodSubsystem extends SubsystemBase {
 
     private final SmartMotorControllerConfig motorConfig;
     private final SmartMotorController smartMotor;
-    private final ArmConfig hoodConfig;
-    private final Arm hood;
+    private final PivotConfig hoodConfig;
+    private final Pivot hood;
 
     // endregion
 
@@ -91,44 +91,28 @@ public class HoodSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
-                        // Use centralized Hood feedforward factory
-                        .withFeedforward(armFeedforward())
-                        .withSimFeedforward(armFeedforwardSim())
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        .withFeedforward(pivotFeedforward())
+                        .withSimFeedforward(pivotFeedforwardSim())
                         .withTelemetry(kHoodMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        // NOTE: This subsystem uses a TalonFX (CTRE Phoenix). The Phoenix
-                        // library doesn't provide a YAMS-accessible `.withVoltageCompensation(...)`
-                        // method like REV SmartMotorController wrappers do, so we don't enable
-                        // voltage compensation here.
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         smartMotor = new TalonFXWrapper(motor, DCMotor.getKrakenX44Foc(1), motorConfig);
 
         hoodConfig =
-                new ArmConfig(smartMotor)
-                        .withMass(kMass)
-                        .withLength(kLength)
+                new PivotConfig(smartMotor)
                         .withTelemetry(kHoodMechTelemetry, Constants.telemetryVerbosity())
                         // Ensure Arm has a known starting angle for simulation and replay
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
                         .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
-        hood = new Arm(hoodConfig);
+        hood = new Pivot(hoodConfig);
 
-        // Initialize the mechanism commanded setpoint to a clamped starting angle to
-        // avoid commanding outside the configured soft limits at startup. Use the
-        // SmartMotorController setPosition API so the mechanism's internal setpoint is
-        // consistent and
-        // observable.
-        double startMeasuredDeg = hood.getAngle().in(Degrees);
-        double clampedStartDeg =
-                MathUtil.clamp(startMeasuredDeg, kSoftLimitMin.in(Degrees), kSoftLimitMax.in(Degrees));
-        smartMotor.setPosition(Degrees.of(clampedStartDeg));
         // Optimize CAN update frequency for the signals we use (centralized default)
         BaseStatusSignal.setUpdateFrequencyForAll(
                 Constants.CommsConstants.DEFAULT_TELEMETRY_HZ, positionSignal, referenceSignal);

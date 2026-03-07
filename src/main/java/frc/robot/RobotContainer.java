@@ -30,6 +30,11 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
+import frc.robot.subsystems.shooter.FlywheelSubsystem;
+import frc.robot.subsystems.shooter.HoodSubsystem;
+import frc.robot.subsystems.shooter.KickerSubsystem;
+import frc.robot.subsystems.shooter.SpindexerSubsystem;
+import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.util.RobotMapValidator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -46,12 +51,11 @@ public class RobotContainer {
     // Subsystems
     private final Drive drive;
     // private final Vision vision;
-    // private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
-    // private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
-    // private final TurretSubsystem turretSubsystem = new TurretSubsystem();
-    // private final SpindexerSubsystem spindexerSubsystem = new
-    // SpindexerSubsystem();
-    // private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
+    private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
+    private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
+    private final TurretSubsystem turretSubsystem = new TurretSubsystem();
+    private final SpindexerSubsystem spindexerSubsystem = new SpindexerSubsystem();
+    private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
     private final IntakeRollersSubsystem rollersSubsystem = new IntakeRollersSubsystem();
 
@@ -168,10 +172,10 @@ public class RobotContainer {
                         () -> -controller.getLeftX(),
                         () -> -controller.getRightX()));
 
-        // kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
-        // turretSubsystem.setDefaultCommand(
-        // turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-        // spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
+        kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
+        turretSubsystem.setDefaultCommand(
+                turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
+        spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
         // Ensure flywheel holds zero when no one owns it so releasing buttons returns
         // it to idle
         // flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
@@ -240,14 +244,15 @@ public class RobotContainer {
             controller.b().whileTrue(intakePivotSubsystem.set(-0.05)); //
             // turretSubsystem.setDutyCycle(-0.2));
 
-            controller.povLeft().onTrue(intakePivotSubsystem.setAngle(Degrees.of(15)));
-            controller.povUp().onTrue(intakePivotSubsystem.setAngle(Degrees.of(45)));
-            controller.povRight().onTrue(intakePivotSubsystem.setAngle(Degrees.of(75)));
-            controller.povDown().onTrue(intakePivotSubsystem.setAngle(Degrees.of(90)));
+            // controller.povLeft().onTrue(intakePivotSubsystem.setAngle(Degrees.of(15)));
+            // controller.povUp().onTrue(intakePivotSubsystem.setAngle(Degrees.of(45)));
+            // controller.povRight().onTrue(intakePivotSubsystem.setAngle(Degrees.of(75)));
+            // controller.povDown().onTrue(intakePivotSubsystem.setAngle(Degrees.of(90)));
 
-            // controller.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
-            // controller.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
-            // controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+            controller.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(30)));
+            controller.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
+            controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-30)));
+            // controller.povDown().onTrue(turretSubsystem.setAngle(Degrees.of(270)));
 
         } else if (Constants.currentMode == Mode.REAL) {
 

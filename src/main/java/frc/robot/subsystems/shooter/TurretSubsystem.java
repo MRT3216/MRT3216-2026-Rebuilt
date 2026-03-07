@@ -95,8 +95,8 @@ public class TurretSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // .withClosedLoopController(kP, kI, kD)
-                        // .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         .withTelemetry(kTurretMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)

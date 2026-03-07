@@ -9,7 +9,6 @@ import static frc.robot.constants.ShooterConstants.HoodConstants.*;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
@@ -17,7 +16,6 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
@@ -32,24 +30,6 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
-/**
- * Hood pivot subsystem — controls the shooting angle.
- *
- * <p>Modeled as a positional arm using the YAMS {@code Arm} abstraction and a TalonFX motor
- * controller. This subsystem exposes small command factories (wrapping the YAMS commands) and
- * maintains a tracked commanded target used by the default hold command.
- *
- * <p>Provenance & references:
- *
- * <ul>
- *   <li>YAMS (Yet Another Mechanical System) used for the Arm abstraction — credit: BroncBotz /
- *       nstrike. If you need YAMS docs or examples, check the team's resources and the YASS
- *       tutorial videos linked in project docs.
- *   <li>Command-based best-practices: Oblarg / ChiefDelphi thread; BoVLB's "FRC Tips" guide; and
- *       WPILib command-based docs. These influenced the command-factory + trigger design used here
- *       (factories on subsystems/systems, triggers for state).
- * </ul>
- */
 public class HoodSubsystem extends SubsystemBase {
     // region Inputs & telemetry
 
@@ -80,10 +60,6 @@ public class HoodSubsystem extends SubsystemBase {
     private final SmartMotorController smartMotor;
     private final PivotConfig hoodConfig;
     private final Pivot hood;
-
-    // endregion
-
-    // region Target tracking
 
     // endregion
 
@@ -171,26 +147,8 @@ public class HoodSubsystem extends SubsystemBase {
 
     // region Public API - queries & commands
 
-    /* ----- Positioning command factories (grouped) ----- */
-    /**
-     * Creates a command that sets the hood to a fixed angle.
-     *
-     * <p>The requested angle will be clamped to the configured soft limits before being commanded.
-     *
-     * @param angle the desired hood Angle
-     * @return a Command which, when scheduled, will move the hood to the requested angle
-     */
-
-    /**
-     * /** Sets the hood to a fixed angle. The requested angle will be clamped to configured soft
-     * limits before being commanded.
-     */
     public Command setAngle(Angle angle) {
-        double requestedDeg = angle.in(Degrees);
-        double minDeg = kSoftLimitMin.in(Degrees);
-        double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
-        return hood.setAngle(Degrees.of(clampedDeg));
+        return hood.setAngle(angle);
     }
 
     /** Supplier-backed overload for dynamic angles. */
@@ -198,56 +156,22 @@ public class HoodSubsystem extends SubsystemBase {
         return hood.setAngle(angle);
     }
 
-    /**
-     * Creates a command that runs the hood motor in open-loop at the requested duty cycle.
-     *
-     * <p>Mechanism-level hard/soft limits configured in {@code ArmConfig} still apply.
-     *
-     * @param dutyCycle output percentage in the range [-1.0, 1.0]
-     * @return a Command which will drive the hood motor in open-loop while active
-     */
     public Command setDutyCycle(double dutyCycle) {
         // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied
         // via ArmConfig
         return hood.set(dutyCycle);
     }
 
-    /**
-     * Immediately write a clamped position setpoint to the mechanism (YAMS Arm).
-     *
-     * <p>This updates the mechanism's stored setpoint directly (no Command is scheduled). It clamps
-     * to the configured soft limits before writing via the Arm API so the mechanism remains the
-     * single source of truth for commanded setpoints.
-     *
-     * @param target the desired hood Angle; it will be clamped to configured soft limits
-     */
     private void writeSetpointImmediate(Angle target) {
-        double requestedDeg = target.in(Degrees);
-        double minDeg = kSoftLimitMin.in(Degrees);
-        double maxDeg = kSoftLimitMax.in(Degrees);
-        double clampedDeg = MathUtil.clamp(requestedDeg, minDeg, maxDeg);
-        hood.setMechanismPositionSetpoint(Degrees.of(clampedDeg));
+        hood.setMechanismPositionSetpoint(target);
     }
 
-    /**
-     * Applies an immediate, clamped offset to the currently commanded setpoint.
-     *
-     * <p>The method reads the latest commanded setpoint from the SmartMotorController when available
-     * (falls back to the measured position), adds {@code delta}, clamps the result, and writes it via
-     * {@link #writeSetpointImmediate(Angle)} so clamping and telemetry remain centralized.
-     *
-     * @param delta offset to apply to the current setpoint (positive raises the hood)
-     */
     public void bumpSetpointImmediate(Angle delta) {
         Angle prevDeg = smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
         Angle newDeg = prevDeg.plus(delta);
         writeSetpointImmediate(newDeg);
     }
 
-    /**
-     * Command factory: returns a short run-once Command that bumps the mechanism setpoint by {@code
-     * delta} when scheduled. The returned command requires this subsystem.
-     */
     public Command bumpSetpoint(Angle delta) {
         return Commands.runOnce(() -> bumpSetpointImmediate(delta), this).withName("Hood.bumpSetpoint");
     }
@@ -255,17 +179,6 @@ public class HoodSubsystem extends SubsystemBase {
     // endregion
 
     // region Triggers & events
-
-    /** Trigger active when the hood is within the configured position tolerance of the setpoint. */
-    public final Trigger atSetpoint =
-            new Trigger(
-                    () -> {
-                        Angle tgt = inputs.setpoint;
-                        double diff = Math.abs(getPosition().in(Degrees) - tgt.in(Degrees));
-                        return diff <= kPositionTolerance.in(Degrees);
-                    });
-
-    // endregion
 
     // (Lifecycle / periodic handled above)
 }

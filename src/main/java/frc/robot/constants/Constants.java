@@ -26,7 +26,7 @@ public final class Constants {
     // ---------------------------------------------------------------------
 
     /** Selected robot hardware profile used at runtime (COMPBOT or SIMBOT). */
-    public static final RobotType robot = RobotType.COMPBOT;
+    public static final RobotType robot = RobotType.SIMBOT;
 
     /**
      * When true, enable runtime tuning/test bindings even if the Driver Station is not in Test mode.

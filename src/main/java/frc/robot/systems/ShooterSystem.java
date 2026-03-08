@@ -24,6 +24,7 @@ import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.AllianceFlipUtil;
+import frc.robot.util.FuelSim;
 import frc.robot.util.geometry.Zones;
 import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShooterModel;
@@ -60,6 +61,13 @@ public class ShooterSystem {
         this.spindexer = spindexer;
         this.turret = turret;
         this.hood = hood;
+    }
+
+    // Optional FuelSim for trajectory visualization. Null when not in simulation or not registered.
+    private FuelSim fuelSim = null;
+
+    public void setFuelSim(FuelSim sim) {
+        this.fuelSim = sim;
     }
 
     // endregion
@@ -167,7 +175,7 @@ public class ShooterSystem {
 
         // Flywheel follow, feed sequence, and telemetry publisher composed from helpers.
         var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
-        var feedSeq = makeFeedSequence();
+        var feedSeq = makeFeedSequence(solutionSupplier);
         var telemetryCmd = makeTelemetryCmd(solutionSupplier);
 
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
@@ -200,8 +208,17 @@ public class ShooterSystem {
         return () -> ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
     }
 
-    private Command makeFeedSequence() {
-        return Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()))
+    private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        return Commands.sequence(
+                        clearKicker(),
+                        Commands.runOnce(
+                                () -> {
+                                    if (fuelSim != null) {
+                                        var sol = solutionSupplier.get();
+                                        fuelSim.launchFromShotSolution(sol, sol.hoodAngle());
+                                    }
+                                }),
+                        spindexer.feedShooter().alongWith(kicker.feedShooter()))
                 .withName("FeedSequence");
     }
 

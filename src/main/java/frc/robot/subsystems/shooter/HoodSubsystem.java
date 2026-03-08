@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kD;
+import static frc.robot.constants.ShooterConstants.HoodConstants.kLength;
+import static frc.robot.constants.ShooterConstants.HoodConstants.kMass;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kD_sim;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kGearing;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMax;
@@ -111,7 +113,8 @@ public class HoodSubsystem extends SubsystemBase {
                         // Ensure Arm has a known starting angle for simulation and replay
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
-                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
+                        .withMOI(kLength, kMass);
 
         hood = new Pivot(hoodConfig);
 

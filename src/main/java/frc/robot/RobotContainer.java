@@ -43,6 +43,7 @@ import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
+import frc.robot.util.FuelSim;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -72,6 +73,9 @@ public class RobotContainer {
             new ShooterSystem(
                     flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem, hoodSubsystem);
 
+    // Fuel physics sim — active in SIM mode only, null on real robot.
+    private final FuelSim fuelSim;
+
     private final IntakeSystem intakeSystem =
             new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
 
@@ -99,6 +103,7 @@ public class RobotContainer {
                                     new ModuleIOTalonFX(TunerConstants.FrontRight),
                                     new ModuleIOTalonFX(TunerConstants.BackLeft),
                                     new ModuleIOTalonFX(TunerConstants.BackRight));
+                    fuelSim = null;
 
                     vision =
                             new Vision(
@@ -123,7 +128,19 @@ public class RobotContainer {
                                     new ModuleIOSim(TunerConstants.BackLeft),
                                     new ModuleIOSim(TunerConstants.BackRight));
 
-                    // Sim robot, instantiate physics sim IO implementations
+                    // Set up FuelSim: register robot dimensions, hook into the shooter, and
+                    // start the simulation with the standard field-game starting fuel layout.
+                    fuelSim = new FuelSim("/FuelSim");
+                    fuelSim.registerRobot(
+                            frc.robot.constants.Dimensions.FULL_WIDTH,
+                            frc.robot.constants.Dimensions.FULL_LENGTH,
+                            frc.robot.constants.Dimensions.BUMPER_HEIGHT,
+                            drive::getPose,
+                            drive::getFieldRelativeSpeeds);
+                    fuelSim.spawnStartingFuel();
+                    fuelSim.start();
+                    shooterSystem.setFuelSim(fuelSim);
+
                     vision =
                             new Vision(
                                     drive::addVisionMeasurement,
@@ -153,6 +170,7 @@ public class RobotContainer {
                                     new ModuleIO() {},
                                     new ModuleIO() {},
                                     new ModuleIO() {});
+                    fuelSim = null;
                     // (Use same number of dummy implementations as the real robot)
                     vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
                     break;

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/4mrt3216/wpilib/**)",
+      "Read(//usr/local/**)",
+      "Read(//Users/4mrt3216/.gradle/caches/8.11/transforms/**)",
+      "Read(//Users/4mrt3216/.gradle/caches/**)",
+      "Bash(xargs -P4 -I{} sh -c ' result=$\\(jar tf \"\"$1\"\" 2>/dev/null | grep -c \"\"json\\\\|april\"\" 2>/dev/null\\) [ \"\"$result\"\" -gt 0 ] && echo \"\"$1: $result matches\"\" ' _ {})",
+      "Bash(jar tf /Users/4mrt3216/.gradle/caches/modules-2/files-2.1/com.pathplanner.lib/PathplannerLib-java/2026.1.2/5b6d85e2169f30e91924e28b150c2eec3437339e/PathplannerLib-java-2026.1.2.jar)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(x.get\\(''name'',''''\\)\\) for x in d] if isinstance\\(d,list\\) else print\\(d\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d[:3], indent=2\\)\\)\")",
+      "Bash(curl -s \"https://api.github.com/repos/Mechanical-Advantage/RobotCode2026/contents/src/main/deploy/apriltags\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d, indent=2\\)\\)\")",
+      "Bash(curl -s \"https://api.github.com/repos/hammerheads5000/2026Rebuilt/contents/src/main/deploy\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(x.get\\(''name'',''''\\), x.get\\(''type'',''''\\)\\) for x in \\(d if isinstance\\(d,list\\) else []\\)]\")",
+      "Bash(curl -s \"https://raw.githubusercontent.com/hammerheads5000/2026Rebuilt/main/src/main/deploy/apriltags.json\")",
+      "Bash(python3 -c \":*)",
+      "Read(//tmp/**)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp"
+    ]
+  }
+}

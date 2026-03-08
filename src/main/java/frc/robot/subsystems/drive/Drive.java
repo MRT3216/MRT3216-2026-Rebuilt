@@ -288,10 +288,23 @@ public class Drive extends SubsystemBase {
         return states;
     }
 
-    /** Returns the measured chassis speeds of the robot. */
+    /** Returns the measured chassis speeds of the robot (robot-relative). */
     @AutoLogOutput(key = "SwerveChassisSpeeds/Measured")
     private ChassisSpeeds getChassisSpeeds() {
         return kinematics.toChassisSpeeds(getModuleStates());
+    }
+
+    /**
+     * Returns the measured chassis speeds converted to the field frame. Used by FuelSim for
+     * robot-collision and fuel-launch velocity addition.
+     */
+    public ChassisSpeeds getFieldRelativeSpeeds() {
+        ChassisSpeeds robot = getChassisSpeeds();
+        Rotation2d heading = getRotation();
+        return new ChassisSpeeds(
+                robot.vxMetersPerSecond * heading.getCos() - robot.vyMetersPerSecond * heading.getSin(),
+                robot.vxMetersPerSecond * heading.getSin() + robot.vyMetersPerSecond * heading.getCos(),
+                robot.omegaRadiansPerSecond);
     }
 
     /** Returns the position of each module in radians. */

@@ -21,6 +21,10 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.RobotType;
+import frc.robot.util.Elastic;
+import frc.robot.util.Elastic.Notification;
+import frc.robot.util.Elastic.NotificationLevel;
+import frc.robot.util.HubShiftUtil;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +35,7 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -138,6 +143,25 @@ public class Robot extends LoggedRobot {
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
 
+        // ── HubShift telemetry ────────────────────────────────────────────────
+        var officialShift = HubShiftUtil.getOfficialShiftInfo();
+        var shiftedShift = HubShiftUtil.getShiftedShiftInfo();
+        Logger.recordOutput("HubShift/CurrentShift", officialShift.currentShift().name());
+        Logger.recordOutput("HubShift/Active", officialShift.active());
+        Logger.recordOutput("HubShift/ElapsedTime", officialShift.elapsedTime());
+        Logger.recordOutput("HubShift/RemainingTime", officialShift.remainingTime());
+        Logger.recordOutput("HubShift/ShiftedActive", shiftedShift.active());
+        Logger.recordOutput("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
+
+        // Publish to SmartDashboard so Elastic widgets can subscribe.
+        SmartDashboard.putString("HubShift/CurrentShift", officialShift.currentShift().name());
+        SmartDashboard.putBoolean("HubShift/Active", officialShift.active());
+        SmartDashboard.putNumber("HubShift/RemainingTime", officialShift.remainingTime());
+        SmartDashboard.putNumber("HubShift/ElapsedTime", officialShift.elapsedTime());
+        SmartDashboard.putBoolean("HubShift/ShiftedActive", shiftedShift.active());
+        SmartDashboard.putNumber("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
+        SmartDashboard.putNumber("MatchTime", DriverStation.getMatchTime());
+
         if (RobotController.getBatteryVoltage() > 0.0
                 && RobotController.getBatteryVoltage() <= Constants.RobotSafetyConstants.kLowBatteryVoltage
                 && disabledTimer.hasElapsed(Constants.RobotSafetyConstants.kLowBatteryDisabledSecs)) {
@@ -152,7 +176,9 @@ public class Robot extends LoggedRobot {
 
     /** This function is called once when the robot is disabled. */
     @Override
-    public void disabledInit() {}
+    public void disabledInit() {
+        Elastic.selectTab("Disabled");
+    }
 
     /** This function is called periodically when disabled. */
     @Override
@@ -161,6 +187,7 @@ public class Robot extends LoggedRobot {
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
     @Override
     public void autonomousInit() {
+        Elastic.selectTab("Auto");
         // autonomousCommand = robotContainer.getAutonomousCommand();
 
         // schedule the autonomous command (example)
@@ -183,6 +210,10 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
+        HubShiftUtil.initialize();
+        Elastic.selectTab("Teleop");
+        Elastic.sendNotification(
+                new Notification(NotificationLevel.INFO, "Teleop Started", "Hub shift timer running.", 3000));
     }
 
     /** This function is called periodically during operator control. */

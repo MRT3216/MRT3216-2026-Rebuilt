@@ -1,0 +1,290 @@
+{
+  "version": 1.0,
+  "grid_size": 64,
+  "tabs": [
+    {
+      "name": "Teleop",
+      "grid_layout": {
+        "layouts": [
+          {
+            "title": "Match",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 192.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "Match Time",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 96.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/SmartDashboard/MatchTime",
+                  "period": 0.1,
+                  "decimal_places": 1,
+                  "show_type": false
+                }
+              },
+              {
+                "title": "Hub Active",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 96.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/HubShift/Active",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              }
+            ]
+          },
+          {
+            "title": "Hub Shift",
+            "x": 256.0,
+            "y": 0.0,
+            "width": 384.0,
+            "height": 320.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "Current Shift",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 384.0,
+                "height": 96.0,
+                "type": "Text Display",
+                "properties": {
+                  "topic": "/SmartDashboard/HubShift/CurrentShift",
+                  "period": 0.1,
+                  "show_type": false
+                }
+              },
+              {
+                "title": "Shift Remaining (s)",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 384.0,
+                "height": 96.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/SmartDashboard/HubShift/RemainingTime",
+                  "period": 0.1,
+                  "decimal_places": 1,
+                  "show_type": false
+                }
+              },
+              {
+                "title": "Shifted Active",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 384.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/HubShift/ShiftedActive",
+                  "period": 0.06,
+                  "true_color": "#00AAFF",
+                  "false_color": "#444444"
+                }
+              },
+              {
+                "title": "Shifted Remaining (s)",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 384.0,
+                "height": 64.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/SmartDashboard/HubShift/ShiftedRemainingTime",
+                  "period": 0.1,
+                  "decimal_places": 1,
+                  "show_type": false
+                }
+              }
+            ]
+          },
+          {
+            "title": "Shooter",
+            "x": 640.0,
+            "y": 0.0,
+            "width": 384.0,
+            "height": 512.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "Flywheel Speed (RPS)",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 384.0,
+                "height": 96.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/Flywheel/Inputs/velocity",
+                  "period": 0.1,
+                  "decimal_places": 0,
+                  "show_type": false
+                }
+              },
+              {
+                "title": "Hood Angle (deg)",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 384.0,
+                "height": 96.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/Hood/Inputs/angle",
+                  "period": 0.1,
+                  "decimal_places": 1,
+                  "show_type": false
+                }
+              },
+              {
+                "title": "Turret Angle (deg)",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 384.0,
+                "height": 96.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/Turret/Inputs/angle",
+                  "period": 0.1,
+                  "decimal_places": 1,
+                  "show_type": false
+                }
+              },
+              {
+                "title": "Flywheel at Speed",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 384.0,
+                "height": 96.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Shooter/FlywheelAtSpeed",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF6600"
+                }
+              }
+            ]
+          },
+          {
+            "title": "Field",
+            "x": 1024.0,
+            "y": 0.0,
+            "width": 576.0,
+            "height": 320.0,
+            "type": "Field2d",
+            "properties": {
+              "topic": "/SmartDashboard/Field",
+              "period": 0.06,
+              "show_other_objects": true,
+              "show_trajectory": false,
+              "field_image": "2026-rebuilt"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Auto",
+      "grid_layout": {
+        "layouts": [
+          {
+            "title": "Auto Chooser",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Chooser",
+              "period": 0.1,
+              "show_type": false
+            }
+          },
+          {
+            "title": "Match Time",
+            "x": 384.0,
+            "y": 0.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Number Display",
+            "properties": {
+              "topic": "/SmartDashboard/MatchTime",
+              "period": 0.1,
+              "decimal_places": 1,
+              "show_type": false
+            }
+          },
+          {
+            "title": "Field",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 768.0,
+            "height": 448.0,
+            "type": "Field2d",
+            "properties": {
+              "topic": "/SmartDashboard/Field",
+              "period": 0.06,
+              "show_other_objects": true,
+              "show_trajectory": true,
+              "field_image": "2026-rebuilt"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Disabled",
+      "grid_layout": {
+        "layouts": [
+          {
+            "title": "Auto Chooser",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 384.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Chooser",
+              "period": 0.1,
+              "show_type": false
+            }
+          },
+          {
+            "title": "Field",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 768.0,
+            "height": 448.0,
+            "type": "Field2d",
+            "properties": {
+              "topic": "/SmartDashboard/Field",
+              "period": 0.06,
+              "show_other_objects": true,
+              "show_trajectory": false,
+              "field_image": "2026-rebuilt"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

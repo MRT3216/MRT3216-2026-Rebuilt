@@ -72,11 +72,6 @@ public final class ShooterConstants {
 
         // Recommended target velocities / helper constants
         public static final AngularVelocity kFlywheelPrepAngularVelocity = RPM.of(3000);
-        /** A lower spin-up/test velocity used for button-driven quick checks. */
-        // public static final AngularVelocity kFlywheelLowSpinAngularVelocity =
-        // RPM.of(1000.0);
-        /** Fractional error margin (e.g. 0.02 == 2%) used to decide when the flywheel is "at speed" */
-        public static final double kFlywheelAtSpeedError = 0.02;
 
         /**
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
@@ -85,14 +80,6 @@ public final class ShooterConstants {
         public static final AngularVelocity kSoftLimitMax = RPM.of(5000.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
-
-        // Motion limits for trajectory generation (used by closed-loop/trapezoidal
-        // profiles)
-        // public static final AngularVelocity kMaxVelocity = RPM.of(5000.0);
-        // Acceleration used for trapezoidal profiling. Units: deg/s^2
-        // (DegreesPerSecondPerSecond)
-        // public static final AngularAcceleration kMaxAccel =
-        // DegreesPerSecondPerSecond.of(6000.0);
 
         /** Duration to run the clear routine while the flywheel spins up (seconds). */
         public static final double kClearDurationSecs = 0.25;
@@ -156,7 +143,7 @@ public final class ShooterConstants {
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
          * robot.
          */
-        public static final AngularVelocity kSoftLimitMax = RPM.of(1200.0);
+        public static final AngularVelocity kSoftLimitMax = RPM.of(1500.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(-500.0);
 

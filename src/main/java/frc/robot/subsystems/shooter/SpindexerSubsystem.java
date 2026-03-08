@@ -97,23 +97,14 @@ public class SpindexerSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants). Spindexer is velocity-driven
-                        // — prefer PID+feedforward for velocity control instead of position profiling.
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
-                        // Telemetry
                         .withTelemetry(kSpindexerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
-                        // Enable 12V voltage compensation for REV/Spark controllers. This helps
-                        // closed-loop controllers remain consistent when battery voltage sags
-                        // (common during matches). Note: CTRE/Phoenix TalonFX devices do not
-                        // expose the same YAMS voltage-compensation API, so we only enable this
-                        // for REV-driven SmartMotorController instances.
                         .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 

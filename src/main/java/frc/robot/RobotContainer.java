@@ -21,6 +21,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.Mode;
 import frc.robot.constants.IntakeConstants;
+import frc.robot.constants.ShooterConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -51,7 +52,6 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
     // Subsystems
     private final Drive drive;
-    // private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
@@ -158,6 +158,31 @@ public class RobotContainer {
         configureButtonBindings();
     }
 
+    // Helper that binds flywheel right trigger to the prep velocity and stops on release.
+    private void bindFlywheelVelocity(CommandXboxController controller) {
+        controller
+                .rightTrigger()
+                .whileTrue(
+                        flywheelSubsystem.setVelocity(
+                                ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity))
+                .whileFalse(flywheelSubsystem.stopNow());
+    }
+
+    // Helper that binds a controller's triggers to hood duty controls.
+    private void bindHoodDuty(CommandXboxController controller) {
+        controller.rightTrigger().whileTrue(hoodSubsystem.setDutyCycle(0.10));
+        controller.leftTrigger().whileTrue(hoodSubsystem.setDutyCycle(-0.10));
+    }
+
+    // Helper that binds POV directions to turret angle presets on the supplied controller.
+    private void bindTurretPovs(CommandXboxController controller) {
+        controller.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
+        controller.povUpLeft().onTrue(turretSubsystem.setAngle(Degrees.of(45)));
+        controller.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
+        controller.povUpRight().onTrue(turretSubsystem.setAngle(Degrees.of(-45)));
+        controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+    }
+
     /**
      * Use this method to define your button->command mappings. Buttons can be created by
      * instantiating a {@link GenericHID} or one of its subclasses ({@link
@@ -191,40 +216,29 @@ public class RobotContainer {
                 intakePivotSubsystem.set(0));
 
         // Have hood hold its current commanded target using the positional controller
-        // (we track a commanded target so button bumps are applied relative to it).
         hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(hoodSubsystem.getPosition()));
 
-        if (Constants.currentMode == Mode.SIM || Constants.tuningMode) {
+        if (Constants.tuningMode) {
 
-            // TUNING/SIM: hold right trigger to run adjustable-target shooting (A/B bumps
-            // apply live)
-            driverController.rightTrigger().whileTrue(shooterSystem.startShootingWithAdjustableTarget());
-
+            bindFlywheelVelocity(driverController);
             driverController
                     .leftTrigger()
                     .whileTrue(
                             intakeRollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
 
-            // Hood: left/right bumper adjust by -/+1 degree per press.
-            // controller
-            // .leftBumper()
-            // .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(-1.0)).ignoringDisable(true));
-
-            // controller
-            // .rightBumper()
-            // .onTrue(shooterSystem.hoodAdjustCommand(Degrees.of(1.0)).ignoringDisable(true));
-
-            operatorController.rightTrigger().whileTrue(hoodSubsystem.setDutyCycle(0.10));
-            operatorController.leftTrigger().whileTrue(hoodSubsystem.setDutyCycle(-0.10));
-
-            operatorController.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
-            operatorController.povUpLeft().onTrue(turretSubsystem.setAngle(Degrees.of(45)));
-            operatorController.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
-            operatorController.povUpRight().onTrue(turretSubsystem.setAngle(Degrees.of(-45)));
-            operatorController.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+            bindHoodDuty(operatorController);
+            bindTurretPovs(operatorController);
 
             operatorController.a().whileTrue(intakePivotSubsystem.set(-0.10));
             operatorController.b().whileTrue(intakePivotSubsystem.set(0.10));
+
+        } else if (Constants.currentMode == Mode.SIM) {
+
+            // SIM: keep the same SIM bindings as tuning (but only in SIM mode when tuning is
+            // not globally enabled)
+            bindFlywheelVelocity(driverController);
+            bindHoodDuty(driverController);
+            bindTurretPovs(driverController);
 
         } else if (Constants.currentMode == Mode.REAL) {
 
@@ -243,7 +257,7 @@ public class RobotContainer {
             // // Left trigger remains a manual stop if needed
             // controller.leftTrigger().onTrue(shooterSystem.stopShooting());
         } else {
-            // Default (REPLAY/unknown) — no SIM-specific bindings here.
+            // Default (REPLAY/unknown) — no platform-specific bindings here.
 
         }
 

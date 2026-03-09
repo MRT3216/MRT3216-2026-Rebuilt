@@ -203,12 +203,6 @@ public final class ShooterConstants {
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
-        // Motion limits for trajectory generation
-        // ublic static final AngularVelocity kMaxVelocity = RPM.of(4000.0);
-        // Acceleration used for trapezoidal profiling. Units: deg/s^2
-        // public static final AngularAcceleration kMaxAccel =
-        // DegreesPerSecondPerSecond.of(2400.0);
-
         /** Returns a preconfigured SimpleMotorFeedforward for the kicker. */
         public static SimpleMotorFeedforward motorFeedforward() {
             return new SimpleMotorFeedforward(kS, kV, kA);
@@ -272,14 +266,19 @@ public final class ShooterConstants {
         public static final Angle kPositionTolerance = Degrees.of(0.5);
 
         /**
-         * Returns a preconfigured ArmFeedforward instance for the Hood arm. Uses the ordering
-         * ArmFeedforward(ks, kg, kv) to match arm semantics.
+         * Returns a preconfigured SimpleMotorFeedforward for the Hood pivot.
+         *
+         * Notes:
+         * - Units: velocity is in rad/s for WPILib SimpleMotorFeedforward.
+         * - This is intentionally a SimpleMotorFeedforward (ks, kv, ka). If the hood
+         *   becomes heavier or its gravity term grows, consider switching to
+         *   ArmFeedforward to include a gravity term.
          */
         public static SimpleMotorFeedforward pivotFeedforward() {
             return new SimpleMotorFeedforward(kS, kV, kA);
         }
 
-        /** Simulation variant of the Hood arm feedforward. */
+        /** Simulation variant of the hood feedforward. */
         public static SimpleMotorFeedforward pivotFeedforwardSim() {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }

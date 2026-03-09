@@ -42,9 +42,9 @@ Assistant: Investigated and fixed conflicts by rebinding A/B and later setting f
 
 10) User: Asked how to back up the chat to GitHub. Assistant: Gave two options — add timestamped markdown into `docs/` and commit to the repo (recommended), or create a private gist via `gh gist create` (requires GitHub CLI). Provided PowerShell commands and offered to commit a backup file.
 
-11) User: Asked assistant to commit a timestamped backup to `mechanisms`. Assistant: Created `docs/assistant-history-2026-02-27.md`, committed and pushed it to `mechanisms`.
+11) User: Asked assistant to commit a timestamped backup to `mechanisms`. Assistant: Created `docs/assistant/history-2026-02-27.md`, committed and pushed it to `mechanisms`.
 
-12) User: Wanted an ongoing single file (append-only) and the entire chat. Assistant: Suggested creating `docs/assistant-history.md` as the single-file archive and asked whether to include raw full transcript or user/assistant only and whether to redact secrets. User asked to include everything but remove unnecessary items. Assistant created `docs/assistant-profile.md` (starter prompt + conventions) and then created the ongoing `docs/assistant-history.md` with a cleaned transcript appended (this file).
+12) User: Wanted an ongoing single file (append-only) and the entire chat. Assistant: Suggested creating `docs/assistant/history.md` as the single-file archive and asked whether to include raw full transcript or user/assistant only and whether to redact secrets. User asked to include everything but remove unnecessary items. Assistant created `docs/assistant/profile.md` (starter prompt + conventions) and then created the ongoing `docs/assistant/history.md` with a cleaned transcript appended (this file).
 
 13) Throughout: Assistant ran multiple Gradle builds to verify changes; initially encountered formatting and a Windows DLL file-lock due to simulator running; user stopped the simulator and builds succeeded.
 
@@ -55,9 +55,9 @@ Assistant: Investigated and fixed conflicts by rebinding A/B and later setting f
 - src/main/java/frc/robot/subsystems/intake/IntakeRollersSubsystem.java — same pattern; Phoenix/TalonFX telemetry refreshes.
 - src/main/java/frc/robot/systems/ShooterSystem.java — flywheelTarget AtomicReference, bump commands, startShootingWithAdjustableTarget, aimAndShoot refactor, named composed commands, Javadoc.
 - src/main/java/frc/robot/RobotContainer.java — cleaned bindings: replaced problematic B whileFalse stop; A/B rebound to bump commands; set flywheel default command to `stopHold()`; right trigger set to whileTrue.
-- docs/assistant-history-2026-02-27.md — timestamped backup
-- docs/assistant-profile.md — starter prompt and distilled conventions
-- docs/assistant-history.md — this ongoing archive (appended now)
+- docs/assistant/history-2026-02-27.md — timestamped backup
+- docs/assistant/profile.md — starter prompt and distilled conventions
+- docs/assistant/history.md — this ongoing archive (appended now)
 
 15) Tests & verification performed: multiple `./gradlew.bat build` runs after edits; final build successful.
 

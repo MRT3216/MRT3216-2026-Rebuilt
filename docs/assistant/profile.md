@@ -29,8 +29,8 @@ Key files & where to look (quick map)
 - Kicker/Spindexer: `src/main/java/frc/robot/subsystems/shooter/KickerSubsystem.java` and `SpindexerSubsystem.java`
 - Turret & Hood: `src/main/java/frc/robot/subsystems/shooter/TurretSubsystem.java` and `HoodSubsystem.java`
 - Controller wiring: `src/main/java/frc/robot/RobotContainer.java`
-- YAMS docs & vendordep: `docs/YAMS.md` and `vendordeps/yams.json`
-- Telemetry notes: `docs/TELEMETRY.md`
+ - YAMS docs & vendordep: `docs/guides/yams.md` and `vendordeps/yams.json`
+ - Telemetry notes: `docs/guides/telemetry.md`
 
 Practical code examples
 -----------------------
@@ -65,9 +65,9 @@ Copy this exact block into a new assistant session to rehydrate behavior and exp
 "Project assistant profile: MRT3216 repo. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning when supplier-backed YAMS commands do not re-evaluate. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
 
 Useful local references (already in repo)
-- `docs/YAMS.md` — vendor install, links to YAMS docs, and licensing notes.
-- `docs/TELEMETRY.md` — AdvantageKit and telemetry guidance used by this project.
-- `docs/assistant-history-2026-02-27.md` — conversation backup created on 2026-02-27 (timestamped archive).
+ - `docs/guides/yams.md` — vendor install, links to YAMS docs, and licensing notes.
+ - `docs/guides/telemetry.md` — AdvantageKit and telemetry guidance used by this project.
+ - `docs/assistant/history-2026-02-27.md` — conversation backup created on 2026-02-27 (timestamped archive).
 
 Backup & transcript policy
 -------------------------

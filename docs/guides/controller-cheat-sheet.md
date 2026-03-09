@@ -74,7 +74,7 @@ This cheat-sheet summarizes the Xbox controller bindings used in SIM mode for th
 If you have pandoc installed locally, run from the repo root (PowerShell):
 
 ```powershell
-pandoc .\docs\Controller_Cheat_Sheet.md -o .\docs\Controller_Cheat_Sheet.pdf
+pandoc .\docs\guides\controller-cheat-sheet.md -o .\docs\guides\controller-cheat-sheet.pdf
 ```
 
 If pandoc isn't available, you can install it from https://pandoc.org/installing.html or open the Markdown directly in a viewer/editor that exports PDF.

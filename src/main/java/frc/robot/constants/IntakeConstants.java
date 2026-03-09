@@ -134,16 +134,13 @@ public final class IntakeConstants {
         public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
         public static final String kIntakeArmMechTelemetry = "IntakeArmMech";
 
-        /**
-         * Gearing used specifically for external encoder wiring (motor:mechanism).
-         *
-         * @deprecated Marked unused by the repository-wide constants usage scan. Remove after review if
-         *     no longer needed.
-         */
-            // kEncoderGearing removed (unused)
+    /**
+     * Gearing used specifically for external encoder wiring (motor:mechanism).
+     */
 
         // Arm position presets
         public static final Angle kStowedAngle = Degrees.of(125);
+
         public static final Angle kDeployedAngle = Degrees.of(0);
 
         public static final Angle kTolerance = Degrees.of(1);

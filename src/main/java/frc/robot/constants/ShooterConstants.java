@@ -136,7 +136,6 @@ public final class ShooterConstants {
 
     // Recommended / helper velocities
     public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
-    // kSpindexerClearAngularVelocity removed (unused)
 
         /**
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
@@ -262,7 +261,6 @@ public final class ShooterConstants {
     public static final String kHoodMotorTelemetry = "HoodMotor";
     public static final String kHoodMechTelemetry = "HoodMech";
     /** Allowed absolute position error for hood angle comparisons (degrees). */
-    // kPositionTolerance removed (unused)
 
         /**
          * Returns a preconfigured SimpleMotorFeedforward for the Hood pivot.

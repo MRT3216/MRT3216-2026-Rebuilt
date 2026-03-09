@@ -192,7 +192,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.setSpeed(speed);
     }
 
-    // Supplier-based overload removed for non-dynamic subsystem (simplified API)
+    
 
     /**
      * Sets the duty cycle (percent output) for the intake rollers.

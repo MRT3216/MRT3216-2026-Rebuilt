@@ -172,7 +172,7 @@ public class SpindexerSubsystem extends SubsystemBase {
         return spindexer.setSpeed(speed);
     }
 
-    // Supplier-based overload removed for non-dynamic subsystem (simplified API)
+    
 
     /**
      * Convenience helper: run the spindexer at the configured shooter feed velocity.

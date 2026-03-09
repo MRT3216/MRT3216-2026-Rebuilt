@@ -174,7 +174,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.run(angle);
     }
 
-    // Supplier-based overload removed for non-dynamic subsystem (simplified API)
+    
 
     public Command setAngleAndStop(Angle angle) {
         return intakePivot.runTo(angle, kTolerance);

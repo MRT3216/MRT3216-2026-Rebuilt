@@ -21,6 +21,7 @@ import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.HybridTurretUtil;
+import frc.robot.util.ShooterModel;
 import frc.robot.util.ShootingLookupTable;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -233,8 +234,12 @@ public class ShooterSystem {
         var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
 
-        // Flywheel re-applier follows the computed flywheel speed continuously.
-        var flywheelFollow = flywheel.followTarget(() -> solutionSupplier.get().flywheelSpeed());
+        // Flywheel re-applier follows a lightweight two-point linear model derived from
+        // the computed lead distance. We keep the LUT-derived hood angle & ToF but prefer
+        // the simple model for flywheel velocity to make on-robot tuning faster.
+        Supplier<AngularVelocity> flywheelModelSupplier =
+                () -> ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
+        var flywheelFollow = flywheel.followTarget(flywheelModelSupplier);
 
         // Feeding sequence runs alongside aiming and flywheel follow.
         var feedSeq =

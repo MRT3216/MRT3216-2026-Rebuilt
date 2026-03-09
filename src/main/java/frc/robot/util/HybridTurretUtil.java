@@ -49,34 +49,35 @@ public class HybridTurretUtil {
             ShootingLookupTable table) {
 
         // 1. Initial Guess: Calculate distance to the target as if we were stationary.
-        double initialDist = robotPose.getTranslation().getDistance(target.toTranslation2d());
-        double tof = table.getTimeOfFlight(initialDist);
+        double initialDistMeters = robotPose.getTranslation().getDistance(target.toTranslation2d());
+        double tof = table.getTimeOfFlight(initialDistMeters);
 
         Translation3d predictedTarget = target;
-        double leadDist = initialDist;
+        Distance leadDist = Meters.of(initialDistMeters);
 
         // 2. Iterative Refinement:
         // We calculate where the target "appears" to move due to our own velocity
         // during the ball's flight.
         // We then re-calculate Time of Flight (ToF) based on that new distance and
         // repeat.
-        double prevLeadDist = leadDist;
+        Distance prevLeadDist = leadDist;
         for (int i = 0; i < iterations; i++) {
             // Subtracting velocity * time effectively "pushes" the target in the opposite
-            // direction
-            // of our travel, allowing the shooter to lead the shot correctly.
+            // direction of our travel, allowing the shooter to lead the shot correctly.
             double pX = target.getX() - fieldSpeeds.vxMetersPerSecond * tof;
             double pY = target.getY() - fieldSpeeds.vyMetersPerSecond * tof;
             predictedTarget = new Translation3d(pX, pY, target.getZ());
 
             // Update parameters for the next iteration based on the "virtual" lead distance
-            leadDist = robotPose.getTranslation().getDistance(predictedTarget.toTranslation2d());
-            tof = table.getTimeOfFlight(leadDist);
+            double leadDistMeters =
+                    robotPose.getTranslation().getDistance(predictedTarget.toTranslation2d());
+            leadDist = Meters.of(leadDistMeters);
+            tof = table.getTimeOfFlight(leadDistMeters);
 
             // Early-exit: if the change in lead distance between iterations is below the
             // convergence threshold, break out to save CPU. Convert the units-aware
             // convergenceEpsilon to meters for the comparison.
-            if (Math.abs(leadDist - prevLeadDist) < convergenceEpsilon.in(Meters)) {
+            if (Math.abs(leadDist.in(Meters) - prevLeadDist.in(Meters)) < convergenceEpsilon.in(Meters)) {
                 break;
             }
             prevLeadDist = leadDist;
@@ -84,7 +85,7 @@ public class HybridTurretUtil {
 
         // 3. Final Solve: Look up tuned RPS/Angle values for the final calculated lead
         // distance.
-        var params = table.getParameters(leadDist);
+        var params = table.getParameters(leadDist.in(Meters));
 
         // Calculate the relative angle (azimuth) from the robot's current heading to
         // the predicted target.
@@ -98,14 +99,15 @@ public class HybridTurretUtil {
                 Degrees.of(params.trajectoryAngle),
                 RotationsPerSecond.of(params.shooterSpeed),
                 Seconds.of(params.timeOfFlight),
-                (leadDist > 0.5 && leadDist < 15.0) // Validates shot is within physically possible range
+                (leadDist.in(Meters) > 0.5
+                        && leadDist.in(Meters) < 15.0) // Validates shot is within physically possible range
                 );
     }
 
     /**
      * Container record for all parameters required to execute a shot.
      *
-     * @param leadDistanceMeters The calculated distance to the "virtual" target point.
+     * @param leadDistance The calculated distance to the "virtual" target point.
      * @param turretAzimuth The required rotation for the turret relative to the robot chassis.
      * @param hoodAngle The required vertical angle for the adjustable hood.
      * @param flywheelSpeed The target rotational velocity for the shooter wheels.
@@ -113,7 +115,7 @@ public class HybridTurretUtil {
      * @param isValid False if the target is too close or too far to be reliably hit.
      */
     public record ShotSolution(
-            double leadDistanceMeters,
+            Distance leadDistance,
             Angle turretAzimuth,
             Angle hoodAngle,
             AngularVelocity flywheelSpeed,

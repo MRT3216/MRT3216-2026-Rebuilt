@@ -96,6 +96,26 @@ public final class ShooterConstants {
         }
     }
 
+    /**
+     * Simple two-point shooter model constants used for a lightweight linear RPM model.
+     *
+     * <p>Values are unit-aware. Distances are stored as {@link Distance} and flywheel anchors are
+     * stored as {@link edu.wpi.first.units.measure.AngularVelocity} using RPM units so they are
+     * friendly for tuning with RPM values.
+     */
+    public static final class ShooterModel {
+        private ShooterModel() {}
+
+        // Distance bounds for the linear model (meters)
+        public static final Distance dMin = Meters.of(1.0);
+        public static final Distance dMax = Meters.of(6.0);
+
+        // Flywheel anchor speeds expressed in RPM for easy tuning on-robot.
+        // Updated per user request: close = 2500 RPM, far = 3500 RPM.
+        public static final edu.wpi.first.units.measure.AngularVelocity kRpmAtMin = RPM.of(2500.0);
+        public static final edu.wpi.first.units.measure.AngularVelocity kRpmAtMax = RPM.of(3500.0);
+    }
+
     public static final class SpindexerConstants {
         private SpindexerConstants() {}
 

@@ -66,9 +66,7 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
-    // Telemetry keys (delegates to TelemetryKeys)
-    public static final String kFlywheelMotorTelemetry = TelemetryKeys.kFlywheelMotorTelemetry;
-    public static final String kFlywheelMechTelemetry = TelemetryKeys.kFlywheelMechTelemetry;
+        // Telemetry keys are centralized in TelemetryKeys
 
         // Recommended target velocities / helper constants
         public static final AngularVelocity kFlywheelPrepAngularVelocity = RPM.of(3000);
@@ -130,9 +128,7 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
-    // Telemetry keys (delegates to TelemetryKeys)
-    public static final String kSpindexerMotorTelemetry = TelemetryKeys.kSpindexerMotorTelemetry;
-    public static final String kSpindexerMechTelemetry = TelemetryKeys.kSpindexerMechTelemetry;
+        // Telemetry keys are centralized in TelemetryKeys
 
         // Recommended / helper velocities
         public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
@@ -185,9 +181,7 @@ public final class ShooterConstants {
         public static final double kI_sim = 0;
         public static final double kD_sim = 0;
 
-    // Telemetry (delegates to TelemetryKeys)
-    public static final String kKickerMotorTelemetry = TelemetryKeys.kKickerMotorTelemetry;
-    public static final String kKickerMechTelemetry = TelemetryKeys.kKickerMechTelemetry;
+        // Telemetry keys are centralized in TelemetryKeys
 
         // Recommended velocities
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2500.0);
@@ -257,9 +251,7 @@ public final class ShooterConstants {
         public static final Angle kSoftLimitMin = Degrees.of(0);
         public static final Angle kStartingPosition = Degrees.of(0);
 
-    // Telemetry (delegates to TelemetryKeys)
-    public static final String kHoodMotorTelemetry = TelemetryKeys.kHoodMotorTelemetry;
-    public static final String kHoodMechTelemetry = TelemetryKeys.kHoodMechTelemetry;
+        // Telemetry keys are centralized in TelemetryKeys
         /** Allowed absolute position error for hood angle comparisons (degrees). */
 
         /**
@@ -323,8 +315,6 @@ public final class ShooterConstants {
         // public static final Angle kSoftLimitMin = Degrees.of(0);
         public static final Angle kStartingPosition = Degrees.of(0);
 
-    // Telemetry (delegates to TelemetryKeys)
-    public static final String kTurretMotorTelemetry = TelemetryKeys.kTurretMotorTelemetry;
-    public static final String kTurretMechTelemetry = TelemetryKeys.kTurretMechTelemetry;
+        // Telemetry keys are centralized in TelemetryKeys
     }
 }

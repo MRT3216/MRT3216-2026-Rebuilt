@@ -1,8 +1,8 @@
 package frc.robot.constants;
 
 /**
- * Centralized telemetry keys used by AdvantageKit/YAMS logging. Keep keys stable to avoid
- * renames across the codebase.
+ * Centralized telemetry keys used by AdvantageKit/YAMS logging. Keep keys stable to avoid renames
+ * across the codebase.
  */
 public final class TelemetryKeys {
     private TelemetryKeys() {}

@@ -6,8 +6,6 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelMechTelemetry;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelMotorTelemetry;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kGearReduction;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI_sim;
@@ -20,6 +18,8 @@ import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelDiame
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelMass;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforward;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforwardSim;
+import static frc.robot.constants.TelemetryKeys.kFlywheelMechTelemetry;
+import static frc.robot.constants.TelemetryKeys.kFlywheelMotorTelemetry;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;

@@ -4,7 +4,23 @@ import static edu.wpi.first.units.Units.Amps;
 // Diameter and mass are centralized in Constants.KickerConstants
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.KickerConstants.*;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kD;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kD_sim;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kGearReduction;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kI;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kI_sim;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kKickerTargetAngularVelocity;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kP;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kP_sim;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMax;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMin;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelDiameter;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelMass;
+import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforward;
+import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforwardSim;
+import static frc.robot.constants.TelemetryKeys.kKickerMechTelemetry;
+import static frc.robot.constants.TelemetryKeys.kKickerMotorTelemetry;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.system.plant.DCMotor;

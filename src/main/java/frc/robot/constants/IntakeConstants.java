@@ -55,9 +55,9 @@ public final class IntakeConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
-        // Telemetry keys
-        public static final String kIntakeRollersMotorTelemetry = "IntakeRollersMotor";
-        public static final String kIntakeRollersMechTelemetry = "IntakeRollersMech";
+    // Telemetry keys (delegates to TelemetryKeys)
+    public static final String kIntakeRollersMotorTelemetry = TelemetryKeys.kIntakeRollersMotorTelemetry;
+    public static final String kIntakeRollersMechTelemetry = TelemetryKeys.kIntakeRollersMechTelemetry;
 
         /** Returns a preconfigured SimpleMotorFeedforward for the intake rollers. */
         public static SimpleMotorFeedforward motorFeedforward() {
@@ -130,13 +130,11 @@ public final class IntakeConstants {
 
         // public static final Angle kEncoderOffset = Rotation.of(0.65784466);
 
-        // Telemetry keys
-        public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
-        public static final String kIntakeArmMechTelemetry = "IntakeArmMech";
+    // Telemetry keys (delegates to TelemetryKeys)
+    public static final String kIntakeArmMotorTelemetry = TelemetryKeys.kIntakeArmMotorTelemetry;
+    public static final String kIntakeArmMechTelemetry = TelemetryKeys.kIntakeArmMechTelemetry;
 
-    /**
-     * Gearing used specifically for external encoder wiring (motor:mechanism).
-     */
+        /** Gearing used specifically for external encoder wiring (motor:mechanism). */
 
         // Arm position presets
         public static final Angle kStowedAngle = Degrees.of(125);

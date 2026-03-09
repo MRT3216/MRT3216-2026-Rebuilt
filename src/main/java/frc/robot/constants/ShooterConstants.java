@@ -66,9 +66,9 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
-        // Telemetry keys
-        public static final String kFlywheelMotorTelemetry = "FlywheelMotor";
-        public static final String kFlywheelMechTelemetry = "FlywheelMech";
+    // Telemetry keys (delegates to TelemetryKeys)
+    public static final String kFlywheelMotorTelemetry = TelemetryKeys.kFlywheelMotorTelemetry;
+    public static final String kFlywheelMechTelemetry = TelemetryKeys.kFlywheelMechTelemetry;
 
         // Recommended target velocities / helper constants
         public static final AngularVelocity kFlywheelPrepAngularVelocity = RPM.of(3000);
@@ -130,12 +130,12 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
-        // Telemetry keys
-        public static final String kSpindexerMotorTelemetry = "SpindexerMotor";
-        public static final String kSpindexerMechTelemetry = "SpindexerMech";
+    // Telemetry keys (delegates to TelemetryKeys)
+    public static final String kSpindexerMotorTelemetry = TelemetryKeys.kSpindexerMotorTelemetry;
+    public static final String kSpindexerMechTelemetry = TelemetryKeys.kSpindexerMechTelemetry;
 
-    // Recommended / helper velocities
-    public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
+        // Recommended / helper velocities
+        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
 
         /**
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
@@ -185,9 +185,9 @@ public final class ShooterConstants {
         public static final double kI_sim = 0;
         public static final double kD_sim = 0;
 
-        // Telemetry
-        public static final String kKickerMotorTelemetry = "KickerMotor";
-        public static final String kKickerMechTelemetry = "KickerMech";
+    // Telemetry (delegates to TelemetryKeys)
+    public static final String kKickerMotorTelemetry = TelemetryKeys.kKickerMotorTelemetry;
+    public static final String kKickerMechTelemetry = TelemetryKeys.kKickerMechTelemetry;
 
         // Recommended velocities
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2500.0);
@@ -257,10 +257,10 @@ public final class ShooterConstants {
         public static final Angle kSoftLimitMin = Degrees.of(0);
         public static final Angle kStartingPosition = Degrees.of(0);
 
-    // Telemetry
-    public static final String kHoodMotorTelemetry = "HoodMotor";
-    public static final String kHoodMechTelemetry = "HoodMech";
-    /** Allowed absolute position error for hood angle comparisons (degrees). */
+    // Telemetry (delegates to TelemetryKeys)
+    public static final String kHoodMotorTelemetry = TelemetryKeys.kHoodMotorTelemetry;
+    public static final String kHoodMechTelemetry = TelemetryKeys.kHoodMechTelemetry;
+        /** Allowed absolute position error for hood angle comparisons (degrees). */
 
         /**
          * Returns a preconfigured SimpleMotorFeedforward for the Hood pivot.
@@ -323,8 +323,8 @@ public final class ShooterConstants {
         // public static final Angle kSoftLimitMin = Degrees.of(0);
         public static final Angle kStartingPosition = Degrees.of(0);
 
-        // Telemetry
-        public static final String kTurretMotorTelemetry = "TurretMotor";
-        public static final String kTurretMechTelemetry = "TurretMech";
+    // Telemetry (delegates to TelemetryKeys)
+    public static final String kTurretMotorTelemetry = TelemetryKeys.kTurretMotorTelemetry;
+    public static final String kTurretMechTelemetry = TelemetryKeys.kTurretMechTelemetry;
     }
 }

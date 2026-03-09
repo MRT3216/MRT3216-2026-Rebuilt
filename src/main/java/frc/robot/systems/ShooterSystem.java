@@ -1,6 +1,9 @@
 package frc.robot.systems;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMax;
@@ -11,10 +14,13 @@ import static frc.robot.constants.ShooterConstants.kRefinementConvergenceEpsilon
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.constants.Constants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -245,8 +251,33 @@ public class ShooterSystem {
         var feedSeq =
                 Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()));
 
-        // Run turret/hood aiming in parallel with the flywheel follow and feeding pipeline.
-        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq)
+        // Telemetry: publish model vs LUT values while aiming. Gate to Test mode so we don't
+        // spam NetworkTables during competition operation.
+        var telemetryCmd =
+                Commands.run(
+                                () -> {
+                                    // Publish in Test mode or when running SIM so telemetry is available
+                                    // during simulation-based tuning.
+                                    if (!(DriverStation.isTest() || Constants.getMode() == Constants.Mode.SIM))
+                                        return;
+                                    var sol = solutionSupplier.get();
+                                    var tableNt = NetworkTableInstance.getDefault().getTable("ShooterTelemetry");
+                                    tableNt.getEntry("leadDistanceMeters").setDouble(sol.leadDistance().in(Meters));
+                                    tableNt.getEntry("lutFlywheelRPM").setDouble(sol.flywheelSpeed().in(RPM));
+                                    var model = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
+                                    tableNt.getEntry("modelFlywheelRPM").setDouble(model.in(RPM));
+                                    tableNt.getEntry("lutHoodDegrees").setDouble(sol.hoodAngle().in(Degrees));
+                                    tableNt.getEntry("lutToFSeconds").setDouble(sol.timeOfFlight().in(Seconds));
+                                    tableNt.getEntry("isValid").setBoolean(sol.isValid());
+                                    tableNt
+                                            .getEntry("deltaRPM")
+                                            .setDouble(model.in(RPM) - sol.flywheelSpeed().in(RPM));
+                                })
+                        .withName("ShooterTelemetryPublisher");
+
+        // Run turret/hood aiming in parallel with the flywheel follow, feeding pipeline, and
+        // telemetry publisher.
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
                 .withName("AimAndShoot");
     }
 

@@ -1,20 +1,25 @@
 package frc.robot.util;
 
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Time;
+
 /**
- * Simple, immutable data holder for shooting parameters returned by lookup tables. Contains shooter
- * speed, trajectory angle, and estimated time-of-flight.
+ * Unit-aware, immutable data holder for shooting parameters returned by lookup tables. Fields use
+ * WPILib unit types to avoid unit-mixing bugs.
  */
 public class ShootingParameters {
-    /** Shooter wheel speed used by the lookup table (units depend on table; typically RPM). */
-    public final double shooterSpeed;
+    /** Shooter wheel speed used by the lookup table (rotations per second). */
+    public final AngularVelocity shooterSpeed;
 
-    /** Projectile trajectory launch angle in degrees (as used by lookup tables). */
-    public final double trajectoryAngle;
+    /** Projectile trajectory launch angle. */
+    public final Angle trajectoryAngle;
 
-    /** Estimated time-of-flight for the shot, in seconds. */
-    public final double timeOfFlight;
+    /** Estimated time-of-flight for the shot. */
+    public final Time timeOfFlight;
 
-    public ShootingParameters(double shooterSpeed, double trajectoryAngle, double timeOfFlight) {
+    public ShootingParameters(
+            AngularVelocity shooterSpeed, Angle trajectoryAngle, Time timeOfFlight) {
         this.shooterSpeed = shooterSpeed;
         this.trajectoryAngle = trajectoryAngle;
         this.timeOfFlight = timeOfFlight;

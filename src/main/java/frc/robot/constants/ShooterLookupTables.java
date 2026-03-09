@@ -1,5 +1,14 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Seconds;
+
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.Time;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,8 +23,23 @@ import java.util.List;
 public final class ShooterLookupTables {
     private ShooterLookupTables() {}
 
-    public static final double[][] HUB;
-    public static final double[][] PASS;
+    public static final class LookupRow {
+        public final Distance distance;
+        public final AngularVelocity shooterSpeed;
+        public final Angle trajectoryAngle;
+        public final Time timeOfFlight;
+
+        public LookupRow(
+                Distance distance, AngularVelocity shooterSpeed, Angle trajectoryAngle, Time timeOfFlight) {
+            this.distance = distance;
+            this.shooterSpeed = shooterSpeed;
+            this.trajectoryAngle = trajectoryAngle;
+            this.timeOfFlight = timeOfFlight;
+        }
+    }
+
+    public static final LookupRow[] HUB;
+    public static final LookupRow[] PASS;
 
     static {
         double[][] hubDefault = {
@@ -52,8 +76,22 @@ public final class ShooterLookupTables {
             pass = passDefault;
         }
 
-        HUB = hub;
-        PASS = pass;
+        // Convert raw double arrays into typed lookup rows to expose unit-aware values.
+        HUB = new LookupRow[hub.length];
+        for (int i = 0; i < hub.length; i++) {
+            var r = hub[i];
+            HUB[i] =
+                    new LookupRow(
+                            Meters.of(r[0]), RotationsPerSecond.of(r[1]), Degrees.of(r[2]), Seconds.of(r[3]));
+        }
+
+        PASS = new LookupRow[pass.length];
+        for (int i = 0; i < pass.length; i++) {
+            var r = pass[i];
+            PASS[i] =
+                    new LookupRow(
+                            Meters.of(r[0]), RotationsPerSecond.of(r[1]), Degrees.of(r[2]), Seconds.of(r[3]));
+        }
     }
 
     // Very small JSON extractor that finds the named array of arrays and parses numbers.

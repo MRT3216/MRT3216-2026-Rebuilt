@@ -3,49 +3,37 @@ package frc.robot.util;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
 
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import frc.robot.constants.ShooterConstants;
 
 /**
- * Tiny two-point linear shooter model: linearly interpolate flywheel RPM between two anchor
- * distances.
- *
- * <p>Returns an {@link AngularVelocity} (unit-aware). Distances outside the anchor range are
- * clamped to the nearest anchor speed. The model parameters are stored in {@link
- * frc.robot.constants.ShooterConstants.ShooterModel} and are expressed in meters and RPM.
+ * Very small two-point linear shooter model. Interpolates flywheel RPM between two anchors
+ * specified in {@link frc.robot.constants.ShooterConstants.ShooterModel} based on distance.
  */
 public final class ShooterModel {
     private ShooterModel() {}
 
+    /**
+     * Return a model-predicted flywheel angular velocity for the provided distance.
+     *
+     * @param distance target lead distance
+     * @return predicted flywheel angular velocity (RPM units)
+     */
     public static AngularVelocity flywheelSpeedForDistance(Distance distance) {
-        Distance dmin = ShooterConstants.ShooterModel.dMin;
-        Distance dmax = ShooterConstants.ShooterModel.dMax;
-        // Anchors are stored as AngularVelocity in RPM units; extract numeric RPM for interpolation
-        double rminRpm = ShooterConstants.ShooterModel.kRpmAtMin.in(RPM);
-        double rmaxRpm = ShooterConstants.ShooterModel.kRpmAtMax.in(RPM);
+        double d = distance.in(Meters);
+        double dMin = ShooterConstants.ShooterModel.dMin.in(Meters);
+        double dMax = ShooterConstants.ShooterModel.dMax.in(Meters);
 
-        // Allow live tuning via NetworkTables. If the NT entries do not exist, the
-        // getDouble calls return the provided default values above.
-        NetworkTable nt = NetworkTableInstance.getDefault().getTable("ShooterModel");
-        rminRpm = nt.getEntry("kRpmAtMin").getDouble(rminRpm);
-        rmaxRpm = nt.getEntry("kRpmAtMax").getDouble(rmaxRpm);
+        if (d <= dMin) return ShooterConstants.ShooterModel.kRpmAtMin;
+        if (d >= dMax) return ShooterConstants.ShooterModel.kRpmAtMax;
 
-        double dminMeters = dmin.in(Meters);
-        double dmaxMeters = dmax.in(Meters);
-        double distanceMeters = distance.in(Meters);
+        double t = (d - dMin) / (dMax - dMin);
 
-        if (Double.isNaN(distanceMeters) || distanceMeters <= dminMeters) {
-            return RPM.of(rminRpm);
-        }
-        if (distanceMeters >= dmaxMeters) {
-            return RPM.of(rmaxRpm);
-        }
+        double rpmMin = ShooterConstants.ShooterModel.kRpmAtMin.in(RPM);
+        double rpmMax = ShooterConstants.ShooterModel.kRpmAtMax.in(RPM);
+        double rpm = rpmMin + (rpmMax - rpmMin) * t;
 
-        double t = (distanceMeters - dminMeters) / (dmaxMeters - dminMeters);
-        double rpm = rminRpm + (rmaxRpm - rminRpm) * t;
         return RPM.of(rpm);
     }
 }

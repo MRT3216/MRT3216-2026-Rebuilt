@@ -1,9 +1,7 @@
 package frc.robot.util;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -50,7 +48,9 @@ public class HybridTurretUtil {
 
         // 1. Initial Guess: Calculate distance to the target as if we were stationary.
         double initialDistMeters = robotPose.getTranslation().getDistance(target.toTranslation2d());
-        double tof = table.getTimeOfFlight(initialDistMeters);
+        var initialDist = Meters.of(initialDistMeters);
+        var tofTime = table.getTimeOfFlight(initialDist);
+        double tof = tofTime.in(Seconds);
 
         Translation3d predictedTarget = target;
         Distance leadDist = Meters.of(initialDistMeters);
@@ -72,7 +72,7 @@ public class HybridTurretUtil {
             double leadDistMeters =
                     robotPose.getTranslation().getDistance(predictedTarget.toTranslation2d());
             leadDist = Meters.of(leadDistMeters);
-            tof = table.getTimeOfFlight(leadDistMeters);
+            tof = table.getTimeOfFlight(leadDist).in(Seconds);
 
             // Early-exit: if the change in lead distance between iterations is below the
             // convergence threshold, break out to save CPU. Convert the units-aware
@@ -85,7 +85,7 @@ public class HybridTurretUtil {
 
         // 3. Final Solve: Look up tuned RPS/Angle values for the final calculated lead
         // distance.
-        var params = table.getParameters(leadDist.in(Meters));
+        var params = table.getParameters(leadDist);
 
         // Calculate the relative angle (azimuth) from the robot's current heading to
         // the predicted target.
@@ -96,9 +96,9 @@ public class HybridTurretUtil {
         return new ShotSolution(
                 leadDist,
                 azimuth,
-                Degrees.of(params.trajectoryAngle),
-                RotationsPerSecond.of(params.shooterSpeed),
-                Seconds.of(params.timeOfFlight),
+                params.trajectoryAngle,
+                params.shooterSpeed,
+                params.timeOfFlight,
                 (leadDist.in(Meters) > 0.5
                         && leadDist.in(Meters) < 15.0) // Validates shot is within physically possible range
                 );

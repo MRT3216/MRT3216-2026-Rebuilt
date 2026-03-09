@@ -130,12 +130,18 @@ public final class IntakeConstants {
 
         // public static final Angle kEncoderOffset = Rotation.of(0.65784466);
 
-        // Telemetry keys
-        public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
-        public static final String kIntakeArmMechTelemetry = "IntakeArmMech";
+    // Telemetry keys
+    public static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
+    public static final String kIntakeArmMechTelemetry = "IntakeArmMech";
 
-        /** Gearing used specifically for external encoder wiring (motor:mechanism). */
-        public static final double kEncoderGearing = 1.0;
+    /**
+     * Gearing used specifically for external encoder wiring (motor:mechanism).
+     *
+     * @deprecated Marked unused by the repository-wide constants usage scan. Remove after
+     *     review if no longer needed.
+     */
+    @Deprecated
+    public static final double kEncoderGearing = 1.0;
 
         // Arm position presets
         public static final Angle kStowedAngle = Degrees.of(125);

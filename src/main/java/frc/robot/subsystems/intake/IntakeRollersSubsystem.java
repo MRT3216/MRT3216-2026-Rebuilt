@@ -192,8 +192,6 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.setSpeed(speed);
     }
 
-    
-
     /**
      * Sets the duty cycle (percent output) for the intake rollers.
      *

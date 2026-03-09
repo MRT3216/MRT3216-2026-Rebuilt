@@ -172,8 +172,6 @@ public class SpindexerSubsystem extends SubsystemBase {
         return spindexer.setSpeed(speed);
     }
 
-    
-
     /**
      * Convenience helper: run the spindexer at the configured shooter feed velocity.
      *

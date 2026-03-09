@@ -134,14 +134,9 @@ public final class ShooterConstants {
         public static final String kSpindexerMotorTelemetry = "SpindexerMotor";
         public static final String kSpindexerMechTelemetry = "SpindexerMech";
 
-        // Recommended / helper velocities
-        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
-        // Default clear velocity (negative to reverse) used to clear jams
-        /**
-         * @deprecated Marked unused by the repository-wide constants usage scan. Remove after review if
-         *     no longer needed.
-         */
-        @Deprecated public static final AngularVelocity kSpindexerClearAngularVelocity = RPM.of(-10.0);
+    // Recommended / helper velocities
+    public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
+    // kSpindexerClearAngularVelocity removed (unused)
 
         /**
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
@@ -263,15 +258,11 @@ public final class ShooterConstants {
         public static final Angle kSoftLimitMin = Degrees.of(0);
         public static final Angle kStartingPosition = Degrees.of(0);
 
-        // Telemetry
-        public static final String kHoodMotorTelemetry = "HoodMotor";
-        public static final String kHoodMechTelemetry = "HoodMech";
-        /** Allowed absolute position error for hood angle comparisons (degrees). */
-        /**
-         * @deprecated Marked unused by the repository-wide constants usage scan. Remove after review if
-         *     no longer needed.
-         */
-        @Deprecated public static final Angle kPositionTolerance = Degrees.of(0.5);
+    // Telemetry
+    public static final String kHoodMotorTelemetry = "HoodMotor";
+    public static final String kHoodMechTelemetry = "HoodMech";
+    /** Allowed absolute position error for hood angle comparisons (degrees). */
+    // kPositionTolerance removed (unused)
 
         /**
          * Returns a preconfigured SimpleMotorFeedforward for the Hood pivot.
@@ -319,11 +310,11 @@ public final class ShooterConstants {
         public static final Distance kTurretOffsetX = Inches.of(0.0);
         public static final Distance kTurretOffsetY = Inches.of(0.0);
         public static final Distance kTurretOffsetZ = Inches.of(18.5);
-    public static final Transform3d kRobotToTurretTransform =
-        new Transform3d(
-            new Translation3d(
-                kTurretOffsetX.in(Meters), kTurretOffsetY.in(Meters), kTurretOffsetZ.in(Meters)),
-            new Rotation3d());
+        public static final Transform3d kRobotToTurretTransform =
+                new Transform3d(
+                        new Translation3d(
+                                kTurretOffsetX.in(Meters), kTurretOffsetY.in(Meters), kTurretOffsetZ.in(Meters)),
+                        new Rotation3d());
 
         // Limits / presets
         public static final Angle kHardLimitMax = Degrees.of(360);

@@ -174,8 +174,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.run(angle);
     }
 
-    
-
     public Command setAngleAndStop(Angle angle) {
         return intakePivot.runTo(angle, kTolerance);
     }

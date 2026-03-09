@@ -17,12 +17,6 @@ public final class RobotMap {
 
         public final class Turret {
             public static final int kMotorId = 54;
-            /**
-             * @deprecated Marked unused by the repository-wide constants usage scan. Keep for
-             *     compatibility; remove after review if unused.
-             */
-            @Deprecated
-            public static final int kAbsoluteEncoderPwmChannel = 0;
         }
 
         public final class Spindexer {

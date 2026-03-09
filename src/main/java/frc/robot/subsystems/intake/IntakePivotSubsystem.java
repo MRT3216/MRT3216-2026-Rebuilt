@@ -203,7 +203,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.sysId(Volts.of(7), Volts.of(2).per(Second), Seconds.of(4));
     }
 
-    // endregi`on
+    // endregion
 
     // region Triggers & events
 

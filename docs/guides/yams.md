@@ -1,5 +1,4 @@
-YAMS (Yet Another Mechanism System)
-===================================
+# YAMS (Yet Another Mechanism System)
 
 This project uses YAMS (Yet Another Mechanism System) for mechanism abstractions (Arm, Elevator, Pivot) and SmartMotorController wrappers.
 
@@ -42,5 +41,3 @@ Suggested repo additions
 ------------------------
 - Link this file into your project README or developer onboarding docs so new contributors know where to find YAMS and the recommended command-based patterns.
 - Consider adding AdvantageKit logging entries for mechanism setpoints and measured angles to aid debugging (YAMS supports AdvantageKit integration).
-
-If you want, I can add a short `DEPENDENCIES.md` at the repo root with this content and a single-line in `README.md` linking to it.

@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.*;
 
 import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -71,8 +72,8 @@ public class SpindexerSubsystem extends SubsystemBase {
      */
 
     /* Hardware Objects */
-    private final SparkFlex motorController =
-            new SparkFlex(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
+    private final SparkMax motorController =
+            new SparkMax(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -96,23 +97,14 @@ public class SpindexerSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants). Spindexer is velocity-driven
-                        // — prefer PID+feedforward for velocity control instead of position profiling.
                         .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
-                        // Feedforward Constants (use centralized factory to avoid parameter-order mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
-                        // Telemetry
                         .withTelemetry(kSpindexerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(true)
                         .withIdleMode(MotorMode.COAST)
-                        // Enable 12V voltage compensation for REV/Spark controllers. This helps
-                        // closed-loop controllers remain consistent when battery voltage sags
-                        // (common during matches). Note: CTRE/Phoenix TalonFX devices do not
-                        // expose the same YAMS voltage-compensation API, so we only enable this
-                        // for REV-driven SmartMotorController instances.
                         .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 

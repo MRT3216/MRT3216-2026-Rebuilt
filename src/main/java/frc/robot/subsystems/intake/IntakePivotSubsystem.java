@@ -19,7 +19,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.mechanisms.config.ArmConfig;
@@ -175,15 +174,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.run(angle);
     }
 
-    /**
-     * Supplier-backed overload for dynamic angle targets (e.g., live tuning).
-     *
-     * @param angle supplier providing the desired Angle
-     * @return a Command that follows the supplier while active
-     */
-    public Command setAngle(Supplier<Angle> angle) {
-        return intakePivot.run(angle);
-    }
+    // Supplier-based overload removed for non-dynamic subsystem (simplified API)
 
     public Command setAngleAndStop(Angle angle) {
         return intakePivot.runTo(angle, kTolerance);

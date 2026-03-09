@@ -18,7 +18,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -193,15 +192,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.setSpeed(speed);
     }
 
-    /**
-     * Supplier-backed overload for dynamic velocities (e.g., live tuning or vision-based targets).
-     *
-     * @param speed supplier providing the desired AngularVelocity
-     * @return a Command that tracks the supplied velocity while active
-     */
-    public Command setVelocity(Supplier<AngularVelocity> speed) {
-        return intakeRollers.setSpeed(speed);
-    }
+    // Supplier-based overload removed for non-dynamic subsystem (simplified API)
 
     /**
      * Sets the duty cycle (percent output) for the intake rollers.

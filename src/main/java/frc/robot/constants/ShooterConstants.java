@@ -268,11 +268,9 @@ public final class ShooterConstants {
         /**
          * Returns a preconfigured SimpleMotorFeedforward for the Hood pivot.
          *
-         * Notes:
-         * - Units: velocity is in rad/s for WPILib SimpleMotorFeedforward.
-         * - This is intentionally a SimpleMotorFeedforward (ks, kv, ka). If the hood
-         *   becomes heavier or its gravity term grows, consider switching to
-         *   ArmFeedforward to include a gravity term.
+         * <p>Notes: - Units: velocity is in rad/s for WPILib SimpleMotorFeedforward. - This is
+         * intentionally a SimpleMotorFeedforward (ks, kv, ka). If the hood becomes heavier or its
+         * gravity term grows, consider switching to ArmFeedforward to include a gravity term.
          */
         public static SimpleMotorFeedforward pivotFeedforward() {
             return new SimpleMotorFeedforward(kS, kV, kA);

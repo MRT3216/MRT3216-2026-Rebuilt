@@ -74,13 +74,15 @@ public class RobotContainer {
 
     // Dashboard inputs (initialized by setupAutoChooser when enabled)
     private LoggedDashboardChooser<Command> autoChooser;
+    // Guard to ensure test bindings are only enabled once
+    private boolean tuningBindingsEnabled = false;
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
         // Validate RobotMap wiring early at startup and warn if duplicate IDs are
         // found.
         RobotMapValidator.validate();
-        switch (Constants.currentMode) {
+        switch (Constants.getMode()) {
             case REAL:
                 {
                     // Real robot, instantiate hardware IO implementations
@@ -158,6 +160,32 @@ public class RobotContainer {
         configureButtonBindings();
     }
 
+    /**
+     * Enable test/tuning-specific bindings. Safe to call multiple times (idempotent). Intended to be
+     * called from {@link Robot#testInit()} so DriverStation test mode can activate tuning bindings at
+     * runtime.
+     */
+    public void enableTestBindings() {
+        // Only enable once
+        if (tuningBindingsEnabled) {
+            return;
+        }
+        tuningBindingsEnabled = true;
+
+        // Bind the test/tuning controls that were previously guarded by a compile-time tuning flag.
+        bindFlywheelVelocity(driverController);
+        driverController
+                .leftTrigger()
+                .whileTrue(
+                        intakeRollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
+
+        bindHoodDuty(operatorController);
+        bindTurretPovs(operatorController);
+
+        operatorController.a().whileTrue(intakePivotSubsystem.set(-0.10));
+        operatorController.b().whileTrue(intakePivotSubsystem.set(0.10));
+    }
+
     // Helper that binds flywheel right trigger to the prep velocity and stops on release.
     private void bindFlywheelVelocity(CommandXboxController controller) {
         controller
@@ -218,29 +246,15 @@ public class RobotContainer {
         // Have hood hold its current commanded target using the positional controller
         hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(hoodSubsystem.getPosition()));
 
-        if (Constants.tuningMode) {
+        if (Constants.getMode() == Mode.SIM) {
 
-            bindFlywheelVelocity(driverController);
-            driverController
-                    .leftTrigger()
-                    .whileTrue(
-                            intakeRollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
-
-            bindHoodDuty(operatorController);
-            bindTurretPovs(operatorController);
-
-            operatorController.a().whileTrue(intakePivotSubsystem.set(-0.10));
-            operatorController.b().whileTrue(intakePivotSubsystem.set(0.10));
-
-        } else if (Constants.currentMode == Mode.SIM) {
-
-            // SIM: keep the same SIM bindings as tuning (but only in SIM mode when tuning is
-            // not globally enabled)
+            // SIM: keep the same SIM bindings as the test/tuning bindings (applies only in SIM
+            // mode when test bindings are not activated via DriverStation)
             bindFlywheelVelocity(driverController);
             bindHoodDuty(driverController);
             bindTurretPovs(driverController);
 
-        } else if (Constants.currentMode == Mode.REAL) {
+        } else if (Constants.getMode() == Mode.REAL) {
 
             // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
             // controller
@@ -272,8 +286,9 @@ public class RobotContainer {
                                         drive)
                                 .ignoringDisable(true));
 
-        // START button resets gyro when running on the real robot or in TUNING mode.
-        if (Constants.currentMode == Constants.Mode.REAL) {
+        // START button resets gyro when running on the real robot (or when test bindings are
+        // enabled).
+        if (Constants.getMode() == Constants.Mode.REAL) {
 
             driverController
                     .start()

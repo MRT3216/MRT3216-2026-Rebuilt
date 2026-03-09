@@ -53,7 +53,7 @@ public class Robot extends LoggedRobot {
     /** Construct the Robot, configure logging and instantiate RobotContainer. */
     public Robot() {
         // Set up data receivers & replay source
-        switch (Constants.currentMode) {
+        switch (Constants.getMode()) {
             case REAL:
                 // Running on a real robot, log to a USB stick ("/U/logs")
                 Logger.addDataReceiver(new WPILOGWriter());
@@ -194,6 +194,11 @@ public class Robot extends LoggedRobot {
     public void testInit() {
         // Cancels all running commands at the start of test mode.
         CommandScheduler.getInstance().cancelAll();
+        // Enable test/tuning bindings from RobotContainer so entering Test on the
+        // Driver Station activates interactive tuning controls at runtime.
+        if (robotContainer != null) {
+            robotContainer.enableTestBindings();
+        }
     }
 
     /** This function is called periodically during test mode. */

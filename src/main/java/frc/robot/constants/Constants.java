@@ -22,10 +22,11 @@ public final class Constants {
     /** Selected robot hardware profile used at runtime (COMPBOT or SIMBOT). */
     public static final RobotType robot = RobotType.COMPBOT;
 
-    /** Whether the project is running in tuning mode (enables extra telemetry/tunables). */
-    // NOTE: computed from `currentMode` below; see `currentMode` for how the active Mode is
-    // selected. The concrete boolean value is declared after `currentMode` so it reflects the
-    // runtime mode selection (including any FORCE_MODE override).
+    /**
+     * Use {@link #getMode()} to determine the runtime mode (REAL, SIM, REPLAY). Extra telemetry and
+     * interactive test bindings are enabled at runtime (for example from {@code Robot.testInit()})
+     * instead of via a compile-time boolean.
+     */
 
     /** Main control loop period (seconds). */
     public static final double loopPeriodSecs = 0.02;
@@ -33,11 +34,15 @@ public final class Constants {
     /** Watchdog period for loop monitoring (seconds). */
     public static final double loopPeriodWatchdogSecs = 0.2;
 
-    //  2) Inferred from WPILib (RobotBase.isReal())
-    public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.SIM;
-
-    /** Whether the project is running in tuning mode (inferred from the active Mode). */
-    public static final boolean tuningMode = true;
+    // Provide a Littleton-style runtime Mode getter. This returns REAL/REPLAY/SIM based on the
+    // selected `robot` profile and `RobotBase.isReal()` when appropriate.
+    public static Mode getMode() {
+        return switch (robot) {
+            case COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
+            case SIMBOT -> Mode.SIM;
+            default -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
+        };
+    }
 
     /** Operation modes for the robot (simulation, real robot, etc.). */
     public enum Mode {
@@ -57,7 +62,7 @@ public final class Constants {
      * behavior for REAL vs TUNING/SIM in one place.
      */
     public static TelemetryVerbosity telemetryVerbosity() {
-        switch (currentMode) {
+        switch (getMode()) {
             case REAL:
             case SIM:
             case REPLAY:
@@ -197,7 +202,7 @@ public final class Constants {
 
     public static class CheckPullRequest {
         public static void main(String... args) {
-            if (robot != RobotType.COMPBOT || tuningMode) {
+            if (robot != RobotType.COMPBOT) {
                 System.err.println("Do not merge, non-default constants are configured.");
                 System.exit(1);
             }

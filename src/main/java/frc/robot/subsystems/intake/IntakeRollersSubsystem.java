@@ -157,7 +157,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         // Use the centralized helper for consistency with other subsystems.
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
 
-        // Phoenix-signal logging for plotting/debug (measured vs closed-loop reference)
+        // Phoenix-signal logging for debug (measured vs closed-loop reference)
         Logger.recordOutput("IntakeRollers/FX/VelocityRPM", velocitySignal.getValue().in(RPM));
         Logger.recordOutput(
                 "IntakeRollers/FX/ReferenceRPM",

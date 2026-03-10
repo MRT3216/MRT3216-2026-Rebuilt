@@ -118,7 +118,7 @@ public class HoodSubsystem extends SubsystemBase {
         // Refresh Phoenix signals so logged telemetry is time-aligned with hardware.
         PhoenixUtil.refresh(positionSignal, referenceSignal);
 
-        // Record raw Phoenix signals (helpful for Phoenix Tuner / AdvantageScope plots)
+        // Record raw Phoenix signals.
         Logger.recordOutput("Hood/FX/PositionDegrees", positionSignal.getValue().in(Degrees));
         Logger.recordOutput(
                 "Hood/FX/ReferenceDegrees", Degrees.convertFrom(referenceSignal.getValue(), Rotations));

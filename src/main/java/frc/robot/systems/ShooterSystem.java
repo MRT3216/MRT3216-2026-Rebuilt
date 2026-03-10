@@ -197,8 +197,8 @@ public class ShooterSystem {
      * short kicker clear routine.
      *
      * <p>This operator-facing "prep" command starts the flywheel closed-loop controller with the
-     * canonical target velocity ({@link
-     * frc.robot.constants.ShooterConstants.FlywheelConstants#kFlywheelTargetAngularVelocity})
+     * canonical prep velocity ({@link
+     * frc.robot.constants.ShooterConstants.FlywheelConstants#kFlywheelPrepAngularVelocity}).
      *
      * @return a command that begins flywheel spin-up and runs the kicker clear routine
      */

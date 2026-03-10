@@ -47,11 +47,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
-/**
- * Minimal Flywheel subsystem: callers/commands own desired setpoints. The subsystem exposes the
- * minimal YAMS-backed commands to run closed-loop velocity from an AngularVelocity or a
- * Supplier<AngularVelocity>, an open-loop duty command, and helpers to observe applied state.
- */
+/** Minimal Flywheel subsystem: exposes closed-loop velocity, open-loop duty, and helpers. */
 public class FlywheelSubsystem extends SubsystemBase {
     // region Inputs & telemetry
 

@@ -4,8 +4,6 @@ package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
@@ -17,7 +15,6 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
@@ -106,14 +103,13 @@ public final class ShooterConstants {
     public static final class ShooterModel {
         private ShooterModel() {}
 
-        // Distance bounds for the linear model (meters)
-        public static final Distance dMin = Meters.of(1.0);
-        public static final Distance dMax = Meters.of(6.0);
+        // Distance bounds for the linear model (meters).
+        public static final Distance dMin = Meters.of(1.209);
+        public static final Distance dMax = Meters.of(5.005);
 
         // Flywheel anchor speeds expressed in RPM for easy tuning on-robot.
-        // Updated per user request: close = 2500 RPM, far = 3500 RPM.
-        public static final edu.wpi.first.units.measure.AngularVelocity kRpmAtMin = RPM.of(2500.0);
-        public static final edu.wpi.first.units.measure.AngularVelocity kRpmAtMax = RPM.of(3500.0);
+        public static final edu.wpi.first.units.measure.AngularVelocity kRpmAtMin = RPM.of(2700.0);
+        public static final edu.wpi.first.units.measure.AngularVelocity kRpmAtMax = RPM.of(3300.0);
     }
 
     public static final class SpindexerConstants {
@@ -259,21 +255,23 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.3;
 
-        // Motion limits
-        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
-        // Acceleration used for trapezoidal profiling (deg/s^2)
-        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(90.0);
-
         // Limits / presets
         public static final Angle kHardLimitMax = Degrees.of(30);
         public static final Angle kHardLimitMin = Degrees.of(0);
         public static final Angle kSoftLimitMax = Degrees.of(30);
         public static final Angle kSoftLimitMin = Degrees.of(0);
+
+        /**
+         * Mechanical offset between the hood's mechanism-zero and the horizontal line.
+         *
+         * <p>Some teams report hood angles with 0° = horizontal or 0° = straight-up. Our mechanism zero
+         * is the hood's lowest position; the horizontal line for the robot is this many degrees above
+         * that zero. Use this constant when converting external angle measurements into
+         * mechanism-relative setpoints.
+         */
+        // public static final Angle kHoodHorizontalOffset = Degrees.of(16.574);
+
         public static final Angle kStartingPosition = Degrees.of(0);
-
-        // Telemetry keys are centralized in TelemetryKeys
-        /** Allowed absolute position error for hood angle comparisons (degrees). */
-
         /**
          * Returns a preconfigured SimpleMotorFeedforward for the Hood pivot.
          *
@@ -317,9 +315,9 @@ public final class ShooterConstants {
         public static final double kD_sim = 0.0;
 
         // Robot / turret pose offsets
-        public static final Distance kTurretOffsetX = Inches.of(0.0);
-        public static final Distance kTurretOffsetY = Inches.of(0.0);
-        public static final Distance kTurretOffsetZ = Inches.of(18.5);
+        public static final Distance kTurretOffsetX = Inches.of(-5.5);
+        public static final Distance kTurretOffsetY = Inches.of(5.5);
+        public static final Distance kTurretOffsetZ = Inches.of(13.0625);
         public static final Transform3d kRobotToTurretTransform =
                 new Transform3d(
                         new Translation3d(

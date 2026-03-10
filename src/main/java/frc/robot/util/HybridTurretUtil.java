@@ -83,25 +83,36 @@ public class HybridTurretUtil {
             prevLeadDist = leadDist;
         }
 
-        // 3. Final Solve: Look up tuned RPS/Angle values for the final calculated lead
-        // distance.
-        var params = table.getParameters(leadDist);
+        // 3. Final Solve: Look up tuned RPM/Angle values for the final calculated lead distance.
 
-        // Calculate the relative angle (azimuth) from the robot's current heading to
-        // the predicted target.
-        double dx = predictedTarget.getX() - robotPose.getX();
-        double dy = predictedTarget.getY() - robotPose.getY();
-        Angle azimuth = Radians.of(Math.atan2(dy, dx) - robotPose.getRotation().getRadians());
+        // Calculate the relative angle (azimuth) from the robot's current heading to the predicted
+        // target. Compute azimuth from the robot center.
+        double dxRobot = predictedTarget.getX() - robotPose.getX();
+        double dyRobot = predictedTarget.getY() - robotPose.getY();
+        Angle azimuthRobot =
+                Radians.of(Math.atan2(dyRobot, dxRobot) - robotPose.getRotation().getRadians());
+
+        // If the lookup table has explicit min/max bounds we can detect out-of-range conditions.
+        // Behavior: prefer LUT parameters whenever possible. If the computed lead distance is
+        // outside the LUT min/max (when provided) we clamp to the nearest endpoint and mark
+        // the solution as invalid so callers know the requested distance was not tuned.
+        Distance min = table.getMinDistance();
+        Distance max = table.getMaxDistance();
+
+        Distance clamped = leadDist;
+        if (min != null && leadDist.in(Meters) < min.in(Meters)) clamped = min;
+        if (max != null && leadDist.in(Meters) > max.in(Meters)) clamped = max;
+
+        var finalParams = table.getParameters(clamped);
+        boolean isValid = clamped == leadDist;
 
         return new ShotSolution(
-                leadDist,
-                azimuth,
-                params.trajectoryAngle,
-                params.shooterSpeed,
-                params.timeOfFlight,
-                (leadDist.in(Meters) > 0.5
-                        && leadDist.in(Meters) < 15.0) // Validates shot is within physically possible range
-                );
+                clamped,
+                azimuthRobot,
+                finalParams.trajectoryAngle,
+                finalParams.shooterSpeed,
+                finalParams.timeOfFlight,
+                isValid);
     }
 
     /**

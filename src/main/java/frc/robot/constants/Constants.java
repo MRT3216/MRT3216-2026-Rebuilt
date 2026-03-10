@@ -38,9 +38,9 @@ public final class Constants {
     // selected `robot` profile and `RobotBase.isReal()` when appropriate.
     public static Mode getMode() {
         return switch (robot) {
-            case COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
+            case COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.SIM;
             case SIMBOT -> Mode.SIM;
-            default -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
+            default -> RobotBase.isReal() ? Mode.REAL : Mode.SIM;
         };
     }
 

@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
+import static edu.wpi.first.units.Units.Kilograms;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
@@ -234,6 +235,14 @@ public final class ShooterConstants {
 
         /** Approximate mass of the hood assembly. */
         public static final Mass kMass = Pounds.of(0.1);
+
+        /**
+         * Approximate moment of inertia for the hood about its pivot. Calculated from a
+         * rod-about-one-end approximation: I = m * L^2 / 3. This keeps a single source of truth for
+         * mechanical properties used by YAMS.
+         */
+        public static final MomentOfInertia kMOI =
+                KilogramSquareMeters.of(kMass.in(Kilograms) * Math.pow(kLength.in(Meters), 2) / 3.0);
 
         // Motor wiring
         public static final boolean kMotorInverted = true;

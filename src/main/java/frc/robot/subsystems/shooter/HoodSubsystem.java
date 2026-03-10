@@ -11,6 +11,7 @@ import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMax;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMin;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kI;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kI_sim;
+import static frc.robot.constants.ShooterConstants.HoodConstants.kMOI;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kMotorInverted;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kP;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kP_sim;
@@ -99,6 +100,7 @@ public class HoodSubsystem extends SubsystemBase {
         hoodConfig =
                 new PivotConfig(smartMotor)
                         .withTelemetry(kHoodMechTelemetry, Constants.telemetryVerbosity())
+                        .withMOI(kMOI)
                         // Ensure Arm has a known starting angle for simulation and replay
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)

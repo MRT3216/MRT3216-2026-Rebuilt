@@ -7,7 +7,12 @@
 
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+
 import edu.wpi.first.wpilibj.RobotBase;
+import frc.robot.generated.TunerConstants;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 
 /**
@@ -112,7 +117,7 @@ public final class Constants {
         public static final double kAngleMaxAcceleration = 20.0;
         public static final double kFFStartDelay = 2.0;
         public static final double kFFRampRate = 0.1;
-        public static final double kWheelRadiusMaxVelocity = 0.25;
+        public static final double kWheelRadiusMaxVelocity = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond) / TunerConstants.kWheelRadius.in(Meters);
         public static final double kWheelRadiusRampRate = 0.05;
     }
 

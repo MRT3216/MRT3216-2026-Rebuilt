@@ -7,11 +7,14 @@
 
 package frc.robot.subsystems.vision;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Radians;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.util.Units;
 
 public class VisionConstants {
     // AprilTag layout
@@ -28,31 +31,31 @@ public class VisionConstants {
     // (Not used by Limelight, configure in web UI instead)
     public static Transform3d robotToCameraLeft =
             new Transform3d(
-                    Units.inchesToMeters(-13.019814),
-                    Units.inchesToMeters(-11.752758),
-                    Units.inchesToMeters(14.217796),
-                    new Rotation3d(0.0, 0.4, Units.degreesToRadians(75)));
+                    Inches.of(-11.791238),
+                    Inches.of(12.876205),
+                    Inches.of(14.154937),
+                    new Rotation3d(Degrees.of(0.0), Radians.of(0.4), Degrees.of(75)));
 
     public static Transform3d robotToCameraRight =
             new Transform3d(
-                    Units.inchesToMeters(12.483854),
-                    Units.inchesToMeters(-11.586729),
-                    Units.inchesToMeters(14.232),
-                    new Rotation3d(0.0, 0.4, Units.degreesToRadians(285)));
-
-    public static Transform3d robotToCameraBack =
-            new Transform3d(
-                    Units.inchesToMeters(-11.76573),
-                    Units.inchesToMeters(-13.006842),
-                    Units.inchesToMeters(16.217796),
-                    new Rotation3d(0.0, 0.4, Units.degreesToRadians(195)));
+                    Inches.of(-11.625209),
+                    Inches.of(-12.340245),
+                    Inches.of(14.169104),
+                    new Rotation3d(Degrees.of(180.0), Radians.of(0.4), Degrees.of(285)));
 
     public static Transform3d robotToCameraFront =
             new Transform3d(
-                    Units.inchesToMeters(10.732502),
-                    Units.inchesToMeters(-11.083471),
-                    Units.inchesToMeters(20.417323),
-                    new Rotation3d(0.0, 0.4, Units.degreesToRadians(15)));
+                    Inches.of(-11.234075),
+                    Inches.of(-10.772856),
+                    Inches.of(20.375546),
+                    new Rotation3d(Degrees.of(180.0), Radians.of(0.4), Degrees.of(15)));
+
+    public static Transform3d robotToCameraBack =
+            new Transform3d(
+                    Inches.of(-12.865422),
+                    Inches.of(11.805673),
+                    Inches.of(16.217796),
+                    new Rotation3d(Degrees.of(180.0), Radians.of(0.4), Degrees.of(195)));
 
     // Basic filtering thresholds
     public static double maxAmbiguity = 0.3;

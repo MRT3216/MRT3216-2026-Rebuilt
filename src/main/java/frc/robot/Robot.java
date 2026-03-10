@@ -192,13 +192,7 @@ public class Robot extends LoggedRobot {
     /** This function is called once when test mode is enabled. */
     @Override
     public void testInit() {
-        // Cancels all running commands at the start of test mode.
         CommandScheduler.getInstance().cancelAll();
-        // Enable test/tuning bindings from RobotContainer so entering Test on the
-        // Driver Station activates interactive tuning controls at runtime.
-        if (robotContainer != null) {
-            robotContainer.enableTestBindings();
-        }
     }
 
     /** This function is called periodically during test mode. */

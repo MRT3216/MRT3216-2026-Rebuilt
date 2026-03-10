@@ -17,7 +17,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.Constants;
@@ -258,8 +257,7 @@ public class ShooterSystem {
                                 () -> {
                                     // Publish in Test mode or when running SIM so telemetry is available
                                     // during simulation-based tuning.
-                                    if (!(DriverStation.isTest() || Constants.getMode() == Constants.Mode.SIM))
-                                        return;
+                                    if (!(Constants.tuningMode || Constants.getMode() == Constants.Mode.SIM)) return;
                                     var sol = solutionSupplier.get();
                                     var tableNt = NetworkTableInstance.getDefault().getTable("ShooterTelemetry");
                                     tableNt.getEntry("leadDistanceMeters").setDouble(sol.leadDistance().in(Meters));

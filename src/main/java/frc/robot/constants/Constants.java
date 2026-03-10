@@ -23,6 +23,13 @@ public final class Constants {
     public static final RobotType robot = RobotType.COMPBOT;
 
     /**
+     * When true, enable runtime tuning/test bindings even if the Driver Station is not in Test mode.
+     * This flag allows enabling tuning behavior via code/config rather than relying on the Driver
+     * Station Test mode switch.
+     */
+    public static boolean tuningMode = false;
+
+    /**
      * Use {@link #getMode()} to determine the runtime mode (REAL, SIM, REPLAY). Extra telemetry and
      * interactive test bindings are enabled at runtime (for example from {@code Robot.testInit()})
      * instead of via a compile-time boolean.

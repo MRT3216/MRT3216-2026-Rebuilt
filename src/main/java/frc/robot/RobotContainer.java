@@ -7,21 +7,15 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Degrees;
-
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.Mode;
-import frc.robot.constants.IntakeConstants;
-import frc.robot.constants.ShooterConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -36,6 +30,11 @@ import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
+import frc.robot.subsystems.vision.VisionIO;
+import frc.robot.subsystems.vision.VisionIOPhotonVision;
+import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
@@ -53,6 +52,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
     // Subsystems
     private final Drive drive;
+    private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
@@ -75,8 +75,6 @@ public class RobotContainer {
 
     // Dashboard inputs (initialized by setupAutoChooser when enabled)
     private LoggedDashboardChooser<Command> autoChooser;
-    // Guard to ensure test bindings are only enabled once
-    private boolean tuningBindingsEnabled = false;
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
@@ -95,18 +93,15 @@ public class RobotContainer {
                                     new ModuleIOTalonFX(TunerConstants.BackLeft),
                                     new ModuleIOTalonFX(TunerConstants.BackRight));
 
-                    // vision =
-                    // new Vision(
-                    // drive::addVisionMeasurement,
-                    // new VisionIOPhotonVision(
-                    // VisionConstants.cameraFrontName,
-                    // VisionConstants.robotToCameraLeft),
-                    // new VisionIOPhotonVision(
-                    // VisionConstants.cameraRightName,
-                    // VisionConstants.robotToCameraRight),
-                    // new VisionIOPhotonVision(
-                    // VisionConstants.cameraBackName,
-                    // VisionConstants.robotToCameraBack));
+                    vision =
+                            new Vision(
+                                    drive::addVisionMeasurement,
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraFrontName, VisionConstants.robotToCameraLeft),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
 
                     break;
                 }
@@ -120,22 +115,23 @@ public class RobotContainer {
                                     new ModuleIOSim(TunerConstants.FrontRight),
                                     new ModuleIOSim(TunerConstants.BackLeft),
                                     new ModuleIOSim(TunerConstants.BackRight));
+
                     // Sim robot, instantiate physics sim IO implementations
-                    // vision =
-                    // new Vision(
-                    // drive::addVisionMeasurement,
-                    // new VisionIOPhotonVisionSim(
-                    // VisionConstants.cameraFrontName,
-                    // VisionConstants.robotToCameraLeft,
-                    // drive::getPose),
-                    // new VisionIOPhotonVisionSim(
-                    // VisionConstants.cameraRightName,
-                    // VisionConstants.robotToCameraRight,
-                    // drive::getPose),
-                    // new VisionIOPhotonVisionSim(
-                    // VisionConstants.cameraBackName,
-                    // VisionConstants.robotToCameraBack,
-                    // drive::getPose));
+                    vision =
+                            new Vision(
+                                    drive::addVisionMeasurement,
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraFrontName,
+                                            VisionConstants.robotToCameraLeft,
+                                            drive::getPose),
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraRightName,
+                                            VisionConstants.robotToCameraRight,
+                                            drive::getPose),
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraBackName,
+                                            VisionConstants.robotToCameraBack,
+                                            drive::getPose));
 
                     break;
                 }
@@ -150,86 +146,16 @@ public class RobotContainer {
                                     new ModuleIO() {},
                                     new ModuleIO() {},
                                     new ModuleIO() {});
-
                     // (Use same number of dummy implementations as the real robot)
-                    // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new
-                    // VisionIO() {});
-
+                    vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
                     break;
                 }
         }
+        configureDefaultCommands();
         configureButtonBindings();
     }
 
-    /**
-     * Enable test/tuning-specific bindings. Safe to call multiple times (idempotent). Intended to be
-     * called from {@link Robot#testInit()} so DriverStation test mode can activate tuning bindings at
-     * runtime.
-     */
-    public void enableTestBindings() {
-        // Only enable once
-        if (tuningBindingsEnabled) {
-            return;
-        }
-        tuningBindingsEnabled = true;
-
-        // Bind the test/tuning controls that were previously guarded by a compile-time tuning flag.
-        bindFlywheelVelocity(driverController);
-        driverController
-                .leftTrigger()
-                .whileTrue(
-                        intakeRollersSubsystem.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
-
-        bindHoodDuty(operatorController);
-        bindTurretPovs(operatorController);
-
-        operatorController.a().whileTrue(intakePivotSubsystem.set(-0.10));
-        operatorController.b().whileTrue(intakePivotSubsystem.set(0.10));
-    }
-
-    // Helper that binds flywheel right trigger to the prep velocity and stops on release.
-    private void bindFlywheelVelocity(CommandXboxController controller) {
-        controller
-                .rightTrigger()
-                .whileTrue(
-                        flywheelSubsystem.setVelocity(
-                                ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity))
-                .whileFalse(flywheelSubsystem.stopNow());
-    }
-
-    // Helper that binds a controller's triggers to hood duty controls.
-    private void bindHoodDuty(CommandXboxController controller) {
-        controller.rightTrigger().whileTrue(hoodSubsystem.setDutyCycle(0.10));
-        controller.leftTrigger().whileTrue(hoodSubsystem.setDutyCycle(-0.10));
-    }
-
-    // Helper that binds POV directions to turret angle presets on the supplied controller.
-    private void bindTurretPovs(CommandXboxController controller) {
-        controller.povLeft().onTrue(turretSubsystem.setAngle(Degrees.of(90)));
-        controller.povUpLeft().onTrue(turretSubsystem.setAngle(Degrees.of(45)));
-        controller.povUp().onTrue(turretSubsystem.setAngle(Degrees.of(0)));
-        controller.povUpRight().onTrue(turretSubsystem.setAngle(Degrees.of(-45)));
-        controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
-    }
-
-    // Centralized reset-gyro command so multiple bindings can reuse the same behavior.
-    private Command resetGyroZeroCommand() {
-        return Commands.runOnce(
-                        () ->
-                                drive.setPose(
-                                        AllianceFlipUtil.apply(
-                                                new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))),
-                        drive)
-                .ignoringDisable(true);
-    }
-
-    /**
-     * Use this method to define your button->command mappings. Buttons can be created by
-     * instantiating a {@link GenericHID} or one of its subclasses ({@link
-     * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
-     * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-     */
-    private void configureButtonBindings() {
+    public void configureDefaultCommands() {
         // Default command, normal field-relative drive
         drive.setDefaultCommand(
                 DriveCommands.joystickDrive(
@@ -242,6 +168,7 @@ public class RobotContainer {
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
+
         // Ensure flywheel holds zero when no one owns it so releasing buttons returns
         // it to idle
         flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopNow());
@@ -257,42 +184,74 @@ public class RobotContainer {
 
         // Have hood hold its current commanded target using the positional controller
         hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(hoodSubsystem.getPosition()));
+    }
 
-        if (Constants.getMode() == Mode.SIM) {
-
-            // SIM: keep the same SIM bindings as the test/tuning bindings (applies only in SIM
-            // mode when test bindings are not activated via DriverStation)
-            bindFlywheelVelocity(driverController);
-            bindHoodDuty(driverController);
-            bindTurretPovs(driverController);
-
+    private void configureButtonBindings() {
+        if (Constants.getMode() == Mode.SIM || Constants.tuningMode) {
+            configureTestButtonBindings();
         } else if (Constants.getMode() == Mode.REAL) {
-
-            // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
-            // controller
-            driverController
-                    .rightTrigger()
-                    .whileTrue(
-                            shooterSystem.aimAndShoot(
-                                    () -> drive.getPose(),
-                                    () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
-                                    () ->
-                                            AllianceFlipUtil.apply(
-                                                    frc.robot.constants.FieldConstants.Hub.innerCenterPoint),
-                                    3,
-                                    frc.robot.util.ShootingLookupTable.Mode.HUB));
-
-            // Left trigger remains a manual stop if needed
-            driverController.leftTrigger().onTrue(shooterSystem.stopShooting());
+            configureRealButtonBindings();
         } else {
             // Default (REPLAY/unknown) — no platform-specific bindings here.
 
         }
 
-        // Reset gyro to 0° when Back button is pressed (available in both REAL and SIM)
+        // Reset gyro to 0° when the Start button is pressed (available in both REAL and
+        // SIM). Use the controller "start()" binding here intentionally — if you prefer Back
+        // change the binding to driverController.back().
         driverController.start().onTrue(resetGyroZeroCommand());
+    }
 
-        // START button intentionally removed — Back now performs the same reset on all modes.
+    /**
+     * Configure bindings used on the REAL robot for competition-style operation.
+     *
+     * <p>Driver controller mappings should be limited to competition-safe behaviors (e.g. aim+shoot
+     * on the right trigger). Longer-lived or tuning helpers belong in {@link
+     * #configureTestButtonBindings()} and should be enabled only in tuning mode.
+     */
+    public void configureRealButtonBindings() {
+        // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
+        // controller.
+        driverController
+                .rightTrigger()
+                .whileTrue(
+                        shooterSystem.aimAndShoot(
+                                () -> drive.getPose(),
+                                () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
+                                () ->
+                                        AllianceFlipUtil.apply(frc.robot.constants.FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                frc.robot.util.ShootingLookupTable.Mode.HUB));
+
+        // Left trigger remains a manual stop if needed
+        driverController.leftTrigger().onTrue(shooterSystem.stopShooting());
+    }
+
+    /**
+     * Enable test/tuning-specific bindings. These are small helpers intended for development and
+     * should not be active during normal competition operation. This method should be idempotent in
+     * higher-level flows (constructor only currently). Add more bindings here as needed when
+     * experimenting.
+     */
+    public void configureTestButtonBindings() {
+        operatorController.a().whileTrue(intakePivotSubsystem.set(-0.10));
+        operatorController.b().whileTrue(intakePivotSubsystem.set(0.10));
+    }
+
+    // Centralized reset-gyro command so multiple bindings can reuse the same
+    // behavior.
+    private Command resetGyroZeroCommand() {
+        // Reset the drivetrain pose to a zeroed rotation while preserving translation.
+        // We explicitly allow this action while disabled so developers can zero the
+        // heading from the Driver Station without enabling the robot. This is a local
+        // convenience and not a safety-sensitive action (no motors are commanded here).
+        return Commands.runOnce(
+                        () ->
+                                drive.setPose(
+                                        AllianceFlipUtil.apply(
+                                                new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))),
+                        drive)
+                .ignoringDisable(true);
     }
 
     /**

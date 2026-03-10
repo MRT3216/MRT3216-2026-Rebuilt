@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.Mode;
+import frc.robot.constants.FieldConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -218,8 +219,7 @@ public class RobotContainer {
                         shooterSystem.aimAndShoot(
                                 () -> drive.getPose(),
                                 () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
-                                () ->
-                                        AllianceFlipUtil.apply(frc.robot.constants.FieldConstants.Hub.innerCenterPoint),
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                                 3,
                                 frc.robot.util.ShootingLookupTable.Mode.HUB));
 

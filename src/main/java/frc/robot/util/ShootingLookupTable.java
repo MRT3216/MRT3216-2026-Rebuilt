@@ -110,8 +110,6 @@ public class ShootingLookupTable {
         return getParameters(distance).timeOfFlight;
     }
 
-    // Prefer the Distance-based API: getTimeOfFlight(Distance)
-
     /** Internal helper to add a row to the table. Kept package-private for easier testing. */
     private void addEntry(Distance distance, Angle angleDeg, Time tofSec) {
         // Store a ShootingParameters instance keyed by distance. The shooterSpeed field is

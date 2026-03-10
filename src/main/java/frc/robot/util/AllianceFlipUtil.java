@@ -7,16 +7,12 @@
 
 package frc.robot.util;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
+import frc.robot.util.geometry.Bounds;
 
-/** Utility to flip coordinates or behavior based on alliance color. */
 public class AllianceFlipUtil {
     public static double applyX(double x) {
         return shouldFlip() ? FieldConstants.fieldLength - x : x;
@@ -53,14 +49,21 @@ public class AllianceFlipUtil {
         return new Pose3d(apply(pose.getTranslation()), apply(pose.getRotation()));
     }
 
-    /**
-     * Returns whether coordinates should be flipped for the current alliance. When running on the Red
-     * alliance this returns true to mirror field coordinates; otherwise false.
-     *
-     * @return true if coordinates should be mirrored for the current alliance
-     */
+    public static Bounds apply(Bounds bounds) {
+        if (shouldFlip()) {
+            return new Bounds(
+                    applyX(bounds.maxX()),
+                    applyX(bounds.minX()),
+                    applyY(bounds.maxY()),
+                    applyY(bounds.minY()));
+        } else {
+            return bounds;
+        }
+    }
+
     public static boolean shouldFlip() {
-        return DriverStation.getAlliance().isPresent()
+        return !Constants.isDisableHAL()
+                && DriverStation.getAlliance().isPresent()
                 && DriverStation.getAlliance().get() == DriverStation.Alliance.Red;
     }
 }

@@ -38,6 +38,7 @@ import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
+import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.RobotMapValidator;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -211,6 +212,17 @@ public class RobotContainer {
         controller.povRight().onTrue(turretSubsystem.setAngle(Degrees.of(-90)));
     }
 
+    // Centralized reset-gyro command so multiple bindings can reuse the same behavior.
+    private Command resetGyroZeroCommand() {
+        return Commands.runOnce(
+                        () ->
+                                drive.setPose(
+                                        AllianceFlipUtil.apply(
+                                                new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))),
+                        drive)
+                .ignoringDisable(true);
+    }
+
     /**
      * Use this method to define your button->command mappings. Buttons can be created by
      * instantiating a {@link GenericHID} or one of its subclasses ({@link
@@ -258,48 +270,29 @@ public class RobotContainer {
 
             // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
             // controller
-            // .rightTrigger()
-            // .whileTrue(
-            // shooterSystem.aimAndShoot(
-            // () -> drive.getPose(),
-            // () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0,
-            // 0.0),
-            // () -> frc.robot.constants.FieldConstants.Hub.innerCenterPoint,
-            // 3,
-            // frc.robot.util.ShootingLookupTable.Mode.HUB));
+            driverController
+                    .rightTrigger()
+                    .whileTrue(
+                            shooterSystem.aimAndShoot(
+                                    () -> drive.getPose(),
+                                    () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
+                                    () ->
+                                            AllianceFlipUtil.apply(
+                                                    frc.robot.constants.FieldConstants.Hub.innerCenterPoint),
+                                    3,
+                                    frc.robot.util.ShootingLookupTable.Mode.HUB));
 
-            // // Left trigger remains a manual stop if needed
-            // controller.leftTrigger().onTrue(shooterSystem.stopShooting());
+            // Left trigger remains a manual stop if needed
+            driverController.leftTrigger().onTrue(shooterSystem.stopShooting());
         } else {
             // Default (REPLAY/unknown) — no platform-specific bindings here.
 
         }
 
         // Reset gyro to 0° when Back button is pressed (available in both REAL and SIM)
-        driverController
-                .back()
-                .onTrue(
-                        Commands.runOnce(
-                                        () ->
-                                                drive.setPose(
-                                                        new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
-                                        drive)
-                                .ignoringDisable(true));
+        driverController.start().onTrue(resetGyroZeroCommand());
 
-        // START button resets gyro when running on the real robot (or when test bindings are
-        // enabled).
-        if (Constants.getMode() == Constants.Mode.REAL) {
-
-            driverController
-                    .start()
-                    .onTrue(
-                            Commands.runOnce(
-                                            () ->
-                                                    drive.setPose(
-                                                            new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
-                                            drive)
-                                    .ignoringDisable(true));
-        }
+        // START button intentionally removed — Back now performs the same reset on all modes.
     }
 
     /**

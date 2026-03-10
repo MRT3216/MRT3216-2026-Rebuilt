@@ -5,8 +5,8 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Time;
 
 /**
- * Unit-aware, immutable data holder for shooting parameters returned by lookup tables. Fields
- * use WPILib unit types to avoid unit-mixing bugs.
+ * Unit-aware, immutable data holder for shooting parameters returned by lookup tables. Fields use
+ * WPILib unit types to avoid unit-mixing bugs.
  */
 public class ShootingParameters {
     /** Shooter wheel speed used by the lookup table (unit: AngularVelocity, typically RPM). */

@@ -6,7 +6,6 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
-import static edu.wpi.first.units.Units.Kilograms;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
@@ -151,7 +150,6 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
-
         // Recommended / helper velocities
         public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
 
@@ -160,6 +158,7 @@ public final class ShooterConstants {
          * robot.
          */
         public static final AngularVelocity kSoftLimitMax = RPM.of(1500.0);
+
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
         /** Returns a preconfigured SimpleMotorFeedforward for the spindexer. */
@@ -216,6 +215,7 @@ public final class ShooterConstants {
          * robot.
          */
         public static final AngularVelocity kSoftLimitMax = RPM.of(4000.0);
+
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
         /** Returns a preconfigured SimpleMotorFeedforward for the kicker. */

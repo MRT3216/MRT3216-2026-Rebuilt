@@ -171,11 +171,17 @@ public class RobotContainer {
         kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-        spindexerSubsystem.setDefaultCommand(spindexerSubsystem.setDutyCycle(0));
+        // Let spindexer coast by default (no-op default command requires the subsystem
+        // but does not actively drive it to zero). This allows cancelling active
+        // commands to leave the mechanism coasting instead of forcing a stop.
+        spindexerSubsystem.setDefaultCommand(
+                Commands.run(() -> {}, spindexerSubsystem).withName("SpindexerCoastDefault"));
 
-        // Ensure flywheel holds zero when no one owns it so releasing buttons returns
-        // it to idle
-        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopNow());
+        // Let flywheel coast by default rather than forcing a zero setpoint. Use a
+        // no-op default that requires the subsystem so it becomes the default when
+        // no other commands are running.
+        flywheelSubsystem.setDefaultCommand(
+                Commands.run(() -> {}, flywheelSubsystem).withName("FlywheelCoastDefault"));
 
         // Ensure intake rollers default to stopped when no command is running
         intakeRollersSubsystem.setDefaultCommand(intakeRollersSubsystem.setDutyCycle(0));

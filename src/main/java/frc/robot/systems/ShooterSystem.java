@@ -257,13 +257,6 @@ public class ShooterSystem {
 
     // endregion
 
-    // region Triggers & events
-
-    // Trigger declarations and ephemeral event-based commands for the shooter
-    // system live here.
-
-    // endregion
-
     // region Private helpers
 
     /**
@@ -275,11 +268,12 @@ public class ShooterSystem {
      * @return a Command that cancels shooting activity and brings mechanisms to a safe idle
      */
     public Command stopShooting() {
+        // Interrupt any active shooter pipelines and let mechanisms return to their
+        // default (coast) behavior. We intentionally avoid issuing one-shot zero
+        // setpoints for flywheel/spindexer so they are allowed to coast after being
+        // cancelled. Kicker is left alone here (subsystems that need an explicit
+        // zero can still use stopNow when required).
         return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood)
-                // Immediately apply zero setpoints imperatively so the stop finishes quickly.
-                .andThen(flywheel.stopNow())
-                .andThen(spindexer.stopNow())
-                .andThen(kicker.stopNow())
                 .withName("StopShooting");
     }
 

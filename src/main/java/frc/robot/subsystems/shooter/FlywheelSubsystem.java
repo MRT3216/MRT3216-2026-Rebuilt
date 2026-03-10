@@ -65,7 +65,7 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // region Hardware & controller
 
-    // TODO: Add the motors in this subsystem to the CANFD bus
+    // (No outstanding TODOs)
     private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();

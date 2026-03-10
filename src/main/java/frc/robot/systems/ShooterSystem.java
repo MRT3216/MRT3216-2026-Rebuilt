@@ -18,14 +18,18 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.Constants;
+import frc.robot.constants.FieldConstants;
+import frc.robot.constants.ShooterConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
+import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HybridTurretUtil;
 import frc.robot.util.ShooterModel;
 import frc.robot.util.ShootingLookupTable;
+import frc.robot.util.Zones;
 import java.util.function.Supplier;
 
 /**
@@ -60,8 +64,6 @@ public class ShooterSystem {
         this.hood = hood;
     }
 
-    // The system reads the tunable flywheel RPM from ShooterConstants when needed.
-
     // endregion
 
     // region Public API (queries & commands)
@@ -89,9 +91,7 @@ public class ShooterSystem {
         return Commands.parallel(flywheelCmd, feedSeq).withName("StartShooting");
     }
 
-    // NOTE: use tunable values from `ShooterConstants` where appropriate.
-
-    /** Start shooting at the canonical prep velocity (fixed-speed convenience overload). */
+    /** Start shooting at the default velocity (fixed-speed convenience overload). */
     public Command startShooting() {
         return startShooting(() -> RPM.of(kTunableFlywheelRPM.get()));
     }
@@ -126,17 +126,50 @@ public class ShooterSystem {
     }
 
     /**
-     * Prepare the shooter by spinning the flywheel to the canonical target velocity while running the
-     * short kicker clear routine.
-     *
-     * <p>This operator-facing "prep" command starts the flywheel closed-loop controller with the
-     * canonical prep velocity (the constant kFlywheelPrepAngularVelocity in {@code
-     * ShooterConstants.FlywheelConstants}).
-     *
-     * @return a command that begins flywheel spin-up and runs the kicker clear routine
+     * Test-mode shoot: use tunable/constant setpoints for hood and flywheel, do not aim the turret or
+     * run any auto-adjustment. Runs a short clear routine and then feeds.
      */
-    public Command prepShooter() {
-        return flywheel.setVelocity(RPM.of(kTunableFlywheelRPM.get())).withName("PrepShooter");
+    public Command testShoot() {
+        var hoodCmd =
+                hood.setAngle(() -> Degrees.of(ShooterConstants.HoodConstants.kTunableHoodAngleDeg.get()));
+        var flywheelCmd = flywheel.setVelocity(RPM.of(kTunableFlywheelRPM.get()));
+
+        return hoodCmd
+                .alongWith(flywheelCmd)
+                .andThen(clearKicker())
+                .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()))
+                .withName("TestShoot");
+    }
+
+    /**
+     * Real shoot: automatically choose HUB vs PASS mode based on the robot pose (zones) and aim
+     * accordingly. Builds a target supplier from field constants and delegates to {@link
+     * #aimAndShoot(Supplier, Supplier, Supplier, int, ShootingLookupTable.Mode)}.
+     */
+    public Command realShoot(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds) {
+        // Determine whether we are in a trench/pass-like zone. Treat trench, trench-duck, and
+        // bump collections as PASS mode; otherwise use HUB.
+        boolean inTrench =
+                Zones.TRENCH_ZONES.contains(robotPose).getAsBoolean()
+                        || Zones.TRENCH_DUCK_ZONES.contains(robotPose).getAsBoolean()
+                        || Zones.BUMP_ZONES.contains(robotPose).getAsBoolean();
+
+        var tableMode = inTrench ? ShootingLookupTable.Mode.PASS : ShootingLookupTable.Mode.HUB;
+
+        // Target supplier: hub center for HUB mode; nearest trench opening for PASS mode.
+        Supplier<Translation3d> targetSupplier =
+                () -> {
+                    if (!inTrench) return AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                    var pose = robotPose.get();
+                    var left = FieldConstants.LeftTrench.openingTopLeft;
+                    var right = FieldConstants.RightTrench.openingTopLeft;
+                    double robotY = pose.getTranslation().getY();
+                    return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
+                            ? AllianceFlipUtil.apply(left)
+                            : AllianceFlipUtil.apply(right);
+                };
+
+        return aimAndShoot(robotPose, fieldSpeeds, targetSupplier, 3, tableMode).withName("RealShoot");
     }
     /**
      * This composed helper is a small convenience for operator bindings: it starts the flywheel

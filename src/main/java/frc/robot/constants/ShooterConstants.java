@@ -68,7 +68,7 @@ public final class ShooterConstants {
         // Telemetry keys are centralized in TelemetryKeys
 
         // Recommended target velocities / helper constants
-        public static final AngularVelocity kFlywheelPrepAngularVelocity = RPM.of(3000);
+        public static final AngularVelocity kFlywheelDefaultVelocity = RPM.of(3000);
 
         /**
          * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
@@ -97,7 +97,7 @@ public final class ShooterConstants {
         /** Tunable: flywheel target RPM (human units: RPM). */
         public static final LoggedTunableNumber kTunableFlywheelRPM =
                 new LoggedTunableNumber(
-                        "Shooter/FlywheelRPM", kFlywheelPrepAngularVelocity.in(RPM), Constants.tuningMode);
+                        "Shooter/FlywheelRPM", kFlywheelDefaultVelocity.in(RPM), Constants.tuningMode);
     }
 
     /**
@@ -151,7 +151,6 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
-        // Telemetry keys are centralized in TelemetryKeys
 
         // Recommended / helper velocities
         public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
@@ -161,8 +160,7 @@ public final class ShooterConstants {
          * robot.
          */
         public static final AngularVelocity kSoftLimitMax = RPM.of(1500.0);
-
-        public static final AngularVelocity kSoftLimitMin = RPM.of(-500.0);
+        public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
         /** Returns a preconfigured SimpleMotorFeedforward for the spindexer. */
         public static SimpleMotorFeedforward motorFeedforward() {
@@ -209,8 +207,6 @@ public final class ShooterConstants {
         public static final double kI_sim = 0;
         public static final double kD_sim = 0;
 
-        // Telemetry keys are centralized in TelemetryKeys
-
         // Recommended velocities
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2500.0);
         public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
@@ -220,7 +216,6 @@ public final class ShooterConstants {
          * robot.
          */
         public static final AngularVelocity kSoftLimitMax = RPM.of(4000.0);
-
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
         /** Returns a preconfigured SimpleMotorFeedforward for the kicker. */
@@ -251,14 +246,6 @@ public final class ShooterConstants {
 
         /** Approximate mass of the hood assembly. */
         public static final Mass kMass = Pounds.of(0.1);
-
-        /**
-         * Approximate moment of inertia for the hood about its pivot. Calculated from a
-         * rod-about-one-end approximation: I = m * L^2 / 3. This keeps a single source of truth for
-         * mechanical properties used by YAMS.
-         */
-        public static final MomentOfInertia kMOI =
-                KilogramSquareMeters.of(kMass.in(Kilograms) * Math.pow(kLength.in(Meters), 2) / 3.0);
 
         // Motor wiring
         public static final boolean kMotorInverted = true;

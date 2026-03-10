@@ -4,6 +4,8 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.IntakeConstants.Pivot.kLength;
+import static frc.robot.constants.IntakeConstants.Pivot.kMass;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kD;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kD_sim;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kGearing;
@@ -11,7 +13,6 @@ import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMax;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMin;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kI;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kMOI;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kMotorInverted;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kP;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kP_sim;
@@ -99,7 +100,7 @@ public class HoodSubsystem extends SubsystemBase {
         hoodConfig =
                 new PivotConfig(smartMotor)
                         .withTelemetry(kHoodMechTelemetry, Constants.telemetryVerbosity())
-                        .withMOI(kMOI)
+                        .withMOI(kLength, kMass)
                         // Ensure Arm has a known starting angle for simulation and replay
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)

@@ -11,7 +11,6 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
  * Lightweight tunable number wrapper used by several teams. Falls back to a default when tuning is
  * disabled and publishes a Junction LoggedNetworkNumber when enabled.
  */
-@SuppressWarnings("unused")
 public class LoggedTunableNumber implements DoubleSupplier {
     private static final String tableKey = "/Tuning";
 

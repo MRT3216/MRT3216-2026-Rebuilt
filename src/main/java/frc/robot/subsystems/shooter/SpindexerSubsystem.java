@@ -12,8 +12,8 @@ import static frc.robot.constants.ShooterConstants.SpindexerConstants.kP;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kP_sim;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSoftLimitMax;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSpindexerTargetAngularVelocity;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kTunableIndexerRPM;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kWheelDiameter;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kWheelMass;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.motorFeedforward;
@@ -194,7 +194,7 @@ public class SpindexerSubsystem extends SubsystemBase {
      * @return a Command that sets the spindexer to the shooter feed speed
      */
     public Command feedShooter() {
-        return setVelocity(kSpindexerTargetAngularVelocity);
+        return setVelocity(RPM.of(kTunableIndexerRPM.get()));
     }
 
     /**

@@ -9,7 +9,7 @@ import frc.robot.constants.ShooterConstants;
 
 /**
  * Very small two-point linear shooter model. Interpolates flywheel RPM between two anchors
- * specified in {@link frc.robot.constants.ShooterConstants.ShooterModel} based on distance.
+ * specified in {@code ShooterConstants.ShooterModel} based on distance.
  */
 public final class ShooterModel {
     private ShooterModel() {}

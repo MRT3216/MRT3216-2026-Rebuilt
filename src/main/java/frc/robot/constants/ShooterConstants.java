@@ -21,6 +21,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.units.measure.MomentOfInertia;
+import frc.robot.util.LoggedTunableNumber;
 
 /** Flywheel shooter constants: wheel geometry, control gains, and velocities. */
 public final class ShooterConstants {
@@ -92,6 +93,11 @@ public final class ShooterConstants {
         public static SimpleMotorFeedforward motorFeedforwardSim() {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
+
+        /** Tunable: flywheel target RPM (human units: RPM). */
+        public static final LoggedTunableNumber kTunableFlywheelRPM =
+                new LoggedTunableNumber(
+                        "Shooter/FlywheelRPM", kFlywheelPrepAngularVelocity.in(RPM), Constants.tuningMode);
     }
 
     /**
@@ -167,6 +173,11 @@ public final class ShooterConstants {
         public static SimpleMotorFeedforward motorFeedforwardSim() {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
+
+        /** Tunable: indexer/spindexer target RPM. */
+        public static final LoggedTunableNumber kTunableIndexerRPM =
+                new LoggedTunableNumber(
+                        "Spindexer/IndexerRPM", kSpindexerTargetAngularVelocity.in(RPM), Constants.tuningMode);
     }
 
     public static final class KickerConstants {
@@ -221,6 +232,11 @@ public final class ShooterConstants {
         public static SimpleMotorFeedforward motorFeedforwardSim() {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
+
+        /** Tunable: kicker target RPM. */
+        public static final LoggedTunableNumber kTunableKickerRPM =
+                new LoggedTunableNumber(
+                        "Kicker/KickerRPM", kKickerTargetAngularVelocity.in(RPM), Constants.tuningMode);
     }
 
     public static final class HoodConstants {
@@ -281,6 +297,10 @@ public final class ShooterConstants {
         // public static final Angle kHoodHorizontalOffset = Degrees.of(16.574);
 
         public static final Angle kStartingPosition = Degrees.of(0);
+        /** Tunable: hood angle in degrees (human units). */
+        public static final LoggedTunableNumber kTunableHoodAngleDeg =
+                new LoggedTunableNumber(
+                        "Shooter/HoodAngleDeg", kStartingPosition.in(Degrees), Constants.tuningMode);
         /**
          * Returns a preconfigured SimpleMotorFeedforward for the Hood pivot.
          *

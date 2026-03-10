@@ -5,9 +5,7 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelPrepAngularVelocity;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMin;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
 import static frc.robot.constants.ShooterConstants.kRefinementConvergenceEpsilon;
 
@@ -28,7 +26,6 @@ import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.HybridTurretUtil;
 import frc.robot.util.ShooterModel;
 import frc.robot.util.ShootingLookupTable;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
@@ -63,10 +60,7 @@ public class ShooterSystem {
         this.hood = hood;
     }
 
-    // Atomic holder for an operator-adjustable flywheel target. Commands can bump this value
-    // and the supplied startShooting(Supplier) overload below can use it to drive the flywheel.
-    private final AtomicReference<AngularVelocity> flywheelTarget =
-            new AtomicReference<>(kFlywheelPrepAngularVelocity);
+    // The system reads the tunable flywheel RPM from ShooterConstants when needed.
 
     // endregion
 
@@ -95,71 +89,11 @@ public class ShooterSystem {
         return Commands.parallel(flywheelCmd, feedSeq).withName("StartShooting");
     }
 
-    /**
-     * Start shooting using the system-owned adjustable target.
-     *
-     * <p>This command uses an internal AtomicReference target that operator bump commands modify. It
-     * schedules a re-applier that continuously writes the latest target to the flywheel so
-     * adjustments take effect live during tuning. The feeding sequence (clear->feed) runs in
-     * parallel.
-     *
-     * @return a composed Command that follows the current system-owned flywheel target and feeds
-     */
-    public Command startShootingWithAdjustableTarget() {
-        // Start a followTarget re-applier so the adjustable atomic target is
-        // continuously applied while the command is active. This guarantees live
-        // updates from bump commands during tuning.
-        var flywheelFollow = flywheel.followTarget(() -> flywheelTarget.get());
-        var feedSeq =
-                Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()));
-        return Commands.parallel(flywheelFollow, feedSeq).withName("StartShootingAdjustable");
-    }
-
-    /**
-     * Bump the system-owned flywheel target by the given delta (AngularVelocity). Clamped to soft
-     * limits.
-     */
-    public Command bumpFlywheelTarget(AngularVelocity delta) {
-        // Do not require any subsystems so bumping does not interrupt running feed/clear
-        // commands. The followTarget command (if active) will pick up the new value.
-        return Commands.runOnce(
-                        () -> {
-                            double current = flywheelTarget.get().in(RPM);
-                            double d = delta.in(RPM);
-                            double min = kSoftLimitMin.in(RPM);
-                            double max = kSoftLimitMax.in(RPM);
-                            double next = Math.max(min, Math.min(max, current + d));
-                            flywheelTarget.set(RPM.of(next));
-                        })
-                .withName("BumpFlywheelSys");
-    }
-
-    /** Convenience factories for small integer RPM bumps (useful for button bindings). */
-    /**
-     * Convenience: one-shot bump of the system-owned flywheel target upward by the given RPM. This
-     * command does not require shooter subsystems so it won't interrupt active shooting pipelines.
-     *
-     * @param rpm amount in RPM to add to the current target
-     * @return a one-shot Command that bumps the target up
-     */
-    public Command bumpFlywheelUp(double rpm) {
-        return bumpFlywheelTarget(RPM.of(rpm));
-    }
-
-    /**
-     * Convenience: one-shot bump of the system-owned flywheel target downward by the given RPM. This
-     * command does not require shooter subsystems so it won't interrupt active shooting pipelines.
-     *
-     * @param rpm amount in RPM to subtract from the current target (positive value expected)
-     * @return a one-shot Command that bumps the target down
-     */
-    public Command bumpFlywheelDown(double rpm) {
-        return bumpFlywheelTarget(RPM.of(-Math.abs(rpm)));
-    }
+    // NOTE: use tunable values from `ShooterConstants` where appropriate.
 
     /** Start shooting at the canonical prep velocity (fixed-speed convenience overload). */
     public Command startShooting() {
-        return startShooting(() -> kFlywheelPrepAngularVelocity);
+        return startShooting(() -> RPM.of(kTunableFlywheelRPM.get()));
     }
 
     private Command feedAndShoot() {
@@ -167,7 +101,7 @@ public class ShooterSystem {
         // clear routine, then start feeding immediately after the clear completes.
         // We intentionally do not wait for the flywheel to reach speed.
         return flywheel
-                .setVelocity(kFlywheelPrepAngularVelocity)
+                .setVelocity(RPM.of(kTunableFlywheelRPM.get()))
                 .andThen(clearKicker())
                 .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()))
                 .withName("FeedAndShoot");
@@ -196,13 +130,13 @@ public class ShooterSystem {
      * short kicker clear routine.
      *
      * <p>This operator-facing "prep" command starts the flywheel closed-loop controller with the
-     * canonical prep velocity ({@link
-     * frc.robot.constants.ShooterConstants.FlywheelConstants#kFlywheelPrepAngularVelocity}).
+     * canonical prep velocity (the constant kFlywheelPrepAngularVelocity in {@code
+     * ShooterConstants.FlywheelConstants}).
      *
      * @return a command that begins flywheel spin-up and runs the kicker clear routine
      */
     public Command prepShooter() {
-        return flywheel.setVelocity(kFlywheelPrepAngularVelocity).withName("PrepShooter");
+        return flywheel.setVelocity(RPM.of(kTunableFlywheelRPM.get())).withName("PrepShooter");
     }
     /**
      * This composed helper is a small convenience for operator bindings: it starts the flywheel
@@ -283,7 +217,9 @@ public class ShooterSystem {
         // Keep the command factory at the system level but delegate the bump operation
         // to the HoodSubsystem to centralize clamping/telemetry. This keeps ownership
         // of the factory in the system while ensuring the subsystem enforces limits.
-        return hood.bumpSetpoint(delta).withName("HoodAdjustSys");
+        // Bump-style adjustments were removed; instead compute a new absolute target and
+        // command the hood to move to that angle and hold.
+        return hood.setAngle(() -> hood.getTarget().plus(delta)).withName("HoodAdjustSys");
     }
 
     // endregion

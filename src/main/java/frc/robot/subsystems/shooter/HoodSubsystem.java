@@ -32,7 +32,6 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -181,19 +180,9 @@ public class HoodSubsystem extends SubsystemBase {
         return hood.set(dutyCycle);
     }
 
-    private void writeSetpointImmediate(Angle target) {
-        hood.setMechanismPositionSetpoint(target);
-    }
-
-    public void bumpSetpointImmediate(Angle delta) {
-        Angle prevDeg = smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
-        Angle newDeg = prevDeg.plus(delta);
-        writeSetpointImmediate(newDeg);
-    }
-
-    public Command bumpSetpoint(Angle delta) {
-        return Commands.runOnce(() -> bumpSetpointImmediate(delta), this).withName("Hood.bumpSetpoint");
-    }
+    // Bump-style immediate setpoint adjustments removed. Use `setAngle(...)` to
+    // move the hood to a new target and hold it, or update the tuned constants
+    // in `ShooterConstants` for canonical setpoints.
 
     // endregion
 

@@ -34,6 +34,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+// ShooterConstants not required here after removing convenience tunable helper
 import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -165,6 +166,8 @@ public class FlywheelSubsystem extends SubsystemBase {
     public Command setVelocity(Supplier<AngularVelocity> supplier) {
         return flywheel.setSpeed(supplier);
     }
+
+    // (No convenience helpers here; use supplier-backed `setVelocity(...)` or inline tunable reads.)
 
     /**
      * Repeatedly reapplies the provided supplier's value imperatively while the returned command is

@@ -9,12 +9,12 @@ import static frc.robot.constants.ShooterConstants.KickerConstants.kD_sim;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kGearReduction;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kI;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kKickerTargetAngularVelocity;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kP;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kP_sim;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMax;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMin;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kTunableKickerRPM;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelDiameter;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelMass;
 import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforward;
@@ -184,7 +184,7 @@ public class KickerSubsystem extends SubsystemBase {
      * @return a Command that sets the kicker to the shooter feed speed
      */
     public Command feedShooter() {
-        return setVelocity(kKickerTargetAngularVelocity);
+        return setVelocity(RPM.of(kTunableKickerRPM.get()));
     }
 
     /**

@@ -96,10 +96,6 @@ public class ShooterSystem {
     }
 
     /**
-     * Test-mode shoot: use tunable/constant setpoints for hood and flywheel, do not aim the turret or
-     * run any auto-adjustment. Runs a short clear routine and then feeds.
-     */
-    /**
      * Test-mode shoot: use the dashboard tunable for hood angle and a tuned flywheel velocity. Does a
      * short clear then feeds. The hood angle is read from the LoggedTunableNumber at runtime via a
      * Supplier so dashboard edits take effect immediately while this command is active.

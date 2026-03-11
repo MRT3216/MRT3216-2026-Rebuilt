@@ -178,13 +178,20 @@ public class KickerSubsystem extends SubsystemBase {
         return kicker.setSpeed(speed);
     }
 
+    /** Supplier-backed overload for dynamic/tunable speeds. */
+    public Command setVelocity(java.util.function.Supplier<AngularVelocity> supplier) {
+        return kicker.setSpeed(supplier);
+    }
+
     /**
      * Convenience helper: run the kicker at the configured shooter feed velocity.
      *
      * @return a Command that sets the kicker to the shooter feed speed
      */
     public Command feedShooter() {
-        return setVelocity(RPM.of(kTunableKickerRPM.get()));
+        // Read the LoggedTunableNumber at runtime so dashboard edits apply while
+        // the command is active.
+        return setVelocity(() -> RPM.of(kTunableKickerRPM.get()));
     }
 
     /**

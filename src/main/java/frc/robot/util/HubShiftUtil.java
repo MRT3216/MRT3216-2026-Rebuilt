@@ -15,11 +15,11 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * Tracks "hub shifts" — the alternating windows in the 2026 Rebuilt teleop period during which
- * each alliance may score into the hub.
+ * Tracks "hub shifts" — the alternating windows in the 2026 Rebuilt teleop period during which each
+ * alliance may score into the hub.
  *
- * <p>Teleop (140 s) is split into six shifts. Shifts 1, 3, 5 belong to one alliance; 2, 4, 6 to
- * the other. Which alliance starts depends on the FMS game-specific message, or falls back to the
+ * <p>Teleop (140 s) is split into six shifts. Shifts 1, 3, 5 belong to one alliance; 2, 4, 6 to the
+ * other. Which alliance starts depends on the FMS game-specific message, or falls back to the
  * opposite of the robot's own alliance.
  *
  * <p>Call {@link #initialize()} once at the start of teleop.
@@ -115,9 +115,7 @@ public class HubShiftUtil {
         Optional<Boolean> override = getAllianceWinOverride();
         if (override.isPresent()) {
             // true = we won → opponent goes first; false = they won → we go first
-            return override.get()
-                    ? (ds == Alliance.Blue ? Alliance.Red : Alliance.Blue)
-                    : ds;
+            return override.get() ? (ds == Alliance.Blue ? Alliance.Red : Alliance.Blue) : ds;
         }
 
         String msg = DriverStation.getGameSpecificMessage();

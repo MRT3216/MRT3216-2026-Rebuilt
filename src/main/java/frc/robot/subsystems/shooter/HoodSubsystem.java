@@ -2,22 +2,24 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD_sim;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI_sim;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kP_sim;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kD;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kLength;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kMass;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kD_sim;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kGearing;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMax;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMin;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kI;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kI_sim;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kLength;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kMass;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kMotorInverted;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kP;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kP_sim;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMax;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMin;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kStartingPosition;
@@ -25,6 +27,7 @@ import static frc.robot.constants.ShooterConstants.HoodConstants.kStatorCurrentL
 import static frc.robot.constants.ShooterConstants.HoodConstants.kTolerance;
 import static frc.robot.constants.ShooterConstants.HoodConstants.pivotFeedforward;
 import static frc.robot.constants.ShooterConstants.HoodConstants.pivotFeedforwardSim;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kD_sim;
 import static frc.robot.constants.TelemetryKeys.kHoodMechTelemetry;
 import static frc.robot.constants.TelemetryKeys.kHoodMotorTelemetry;
 
@@ -93,8 +96,10 @@ public class HoodSubsystem extends SubsystemBase {
     public HoodSubsystem() {
         motorConfig =
                 new SmartMotorControllerConfig(this)
+                        .withMechanismCircumference(Inches.of(1.26875 * Math.PI))
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(kP, kI, kD)
+                        .withClosedLoopController(
+                                kP, kI, kD, DegreesPerSecond.of(270), DegreesPerSecondPerSecond.of(270))
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         .withFeedforward(pivotFeedforward())
                         .withSimFeedforward(pivotFeedforwardSim())

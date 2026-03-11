@@ -159,7 +159,9 @@ public class FlywheelSubsystem extends SubsystemBase {
     }
 
     public Command setToTunedVelocity() {
-        return this.setVelocity(RPM.of(kTunableFlywheelRPM.get()));
+        // Use the supplier-backed overload so the LoggedTunableNumber is read
+        // while the command is active (dashboard edits take effect immediately).
+        return this.setVelocity(() -> RPM.of(kTunableFlywheelRPM.get()));
     }
 
     /**
@@ -171,7 +173,7 @@ public class FlywheelSubsystem extends SubsystemBase {
      * target within {@code kVelocityTolerance}.
      */
     public Command runToTunedVelocity() {
-        return flywheel.runTo(RPM.of(kTunableFlywheelRPM.get()), kVelocityTolerance);
+        return flywheel.runTo(() -> RPM.of(kTunableFlywheelRPM.get()), kVelocityTolerance);
     }
 
     /**

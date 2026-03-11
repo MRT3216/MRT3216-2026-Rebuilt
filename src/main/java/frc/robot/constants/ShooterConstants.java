@@ -236,11 +236,11 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID and feedforward
-        public static final double kP = 0.0;
+        public static final double kP = 300.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
-        public static final double kS = 0.0;
-        public static final double kV = 0.0;
+        public static final double kS = 0.45;
+        public static final double kV = 3.0;
         public static final double kA = 0.0;
 
         // Simulation-specific defaults for Hood

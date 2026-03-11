@@ -270,6 +270,8 @@ public class RobotContainer {
 
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
+        driverController.leftBumper().whileTrue((hoodSubsystem.setDutyCycle(-0.1)));
+        driverController.rightBumper().whileTrue((hoodSubsystem.setDutyCycle(0.1)));
 
         // driverController.leftBumper().whileTrue(intakeSystem.intake());
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot());

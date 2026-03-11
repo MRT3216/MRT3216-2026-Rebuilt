@@ -213,7 +213,8 @@ public class Robot extends LoggedRobot {
         HubShiftUtil.initialize();
         Elastic.selectTab("Teleop");
         Elastic.sendNotification(
-                new Notification(NotificationLevel.INFO, "Teleop Started", "Hub shift timer running.", 3000));
+                new Notification(
+                        NotificationLevel.INFO, "Teleop Started", "Hub shift timer running.", 3000));
     }
 
     /** This function is called periodically during operator control. */

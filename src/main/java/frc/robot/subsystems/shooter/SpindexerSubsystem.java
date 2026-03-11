@@ -170,13 +170,20 @@ public class SpindexerSubsystem extends SubsystemBase {
         return spindexer.setSpeed(speed);
     }
 
+    /** Supplier-backed overload for dynamic/tunable speeds. */
+    public Command setVelocity(java.util.function.Supplier<AngularVelocity> supplier) {
+        return spindexer.setSpeed(supplier);
+    }
+
     /**
      * Convenience helper: run the spindexer at the configured shooter feed velocity.
      *
      * @return a Command that sets the spindexer to the shooter feed speed
      */
     public Command feedShooter() {
-        return setVelocity(RPM.of(kTunableIndexerRPM.get()));
+        // Read the LoggedTunableNumber at runtime so dashboard edits apply while
+        // the command is active.
+        return setVelocity(() -> RPM.of(kTunableIndexerRPM.get()));
     }
 
     /**

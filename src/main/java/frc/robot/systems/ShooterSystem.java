@@ -130,8 +130,10 @@ public class ShooterSystem {
      * run any auto-adjustment. Runs a short clear routine and then feeds.
      */
     public Command testShoot() {
-        var hoodRun = hood.runTo(Degrees.of(ShooterConstants.HoodConstants.kTunableHoodAngleDeg.get()));
-        var flywheelCmd = flywheel.setVelocity(RPM.of(kTunableFlywheelRPM.get()));
+        var hoodRun =
+                hood.runTo(Degrees.of(ShooterConstants.HoodConstants.kTunableHoodAngleDeg.get()))
+                        .withTimeout(1);
+        var flywheelCmd = flywheel.setTunedVelocity();
 
         // First move the hood to the tuned angle (this command completes when the
         // hood reaches its target), then run flywheel + clear routine in parallel
@@ -212,7 +214,7 @@ public class ShooterSystem {
         // the simple model for flywheel velocity to make on-robot tuning faster.
         Supplier<AngularVelocity> flywheelModelSupplier =
                 () -> ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
-        var flywheelFollow = flywheel.followTarget(flywheelModelSupplier);
+        var flywheelFollow = flywheel.setVelocity(flywheelModelSupplier);
 
         // Feeding sequence runs alongside aiming and flywheel follow.
         var feedSeq =

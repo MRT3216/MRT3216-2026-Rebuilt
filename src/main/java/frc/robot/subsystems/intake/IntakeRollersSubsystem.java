@@ -30,6 +30,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -46,13 +47,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
-/**
- * AdvantageKit-ready Intake Rollers Subsystem for MRT 3216.
- *
- * <p>This subsystem manages dual-Kraken intake rollers using the YAMS library and Phoenix 6. It
- * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
- * (Inputs) are separated from software commands (Outputs).
- */
+/** Intake rollers subsystem: controls dual rollers and telemetry. */
 public class IntakeRollersSubsystem extends SubsystemBase {
     // region Inputs & telemetry
 
@@ -120,8 +115,8 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         .withSimFeedforward(motorFeedforwardSim())
                         .withTelemetry(kIntakeRollersMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
-                        .withMotorInverted(true)
-                        .withIdleMode(MotorMode.COAST)
+                        // Intake rollers should stop when idle; use BRAKE to hold zero output.
+                        .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
@@ -153,7 +148,8 @@ public class IntakeRollersSubsystem extends SubsystemBase {
      * to ensure telemetry is time-aligned.
      */
     private void updateInputs() {
-        // Refresh Phoenix signals to ensure telemetry is up-to-date for AdvantageKit/YAMS
+        // Refresh Phoenix signals to ensure telemetry is up-to-date for
+        // AdvantageKit/YAMS
         // Use the centralized helper for consistency with other subsystems.
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
 
@@ -218,9 +214,27 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.set(dutyCycle);
     }
 
-    // region Triggers & events
+    /**
+     * One-shot stop command: immediately disables closed-loop control and sets motor output to
+     * zero,then finishes. Use for imperative immediate stops (non-blocking). This does not hold the
+     * subsystem at zero after completion.
+     */
+    public Command stopNow() {
+        return Commands.runOnce(() -> intakeRollers.set(0), this).withName("IntakeRollersStopNow");
+    }
 
-    // (none yet) — triggers can be added here during wiring in RobotContainer/Systems
-
-    // endregion
+    /**
+     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
+     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
+     * commands are running.
+     */
+    public Command stopHold() {
+        return Commands.run(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("IntakeRollersStopHold");
+    }
 }

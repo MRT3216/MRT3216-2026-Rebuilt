@@ -1,5 +1,4 @@
-// Shooter constants extracted from `Constants.java` for easier maintenance and smaller file churn.
-// @source: measured and tuned by Littleton Robotics team (2025-2026)
+// Shooter constants (flywheel, spindexer, kicker, hood, turret). Tuned by the team.
 package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
@@ -28,11 +27,7 @@ import frc.robot.util.LoggedTunableNumber;
 public final class ShooterConstants {
     private ShooterConstants() {}
 
-    /**
-     * Convergence threshold (meters) used by shot-refinement logic. Placed at the ShooterConstants
-     * level because the refinement is a system-level concern that may be referenced from multiple
-     * shooter-related classes.
-     */
+    /** Convergence threshold (meters) for shot refinement. */
     public static final Distance kRefinementConvergenceEpsilon = Meters.of(0.01); // 1 cm
 
     // Group flywheel-specific constants under a Flywheel section to improve
@@ -45,20 +40,20 @@ public final class ShooterConstants {
         public static final Mass kWheelMass = Pounds.of(3);
         public static final double kGearReduction = 1.0;
 
-        // Electrical / limits
+        // Electrical limits
         public static final Current kStatorCurrentLimit = Amps.of(80);
 
-        // PID (velocity) - set to 0.0 for initial tuning
+        // PID gains (velocity)
         public static final double kP = 0.2;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
-        // Feedforward - set to 0.0 for initial tuning
+        // Feedforward gains
         public static final double kS = 0.35;
         public static final double kV = 0.12;
         public static final double kA = 0.0;
 
-        // Simulation overrides - start at 0.0 until tuned
+        // Simulation overrides
         public static final double kS_sim = 0.0;
         public static final double kV_sim = 0.124;
         public static final double kA_sim = 0.1;
@@ -68,18 +63,15 @@ public final class ShooterConstants {
 
         // Telemetry keys are centralized in TelemetryKeys
 
-        // Recommended target velocities / helper constants
+        // Recommended target velocities
         public static final AngularVelocity kFlywheelDefaultVelocity = RPM.of(3000);
 
-        /**
-         * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
-         * robot.
-         */
+        /** Soft limits (RPM) used for safety and tooling. */
         public static final AngularVelocity kSoftLimitMax = RPM.of(5000.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
-        /** Duration to run the clear routine while the flywheel spins up (seconds). */
+        /** Clear routine duration (seconds). */
         public static final double kClearDurationSecs = 0.25;
 
         /**
@@ -95,7 +87,7 @@ public final class ShooterConstants {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
 
-        /** Tunable: flywheel target RPM (human units: RPM). */
+        /** Tunable: flywheel target RPM. */
         public static final LoggedTunableNumber kTunableFlywheelRPM =
                 new LoggedTunableNumber(
                         "Shooter/FlywheelRPM", kFlywheelDefaultVelocity.in(RPM), Constants.tuningMode);
@@ -111,11 +103,11 @@ public final class ShooterConstants {
     public static final class ShooterModel {
         private ShooterModel() {}
 
-        // Distance bounds for the linear model (meters).
+        // Distance bounds (meters) for the shooter model.
         public static final Distance dMin = Meters.of(1.209);
         public static final Distance dMax = Meters.of(5.005);
 
-        // Flywheel anchor speeds expressed in RPM for easy tuning on-robot.
+        // Flywheel anchor speeds (RPM)
         public static final AngularVelocity kRpmAtMin = RPM.of(2700.0);
         public static final AngularVelocity kRpmAtMax = RPM.of(3300.0);
     }
@@ -126,17 +118,17 @@ public final class ShooterConstants {
         // Mechanical
         public static final double kGearReduction = 5.0;
 
-        /** Roller physical size used by FlyWheel configs. */
-        public static final Distance kWheelDiameter = Inches.of(4);
+        /** Roller diameter. */
+        public static final Distance kWheelDiameter = Inches.of(8);
 
-        /** Roller mass used by FlyWheel configs. */
-        public static final Mass kWheelMass = Pounds.of(0.5);
+        /** Roller mass. */
+        public static final Mass kWheelMass = Pounds.of(2);
 
-        // Motor wiring / limits
+        // Motor wiring and limits
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(60);
 
-        // PID / Feedforward
+        // PID and feedforward
         public static final double kP = 0.02;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
@@ -144,7 +136,7 @@ public final class ShooterConstants {
         public static final double kV = 0.6;
         public static final double kA = 0.0;
 
-        // Simulation-specific feedforward / PID defaults for Spindexer
+        // Simulation-specific defaults
         public static final double kS_sim = 0.0;
         public static final double kV_sim = 0.624;
         public static final double kA_sim = 0.0;
@@ -152,18 +144,15 @@ public final class ShooterConstants {
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
 
-        // Recommended / helper velocities
+        // Recommended velocities
         public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
 
-        /**
-         * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
-         * robot.
-         */
+        /** Soft limit (RPM). */
         public static final AngularVelocity kSoftLimitMax = RPM.of(1500.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
-        /** Returns a preconfigured SimpleMotorFeedforward for the spindexer. */
+        /** Returns a SimpleMotorFeedforward for the spindexer. */
         public static SimpleMotorFeedforward motorFeedforward() {
             return new SimpleMotorFeedforward(kS, kV, kA);
         }
@@ -173,7 +162,7 @@ public final class ShooterConstants {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
 
-        /** Tunable: indexer/spindexer target RPM. */
+        /** Tunable: spindexer target RPM. */
         public static final LoggedTunableNumber kTunableIndexerRPM =
                 new LoggedTunableNumber(
                         "Spindexer/IndexerRPM", kSpindexerTargetAngularVelocity.in(RPM), Constants.tuningMode);
@@ -187,7 +176,7 @@ public final class ShooterConstants {
         public static final Mass kWheelMass = Pounds.of(1);
         public static final double kGearReduction = 1.0;
 
-        // Electrical / limits
+        // Electrical limits
         public static final Current kStatorCurrentLimit = Amps.of(60);
 
         // PID
@@ -212,10 +201,7 @@ public final class ShooterConstants {
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2500.0);
         public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
 
-        /**
-         * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
-         * robot.
-         */
+        /** Soft limit (RPM). */
         public static final AngularVelocity kSoftLimitMax = RPM.of(4000.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
@@ -240,20 +226,15 @@ public final class ShooterConstants {
         private HoodConstants() {}
 
         // Mechanical
-        /** Gearing from motor to hood pivot (ratio). */
         public static final double kGearing = 30.0;
-
-        /** Physical arm length from pivot to hood center (useful for dynamics) */
         public static final Distance kLength = Inches.of(0.5);
-
-        /** Approximate mass of the hood assembly. */
         public static final Mass kMass = Pounds.of(0.1);
 
         // Motor wiring
         public static final boolean kMotorInverted = true;
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
-        // PID & Feedforward
+        // PID and feedforward
         public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
@@ -261,7 +242,7 @@ public final class ShooterConstants {
         public static final double kV = 0.0;
         public static final double kA = 0.0;
 
-        // Simulation-specific feedforward / PID defaults for Hood (tuned for sim)
+        // Simulation-specific defaults for Hood
         public static final double kS_sim = 0.0;
         public static final double kV_sim = 3.7;
         public static final double kA_sim = 0.0;
@@ -275,30 +256,17 @@ public final class ShooterConstants {
         public static final Angle kSoftLimitMax = Degrees.of(30);
         public static final Angle kSoftLimitMin = Degrees.of(0);
 
-        /**
-         * Mechanical offset between the hood's mechanism-zero and the horizontal line.
-         *
-         * <p>Some teams report hood angles with 0° = horizontal or 0° = straight-up. Our mechanism zero
-         * is the hood's lowest position; the horizontal line for the robot is this many degrees above
-         * that zero. Use this constant when converting external angle measurements into
-         * mechanism-relative setpoints.
-         */
         // public static final Angle kHoodHorizontalOffset = Degrees.of(16.574);
 
         public static final Angle kStartingPosition = Degrees.of(0);
-        /** Position tolerance used by runTo and other blocking movements. */
+        /** Position tolerance for runTo (degrees). */
         public static final Angle kTolerance = Degrees.of(0.5);
-        /** Tunable: hood angle in degrees (human units). */
+        /** Tunable: hood angle in degrees. */
         public static final LoggedTunableNumber kTunableHoodAngleDeg =
                 new LoggedTunableNumber(
                         "Shooter/HoodAngleDeg", kStartingPosition.in(Degrees), Constants.tuningMode);
-        /**
-         * Returns a preconfigured SimpleMotorFeedforward for the Hood pivot.
-         *
-         * <p>Notes: - Units: velocity is in rad/s for WPILib SimpleMotorFeedforward. - This is
-         * intentionally a SimpleMotorFeedforward (ks, kv, ka). If the hood becomes heavier or its
-         * gravity term grows, consider switching to ArmFeedforward to include a gravity term.
-         */
+
+        /** Returns a SimpleMotorFeedforward for the hood pivot. */
         public static SimpleMotorFeedforward pivotFeedforward() {
             return new SimpleMotorFeedforward(kS, kV, kA);
         }
@@ -309,12 +277,9 @@ public final class ShooterConstants {
         }
 
         public static final Distance EXTRA_DUCK_DISTANCE = Inches.of(12.0); // inches
-        // TODO: tune this value on the robot. This is the time to go to the duck angle, used for
-        // predictive triggers in ZoneSystem.
-        public static final Time kDuckDuration = Seconds.of(0.5); // seconds
-        // TODO: tune this value on the robot. This is the angle to tilt the hood when we want to duck
-        // under the trench, used for predictive triggers in ZoneSystem.
-        public static final Angle kDuckAngle = Degrees.of(15.0); // degrees
+        // TODO: tune these on robot: duck duration and duck angle.
+        public static final Time kDuckDuration = Seconds.of(0.5);
+        public static final Angle kDuckAngle = Degrees.of(15.0);
     }
 
     public static final class TurretConstants {

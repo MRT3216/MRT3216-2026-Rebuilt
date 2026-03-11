@@ -174,14 +174,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // region Public API (queries & commands)
 
-    public Angle getPosition() {
-        return intakePivotInputs.angle;
-    }
-
-    public Angle getSetpoint() {
-        return intakePivotInputs.setpoint;
-    }
-
     /**
      * Sets the target angle for the intake arm.
      *
@@ -189,7 +181,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-
         return intakePivot.run(angle);
     }
 
@@ -210,12 +201,6 @@ public class IntakePivotSubsystem extends SubsystemBase {
     public Command sysId() {
         return intakePivot.sysId(Volts.of(7), Volts.of(2).per(Second), Seconds.of(4));
     }
-
-    // endregion
-
-    // region Triggers & events
-
-    // (none yet) — trigger wiring is done in RobotContainer/Systems
 
     // endregion
 }

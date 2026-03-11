@@ -45,10 +45,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.local.SparkWrapper;
 
-/**
- * AdvantageKit Kicker Subsystem, capable of replaying the kicker. Subsystem that manages the ball
- * kicker intake/outtake mechanism.
- */
+/** Kicker subsystem: controls the kicker wheel and telemetry. */
 public class KickerSubsystem extends SubsystemBase {
     // region Inputs & telemetry
 
@@ -110,7 +107,9 @@ public class KickerSubsystem extends SubsystemBase {
                         .withTelemetry(kKickerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
-                        .withIdleMode(MotorMode.COAST)
+                        // Kicker should actively stop when idle, use BRAKE so zero output
+                        // results in an immediate halt rather than freewheeling.
+                        .withIdleMode(MotorMode.BRAKE)
                         .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
@@ -198,17 +197,27 @@ public class KickerSubsystem extends SubsystemBase {
         return kicker.set(dutyCycle);
     }
 
-    /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. Use for init/tests. */
-    private void applySetpoint(AngularVelocity speed) {
-        kicker.setMechanismVelocitySetpoint(speed);
+    public Command stopNow() {
+        /**
+         * One-shot stop command: immediately disables closed-loop control and sets motor output to
+         * zero, then finishes. Use for imperative immediate stops (non-blocking). This does not hold
+         * the subsystem at zero after completion.
+         */
+        return Commands.runOnce(() -> kicker.set(0), this).withName("KickerStopNow");
     }
 
     /**
-     * Short one-shot command that imperatively applies a zero velocity setpoint and finishes. Useful
-     * in sequences where we want to stop the mechanism immediately and allow the sequence to proceed
-     * (non-blocking).
+     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
+     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
+     * commands are running.
      */
-    public Command stopNow() {
-        return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("KickerStopNow");
+    public Command stopHold() {
+        return Commands.run(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("KickerStopHold");
     }
 }

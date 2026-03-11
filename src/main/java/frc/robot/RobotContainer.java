@@ -168,23 +168,23 @@ public class RobotContainer {
                         () -> -driverController.getLeftX(),
                         () -> -driverController.getRightX()));
 
-        kickerSubsystem.setDefaultCommand(kickerSubsystem.setDutyCycle(0));
+        // Kicker should stop (do not coast) when idle — use persistent stopHold()
+        // so the subsystem remains at zero output when no one owns it.
+        kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-        // Let spindexer coast by default (no-op default command requires the subsystem
-        // but does not actively drive it to zero). This allows cancelling active
-        // commands to leave the mechanism coasting instead of forcing a stop.
-        spindexerSubsystem.setDefaultCommand(
-                Commands.run(() -> {}, spindexerSubsystem).withName("SpindexerCoastDefault"));
 
-        // Let flywheel coast by default rather than forcing a zero setpoint. Use a
-        // no-op default that requires the subsystem so it becomes the default when
-        // no other commands are running.
-        flywheelSubsystem.setDefaultCommand(
-                Commands.run(() -> {}, flywheelSubsystem).withName("FlywheelCoastDefault"));
+        // Let spindexer coast by default. Use the persistent stopHold() default
+        // which disables closed-loop control and keeps the duty/voltage at zero
+        // while scheduled (the motor idle mode is COAST so it will freewheel).
+        spindexerSubsystem.setDefaultCommand(spindexerSubsystem.stopHold());
 
-        // Ensure intake rollers default to stopped when no command is running
-        intakeRollersSubsystem.setDefaultCommand(intakeRollersSubsystem.setDutyCycle(0));
+        // Let flywheel coast by default rather than forcing a zero setpoint.
+        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
+
+        // Ensure intake rollers default to stopped when no command is running —
+        // they should not coast, so use the persistent stopHold() default.
+        intakeRollersSubsystem.setDefaultCommand(intakeRollersSubsystem.stopHold());
 
         // Ensure intake pivot holds its commanded setpoint when no one owns it so
         // live tuning and dashboard writes persist.
@@ -203,8 +203,6 @@ public class RobotContainer {
             configureTestButtonBindings();
         } else if (Constants.getMode() == Mode.REAL) {
             configureRealButtonBindings();
-        } else {
-            // Default (REPLAY/unknown) — no platform-specific bindings here.
         }
 
         // Reset gyro to 0° when the Start button is pressed (available in both REAL and
@@ -225,7 +223,7 @@ public class RobotContainer {
         // controller.
         driverController
                 .rightTrigger()
-                .onTrue(
+                .whileTrue(
                         shooterSystem.aimAndShoot(
                                 () -> drive.getPose(),
                                 () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
@@ -249,6 +247,7 @@ public class RobotContainer {
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
 
+        driverController.rightBumper().whileTrue(flywheelSubsystem.setTunedVelocity());
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
     }
 

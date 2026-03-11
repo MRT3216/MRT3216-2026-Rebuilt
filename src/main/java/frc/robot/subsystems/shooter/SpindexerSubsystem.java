@@ -44,13 +44,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.local.SparkWrapper;
 
-/**
- * AdvantageKit Spindexer Subsystem for MRT 3216.
- *
- * <p>This subsystem manages a single Neo Vortex spindexer using the YAMS library. It utilizes an
- * IO-layer abstraction for full log replay capabilities, ensuring that hardware states (Inputs) are
- * separated from software commands (Outputs).
- */
+/** Spindexer subsystem (YAMS). Handles the spindexer motor and telemetry. */
 public class SpindexerSubsystem extends SubsystemBase {
     // region Inputs & telemetry
 
@@ -196,25 +190,30 @@ public class SpindexerSubsystem extends SubsystemBase {
     }
 
     /**
-     * Convenience: stop the spindexer via a closed-loop zero-speed command (holds zero while
-     * scheduled).
+     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
+     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
+     * commands are running. If the motor idle mode is COAST, this allows the mechanism to freewheel.
      */
     public Command stopHold() {
-        return setVelocity(RPM.of(0)).withName("SpindexerStopHold");
-    }
-
-    /** Imperative: immediately apply a mechanism velocity setpoint via YAMS. Use for init/tests. */
-    private void applySetpoint(AngularVelocity speed) {
-        spindexer.setMechanismVelocitySetpoint(speed);
+        return Commands.run(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("SpindexerStopHold");
     }
 
     /**
-     * Short one-shot command that imperatively applies a zero velocity setpoint and finishes. Useful
-     * when sequences need to stop the spindexer immediately without holding a long-running zero-speed
-     * command.
+     * One-shot stop command: immediately disables closed-loop control and sets motor output to zero,
+     * then finishes. Use for imperative immediate stops (non-blocking). This does not hold the
+     * subsystem at zero after completion.
      */
     public Command stopNow() {
-        return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("SpindexerStopNow");
+        return runOnce(
+                () -> {
+                    spindexer.set(0);
+                });
     }
 
     // endregion

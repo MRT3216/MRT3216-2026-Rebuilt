@@ -14,6 +14,7 @@ import static frc.robot.constants.ShooterConstants.FlywheelConstants.kP_sim;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMax;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMin;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelDiameter;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelMass;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforward;
@@ -34,7 +35,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-// ShooterConstants not required here after removing convenience tunable helper
 import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -48,7 +48,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
-/** Minimal Flywheel subsystem: exposes closed-loop velocity, open-loop duty, and helpers. */
+/** Flywheel subsystem: velocity control, open-loop duty, and telemetry helpers. */
 public class FlywheelSubsystem extends SubsystemBase {
     // region Inputs & telemetry
 
@@ -66,7 +66,6 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // region Hardware & controller
 
-    // (No outstanding TODOs)
     private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
@@ -167,25 +166,18 @@ public class FlywheelSubsystem extends SubsystemBase {
         return flywheel.setSpeed(supplier);
     }
 
-    // (No convenience helpers here; use supplier-backed `setVelocity(...)` or inline tunable reads.)
-
-    /**
-     * Repeatedly reapplies the provided supplier's value imperatively while the returned command is
-     * scheduled. This is useful when the underlying YAMS command does not re-evaluate a Supplier
-     * after scheduling and we need a running re-applier for live tuning.
-     */
-    public Command followTarget(Supplier<AngularVelocity> supplier) {
-        return Commands.run(() -> applySetpoint(supplier.get()), this).withName("FlywheelFollowTarget");
+    public Command setTunedVelocity() {
+        return this.setVelocity(RPM.of(kTunableFlywheelRPM.get()));
     }
 
     /**
-     * Imperative API: immediately apply a mechanism velocity setpoint via YAMS.
+     * Sets the duty cycle (percent output) for the spindexer.
      *
-     * <p>Use only internally for short one-shot helpers (e.g., {@link #stopNow()}) or for tests. This
-     * is intentionally private to avoid exposing imperative ownership in the public API.
+     * @param dutyCycle The output percentage (-1.0 to 1.0).
+     * @return A command to run the spindexer at the specified duty cycle.
      */
-    private void applySetpoint(AngularVelocity speed) {
-        flywheel.setMechanismVelocitySetpoint(speed);
+    public Command setDutyCycle(double dutyCycle) {
+        return flywheel.set(dutyCycle);
     }
 
     /**
@@ -193,6 +185,26 @@ public class FlywheelSubsystem extends SubsystemBase {
      * in sequences where an immediate non-blocking stop is required.
      */
     public Command stopNow() {
-        return Commands.runOnce(() -> applySetpoint(RPM.of(0)), this).withName("FlywheelStopNow");
+        return runOnce(
+                () -> {
+                    flywheel.set(0);
+                });
     }
+
+    /**
+     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
+     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
+     * commands are running. If the motor idle mode is COAST, this allows the mechanism to freewheel.
+     */
+    public Command stopHold() {
+        return Commands.run(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("FlywheelStopHold");
+    }
+
+    // #endregion
 }

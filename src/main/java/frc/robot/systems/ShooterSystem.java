@@ -67,8 +67,7 @@ public class ShooterSystem {
     // region Public API (queries & commands)
 
     private Command clearThenFeed() {
-        // Start the short clear routine, then feed immediately after the clear completes.
-        // We intentionally do not wait for the flywheel to reach speed.
+        // Run a short reverse clear, then feed. Do not wait for flywheel spin-up here.
         return clearKicker()
                 .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()))
                 .withName("ClearThenFeed");
@@ -80,8 +79,7 @@ public class ShooterSystem {
      * @return a command that executes the clear routine
      */
     public Command clearKicker() {
-        // Use small negative closed-loop velocities to clear any jammed balls.
-        // Closed-loop ensures repeatable behavior across real and sim.
+        // Brief closed-loop reverse motion to clear jams, then stop.
         return kicker
                 .setVelocity(kKickerClearAngularVelocity)
                 .withTimeout(kClearDurationSecs)
@@ -93,15 +91,17 @@ public class ShooterSystem {
      * Test-mode shoot: use tunable/constant setpoints for hood and flywheel, do not aim the turret or
      * run any auto-adjustment. Runs a short clear routine and then feeds.
      */
+    /**
+     * Test-mode shoot: use the dashboard tunable for hood angle and a tuned flywheel velocity. Does a
+     * short clear then feeds. The hood angle is read from the LoggedTunableNumber at runtime via a
+     * Supplier so dashboard edits take effect immediately while this command is active.
+     */
     public Command testShoot() {
-        var hoodRun = hood.runTo(Degrees.of(kTunableHoodAngleDeg.get())).withTimeout(5);
+        var hoodRun = hood.setAngle(() -> Degrees.of(kTunableHoodAngleDeg.get())).withTimeout(5);
 
-        // First move the hood to the tuned angle (this command completes when the
-        // hood reaches its target), then run flywheel + clear-then-feed routine in parallel
-        // before feeding.
-        return hoodRun
-                .andThen(flywheel.runToTunedVelocity().alongWith(clearThenFeed()))
-                .withName("TestShoot");
+        var sequence = hoodRun.andThen(flywheel.runToTunedVelocity().alongWith(clearThenFeed()));
+
+        return Commands.parallel(sequence).withName("TestShoot");
     }
 
     /**
@@ -235,11 +235,12 @@ public class ShooterSystem {
      *
      * @return a Command that cancels shooting activity and brings mechanisms to a safe idle
      */
+    /**
+     * Interrupt any active shooting commands. This cancels pipelines but does not command zero
+     * setpoints (allowing flywheel/spindexer to coast). Use {@code stopNow()} / {@code stopHold()} on
+     * subsystems when an explicit stop is required.
+     */
     public Command interruptShooting() {
-        // Interrupt active shooter pipelines and allow mechanisms to return to their
-        // default behavior. This intentionally does NOT issue zero-setpoints so the
-        // flywheel and spindexer may coast after cancellation. Use explicit
-        // stopNow()/stopHold() on subsystems when an immediate zero is required.
         return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood)
                 .withName("InterruptShooting");
     }

@@ -7,6 +7,8 @@
 
 package frc.robot;
 
+import static frc.robot.constants.IntakeConstants.Rollers.kTargetAngularVelocity;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -243,12 +245,15 @@ public class RobotContainer {
      * experimenting.
      */
     public void configureTestButtonBindings() {
-        driverController.a().whileTrue(intakePivotSubsystem.set(-0.10));
-        driverController.b().whileTrue(intakePivotSubsystem.set(0.10));
+        // driverController.a().whileTrue(intakePivotSubsystem.set(-0.10));
+        // driverController.b().whileTrue(intakePivotSubsystem.set(0.10));
+        driverController.a().whileTrue(flywheelSubsystem.setToTunedVelocity());
+        driverController.b().whileTrue(intakeRollersSubsystem.setVelocity(kTargetAngularVelocity));
+
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
 
-        driverController.rightBumper().whileTrue(flywheelSubsystem.setTunedVelocity());
+        // driverController.leftBumper().whileTrue(intakeSystem.intake());
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
     }
 

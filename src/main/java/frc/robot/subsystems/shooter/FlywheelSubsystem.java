@@ -158,9 +158,10 @@ public class FlywheelSubsystem extends SubsystemBase {
         return flywheel.setSpeed(supplier);
     }
 
-    public Command setTunedVelocity() {
+    public Command setToTunedVelocity() {
         return this.setVelocity(RPM.of(kTunableFlywheelRPM.get()));
     }
+
     /**
      * Run the flywheel to the tuned velocity and finish when within tolerance.
      *

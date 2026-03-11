@@ -65,6 +65,7 @@ public final class ShooterConstants {
 
         // Recommended target velocities
         public static final AngularVelocity kFlywheelDefaultVelocity = RPM.of(3000);
+        public static final AngularVelocity kVelocityTolerance = RPM.of(30);
 
         /** Soft limits (RPM) used for safety and tooling. */
         public static final AngularVelocity kSoftLimitMax = RPM.of(5000.0);
@@ -259,6 +260,7 @@ public final class ShooterConstants {
         // public static final Angle kHoodHorizontalOffset = Degrees.of(16.574);
 
         public static final Angle kStartingPosition = Degrees.of(0);
+
         /** Position tolerance for runTo (degrees). */
         public static final Angle kTolerance = Degrees.of(0.5);
         /** Tunable: hood angle in degrees. */

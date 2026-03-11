@@ -233,7 +233,7 @@ public class RobotContainer {
                                 ShootingLookupTable.Mode.HUB));
 
         // Left trigger remains a manual stop if needed
-        driverController.leftTrigger().onTrue(shooterSystem.stopShooting());
+        driverController.leftTrigger().onTrue(shooterSystem.interruptShooting());
     }
 
     /**

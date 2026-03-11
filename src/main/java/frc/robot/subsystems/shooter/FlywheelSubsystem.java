@@ -15,6 +15,7 @@ import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitM
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMin;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kStatorCurrentLimit;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kVelocityTolerance;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelDiameter;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelMass;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforward;
@@ -145,15 +146,6 @@ public class FlywheelSubsystem extends SubsystemBase {
     // region Public API (queries & commands)
 
     /**
-     * Returns the last-measured velocity for the flywheel.
-     *
-     * @return measured AngularVelocity of the flywheel
-     */
-    public AngularVelocity getVelocity() {
-        return flywheelInputs.velocity;
-    }
-
-    /**
      * Command-returning API: set the flywheel closed-loop velocity while the returned Command is
      * scheduled. Prefer this for command-based flows and button bindings.
      */
@@ -169,32 +161,29 @@ public class FlywheelSubsystem extends SubsystemBase {
     public Command setTunedVelocity() {
         return this.setVelocity(RPM.of(kTunableFlywheelRPM.get()));
     }
-
     /**
-     * Sets the duty cycle (percent output) for the spindexer.
+     * Run the flywheel to the tuned velocity and finish when within tolerance.
      *
-     * @param dutyCycle The output percentage (-1.0 to 1.0).
-     * @return A command to run the spindexer at the specified duty cycle.
+     * <p>Prefer this when you need a composition that should progress after the flywheel reaches
+     * setpoint (for example: move hood -> runTo flywheel -> feed). This returns the finite YAMS
+     * command produced by {@code flywheel.runTo(...)} which completes when the mechanism reaches the
+     * target within {@code kVelocityTolerance}.
      */
-    public Command setDutyCycle(double dutyCycle) {
-        return flywheel.set(dutyCycle);
+    public Command runToTunedVelocity() {
+        return flywheel.runTo(RPM.of(kTunableFlywheelRPM.get()), kVelocityTolerance);
     }
 
     /**
-     * Short one-shot command that imperatively applies a zero velocity setpoint and finishes. Useful
-     * in sequences where an immediate non-blocking stop is required.
+     * One-shot immediate stop: disables closed-loop control and sets motor output to zero, then
+     * finishes. Use when you need an imperative, non-blocking stop in a sequence.
      */
     public Command stopNow() {
-        return runOnce(
-                () -> {
-                    flywheel.set(0);
-                });
+        return Commands.runOnce(() -> flywheel.set(0), this).withName("FlywheelStopNow");
     }
 
     /**
      * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
-     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
-     * commands are running. If the motor idle mode is COAST, this allows the mechanism to freewheel.
+     * zero. Use as the default command to keep the mechanism at zero when idle.
      */
     public Command stopHold() {
         return Commands.run(
@@ -206,5 +195,5 @@ public class FlywheelSubsystem extends SubsystemBase {
                 .withName("FlywheelStopHold");
     }
 
-    // #endregion
+    // endregion
 }

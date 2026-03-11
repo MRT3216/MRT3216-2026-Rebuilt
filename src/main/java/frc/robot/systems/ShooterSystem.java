@@ -24,7 +24,6 @@ import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.AllianceFlipUtil;
-import frc.robot.util.FuelSim;
 import frc.robot.util.geometry.Zones;
 import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShooterModel;
@@ -63,13 +62,6 @@ public class ShooterSystem {
         this.hood = hood;
     }
 
-    // Optional FuelSim for trajectory visualization. Null when not in simulation or not registered.
-    private FuelSim fuelSim = null;
-
-    public void setFuelSim(FuelSim sim) {
-        this.fuelSim = sim;
-    }
-
     // endregion
 
     // region Public API (queries & commands)
@@ -103,7 +95,7 @@ public class ShooterSystem {
     public Command testShoot() {
         var hoodRun = hood.setAngle(() -> Degrees.of(kTunableHoodAngleDeg.get())).withTimeout(5);
 
-        var sequence = hoodRun.andThen(flywheel.runToTunedVelocity().alongWith(clearThenFeed()));
+        var sequence = flywheel.runToTunedVelocity().alongWith(clearThenFeed());
 
         return Commands.parallel(sequence).withName("TestShoot");
     }
@@ -205,16 +197,7 @@ public class ShooterSystem {
     }
 
     private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
-        return Commands.sequence(
-                        clearKicker(),
-                        Commands.runOnce(
-                                () -> {
-                                    if (fuelSim != null) {
-                                        var sol = solutionSupplier.get();
-                                        fuelSim.launchFromShotSolution(sol, sol.hoodAngle());
-                                    }
-                                }),
-                        spindexer.feedShooter().alongWith(kicker.feedShooter()))
+        return Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()))
                 .withName("FeedSequence");
     }
 

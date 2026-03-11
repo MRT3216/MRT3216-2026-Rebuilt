@@ -325,26 +325,5 @@ public final class ShooterConstants {
         // public static final Angle kSoftLimitMax = Degrees.of(360);
         // public static final Angle kSoftLimitMin = Degrees.of(0);
         public static final Angle kStartingPosition = Degrees.of(0);
-
-        /**
-         * Extra clearance above the kicker that the ball must clear on its way out. Used by
-         * TurretCalculator's funnel-clearance shot algorithm.
-         */
-        public static final Distance kDistanceAboveKicker = Inches.of(6.0);
-
-        /**
-         * Additional height above the funnel top that the ball must clear when using the physics-based
-         * funnel-clearance solver in {@link frc.robot.util.TurretCalculator}. Larger values are more
-         * conservative (miss-safe); smaller values allow longer shots.
-         */
-        public static final Distance kDistanceAboveFunnel = Inches.of(4.0);
-
-        /**
-         * Flywheel radius convenience constant for speed ↔ linear-velocity conversions in {@link
-         * frc.robot.util.TurretCalculator} and {@link frc.robot.util.FuelSim}.
-         */
-        public static final Distance kFlywheelRadius = FlywheelConstants.kWheelDiameter.div(2);
-
-        // Telemetry keys are centralized in TelemetryKeys
     }
 }

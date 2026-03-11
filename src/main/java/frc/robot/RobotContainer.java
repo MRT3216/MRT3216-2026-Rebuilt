@@ -7,7 +7,9 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.constants.IntakeConstants.Rollers.kTargetAngularVelocity;
+import static frc.robot.constants.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -35,15 +37,9 @@ import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
-import frc.robot.subsystems.vision.Vision;
-import frc.robot.subsystems.vision.VisionConstants;
-import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOPhotonVision;
-import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
-import frc.robot.util.FuelSim;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -59,7 +55,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
     // Subsystems
     private final Drive drive;
-    private final Vision vision;
+    // private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
@@ -72,9 +68,6 @@ public class RobotContainer {
     private final ShooterSystem shooterSystem =
             new ShooterSystem(
                     flywheelSubsystem, kickerSubsystem, spindexerSubsystem, turretSubsystem, hoodSubsystem);
-
-    // Fuel physics sim — active in SIM mode only, null on real robot.
-    private final FuelSim fuelSim;
 
     private final IntakeSystem intakeSystem =
             new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
@@ -103,17 +96,19 @@ public class RobotContainer {
                                     new ModuleIOTalonFX(TunerConstants.FrontRight),
                                     new ModuleIOTalonFX(TunerConstants.BackLeft),
                                     new ModuleIOTalonFX(TunerConstants.BackRight));
-                    fuelSim = null;
 
-                    vision =
-                            new Vision(
-                                    drive::addVisionMeasurement,
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraFrontName, VisionConstants.robotToCameraLeft),
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
-                                    new VisionIOPhotonVision(
-                                            VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
+                    //     vision =
+                    //             new Vision(
+                    //                     drive::addVisionMeasurement,
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraFrontName,
+                    // VisionConstants.robotToCameraLeft),
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraRightName,
+                    // VisionConstants.robotToCameraRight),
+                    //                     new VisionIOPhotonVision(
+                    //                             VisionConstants.cameraBackName,
+                    // VisionConstants.robotToCameraBack));
 
                     break;
                 }
@@ -128,34 +123,21 @@ public class RobotContainer {
                                     new ModuleIOSim(TunerConstants.BackLeft),
                                     new ModuleIOSim(TunerConstants.BackRight));
 
-                    // Set up FuelSim: register robot dimensions, hook into the shooter, and
-                    // start the simulation with the standard field-game starting fuel layout.
-                    fuelSim = new FuelSim("/FuelSim");
-                    fuelSim.registerRobot(
-                            frc.robot.constants.Dimensions.FULL_WIDTH,
-                            frc.robot.constants.Dimensions.FULL_LENGTH,
-                            frc.robot.constants.Dimensions.BUMPER_HEIGHT,
-                            drive::getPose,
-                            drive::getFieldRelativeSpeeds);
-                    fuelSim.spawnStartingFuel();
-                    fuelSim.start();
-                    shooterSystem.setFuelSim(fuelSim);
-
-                    vision =
-                            new Vision(
-                                    drive::addVisionMeasurement,
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraFrontName,
-                                            VisionConstants.robotToCameraLeft,
-                                            drive::getPose),
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraRightName,
-                                            VisionConstants.robotToCameraRight,
-                                            drive::getPose),
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraBackName,
-                                            VisionConstants.robotToCameraBack,
-                                            drive::getPose));
+                    //     vision =
+                    //             new Vision(
+                    //                     drive::addVisionMeasurement,
+                    //                     new VisionIOPhotonVisionSim(
+                    //                             VisionConstants.cameraFrontName,
+                    //                             VisionConstants.robotToCameraLeft,
+                    //                             drive::getPose),
+                    //                     new VisionIOPhotonVisionSim(
+                    //                             VisionConstants.cameraRightName,
+                    //                             VisionConstants.robotToCameraRight,
+                    //                             drive::getPose),
+                    //                     new VisionIOPhotonVisionSim(
+                    //                             VisionConstants.cameraBackName,
+                    //                             VisionConstants.robotToCameraBack,
+                    //                             drive::getPose));
 
                     break;
                 }
@@ -170,9 +152,8 @@ public class RobotContainer {
                                     new ModuleIO() {},
                                     new ModuleIO() {},
                                     new ModuleIO() {});
-                    fuelSim = null;
                     // (Use same number of dummy implementations as the real robot)
-                    vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+                    // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
                     break;
                 }
         }
@@ -270,9 +251,12 @@ public class RobotContainer {
 
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
-        driverController.leftBumper().whileTrue((hoodSubsystem.setDutyCycle(-0.1)));
-        driverController.rightBumper().whileTrue((hoodSubsystem.setDutyCycle(0.1)));
+        // driverController.leftBumper().whileTrue((hoodSubsystem.setDutyCycle(-0.1)));
+        // driverController.rightBumper().whileTrue((hoodSubsystem.setDutyCycle(0.1)));
 
+        driverController
+                .rightBumper()
+                .onTrue(hoodSubsystem.setAngle(() -> Degrees.of(kTunableHoodAngleDeg.get())));
         // driverController.leftBumper().whileTrue(intakeSystem.intake());
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
     }

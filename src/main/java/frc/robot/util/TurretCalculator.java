@@ -4,11 +4,8 @@
 //   - Uses MRT3216's FieldConstants and ShooterConstants directly
 //   - Integrates with ShootingLookupTable instead of a custom TreeMap
 //   - Early-exit convergence for iterative methods mirrors HybridTurretUtil
-//   - ShotData bridges directly to FuelSim.launchFromShotData()
 package frc.robot.util;
 
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Radians;
@@ -16,7 +13,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelDiameter;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kDistanceAboveFunnel;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kRobotToTurretTransform;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kSoftLimitMax;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kSoftLimitMin;
@@ -37,31 +33,7 @@ import frc.robot.constants.FieldConstants;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.Logger;
 
-/**
- * Physics-based turret calculator for shoot-on-the-fly scenarios.
- *
- * <p>Provides two shooting modes:
- *
- * <ul>
- *   <li><b>Funnel-clearance</b> – derives exit velocity and hood angle purely from geometry so the
- *       ball just clears the funnel rim and enters the hub. No lookup table needed. Use when you
- *       want physics-accurate simulation or when the table is unavailable.
- *   <li><b>Map-based</b> – wraps {@link ShootingLookupTable} with iterative time-of-flight
- *       refinement to account for robot motion (same algorithm as {@link HybridTurretUtil}). Use
- *       during the actual match where tuned values matter.
- * </ul>
- *
- * <p>Results are returned as {@link ShotData}, which bridges directly to {@link
- * FuelSim#launchFromShotData} for visualising trajectories in AdvantageScope.
- *
- * <p>Angle convention used throughout this class (matches hammerheads5000 original):<br>
- * {@code hoodAngle = 0} → straight up (vertical), {@code hoodAngle = PI/2} → horizontal.<br>
- * FuelSim uses the inverse convention (elevation from horizontal), so {@link
- * FuelSim#launchFromShotData} performs the conversion automatically.
- *
- * @see FuelSim#launchFromShotData
- * @see HybridTurretUtil
- */
+
 public class TurretCalculator {
 
     // Compression / slip factor for flywheel → ball-speed conversion.
@@ -173,123 +145,7 @@ public class TurretCalculator {
                 target.getZ());
     }
 
-    // ── Physics-based shot (funnel-clearance) ────────────────────────────────────
-
-    /**
-     * Compute exit velocity and hood angle purely from geometry so the ball clears the funnel rim and
-     * enters the hub opening.
-     *
-     * <p>The algorithm solves a system of two parabolic equations:
-     *
-     * <ol>
-     *   <li>Ball must reach the horizontal distance to the (predicted) target.
-     *   <li>Ball must just clear the near edge of the funnel at a height of {@code FUNNEL_HEIGHT +
-     *       kDistanceAboveFunnel}.
-     * </ol>
-     *
-     * <p>See the Desmos derivation: <a
-     * href="https://www.desmos.com/calculator/ezjqolho6g">desmos.com/calculator/ezjqolho6g</a>
-     *
-     * @param robot current robot pose
-     * @param actualTarget true hub centre (used to scale funnel radius proportionally)
-     * @param predictedTarget where the target appears to be after accounting for robot motion
-     * @return {@link ShotData} with angular exit velocity, hood angle, and target
-     */
-    public static ShotData calculateShotFromFunnelClearance(
-            Pose2d robot, Translation3d actualTarget, Translation3d predictedTarget) {
-
-        // All math performed in inches to match the Desmos derivation.
-        double x_dist = getDistanceToTarget(robot, predictedTarget).in(Inches);
-        double y_dist =
-                predictedTarget.getMeasureZ().minus(kRobotToTurretTransform.getMeasureZ()).in(Inches);
-        double g = 386.0; // in/s²
-
-        // Funnel radius scaled by how far the predicted target is vs the actual target.
-        // Guarantees the ball clears the rim even when the target has been "moved" for lead.
-        double actualDist = getDistanceToTarget(robot, actualTarget).in(Inches);
-        double r =
-                FieldConstants.FUNNEL_RADIUS.in(Inches) * x_dist / (actualDist > 0 ? actualDist : 1.0);
-        double h = FieldConstants.FUNNEL_HEIGHT.plus(kDistanceAboveFunnel).in(Inches);
-
-        // Two-constraint system: reach target XY (A1, B1, D1) and clear funnel (A2, B2, D2)
-        double A1 = x_dist * x_dist;
-        double B1 = x_dist;
-        double D1 = y_dist;
-        double A2 = -x_dist * x_dist + (x_dist - r) * (x_dist - r);
-        double B2 = -r;
-        double D2 = h;
-        double Bm = -B2 / B1;
-        double A3 = Bm * A1 + A2;
-        double D3 = Bm * D1 + D2;
-
-        double a = D3 / A3;
-        double b = (D1 - A1 * a) / B1;
-        double theta = Math.atan(b); // elevation angle from horizontal
-        double v0 = Math.sqrt(-g / (2.0 * a * Math.cos(theta) * Math.cos(theta)));
-
-        if (Double.isNaN(v0) || Double.isNaN(theta)) {
-            v0 = 0;
-            theta = 0;
-        }
-
-        // Convert elevation angle → hoodAngle convention (from vertical)
-        return new ShotData(
-                linearToAngularVelocity(InchesPerSecond.of(v0)),
-                Radians.of(Math.PI / 2.0 - theta),
-                predictedTarget);
-    }
-
-    // ── Iterative moving-shot (funnel-clearance) ─────────────────────────────────
-
-    /**
-     * Iterative version of {@link #calculateShotFromFunnelClearance} that accounts for robot motion
-     * by refining the time-of-flight estimate across multiple passes.
-     *
-     * <p>On the first pass the robot is treated as stationary to get a time-of-flight estimate.
-     * Subsequent passes move the "virtual" target and recompute until convergence.
-     *
-     * @param robot current robot pose
-     * @param fieldSpeeds field-relative chassis speeds
-     * @param target true 3D hub position
-     * @param iterations refinement passes (2–4 is usually sufficient)
-     * @return refined {@link ShotData}
-     */
-    public static ShotData iterativeMovingShotFromFunnelClearance(
-            Pose2d robot, ChassisSpeeds fieldSpeeds, Translation3d target, int iterations) {
-
-        // Pass 0: stationary estimate
-        ShotData shot = calculateShotFromFunnelClearance(robot, target, target);
-        Distance distance = getDistanceToTarget(robot, target);
-        Time tof = calculateTimeOfFlight(shot.getLinearExitVelocity(), shot.getHoodAngle(), distance);
-        Translation3d predictedTarget = target;
-
-        for (int i = 0; i < iterations; i++) {
-            predictedTarget = predictTargetPos(target, fieldSpeeds, tof);
-            shot = calculateShotFromFunnelClearance(robot, target, predictedTarget);
-            tof =
-                    calculateTimeOfFlight(
-                            shot.getLinearExitVelocity(),
-                            shot.getHoodAngle(),
-                            getDistanceToTarget(robot, predictedTarget));
-        }
-        return shot;
-    }
-
     // ── Iterative moving-shot (lookup table) ─────────────────────────────────────
-
-    /**
-     * Iterative moving shot using the {@link ShootingLookupTable} for tuned parameters.
-     *
-     * <p>This mirrors {@link HybridTurretUtil#computeMovingShot} but returns a {@link ShotData} that
-     * includes the predicted target position (useful for FuelSim launching and telemetry).
-     *
-     * @param robot current robot pose
-     * @param fieldSpeeds field-relative chassis speeds
-     * @param target true 3D hub position
-     * @param iterations refinement passes (2–4 is usually sufficient)
-     * @param table the shooting lookup table to use
-     * @return refined {@link ShotData}
-     */
     public static ShotData iterativeMovingShotFromMap(
             Pose2d robot,
             ChassisSpeeds fieldSpeeds,
@@ -326,17 +182,6 @@ public class TurretCalculator {
 
     // ── ShotData record ──────────────────────────────────────────────────────────
 
-    /**
-     * Immutable result of a shot calculation.
-     *
-     * <p><b>Angle convention</b>: {@code hoodAngle} is measured from vertical (0 = straight up, PI/2
-     * = horizontal). This is the inverse of the FuelSim elevation convention; {@link
-     * FuelSim#launchFromShotData} handles the conversion.
-     *
-     * @param exitVelocity flywheel angular exit velocity in rad/s (raw)
-     * @param hoodAngle hood angle from vertical in radians
-     * @param target predicted 3D field target used for this solution
-     */
     public record ShotData(double exitVelocity, double hoodAngle, Translation3d target) {
 
         /** Construct from typed units (preferred). */

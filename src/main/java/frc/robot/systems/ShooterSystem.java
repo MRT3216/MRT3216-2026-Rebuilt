@@ -26,10 +26,10 @@ import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.AllianceFlipUtil;
-import frc.robot.util.HybridTurretUtil;
-import frc.robot.util.ShooterModel;
-import frc.robot.util.ShootingLookupTable;
 import frc.robot.util.Zones;
+import frc.robot.util.shooter.HybridTurretUtil;
+import frc.robot.util.shooter.ShooterModel;
+import frc.robot.util.shooter.ShootingLookupTable;
 import java.util.function.Supplier;
 
 /**

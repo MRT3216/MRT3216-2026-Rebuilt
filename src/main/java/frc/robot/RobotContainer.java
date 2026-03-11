@@ -42,6 +42,7 @@ import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.RobotMapValidator;
+import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -229,7 +230,7 @@ public class RobotContainer {
                                 () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
                                 () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                                 3,
-                                frc.robot.util.ShootingLookupTable.Mode.HUB));
+                                ShootingLookupTable.Mode.HUB));
 
         // Left trigger remains a manual stop if needed
         driverController.leftTrigger().onTrue(shooterSystem.stopShooting());

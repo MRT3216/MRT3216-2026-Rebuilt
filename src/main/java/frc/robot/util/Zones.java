@@ -215,6 +215,33 @@ public class Zones {
     public static final PredictiveXZoneCollection BUMP_ZONES =
             new PredictiveXZoneCollection(BLUE_BOTTOM_BUMP, BLUE_TOP_BUMP, RED_BOTTOM_BUMP, RED_TOP_BUMP);
 
+    private static final PredictiveXBaseZone BLUE_ALLIANCE_ZONE =
+            new PredictiveXBaseZone(
+                    Meters.of(0), // Starting at the Blue Alliance wall
+                    FieldConstants.ALLIANCE_ZONE, // Distance out to the zone line
+                    Meters.of(0), // Bottom of the field
+                    FieldConstants.FIELD_WIDTH // Top of the field
+                    );
+
+    private static final PredictiveXBaseZone RED_ALLIANCE_ZONE = BLUE_ALLIANCE_ZONE.mirroredX();
+
+    public static final PredictiveXZoneCollection ALLIANCE_ZONES =
+            new PredictiveXZoneCollection(BLUE_ALLIANCE_ZONE, RED_ALLIANCE_ZONE);
+
+    private static final PredictiveXBaseZone NEUTRAL_ZONE =
+            new PredictiveXBaseZone(
+                    FieldConstants.ALLIANCE_ZONE.plus(
+                            FieldConstants.BUMP_WIDTH), // Starting at the Blue Alliance zone line
+                    FieldConstants.FIELD_LENGTH.minus(
+                            FieldConstants.ALLIANCE_ZONE.plus(
+                                    FieldConstants.BUMP_WIDTH)), // Ending at the Red Alliance zone line
+                    Meters.of(0), // Bottom of the field
+                    FieldConstants.FIELD_WIDTH // Top of the field
+                    );
+
+    public static final PredictiveXZoneCollection NEUTRAL_ZONES =
+            new PredictiveXZoneCollection(NEUTRAL_ZONE);
+
     public static void logAllZones() {
         Logger.recordOutput("Zones/Trenches/Blue Bottom", BLUE_BOTTOM_TRENCH.getCorners());
         Logger.recordOutput("Zones/Trenches/Blue Top", BLUE_TOP_TRENCH.getCorners());
@@ -230,5 +257,9 @@ public class Zones {
         Logger.recordOutput("Zones/Bumps/Blue Top", BLUE_TOP_BUMP.getCorners());
         Logger.recordOutput("Zones/Bumps/Red Bottom", RED_BOTTOM_BUMP.getCorners());
         Logger.recordOutput("Zones/Bumps/Red Top", RED_TOP_BUMP.getCorners());
+
+        Logger.recordOutput("Zones/Alliance Zones/Blue", BLUE_ALLIANCE_ZONE.getCorners());
+        Logger.recordOutput("Zones/Alliance Zones/Red", RED_ALLIANCE_ZONE.getCorners());
+        Logger.recordOutput("Zones/Neutral Zone", NEUTRAL_ZONE.getCorners());
     }
 }

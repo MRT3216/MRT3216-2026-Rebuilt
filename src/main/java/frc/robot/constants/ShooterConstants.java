@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -20,6 +21,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.units.measure.MomentOfInertia;
+import edu.wpi.first.units.measure.Time;
 import frc.robot.util.LoggedTunableNumber;
 
 /** Flywheel shooter constants: wheel geometry, control gains, and velocities. */
@@ -305,6 +307,12 @@ public final class ShooterConstants {
         }
 
         public static final Distance EXTRA_DUCK_DISTANCE = Inches.of(12.0); // inches
+        // TODO: tune this value on the robot. This is the time to go to the duck angle, used for
+        // predictive triggers in ZoneSystem.
+        public static final Time kDuckDuration = Seconds.of(0.5); // seconds
+        // TODO: tune this value on the robot. This is the angle to tilt the hood when we want to duck
+        // under the trench, used for predictive triggers in ZoneSystem.
+        public static final Angle kDuckAngle = Degrees.of(15.0); // degrees
     }
 
     public static final class TurretConstants {

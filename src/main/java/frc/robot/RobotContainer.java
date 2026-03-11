@@ -197,13 +197,14 @@ public class RobotContainer {
     }
 
     private void configureButtonBindings() {
-        if (Constants.getMode() == Mode.SIM || Constants.tuningMode) {
+        if (Constants.tuningMode) {
+            configureTestButtonBindings();
+        } else if (Constants.getMode() == Mode.SIM) {
             configureTestButtonBindings();
         } else if (Constants.getMode() == Mode.REAL) {
             configureRealButtonBindings();
         } else {
             // Default (REPLAY/unknown) — no platform-specific bindings here.
-
         }
 
         // Reset gyro to 0° when the Start button is pressed (available in both REAL and
@@ -224,7 +225,7 @@ public class RobotContainer {
         // controller.
         driverController
                 .rightTrigger()
-                .whileTrue(
+                .onTrue(
                         shooterSystem.aimAndShoot(
                                 () -> drive.getPose(),
                                 () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
@@ -243,8 +244,12 @@ public class RobotContainer {
      * experimenting.
      */
     public void configureTestButtonBindings() {
-        operatorController.a().whileTrue(intakePivotSubsystem.set(-0.10));
-        operatorController.b().whileTrue(intakePivotSubsystem.set(0.10));
+        driverController.a().whileTrue(intakePivotSubsystem.set(-0.10));
+        driverController.b().whileTrue(intakePivotSubsystem.set(0.10));
+        driverController.x().whileTrue(spindexerSubsystem.feedShooter());
+        driverController.y().whileTrue(kickerSubsystem.feedShooter());
+
+        driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
     }
 
     // Centralized reset-gyro command so multiple bindings can reuse the same

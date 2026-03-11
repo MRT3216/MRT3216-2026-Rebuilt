@@ -29,6 +29,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -172,7 +173,7 @@ public class KickerSubsystem extends SubsystemBase {
      * Set the kicker velocity.
      *
      * @param speed Speed to set.
-     * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
+     * @return {@link RunCommand}
      */
     public Command setVelocity(AngularVelocity speed) {
         return kicker.setSpeed(speed);
@@ -191,7 +192,7 @@ public class KickerSubsystem extends SubsystemBase {
      * Set the dutycycle of the kicker.
      *
      * @param dutyCycle DutyCycle to set.
-     * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
+     * @return {@link RunCommand}
      */
     public Command setDutyCycle(double dutyCycle) {
         return kicker.set(dutyCycle);

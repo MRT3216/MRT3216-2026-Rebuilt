@@ -130,13 +130,14 @@ public class ShooterSystem {
      * run any auto-adjustment. Runs a short clear routine and then feeds.
      */
     public Command testShoot() {
-        var hoodCmd =
-                hood.setAngle(() -> Degrees.of(ShooterConstants.HoodConstants.kTunableHoodAngleDeg.get()));
+        var hoodRun = hood.runTo(Degrees.of(ShooterConstants.HoodConstants.kTunableHoodAngleDeg.get()));
         var flywheelCmd = flywheel.setVelocity(RPM.of(kTunableFlywheelRPM.get()));
 
-        return hoodCmd
-                .alongWith(flywheelCmd)
-                .andThen(clearKicker())
+        // First move the hood to the tuned angle (this command completes when the
+        // hood reaches its target), then run flywheel + clear routine in parallel
+        // before feeding.
+        return hoodRun
+                .andThen(Commands.parallel(flywheelCmd, clearKicker()))
                 .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()))
                 .withName("TestShoot");
     }

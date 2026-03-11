@@ -103,8 +103,8 @@ public final class ShooterConstants {
      * Simple two-point shooter model constants used for a lightweight linear RPM model.
      *
      * <p>Values are unit-aware. Distances are stored as {@link Distance} and flywheel anchors are
-     * stored as {@link edu.wpi.first.units.measure.AngularVelocity} using RPM units so they are
-     * friendly for tuning with RPM values.
+     * stored as {@link AngularVelocity} using RPM units so they are friendly for tuning with RPM
+     * values.
      */
     public static final class ShooterModel {
         private ShooterModel() {}
@@ -114,8 +114,8 @@ public final class ShooterConstants {
         public static final Distance dMax = Meters.of(5.005);
 
         // Flywheel anchor speeds expressed in RPM for easy tuning on-robot.
-        public static final edu.wpi.first.units.measure.AngularVelocity kRpmAtMin = RPM.of(2700.0);
-        public static final edu.wpi.first.units.measure.AngularVelocity kRpmAtMax = RPM.of(3300.0);
+        public static final AngularVelocity kRpmAtMin = RPM.of(2700.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(3300.0);
     }
 
     public static final class SpindexerConstants {
@@ -284,6 +284,8 @@ public final class ShooterConstants {
         // public static final Angle kHoodHorizontalOffset = Degrees.of(16.574);
 
         public static final Angle kStartingPosition = Degrees.of(0);
+        /** Position tolerance used by runTo and other blocking movements. */
+        public static final Angle kTolerance = Degrees.of(0.5);
         /** Tunable: hood angle in degrees (human units). */
         public static final LoggedTunableNumber kTunableHoodAngleDeg =
                 new LoggedTunableNumber(

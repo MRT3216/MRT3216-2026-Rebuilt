@@ -4,8 +4,6 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.IntakeConstants.Pivot.kLength;
-import static frc.robot.constants.IntakeConstants.Pivot.kMass;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kD;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kD_sim;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kGearing;
@@ -13,6 +11,8 @@ import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMax;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMin;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kI;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kI_sim;
+import static frc.robot.constants.ShooterConstants.HoodConstants.kLength;
+import static frc.robot.constants.ShooterConstants.HoodConstants.kMass;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kMotorInverted;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kP;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kP_sim;
@@ -20,6 +20,7 @@ import static frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMax;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMin;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kStartingPosition;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.HoodConstants.kTolerance;
 import static frc.robot.constants.ShooterConstants.HoodConstants.pivotFeedforward;
 import static frc.robot.constants.ShooterConstants.HoodConstants.pivotFeedforwardSim;
 import static frc.robot.constants.TelemetryKeys.kHoodMechTelemetry;
@@ -36,6 +37,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import frc.robot.constants.ShooterConstants.HoodConstants;
 import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -69,6 +71,11 @@ public class HoodSubsystem extends SubsystemBase {
 
     private final StatusSignal<Angle> positionSignal = motor.getPosition();
     private final StatusSignal<Double> referenceSignal = motor.getClosedLoopReference();
+
+    // Hood subsystem: positional pivot controlled via YAMS Pivot. This subsystem exposes
+    // command-returning APIs (setAngle, runTo) and keeps telemetry updated. There are no
+    // hardware limit-switches assumed here; any external limits are enforced via the
+    // mechanism soft/hard limits configured in ShooterConstants.
 
     // endregion
 
@@ -166,28 +173,59 @@ public class HoodSubsystem extends SubsystemBase {
 
     // region Public API - queries & commands
 
+    /**
+     * Returns a command that moves the hood to the requested absolute angle and holds that angle
+     * while the command is scheduled.
+     *
+     * @param angle target hood angle (mechanism units)
+     * @return a command that sets and holds the hood angle while scheduled
+     */
     public Command setAngle(Angle angle) {
         return hood.setAngle(angle);
     }
 
-    /** Supplier-backed overload for dynamic angles. */
+    /**
+     * Supplier-backed overload for dynamic angles.
+     *
+     * <p>The supplied angle is read while the returned command is active. Use this when the target
+     * depends on runtime values (tunables, operators, or computed solutions).
+     *
+     * @param angle supplier of target hood angle
+     * @return a command that continuously applies the supplied target while scheduled
+     */
     public Command setAngle(Supplier<Angle> angle) {
         return hood.setAngle(angle);
     }
 
+    /**
+     * Returns an open-loop duty-cycle command for the hood pivot.
+     *
+     * <p>This bypasses closed-loop positional control and applies a percent output to the mechanism.
+     * Mechanism-level soft/hard limits defined in {@link HoodConstants} are still enforced by the
+     * underlying Pivot configuration.
+     *
+     * @param dutyCycle open-loop output (-1.0 .. 1.0)
+     * @return a command that applies the given duty cycle while scheduled
+     */
     public Command setDutyCycle(double dutyCycle) {
         // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied
-        // via ArmConfig
+        // via PivotConfig (the underlying Pivot configuration enforces limits)
         return hood.set(dutyCycle);
     }
 
-    // Bump-style immediate setpoint adjustments removed. Use `setAngle(...)` to
-    // move the hood to a new target and hold it, or update the tuned constants
-    // in `ShooterConstants` for canonical setpoints.
+    /**
+     * Move the hood to the requested angle and finish when the mechanism reaches the target within
+     * the configured tolerance.
+     *
+     * <p>This is a blocking command that completes once the hood's position is within {@link
+     * HoodConstants#kTolerance} of the target.
+     *
+     * @param angle target hood angle
+     * @return a command that completes when the hood reaches the target
+     */
+    public Command runTo(Angle angle) {
+        return hood.runTo(angle, kTolerance);
+    }
 
     // endregion
-
-    // region Triggers & events
-
-    // (Lifecycle / periodic handled above)
 }

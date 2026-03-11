@@ -9,7 +9,9 @@ package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Seconds;
 
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.generated.TunerConstants;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
@@ -99,6 +101,10 @@ public final class Constants {
         public static final double kOdometryFreqCAN = 100.0;
         public static final double kDefaultMotionMagicCruiseVelocity = 100.0;
         public static final double kMotionMagicAccelWindowSec = 0.100;
+
+        // TODO: tune this value on the robot. This is the time to rotate the robot to a Diagonal, used
+        // for predictive triggers in ZoneSystem.
+        public static final Time kRotateSnapDuration = Seconds.of(0.25);
     }
 
     // endregion

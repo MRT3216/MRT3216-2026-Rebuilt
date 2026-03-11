@@ -26,7 +26,7 @@ import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.AllianceFlipUtil;
-import frc.robot.util.Zones;
+import frc.robot.util.geometry.Zones;
 import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShooterModel;
 import frc.robot.util.shooter.ShootingLookupTable;

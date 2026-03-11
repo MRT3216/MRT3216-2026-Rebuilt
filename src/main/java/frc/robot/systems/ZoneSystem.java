@@ -5,7 +5,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants.DriveConstants;
 import frc.robot.constants.ShooterConstants.HoodConstants;
-import frc.robot.util.Zones;
+import frc.robot.util.geometry.Zones;
 import java.util.function.Supplier;
 
 public class ZoneSystem {
@@ -55,6 +55,6 @@ public class ZoneSystem {
 
     /** Periodic logging of zone boundaries to AdvantageScope. */
     public void log() {
-        frc.robot.util.Zones.logAllZones();
+        frc.robot.util.geometry.Zones.logAllZones();
     }
 }

@@ -191,62 +191,72 @@ public class ShooterSystem {
             int refinementIterations,
             ShootingLookupTable.Mode tableMode) {
         // Build a lookup table for the requested mode
-        var table = new ShootingLookupTable(tableMode);
+        var table = makeLookupTable(tableMode);
 
-        // Supplier that computes a live ShotSolution (includes turret azimuth, hood angle, and
-        // flywheel speed) using the hybrid turret util which accounts for robot motion.
-        Supplier<HybridTurretUtil.ShotSolution> solutionSupplier =
-                () ->
-                        HybridTurretUtil.computeMovingShot(
-                                robotPose.get(),
-                                fieldSpeeds.get(),
-                                targetSupplier.get(),
-                                refinementIterations,
-                                kRefinementConvergenceEpsilon,
-                                table);
+        // Live solution supplier (motion-compensated shot solution)
+        var solutionSupplier =
+                makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
         // Commands to track dynamic targets for turret and hood.
         var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
 
-        // Flywheel re-applier follows a lightweight two-point linear model derived from
-        // the computed lead distance. We keep the LUT-derived hood angle & ToF but prefer
-        // the simple model for flywheel velocity to make on-robot tuning faster.
-        Supplier<AngularVelocity> flywheelModelSupplier =
-                () -> ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
-        var flywheelFollow = flywheel.setVelocity(flywheelModelSupplier);
+        // Flywheel follow, feed sequence, and telemetry publisher composed from helpers.
+        var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
+        var feedSeq = makeFeedSequence();
+        var telemetryCmd = makeTelemetryCmd(solutionSupplier);
 
-        // Feeding sequence runs alongside aiming and flywheel follow.
-        var feedSeq =
-                Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()));
-
-        // Telemetry: publish model vs LUT values while aiming. Gate to Test mode so we don't
-        // spam NetworkTables during competition operation.
-        var telemetryCmd =
-                Commands.run(
-                                () -> {
-                                    // Publish in Test mode or when running SIM so telemetry is available
-                                    // during simulation-based tuning.
-                                    if (!(Constants.tuningMode || Constants.getMode() == Constants.Mode.SIM)) return;
-                                    var sol = solutionSupplier.get();
-                                    var tableNt = NetworkTableInstance.getDefault().getTable("ShooterTelemetry");
-                                    tableNt.getEntry("leadDistanceMeters").setDouble(sol.leadDistance().in(Meters));
-                                    tableNt.getEntry("lutFlywheelRPM").setDouble(sol.flywheelSpeed().in(RPM));
-                                    var model = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
-                                    tableNt.getEntry("modelFlywheelRPM").setDouble(model.in(RPM));
-                                    tableNt.getEntry("lutHoodDegrees").setDouble(sol.hoodAngle().in(Degrees));
-                                    tableNt.getEntry("lutToFSeconds").setDouble(sol.timeOfFlight().in(Seconds));
-                                    tableNt.getEntry("isValid").setBoolean(sol.isValid());
-                                    tableNt
-                                            .getEntry("deltaRPM")
-                                            .setDouble(model.in(RPM) - sol.flywheelSpeed().in(RPM));
-                                })
-                        .withName("ShooterTelemetryPublisher");
-
-        // Run turret/hood aiming in parallel with the flywheel follow, feeding pipeline, and
-        // telemetry publisher.
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
                 .withName("AimAndShoot");
+    }
+
+    // Small helper factories to keep the main flow concise and easier to read.
+    private ShootingLookupTable makeLookupTable(ShootingLookupTable.Mode mode) {
+        return new ShootingLookupTable(mode);
+    }
+
+    private Supplier<HybridTurretUtil.ShotSolution> makeSolutionSupplier(
+            Supplier<Pose2d> robotPose,
+            Supplier<ChassisSpeeds> fieldSpeeds,
+            Supplier<Translation3d> targetSupplier,
+            int refinementIterations,
+            ShootingLookupTable table) {
+        return () ->
+                HybridTurretUtil.computeMovingShot(
+                        robotPose.get(),
+                        fieldSpeeds.get(),
+                        targetSupplier.get(),
+                        refinementIterations,
+                        kRefinementConvergenceEpsilon,
+                        table);
+    }
+
+    private Supplier<AngularVelocity> makeFlywheelModelSupplier(
+            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        return () -> ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
+    }
+
+    private Command makeFeedSequence() {
+        return Commands.sequence(
+                clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()));
+    }
+
+    private Command makeTelemetryCmd(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        return Commands.run(
+                        () -> {
+                            if (!(Constants.tuningMode || Constants.getMode() == Constants.Mode.SIM)) return;
+                            var sol = solutionSupplier.get();
+                            var tableNt = NetworkTableInstance.getDefault().getTable("ShooterTelemetry");
+                            tableNt.getEntry("leadDistanceMeters").setDouble(sol.leadDistance().in(Meters));
+                            tableNt.getEntry("lutFlywheelRPM").setDouble(sol.flywheelSpeed().in(RPM));
+                            var model = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
+                            tableNt.getEntry("modelFlywheelRPM").setDouble(model.in(RPM));
+                            tableNt.getEntry("lutHoodDegrees").setDouble(sol.hoodAngle().in(Degrees));
+                            tableNt.getEntry("lutToFSeconds").setDouble(sol.timeOfFlight().in(Seconds));
+                            tableNt.getEntry("isValid").setBoolean(sol.isValid());
+                            tableNt.getEntry("deltaRPM").setDouble(model.in(RPM) - sol.flywheelSpeed().in(RPM));
+                        })
+                .withName("ShooterTelemetryPublisher");
     }
 
     public Command hoodAdjustCommand(Angle delta) {

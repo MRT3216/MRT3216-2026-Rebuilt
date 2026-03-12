@@ -3,8 +3,10 @@ package frc.robot.util.shooter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Seconds;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kRobotToTurretTransform;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
@@ -21,7 +23,17 @@ public class HybridTurretUtil {
             int iterations,
             Distance convergenceEpsilon,
             ShootingLookupTable table) {
-        double initialDistMeters = robotPose.getTranslation().getDistance(target.toTranslation2d());
+        // Use the turret origin (robot -> turret transform) when measuring distance/azimuth so
+        // the model accounts for the physical offset between robot center and turret.
+        // The configured transform is a pure translation so we can compute the turret world XY by
+        // rotating the offset into field coordinates rather than creating Pose3d objects.
+        double theta = robotPose.getRotation().getRadians();
+        double ox = kRobotToTurretTransform.getTranslation().getX();
+        double oy = kRobotToTurretTransform.getTranslation().getY();
+        double turretX = robotPose.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
+        double turretY = robotPose.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
+        var turretXY = new Translation2d(turretX, turretY);
+        double initialDistMeters = turretXY.getDistance(target.toTranslation2d());
         var initialDist = Meters.of(initialDistMeters);
         var tofTime = table.getTimeOfFlight(initialDist);
         double tof = tofTime.in(Seconds);
@@ -34,8 +46,7 @@ public class HybridTurretUtil {
             double pY = target.getY() - fieldSpeeds.vyMetersPerSecond * tof;
             predictedTarget = new Translation3d(pX, pY, target.getZ());
 
-            double leadDistMeters =
-                    robotPose.getTranslation().getDistance(predictedTarget.toTranslation2d());
+            double leadDistMeters = turretXY.getDistance(predictedTarget.toTranslation2d());
             leadDist = Meters.of(leadDistMeters);
             tof = table.getTimeOfFlight(leadDist).in(Seconds);
 
@@ -45,10 +56,10 @@ public class HybridTurretUtil {
             prevLeadDist = leadDist;
         }
 
-        double dxRobot = predictedTarget.getX() - robotPose.getX();
-        double dyRobot = predictedTarget.getY() - robotPose.getY();
+        // Compute azimuth from the turret origin, not the robot center.
+        var dir = predictedTarget.toTranslation2d().minus(turretXY);
         Angle azimuthRobot =
-                Radians.of(Math.atan2(dyRobot, dxRobot) - robotPose.getRotation().getRadians());
+                Radians.of(Math.atan2(dir.getY(), dir.getX()) - robotPose.getRotation().getRadians());
 
         Distance min = table.getMinDistance();
         Distance max = table.getMaxDistance();

@@ -15,7 +15,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Constants.DriveConstants;
-import frc.robot.constants.ShooterConstants.HoodConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.util.geometry.Zones;
 import java.util.function.Supplier;
@@ -62,7 +61,8 @@ public class ZoneSystem extends Command {
 
         inTrench = Zones.TRENCH_ZONES.contains(poseSupplier).debounce(.1);
         willEnterTrench =
-                Zones.TRENCH_ZONES.willContain(poseSupplier, speedsSupplier, DriveConstants.kRotateSnapDuration);
+                Zones.TRENCH_ZONES.willContain(
+                        poseSupplier, speedsSupplier, DriveConstants.kRotateSnapDuration);
         inBump = Zones.BUMP_ZONES.contains(poseSupplier).debounce(.1);
         willEnterBump =
                 Zones.BUMP_ZONES

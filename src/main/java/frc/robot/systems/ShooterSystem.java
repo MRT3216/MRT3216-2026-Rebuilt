@@ -7,6 +7,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kRobotToTurretTransform;
 import static frc.robot.constants.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -164,7 +165,7 @@ public class ShooterSystem {
         // Flywheel follow, feed sequence, and telemetry publisher composed from helpers.
         var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
         var feedSeq = makeFeedSequence(solutionSupplier);
-        var telemetryCmd = makeTelemetryCmd(solutionSupplier);
+        var telemetryCmd = makeTelemetryCmd(robotPose, targetSupplier, solutionSupplier);
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
                 .withName("AimAndShoot");
     }
@@ -200,13 +201,38 @@ public class ShooterSystem {
                 .withName("FeedSequence");
     }
 
-    private Command makeTelemetryCmd(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+    private Command makeTelemetryCmd(
+            Supplier<Pose2d> robotPose,
+            Supplier<Translation3d> targetSupplier,
+            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         return Commands.run(
                         () -> {
                             if (!(Constants.tuningMode || Constants.getMode() == Constants.Mode.SIM)) return;
                             var sol = solutionSupplier.get();
                             var tableNt = NetworkTableInstance.getDefault().getTable("ShooterTelemetry");
+                            // Lead distance (includes motion-predicted lead)
                             tableNt.getEntry("leadDistanceMeters").setDouble(sol.leadDistance().in(Meters));
+
+                            // Distance to the alliance hub center measured from the turret origin.
+                            // Rotate the turret translation into field coordinates instead of
+                            // allocating a Pose3d so telemetry matches the shooter model.
+                            var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                            var rp = robotPose.get();
+                            double theta = rp.getRotation().getRadians();
+                            double ox = kRobotToTurretTransform.getTranslation().getX();
+                            double oy = kRobotToTurretTransform.getTranslation().getY();
+                            double turretX = rp.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
+                            double turretY = rp.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
+                            double hubDx = hub.toTranslation2d().getX() - turretX;
+                            double hubDy = hub.toTranslation2d().getY() - turretY;
+                            tableNt.getEntry("turretX").setDouble(turretX);
+                            tableNt.getEntry("turretY").setDouble(turretY);
+                            tableNt.getEntry("robotTheta").setDouble(theta);
+                            tableNt.getEntry("hubDx").setDouble(hubDx);
+                            tableNt.getEntry("hubDy").setDouble(hubDy);
+                            double hubDistMeters = Math.hypot(hubDx, hubDy);
+                            tableNt.getEntry("hubDistanceMeters").setDouble(hubDistMeters);
+
                             tableNt.getEntry("lutFlywheelRPM").setDouble(sol.flywheelSpeed().in(RPM));
                             var model = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
                             tableNt.getEntry("modelFlywheelRPM").setDouble(model.in(RPM));

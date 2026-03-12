@@ -176,6 +176,10 @@ public class FlywheelSubsystem extends SubsystemBase {
         return flywheel.runTo(() -> RPM.of(kTunableFlywheelRPM.get()), kVelocityTolerance);
     }
 
+    public Command clearFlywheel() {
+        return flywheel.runTo(() -> RPM.of(kTunableFlywheelRPM.get() * -1), kVelocityTolerance);
+    }
+
     /**
      * One-shot immediate stop: disables closed-loop control and sets motor output to zero, then
      * finishes. Use when you need an imperative, non-blocking stop in a sequence.

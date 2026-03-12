@@ -35,9 +35,13 @@ import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
+import frc.robot.subsystems.vision.VisionIO;
+import frc.robot.subsystems.vision.VisionIOPhotonVision;
+import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
-import frc.robot.systems.ZoneSystem;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.ShootingLookupTable;
@@ -54,7 +58,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
     // Subsystems
     private final Drive drive;
-    // private final Vision vision;
+    private final Vision vision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
@@ -71,7 +75,7 @@ public class RobotContainer {
     private final IntakeSystem intakeSystem =
             new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
 
-    private final ZoneSystem zoneSystem;
+    // private final ZoneSystem zoneSystem;
 
     // Controller
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -101,22 +105,22 @@ public class RobotContainer {
                                     new ModuleIOTalonFX(TunerConstants.BackLeft),
                                     new ModuleIOTalonFX(TunerConstants.BackRight));
 
-                    //     vision =
-                    //             new Vision(
-                    //                     drive::addVisionMeasurement,
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraFrontName,
-                    // VisionConstants.robotToCameraLeft),
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraRightName,
-                    // VisionConstants.robotToCameraRight),
-                    //                     new VisionIOPhotonVision(
-                    //                             VisionConstants.cameraBackName,
-                    // VisionConstants.robotToCameraBack));
+                    vision =
+                            new Vision(
+                                    drive::addVisionMeasurement,
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraFrontName, VisionConstants.robotToCameraFront),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraLeftName, VisionConstants.robotToCameraLeft),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraRightName, VisionConstants.robotToCameraRight),
+                                    new VisionIOPhotonVision(
+                                            VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
 
-                    zoneSystem =
-                            new ZoneSystem(
-                                    drive::getPose, drive::getChassisSpeeds, shooterSystem, drive, driverController);
+                    // zoneSystem =
+                    // new ZoneSystem(
+                    // drive::getPose, drive::getChassisSpeeds, shooterSystem, drive,
+                    // driverController);
 
                     break;
                 }
@@ -131,25 +135,26 @@ public class RobotContainer {
                                     new ModuleIOSim(TunerConstants.BackLeft),
                                     new ModuleIOSim(TunerConstants.BackRight));
 
-                    //     vision =
-                    //             new Vision(
-                    //                     drive::addVisionMeasurement,
-                    //                     new VisionIOPhotonVisionSim(
-                    //                             VisionConstants.cameraFrontName,
-                    //                             VisionConstants.robotToCameraLeft,
-                    //                             drive::getPose),
-                    //                     new VisionIOPhotonVisionSim(
-                    //                             VisionConstants.cameraRightName,
-                    //                             VisionConstants.robotToCameraRight,
-                    //                             drive::getPose),
-                    //                     new VisionIOPhotonVisionSim(
-                    //                             VisionConstants.cameraBackName,
-                    //                             VisionConstants.robotToCameraBack,
-                    //                             drive::getPose));
+                    vision =
+                            new Vision(
+                                    drive::addVisionMeasurement,
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraFrontName,
+                                            VisionConstants.robotToCameraLeft,
+                                            drive::getPose),
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraRightName,
+                                            VisionConstants.robotToCameraRight,
+                                            drive::getPose),
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraBackName,
+                                            VisionConstants.robotToCameraBack,
+                                            drive::getPose));
 
-                    zoneSystem =
-                            new ZoneSystem(
-                                    drive::getPose, drive::getChassisSpeeds, shooterSystem, drive, driverController);
+                    // zoneSystem =
+                    // new ZoneSystem(
+                    // drive::getPose, drive::getChassisSpeeds, shooterSystem, drive,
+                    // driverController);
 
                     break;
                 }
@@ -165,10 +170,11 @@ public class RobotContainer {
                                     new ModuleIO() {},
                                     new ModuleIO() {});
                     // (Use same number of dummy implementations as the real robot)
-                    // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
-                    zoneSystem =
-                            new ZoneSystem(
-                                    drive::getPose, drive::getChassisSpeeds, shooterSystem, drive, driverController);
+                    vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+                    // zoneSystem =
+                    // new ZoneSystem(
+                    // drive::getPose, drive::getChassisSpeeds, shooterSystem, drive,
+                    // driverController);
                     break;
                 }
         }
@@ -178,14 +184,21 @@ public class RobotContainer {
     }
 
     public void configureDefaultCommands() {
+        // drive.setDefaultCommand(zoneSystem);
         // Default command, normal field-relative drive
-        drive.setDefaultCommand(zoneSystem);
+        drive.setDefaultCommand(
+                DriveCommands.joystickDrive(
+                        drive,
+                        () -> -driverController.getLeftY(),
+                        () -> -driverController.getLeftX(),
+                        () -> -driverController.getRightX()));
 
         // Kicker should stop (do not coast) when idle — use persistent stopHold()
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
+        // turretSubsystem.setAngle(Degrees.of(0)));
 
         // Let spindexer coast by default. Use the persistent stopHold() default
         // which disables closed-loop control and keeps the duty/voltage at zero
@@ -219,7 +232,8 @@ public class RobotContainer {
         }
 
         // Reset gyro to 0° when the Start button is pressed (available in both REAL and
-        // SIM). Use the controller "start()" binding here intentionally — if you prefer Back
+        // SIM). Use the controller "start()" binding here intentionally — if you prefer
+        // Back
         // change the binding to driverController.back().
         driverController.start().onTrue(resetGyroZeroCommand());
     }
@@ -232,9 +246,16 @@ public class RobotContainer {
      * #configureTestButtonBindings()} and should be enabled only in tuning mode.
      */
     public void configureRealButtonBindings() {
+        // Right trigger toggles intake on/off (press once to start, press again to
+        // cancel).
+        driverController.rightTrigger().onTrue(intakeSystem.intake());
+
+        // Left trigger immediately stops rollers and holds them stopped while pressed.
+        driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
+
         // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
         // controller.
-        driverController
+        operatorController
                 .rightTrigger()
                 .onTrue(
                         shooterSystem.aimAndShoot(
@@ -245,13 +266,21 @@ public class RobotContainer {
                                 ShootingLookupTable.Mode.HUB));
 
         // Left trigger remains a manual stop if needed
-        driverController.leftTrigger().onTrue(shooterSystem.interruptShooting());
+        operatorController.leftTrigger().onTrue(shooterSystem.interruptShooting());
 
-        // Right bumper toggles intake on/off (press once to start, press again to cancel).
-        driverController.rightBumper().toggleOnTrue(intakeSystem.intake());
+        // Right bumper toggles intake on/off (press once to start, press again to
+        // cancel).
+        operatorController.rightBumper().onTrue(intakeSystem.intake());
 
         // Left bumper immediately stops rollers and holds them stopped while pressed.
-        driverController.leftBumper().onTrue(intakeSystem.stopRollers());
+        operatorController.leftBumper().onTrue(intakeSystem.stopRollers());
+
+        operatorController.a().whileTrue(intakeSystem.agitate());
+
+        operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
+
+        operatorController.x().whileTrue(intakeRollersSubsystem.ejectBalls());
+        operatorController.y().whileTrue(intakeRollersSubsystem.intakeBalls());
     }
 
     /**

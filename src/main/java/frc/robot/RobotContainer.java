@@ -37,6 +37,7 @@ import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
+import frc.robot.systems.ZoneSystem;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.ShootingLookupTable;
@@ -69,6 +70,8 @@ public class RobotContainer {
 
     private final IntakeSystem intakeSystem =
             new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
+
+    private final ZoneSystem zoneSystem;
 
     // Controller
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -108,6 +111,10 @@ public class RobotContainer {
                     //                             VisionConstants.cameraBackName,
                     // VisionConstants.robotToCameraBack));
 
+                    zoneSystem =
+                            new ZoneSystem(
+                                    drive::getPose, drive::getChassisSpeeds, shooterSystem, drive, driverController);
+
                     break;
                 }
             case SIM:
@@ -137,6 +144,10 @@ public class RobotContainer {
                     //                             VisionConstants.robotToCameraBack,
                     //                             drive::getPose));
 
+                    zoneSystem =
+                            new ZoneSystem(
+                                    drive::getPose, drive::getChassisSpeeds, shooterSystem, drive, driverController);
+
                     break;
                 }
 
@@ -152,6 +163,9 @@ public class RobotContainer {
                                     new ModuleIO() {});
                     // (Use same number of dummy implementations as the real robot)
                     // vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+                    zoneSystem =
+                            new ZoneSystem(
+                                    drive::getPose, drive::getChassisSpeeds, shooterSystem, drive, driverController);
                     break;
                 }
         }
@@ -162,12 +176,7 @@ public class RobotContainer {
 
     public void configureDefaultCommands() {
         // Default command, normal field-relative drive
-        drive.setDefaultCommand(
-                DriveCommands.joystickDrive(
-                        drive,
-                        () -> -driverController.getLeftY(),
-                        () -> -driverController.getLeftX(),
-                        () -> -driverController.getRightX()));
+        drive.setDefaultCommand(zoneSystem);
 
         // Kicker should stop (do not coast) when idle — use persistent stopHold()
         // so the subsystem remains at zero output when no one owns it.

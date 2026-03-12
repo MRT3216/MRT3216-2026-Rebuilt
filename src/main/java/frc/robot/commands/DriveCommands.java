@@ -287,4 +287,10 @@ public class DriveCommands {
         Rotation2d lastAngle = Rotation2d.kZero;
         double gyroDelta = 0.0;
     }
+
+    public static Rotation2d snap45(Rotation2d rotation) {
+        double currentAngle = rotation.getDegrees();
+        double snappedAngle = Math.round(currentAngle / 45.0) * 45.0;
+        return Rotation2d.fromDegrees(snappedAngle);
+    }
 }

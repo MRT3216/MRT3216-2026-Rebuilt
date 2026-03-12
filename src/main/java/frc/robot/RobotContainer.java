@@ -85,6 +85,9 @@ public class RobotContainer {
         // Validate RobotMap wiring early at startup and warn if duplicate IDs are
         // found.
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
+        // Force VisionConstants class-load (parses AprilTag JSON) at startup so the
+        // first Vision.periodic() call does not eat the ~250-500ms file I/O cost.
+        frc.robot.subsystems.vision.VisionConstants.aprilTagLayout.getFieldLength();
         RobotMapValidator.validate();
         switch (Constants.getMode()) {
             case REAL:

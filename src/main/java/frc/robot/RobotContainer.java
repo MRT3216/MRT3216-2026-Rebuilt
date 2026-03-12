@@ -201,7 +201,7 @@ public class RobotContainer {
         if (Constants.tuningMode) {
             configureTestButtonBindings();
         } else if (Constants.getMode() == Mode.SIM) {
-            configureTestButtonBindings();
+            configureRealButtonBindings();
         } else if (Constants.getMode() == Mode.REAL) {
             configureRealButtonBindings();
         }
@@ -224,16 +224,22 @@ public class RobotContainer {
         // controller.
         driverController
                 .rightTrigger()
-                .whileTrue(
+                .onTrue(
                         shooterSystem.aimAndShoot(
                                 () -> drive.getPose(),
-                                () -> new edu.wpi.first.math.kinematics.ChassisSpeeds(0.0, 0.0, 0.0),
+                                () -> drive.getChassisSpeeds(),
                                 () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                                 3,
                                 ShootingLookupTable.Mode.HUB));
 
         // Left trigger remains a manual stop if needed
         driverController.leftTrigger().onTrue(shooterSystem.interruptShooting());
+
+        // Right bumper toggles intake on/off (press once to start, press again to cancel).
+        driverController.rightBumper().toggleOnTrue(intakeSystem.intake());
+
+        // Left bumper immediately stops rollers and holds them stopped while pressed.
+        driverController.leftBumper().onTrue(intakeSystem.stopRollers());
     }
 
     /**
@@ -243,15 +249,11 @@ public class RobotContainer {
      * experimenting.
      */
     public void configureTestButtonBindings() {
-        // driverController.a().whileTrue(intakePivotSubsystem.set(-0.10));
-        // driverController.b().whileTrue(intakePivotSubsystem.set(0.10));
         driverController.a().whileTrue(flywheelSubsystem.setToTunedVelocity());
         driverController.b().whileTrue(intakeRollersSubsystem.setVelocity(kTargetAngularVelocity));
 
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
-        // driverController.leftBumper().whileTrue((hoodSubsystem.setDutyCycle(-0.1)));
-        // driverController.rightBumper().whileTrue((hoodSubsystem.setDutyCycle(0.1)));
 
         driverController.leftBumper().whileTrue(intakePivotSubsystem.set(-.40).withTimeout(0.5));
         driverController
@@ -263,7 +265,6 @@ public class RobotContainer {
                                         .withTimeout(0.15)
                                         .andThen(intakePivotSubsystem.set(-0.15).withTimeout(0.15))));
 
-        // driverController.leftBumper().whileTrue(intakeSystem.intake());
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
     }
 

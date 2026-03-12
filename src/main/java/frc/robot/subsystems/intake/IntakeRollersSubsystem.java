@@ -150,7 +150,6 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     private void updateInputs() {
         // Refresh Phoenix signals to ensure telemetry is up-to-date for
         // AdvantageKit/YAMS
-        // Use the centralized helper for consistency with other subsystems.
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
 
         // Phoenix-signal logging for debug (measured vs closed-loop reference)

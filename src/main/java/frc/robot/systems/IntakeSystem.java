@@ -53,15 +53,37 @@ public class IntakeSystem {
     }
 
     /**
+     * Eject (reverse) the intake: deploy if needed and run rollers in reverse.
+     *
+     * @return a command to perform the eject action
+     */
+    public Command eject() {
+        switch (currentState) {
+            case Stowed:
+                return deploy()
+                        .andThen(
+                                intakeRoller.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity.times(-1)));
+            case Deployed:
+                return intakeRoller.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity.times(-1));
+            default:
+                return Commands.none();
+        }
+    }
+
+    /**
      * Deploy and run the intake rollers (or run rollers if already deployed).
      *
      * @return a command to perform the intake action
      */
     public Command deploy() {
         if (currentState == IntakeStates.Stowed) {
-            // Return a command that updates the system state when executed, then moves the arm.
-            return Commands.runOnce(() -> currentState = IntakeStates.Deployed)
-                    .andThen(intakeArm.setAngle(IntakeConstants.Pivot.kDeployedAngle));
+            // Move the arm to the deployed angle, then update the logical state after the motion
+            // completes. This ensures the state reflects the physical position rather than the
+            // scheduled intention.
+            return intakeArm
+                    .setAngle(IntakeConstants.Pivot.kDeployedAngle)
+                    .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
+                    .withName("Intake.Deploy");
         }
         return Commands.none();
     }
@@ -73,10 +95,18 @@ public class IntakeSystem {
      */
     public Command stow() {
         if (currentState == IntakeStates.Deployed) {
-            // Return a command that updates the system state when executed, then moves the arm.
-            return Commands.runOnce(() -> currentState = IntakeStates.Stowed)
-                    .andThen(intakeArm.setAngle(IntakeConstants.Pivot.kStowedAngle));
+            // Move the arm to the stowed angle, then update the logical state after motion
+            // completes so other callers observe the true physical state.
+            return intakeArm
+                    .setAngle(IntakeConstants.Pivot.kStowedAngle)
+                    .andThen(Commands.runOnce(() -> currentState = IntakeStates.Stowed))
+                    .withName("Intake.Stow");
         }
         return Commands.none();
+    }
+
+    /** Convenience command to stop the rollers (persistent hold). */
+    public Command stopRollers() {
+        return intakeRoller.stopHold();
     }
 }

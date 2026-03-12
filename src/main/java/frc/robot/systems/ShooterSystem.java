@@ -95,7 +95,7 @@ public class ShooterSystem {
     public Command testShoot() {
         var hoodRun = hood.setAngle(() -> Degrees.of(kTunableHoodAngleDeg.get())).withTimeout(5);
 
-        var sequence = flywheel.runToTunedVelocity().alongWith(clearThenFeed());
+        var sequence = hoodRun.andThen(flywheel.runToTunedVelocity().alongWith(clearThenFeed()));
 
         return Commands.parallel(sequence).withName("TestShoot");
     }
@@ -165,7 +165,6 @@ public class ShooterSystem {
         var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
         var feedSeq = makeFeedSequence(solutionSupplier);
         var telemetryCmd = makeTelemetryCmd(solutionSupplier);
-
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
                 .withName("AimAndShoot");
     }
@@ -224,17 +223,11 @@ public class ShooterSystem {
     // region Private helpers
 
     /**
-     * Stops any active shooting pipeline.
-     *
-     * <p>Briefly requires all shooter subsystems to interrupt running pipelines, then issues one-shot
-     * imperative zero-setpoint commands so mechanisms return to idle without blocking the scheduler.
-     *
-     * @return a Command that cancels shooting activity and brings mechanisms to a safe idle
-     */
-    /**
      * Interrupt any active shooting commands. This cancels pipelines but does not command zero
      * setpoints (allowing flywheel/spindexer to coast). Use {@code stopNow()} / {@code stopHold()} on
      * subsystems when an explicit stop is required.
+     *
+     * @return a Command that cancels shooting activity and brings mechanisms to a safe idle
      */
     public Command interruptShooting() {
         return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood)

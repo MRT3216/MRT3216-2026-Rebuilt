@@ -7,7 +7,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import frc.robot.constants.ShooterConstants;
 
-/** Very small two-point linear shooter model. */
+/** Two-point linear shooter model used for quick RPM lookups. */
 public final class ShooterModel {
     private ShooterModel() {}
 
@@ -24,5 +24,23 @@ public final class ShooterModel {
         double t = (d - dMin) / (dMax - dMin);
         double interpRpm = rpmAtMin + (rpmAtMax - rpmAtMin) * t;
         return RPM.of(interpRpm);
+    }
+
+    /**
+     * Convenience helper returning the model RPM for a distance in inches. Useful for quick lookups
+     * (e.g. spreadsheets or UI code) without constructing a {@link Distance} object.
+     *
+     * @param inches distance in inches
+     * @return predicted flywheel speed in RPM
+     */
+
+    /**
+     * Convenience helper returning the model RPM for a {@link Distance} object.
+     *
+     * @param distance distance as a {@link Distance}
+     * @return predicted flywheel speed in RPM
+     */
+    public static double flywheelRPMForDistance(Distance distance) {
+        return flywheelSpeedForDistance(distance).in(RPM);
     }
 }

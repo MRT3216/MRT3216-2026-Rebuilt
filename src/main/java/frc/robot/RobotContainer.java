@@ -7,9 +7,7 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.constants.IntakeConstants.Rollers.kTargetAngularVelocity;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -159,6 +157,7 @@ public class RobotContainer {
         }
         configureDefaultCommands();
         configureButtonBindings();
+        // (Manual model publisher removed — no runtime publisher for manual distance.)
     }
 
     public void configureDefaultCommands() {
@@ -254,9 +253,16 @@ public class RobotContainer {
         // driverController.leftBumper().whileTrue((hoodSubsystem.setDutyCycle(-0.1)));
         // driverController.rightBumper().whileTrue((hoodSubsystem.setDutyCycle(0.1)));
 
+        driverController.leftBumper().whileTrue(intakePivotSubsystem.set(-.40).withTimeout(0.5));
         driverController
                 .rightBumper()
-                .onTrue(hoodSubsystem.setAngle(() -> Degrees.of(kTunableHoodAngleDeg.get())));
+                .whileTrue(
+                        Commands.repeatingSequence(
+                                intakePivotSubsystem
+                                        .set(0.15)
+                                        .withTimeout(0.15)
+                                        .andThen(intakePivotSubsystem.set(-0.15).withTimeout(0.15))));
+
         // driverController.leftBumper().whileTrue(intakeSystem.intake());
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
     }

@@ -104,13 +104,13 @@ public final class ShooterConstants {
     public static final class ShooterModel {
         private ShooterModel() {}
 
-        // Distance bounds (meters) for the shooter model.
-        public static final Distance dMin = Meters.of(1.209);
-        public static final Distance dMax = Meters.of(5.005);
+        // Distance bounds (inches) for the shooter model.
+        public static final Distance dMin = Inches.of(61);
+        public static final Distance dMax = Inches.of(291.5);
 
         // Flywheel anchor speeds (RPM)
-        public static final AngularVelocity kRpmAtMin = RPM.of(2700.0);
-        public static final AngularVelocity kRpmAtMax = RPM.of(3300.0);
+        public static final AngularVelocity kRpmAtMin = RPM.of(2400.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(4200.0);
     }
 
     public static final class SpindexerConstants {
@@ -267,6 +267,8 @@ public final class ShooterConstants {
         public static final LoggedTunableNumber kTunableHoodAngleDeg =
                 new LoggedTunableNumber(
                         "Shooter/HoodAngleDeg", kStartingPosition.in(Degrees), Constants.tuningMode);
+
+        // Manual distance tunable removed — use spreadsheet/model constants instead.
 
         /** Returns a SimpleMotorFeedforward for the hood pivot. */
         public static SimpleMotorFeedforward pivotFeedforward() {

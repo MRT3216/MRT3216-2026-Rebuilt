@@ -33,7 +33,6 @@ import frc.robot.constants.FieldConstants;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.Logger;
 
-
 public class TurretCalculator {
 
     // Compression / slip factor for flywheel → ball-speed conversion.

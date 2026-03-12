@@ -66,8 +66,6 @@ public class VisionIOLimelight implements VisionIO {
         // Update orientation for MegaTag 2
         orientationPublisher.accept(
                 new double[] {rotationSupplier.get().getDegrees(), 0.0, 0.0, 0.0, 0.0, 0.0});
-        NetworkTableInstance.getDefault()
-                .flush(); // Increases network traffic but recommended by Limelight
 
         // Read new pose observations from NetworkTables
         Set<Integer> tagIds = new HashSet<>();

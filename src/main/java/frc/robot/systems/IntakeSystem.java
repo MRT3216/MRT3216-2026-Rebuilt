@@ -68,14 +68,8 @@ public class IntakeSystem {
     }
 
     public Command agitate() {
-        return intakeRollers
-                .ejectBalls()
-                .alongWith(
-                        Commands.repeatingSequence(
-                                intakePivot
-                                        .set(0.15)
-                                        .withTimeout(0.17)
-                                        .andThen(intakePivot.set(-0.15).withTimeout(0.17))));
+        return Commands.repeatingSequence(
+                intakePivot.set(0.15).withTimeout(0.17).andThen(intakePivot.set(-0.15).withTimeout(0.17)));
     }
 
     /**

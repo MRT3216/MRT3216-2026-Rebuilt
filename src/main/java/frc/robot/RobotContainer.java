@@ -191,7 +191,7 @@ public class RobotContainer {
                         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                         3,
                         ShootingLookupTable.Mode.HUB));
-        // NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
+        NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
 
         setupAutoChooser();
         configureDefaultCommands();

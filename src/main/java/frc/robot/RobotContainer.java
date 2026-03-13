@@ -47,6 +47,7 @@ import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import com.pathplanner.lib.auto.NamedCommands;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -77,6 +78,16 @@ public class RobotContainer {
             new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
 
     // Register auto commands
+    NamedCommands.registerCommand("Start Intake", intakeSystem.intake());
+    NamedCommands.registerCommand("Aim and Shoot", 
+
+        shooterSystem.aimAndShoot(
+                () -> drive.getPose(),
+                () -> drive.getChassisSpeeds(),
+                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                3,
+                ShootingLookupTable.Mode.HUB));
+    NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
 
     // private final ZoneSystem zoneSystem;
 

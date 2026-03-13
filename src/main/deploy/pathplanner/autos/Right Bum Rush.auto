@@ -7,13 +7,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Move Intake Down"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Activate Rollers"
+            "name": "Start Intake"
           }
         },
         {

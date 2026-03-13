@@ -2,7 +2,6 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kD;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kD_sim;
@@ -120,7 +119,7 @@ public class TurretSubsystem extends SubsystemBase {
                         .withClosedLoopController(kP, kI, kD) // , kMaxVelocity, kMaxAccel)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         .withTelemetry(kTurretMotorTelemetry, Constants.telemetryVerbosity())
-                        .withClosedLoopRampRate(Seconds.of(0.5))
+                        // .withClosedLoopRampRate(Seconds.of(0.5))
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)

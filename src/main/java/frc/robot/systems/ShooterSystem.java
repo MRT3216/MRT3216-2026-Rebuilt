@@ -165,7 +165,8 @@ public class ShooterSystem {
         // Commands to track dynamic targets for turret and hood.
         // Track turret azimuth dynamically from the computed shot solution rather
         // than using a fixed placeholder angle.
-        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
+        var turretCmd = turret.setAngle(Degrees.of(0));
+        // () -> solutionSupplier.get().turretAzimuth()); // .plus(Degrees.of(167)));
         var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
 
         // Flywheel follow, feed sequence, and telemetry publisher composed from
@@ -205,7 +206,10 @@ public class ShooterSystem {
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
         // Return a command that dynamically tracks the computed turret azimuth.
-        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
+        var turretCmd =
+                // turret.setAngle(() -> solutionSupplier.get().turretAzimuth()); //
+                // .plus(Degrees.of(167)));
+                turret.setAngle(Degrees.of(0));
 
         return turretCmd.withName("Aim");
     }

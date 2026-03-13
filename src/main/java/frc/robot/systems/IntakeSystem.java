@@ -69,7 +69,7 @@ public class IntakeSystem {
 
     public Command agitate() {
         return intakeRollers
-                .ejectBalls()
+                .intakeBalls()
                 .alongWith(
                         Commands.repeatingSequence(
                                 intakePivot

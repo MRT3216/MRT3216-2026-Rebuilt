@@ -26,6 +26,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
@@ -103,6 +104,10 @@ public class TurretSubsystem extends SubsystemBase {
         turretInputs.volts = smartMotor.getVoltage();
         turretInputs.current = smartMotor.getStatorCurrent();
         turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
+        Logger.recordOutput("Shooter/Turret/PositionDegrees", turretInputs.angle.in(Degrees));
+        SmartDashboard.putBoolean(
+                "Mechanisms/TurretIsMoving",
+                Math.abs(turretInputs.setpoint.in(Degrees) - turretInputs.angle.in(Degrees)) > 1.0);
     }
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */

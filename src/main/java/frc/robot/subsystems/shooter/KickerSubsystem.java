@@ -197,6 +197,12 @@ public class KickerSubsystem extends SubsystemBase {
         return setVelocity(() -> RPM.of(kTunableKickerRPM.get()));
     }
 
+    public Command clearKicker() {
+        // Read the LoggedTunableNumber at runtime so dashboard edits apply while
+        // the command is active.
+        return setVelocity(() -> RPM.of(kTunableKickerRPM.get() * -1));
+    }
+
     /**
      * Set the dutycycle of the kicker.
      *

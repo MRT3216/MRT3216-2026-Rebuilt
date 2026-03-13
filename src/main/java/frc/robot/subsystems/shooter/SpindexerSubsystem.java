@@ -189,6 +189,12 @@ public class SpindexerSubsystem extends SubsystemBase {
         return setVelocity(() -> RPM.of(kTunableIndexerRPM.get()));
     }
 
+    public Command clearSpindexer() {
+        // Read the LoggedTunableNumber at runtime so dashboard edits apply while
+        // the command is active.
+        return setVelocity(() -> RPM.of(kTunableIndexerRPM.get() * -1));
+    }
+
     /**
      * Sets the duty cycle (percent output) for the spindexer.
      *

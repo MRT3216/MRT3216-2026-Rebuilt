@@ -10,8 +10,8 @@ import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 public class IntakeSystem {
     // region Hardware & signals
 
-    public final IntakeRollersSubsystem intakeRoller;
-    public final IntakePivotSubsystem intakeArm;
+    public final IntakeRollersSubsystem intakeRollers;
+    public final IntakePivotSubsystem intakePivot;
     public IntakeStates currentState;
 
     // endregion
@@ -30,8 +30,8 @@ public class IntakeSystem {
      * @param intakeArm the pivot subsystem that deploys/stows the intake
      */
     public IntakeSystem(IntakeRollersSubsystem intakeRoller, IntakePivotSubsystem intakeArm) {
-        this.intakeRoller = intakeRoller;
-        this.intakeArm = intakeArm;
+        this.intakeRollers = intakeRoller;
+        this.intakePivot = intakeArm;
         this.currentState = IntakeStates.Stowed;
     }
 
@@ -43,10 +43,9 @@ public class IntakeSystem {
         switch (currentState) {
             case Stowed:
                 // Deploy then run rollers. deploy() is side-effect free and returns a Command.
-                return deploy()
-                        .andThen(intakeRoller.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity));
+                return deploy().andThen(intakeRollers.intakeBalls());
             case Deployed:
-                return intakeRoller.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity);
+                return intakeRollers.intakeBalls();
             default:
                 return Commands.none();
         }
@@ -60,14 +59,23 @@ public class IntakeSystem {
     public Command eject() {
         switch (currentState) {
             case Stowed:
-                return deploy()
-                        .andThen(
-                                intakeRoller.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity.times(-1)));
+                return deploy().andThen(intakeRollers.ejectBalls());
             case Deployed:
-                return intakeRoller.setVelocity(IntakeConstants.Rollers.kTargetAngularVelocity.times(-1));
+                return intakeRollers.ejectBalls();
             default:
                 return Commands.none();
         }
+    }
+
+    public Command agitate() {
+        return intakeRollers
+                .ejectBalls()
+                .alongWith(
+                        Commands.repeatingSequence(
+                                intakePivot
+                                        .set(0.15)
+                                        .withTimeout(0.17)
+                                        .andThen(intakePivot.set(-0.15).withTimeout(0.17))));
     }
 
     /**
@@ -77,11 +85,14 @@ public class IntakeSystem {
      */
     public Command deploy() {
         if (currentState == IntakeStates.Stowed) {
-            // Move the arm to the deployed angle, then update the logical state after the motion
-            // completes. This ensures the state reflects the physical position rather than the
+            // Move the arm to the deployed angle, then update the logical state after the
+            // motion
+            // completes. This ensures the state reflects the physical position rather than
+            // the
             // scheduled intention.
-            return intakeArm
-                    .setAngle(IntakeConstants.Pivot.kDeployedAngle)
+            return intakePivot
+                    .set(-.30)
+                    .withTimeout(0.5)
                     .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
                     .withName("Intake.Deploy");
         }
@@ -97,7 +108,7 @@ public class IntakeSystem {
         if (currentState == IntakeStates.Deployed) {
             // Move the arm to the stowed angle, then update the logical state after motion
             // completes so other callers observe the true physical state.
-            return intakeArm
+            return intakePivot
                     .setAngle(IntakeConstants.Pivot.kStowedAngle)
                     .andThen(Commands.runOnce(() -> currentState = IntakeStates.Stowed))
                     .withName("Intake.Stow");
@@ -107,6 +118,6 @@ public class IntakeSystem {
 
     /** Convenience command to stop the rollers (persistent hold). */
     public Command stopRollers() {
-        return intakeRoller.stopHold();
+        return intakeRollers.stopHold();
     }
 }

@@ -11,6 +11,7 @@ import static frc.robot.constants.ShooterConstants.TurretConstants.kRobotToTurre
 import static frc.robot.constants.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -107,7 +108,8 @@ public class ShooterSystem {
      * #aimAndShoot(Supplier, Supplier, Supplier, int, ShootingLookupTable.Mode)}.
      */
     public Command realShoot(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds) {
-        // Determine whether we are in a trench/pass-like zone. Treat trench, trench-duck, and
+        // Determine whether we are in a trench/pass-like zone. Treat trench,
+        // trench-duck, and
         // bump collections as PASS mode; otherwise use HUB.
         boolean inTrench =
                 Zones.TRENCH_ZONES.contains(robotPose).getAsBoolean()
@@ -116,7 +118,8 @@ public class ShooterSystem {
 
         var tableMode = inTrench ? ShootingLookupTable.Mode.PASS : ShootingLookupTable.Mode.HUB;
 
-        // Target supplier: hub center for HUB mode; nearest trench opening for PASS mode.
+        // Target supplier: hub center for HUB mode; nearest trench opening for PASS
+        // mode.
         Supplier<Translation3d> targetSupplier =
                 () -> {
                     if (!inTrench) return AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
@@ -131,6 +134,7 @@ public class ShooterSystem {
 
         return aimAndShoot(robotPose, fieldSpeeds, targetSupplier, 3, tableMode).withName("RealShoot");
     }
+
     /**
      * Dynamically aim the turret and hood, spin the flywheel, and run the feed pipeline.
      *
@@ -159,10 +163,14 @@ public class ShooterSystem {
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
         // Commands to track dynamic targets for turret and hood.
-        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
+        var turretCmd =
+                // turret.setAngle(
+                //         Degrees.of(0));
+                turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
 
-        // Flywheel follow, feed sequence, and telemetry publisher composed from helpers.
+        // Flywheel follow, feed sequence, and telemetry publisher composed from
+        // helpers.
         var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
         var feedSeq = makeFeedSequence(solutionSupplier);
         var telemetryCmd = makeTelemetryCmd(robotPose, targetSupplier, solutionSupplier);
@@ -201,6 +209,19 @@ public class ShooterSystem {
                 .withName("FeedSequence");
     }
 
+    /**
+     * Compute the turret origin (world XY) from the robot pose using the configured robot->turret
+     * transform. This avoids allocations and keeps the telemetry math tidy.
+     */
+    private static Translation2d turretOrigin(Pose2d rp) {
+        double theta = rp.getRotation().getRadians();
+        double ox = kRobotToTurretTransform.getTranslation().getX();
+        double oy = kRobotToTurretTransform.getTranslation().getY();
+        double turretX = rp.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
+        double turretY = rp.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
+        return new Translation2d(turretX, turretY);
+    }
+
     private Command makeTelemetryCmd(
             Supplier<Pose2d> robotPose,
             Supplier<Translation3d> targetSupplier,
@@ -218,18 +239,9 @@ public class ShooterSystem {
                             // allocating a Pose3d so telemetry matches the shooter model.
                             var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
                             var rp = robotPose.get();
-                            double theta = rp.getRotation().getRadians();
-                            double ox = kRobotToTurretTransform.getTranslation().getX();
-                            double oy = kRobotToTurretTransform.getTranslation().getY();
-                            double turretX = rp.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
-                            double turretY = rp.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
-                            double hubDx = hub.toTranslation2d().getX() - turretX;
-                            double hubDy = hub.toTranslation2d().getY() - turretY;
-                            tableNt.getEntry("turretX").setDouble(turretX);
-                            tableNt.getEntry("turretY").setDouble(turretY);
-                            tableNt.getEntry("robotTheta").setDouble(theta);
-                            tableNt.getEntry("hubDx").setDouble(hubDx);
-                            tableNt.getEntry("hubDy").setDouble(hubDy);
+                            var turretXY = turretOrigin(rp);
+                            double hubDx = hub.toTranslation2d().getX() - turretXY.getX();
+                            double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
                             double hubDistMeters = Math.hypot(hubDx, hubDy);
                             tableNt.getEntry("hubDistanceMeters").setDouble(hubDistMeters);
 
@@ -242,6 +254,12 @@ public class ShooterSystem {
                             tableNt.getEntry("deltaRPM").setDouble(model.in(RPM) - sol.flywheelSpeed().in(RPM));
                         })
                 .withName("ShooterTelemetryPublisher");
+    }
+
+    public Command clearShooterSystem() {
+        return flywheel
+                .clearFlywheel()
+                .alongWith(kicker.clearKicker().alongWith(spindexer.clearSpindexer()));
     }
 
     // endregion

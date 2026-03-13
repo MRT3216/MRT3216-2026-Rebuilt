@@ -34,6 +34,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import frc.robot.constants.IntakeConstants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
 import org.littletonrobotics.junction.AutoLog;
@@ -214,6 +215,14 @@ public class IntakeRollersSubsystem extends SubsystemBase {
      */
     public Command setDutyCycle(double dutyCycle) {
         return intakeRollers.set(dutyCycle);
+    }
+
+    public Command intakeBalls() {
+        return intakeRollers.setSpeed(IntakeConstants.Rollers.kTargetAngularVelocity);
+    }
+
+    public Command ejectBalls() {
+        return intakeRollers.set(-1.0);
     }
 
     /**

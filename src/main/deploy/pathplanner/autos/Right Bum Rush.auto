@@ -31,12 +31,6 @@
                 "data": {
                   "name": "Aim and Shoot"
                 }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Agitate"
-                }
               }
             ]
           }

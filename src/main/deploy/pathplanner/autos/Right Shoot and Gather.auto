@@ -15,12 +15,6 @@
                 }
               },
               {
-                "type": "named",
-                "data": {
-                  "name": "Agitate"
-                }
-              },
-              {
                 "type": "wait",
                 "data": {
                   "waitTime": 1.0
@@ -55,12 +49,6 @@
                 "type": "named",
                 "data": {
                   "name": "Aim and Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Agitate"
                 }
               }
             ]

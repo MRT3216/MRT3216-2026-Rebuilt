@@ -197,7 +197,7 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooter());
 
         setupAutoChooser();
-        //setupSysid();
+        // setupSysid();
         configureDefaultCommands();
         configureButtonBindings();
     }

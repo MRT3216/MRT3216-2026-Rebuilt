@@ -173,16 +173,7 @@ public class ShooterSystem {
         var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
         var feedSeq = makeFeedSequence(solutionSupplier);
         var telemetryCmd = makeTelemetryCmd(robotPose, targetSupplier, solutionSupplier);
-        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
-                .withName("AimAndShoot");
-    }
-
-    public Command stopShooter() {
-        var turretCmd = turret.setAngle(turret.getPosition());
-        var flywheelCmd = flywheel.setVelocity(RPM.of(0));
-        var hoodCmd = hood.setAngle(Degrees.of(0));
-
-        return Commands.parallel(turretCmd, hoodCmd, flywheelCmd);
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd);
     }
 
     /**

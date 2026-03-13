@@ -5,9 +5,15 @@
     "data": {
       "commands": [
         {
-          "type": "parallel",
+          "type": "race",
           "data": {
             "commands": [
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 3.0
+                }
+              },
               {
                 "type": "named",
                 "data": {
@@ -19,12 +25,6 @@
                 "data": {
                   "name": "Agitate"
                 }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 1.0
-                }
               }
             ]
           }
@@ -34,15 +34,15 @@
           "data": {
             "commands": [
               {
-                "type": "named",
-                "data": {
-                  "name": "Run Intake"
-                }
-              },
-              {
                 "type": "path",
                 "data": {
                   "pathName": "Right Enter"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Run Intake"
                 }
               }
             ]
@@ -55,9 +55,15 @@
           }
         },
         {
-          "type": "parallel",
+          "type": "race",
           "data": {
             "commands": [
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 6.0
+                }
+              },
               {
                 "type": "named",
                 "data": {
@@ -68,12 +74,6 @@
                 "type": "named",
                 "data": {
                   "name": "Agitate"
-                }
-              },
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 1.0
                 }
               }
             ]

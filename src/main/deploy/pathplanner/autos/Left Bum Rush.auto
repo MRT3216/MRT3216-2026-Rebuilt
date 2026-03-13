@@ -30,7 +30,7 @@
           }
         },
         {
-          "type": "deadline",
+          "type": "race",
           "data": {
             "commands": [
               {
@@ -52,12 +52,6 @@
                 }
               }
             ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stop Shooter"
           }
         }
       ]

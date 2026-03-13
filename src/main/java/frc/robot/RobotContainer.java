@@ -191,6 +191,7 @@ public class RobotContainer {
                         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                         3,
                         ShootingLookupTable.Mode.HUB));
+        NamedCommands.registerCommand("Shoot", shooterSystem.testShoot());
         NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooter());
 
@@ -393,6 +394,6 @@ public class RobotContainer {
 
     /** Returns the command selected on the dashboard to run during autonomous. */
     public Command getAutonomousCommand() {
-        return autoChooser.get().repeatedly().withTimeout(20);
+        return autoChooser.get();
     }
 }

@@ -17,7 +17,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Left Blue Enter"
+                  "pathName": "Left Enter"
                 }
               },
               {
@@ -32,7 +32,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Left Blue Leave"
+            "pathName": "Left Leave"
           }
         },
         {
@@ -58,6 +58,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Blue",
+  "folder": null,
   "choreoAuto": false
 }

@@ -5,28 +5,9 @@
     "data": {
       "commands": [
         {
-          "type": "deadline",
-          "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Right Enter"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Run Intake"
-                }
-              }
-            ]
-          }
-        },
-        {
           "type": "path",
           "data": {
-            "pathName": "Right Leave"
+            "pathName": "Fire First 8 Without SOTF"
           }
         },
         {
@@ -44,12 +25,6 @@
                 "data": {
                   "name": "Aim and Shoot"
                 }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Agitate"
-                }
               }
             ]
           }
@@ -58,12 +33,6 @@
           "type": "named",
           "data": {
             "name": "Stop Shooter"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stop Agitate"
           }
         }
       ]

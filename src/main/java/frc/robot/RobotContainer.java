@@ -186,19 +186,14 @@ public class RobotContainer {
         NamedCommands.registerCommand("Run Intake", intakeSystem.intake());
         NamedCommands.registerCommand(
                 "Aim and Shoot",
-                shooterSystem
-                        .aimAndShoot(
-                                () -> drive.getPose(),
-                                () -> drive.getChassisSpeeds(),
-                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                                3,
-                                ShootingLookupTable.Mode.HUB)
-                        .withTimeout(6.0));
-        NamedCommands.registerCommand("Stop Shooter", shooterSystem.interruptShooting());
+                shooterSystem.aimAndShoot(
+                        () -> drive.getPose(),
+                        () -> drive.getChassisSpeeds(),
+                        () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                        3,
+                        ShootingLookupTable.Mode.HUB));
         NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
-        NamedCommands.registerCommand("Stop Agitate", intakeSystem.stopRollers());
-
-        
+        NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooter());
 
         setupAutoChooser();
         //setupSysid();
@@ -397,22 +392,10 @@ public class RobotContainer {
     private void setupAutoChooser() {
         // "Auto Chooser" matches the topic key the Elastic dashboard subscribes to.
         autoChooser = new LoggedDashboardChooser<>("Auto Chooser", AutoBuilder.buildAutoChooser());
-
-        // Fire all 8 pre-loaded balls from the starting position — no driving.
-        autoChooser.addOption(
-                "Fire 8 Balls",
-                shooterSystem
-                        .aimAndShoot(
-                                drive::getPose,
-                                drive::getChassisSpeeds,
-                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                                3,
-                                ShootingLookupTable.Mode.HUB)
-                        .withTimeout(13.0));
     }
 
     /** Returns the command selected on the dashboard to run during autonomous. */
     public Command getAutonomousCommand() {
-        return autoChooser.get();
+        return autoChooser.get().repeatedly().withTimeout(20);
     }
 }

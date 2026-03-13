@@ -177,6 +177,14 @@ public class ShooterSystem {
                 .withName("AimAndShoot");
     }
 
+    public Command stopShooter() {
+        var turretCmd = turret.setAngle(turret.getPosition());
+        var flywheelCmd = flywheel.setVelocity(RPM.of(0));
+        var hoodCmd = hood.setAngle(Degrees.of(0));
+
+        return Commands.parallel(turretCmd, hoodCmd, flywheelCmd);
+    }
+
     /**
      * Dynamically aim the turret and hood, spin the flywheel, and run the feed pipeline.
      *

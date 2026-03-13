@@ -192,6 +192,7 @@ public class RobotContainer {
                         3,
                         ShootingLookupTable.Mode.HUB));
         NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
+        NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooter());
 
         setupAutoChooser();
         configureDefaultCommands();

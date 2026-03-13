@@ -91,8 +91,8 @@ public class IntakeSystem {
             // the
             // scheduled intention.
             return intakePivot
-                    .set(-.30)
-                    .withTimeout(0.5)
+                    .set(-.20)
+                    .withTimeout(0.3)
                     .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
                     .withName("Intake.Deploy");
         }

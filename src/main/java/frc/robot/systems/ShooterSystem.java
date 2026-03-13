@@ -163,10 +163,9 @@ public class ShooterSystem {
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
         // Commands to track dynamic targets for turret and hood.
-        var turretCmd =
-                // turret.setAngle(
-                //         Degrees.of(0));
-                turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
+        // Track turret azimuth dynamically from the computed shot solution rather
+        // than using a fixed placeholder angle.
+        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
 
         // Flywheel follow, feed sequence, and telemetry publisher composed from
@@ -176,6 +175,39 @@ public class ShooterSystem {
         var telemetryCmd = makeTelemetryCmd(robotPose, targetSupplier, solutionSupplier);
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
                 .withName("AimAndShoot");
+    }
+
+    /**
+     * Dynamically aim the turret and hood, spin the flywheel, and run the feed pipeline.
+     *
+     * <p>The returned command continuously tracks a motion-compensated {@code ShotSolution} computed
+     * from the provided pose, chassis speeds, and target supplier. It moves the turret and hood,
+     * updates flywheel setpoints, runs the feed sequence, and publishes telemetry while active.
+     *
+     * @param robotPose supplier of the robot pose
+     * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
+     * @param targetSupplier supplier of the 3D target point
+     * @param refinementIterations number of solver refinement iterations for the shot solution
+     * @param tableMode lookup table mode (HUB or PASS)
+     * @return a command that aims and executes a shot when scheduled
+     */
+    public Command aim(
+            Supplier<Pose2d> robotPose,
+            Supplier<ChassisSpeeds> fieldSpeeds,
+            Supplier<Translation3d> targetSupplier,
+            int refinementIterations,
+            ShootingLookupTable.Mode tableMode) {
+        // Build a lookup table for the requested mode
+        var table = makeLookupTable(tableMode);
+
+        // Live solution supplier (motion-compensated shot solution)
+        var solutionSupplier =
+                makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
+
+        // Return a command that dynamically tracks the computed turret azimuth.
+        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
+
+        return turretCmd.withName("Aim");
     }
 
     // Small helper factories to keep the main flow concise and easier to read.

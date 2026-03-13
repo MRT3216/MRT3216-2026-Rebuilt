@@ -7,13 +7,13 @@
         {
           "type": "named",
           "data": {
-            "name": "intakePivotSubsystem.set(-.40).withTimeout(0.5)"
+            "name": "Move Intake Down"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "intakeRollersSubsystem.setVelocity(kTargetAngularVelocity)"
+            "name": "Activate Rollers"
           }
         },
         {
@@ -35,13 +35,13 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "shooterSystem.aimAndShoot(\r                                () -> drive.getPose(),\r                                () -> drive.getChassisSpeeds(),\r                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),\r                                3,\r                                ShootingLookupTable.Mode.HUB)"
+                  "name": "Aim and Shoot"
                 }
               },
               {
                 "type": "named",
                 "data": {
-                  "name": "intakeSystem.agitate()"
+                  "name": "Agitate"
                 }
               }
             ]

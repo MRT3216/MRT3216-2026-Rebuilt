@@ -76,6 +76,8 @@ public class RobotContainer {
     private final IntakeSystem intakeSystem =
             new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
 
+    // Register auto commands
+
     // private final ZoneSystem zoneSystem;
 
     // Controller

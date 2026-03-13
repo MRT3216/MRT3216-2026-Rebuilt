@@ -12,6 +12,7 @@ import static frc.robot.constants.IntakeConstants.Rollers.kTargetAngularVelocity
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.net.WebServer;
@@ -360,7 +361,6 @@ public class RobotContainer {
      */
     @SuppressWarnings("unused")
     private void setupSysid() {
-        // autoChooser = new LoggedDashboardChooser<>("Auto Chooser", AutoBuilder.buildAutoChooser());
         // Set up SysId routines
         autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
         autoChooser.addOption(
@@ -391,7 +391,11 @@ public class RobotContainer {
      */
     private void setupAutoChooser() {
         // "Auto Chooser" matches the topic key the Elastic dashboard subscribes to.
-        autoChooser = new LoggedDashboardChooser<>("Auto Chooser", AutoBuilder.buildAutoChooser());
+        autoChooser =
+                new LoggedDashboardChooser<>(
+                        "Auto Chooser", AutoBuilder.buildAutoChooser("Left Bum Rush (No SOTF)"));
+        autoChooser.addOption(
+                "Left Bum Rush (No SOTF)", new PathPlannerAuto("Left Bum Rush (No SOTF)"));
     }
 
     /** Returns the command selected on the dashboard to run during autonomous. */

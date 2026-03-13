@@ -192,19 +192,7 @@ public class RobotContainer {
                     break;
                 }
         }
-        // Auto for shooting the first eight balls
-        // Need to use the pathplanner to create the name and pull it through the dashboard
-        NamedCommands.registerCommand(
-                "FireEight",
-                shooterSystem
-                        .aimAndShoot(
-                                drive::getPose,
-                                drive::getChassisSpeeds,
-                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                                3,
-                                ShootingLookupTable.Mode.HUB)
-                        .withTimeout(10.0));
-
+        
         setupAutoChooser();
         configureDefaultCommands();
         configureButtonBindings();

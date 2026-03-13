@@ -11,28 +11,21 @@
           }
         },
         {
-          "type": "parallel",
+          "type": "named",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Left Enter"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "intakeRollersSubsystem.setVelocity(kTargetAngularVelocity)"
-                }
-              }
-            ]
+            "name": "intakeRollersSubsystem.setVelocity(kTargetAngularVelocity)"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Left Leave"
+            "pathName": "Right Enter"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Right Leave"
           }
         },
         {

@@ -127,14 +127,14 @@
             },
             "children": [
               {
-                "title": "Flywheel Speed (RPS)",
+                "title": "Flywheel Speed (RPM)",
                 "x": 0.0,
                 "y": 0.0,
                 "width": 384.0,
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Flywheel/Inputs/velocity",
+                  "topic": "/Flywheel/FX/VelocityRPM",
                   "period": 0.1,
                   "decimal_places": 0,
                   "show_type": false
@@ -148,7 +148,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Hood/Inputs/angle",
+                  "topic": "/Hood/FX/PositionDegrees",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false
@@ -162,7 +162,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Turret/Inputs/angle",
+                  "topic": "/Shooter/Turret/PositionDegrees",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false
@@ -185,11 +185,136 @@
             ]
           },
           {
-            "title": "Field",
+            "title": "Mechanisms",
             "x": 1024.0,
             "y": 0.0,
-            "width": 576.0,
-            "height": 320.0,
+            "width": 256.0,
+            "height": 512.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "Drive",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Mechanisms/DriveIsMoving",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              },
+              {
+                "title": "Intake Pivot",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Mechanisms/IntakePivotIsMoving",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              },
+              {
+                "title": "Intake Rollers",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Mechanisms/IntakeRollersIsMoving",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              },
+              {
+                "title": "Flywheel",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Mechanisms/FlywheelIsMoving",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              },
+              {
+                "title": "Hood",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Mechanisms/HoodIsMoving",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              },
+              {
+                "title": "Kicker",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Mechanisms/KickerIsMoving",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              },
+              {
+                "title": "Spindexer",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Mechanisms/SpindexerIsMoving",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              },
+              {
+                "title": "Turret",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/SmartDashboard/Mechanisms/TurretIsMoving",
+                  "period": 0.06,
+                  "true_color": "#00FF00",
+                  "false_color": "#FF2222"
+                }
+              }
+            ]
+          },
+          {
+            "title": "Field",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 1280.0,
+            "height": 448.0,
             "type": "Field2d",
             "properties": {
               "topic": "/SmartDashboard/Field",
@@ -207,31 +332,57 @@
       "grid_layout": {
         "layouts": [
           {
-            "title": "Auto Chooser",
+            "title": "Auto Selection",
             "x": 0.0,
             "y": 0.0,
-            "width": 384.0,
+            "width": 448.0,
             "height": 128.0,
-            "type": "ComboBox Chooser",
+            "type": "List Layout",
             "properties": {
-              "topic": "/SmartDashboard/Auto Chooser",
-              "period": 0.1,
-              "show_type": false
-            }
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "Auto Chooser",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 448.0,
+                "height": 128.0,
+                "type": "ComboBox Chooser",
+                "properties": {
+                  "topic": "/SmartDashboard/Auto Chooser",
+                  "period": 0.1,
+                  "show_type": false
+                }
+              }
+            ]
           },
           {
-            "title": "Match Time",
-            "x": 384.0,
+            "title": "Info",
+            "x": 448.0,
             "y": 0.0,
-            "width": 256.0,
+            "width": 192.0,
             "height": 128.0,
-            "type": "Number Display",
+            "type": "List Layout",
             "properties": {
-              "topic": "/SmartDashboard/MatchTime",
-              "period": 0.1,
-              "decimal_places": 1,
-              "show_type": false
-            }
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "Match Time",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 192.0,
+                "height": 128.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/SmartDashboard/MatchTime",
+                  "period": 0.1,
+                  "decimal_places": 1,
+                  "show_type": false
+                }
+              }
+            ]
           },
           {
             "title": "Field",
@@ -256,17 +407,30 @@
       "grid_layout": {
         "layouts": [
           {
-            "title": "Auto Chooser",
+            "title": "Auto Selection",
             "x": 0.0,
             "y": 0.0,
-            "width": 384.0,
+            "width": 448.0,
             "height": 128.0,
-            "type": "ComboBox Chooser",
+            "type": "List Layout",
             "properties": {
-              "topic": "/SmartDashboard/Auto Chooser",
-              "period": 0.1,
-              "show_type": false
-            }
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "Auto Chooser",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 448.0,
+                "height": 128.0,
+                "type": "ComboBox Chooser",
+                "properties": {
+                  "topic": "/SmartDashboard/Auto Chooser",
+                  "period": 0.1,
+                  "show_type": false
+                }
+              }
+            ]
           },
           {
             "title": "Field",

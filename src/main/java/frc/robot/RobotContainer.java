@@ -10,6 +10,7 @@ package frc.robot;
 import static frc.robot.constants.IntakeConstants.Rollers.kTargetAngularVelocity;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.net.WebServer;
@@ -178,9 +179,22 @@ public class RobotContainer {
                     break;
                 }
         }
+        // Auto for shooting the first eight balls
+        // Need to use the pathplanner to create the name and pull it through the dashboard
+        NamedCommands.registerCommand(
+                "FireEight",
+                shooterSystem
+                        .aimAndShoot(
+                                drive::getPose,
+                                drive::getChassisSpeeds,
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                ShootingLookupTable.Mode.HUB)
+                        .withTimeout(10.0));
+
+        setupAutoChooser();
         configureDefaultCommands();
         configureButtonBindings();
-        // (Manual model publisher removed — no runtime publisher for manual distance.)
     }
 
     public void configureDefaultCommands() {
@@ -198,7 +212,7 @@ public class RobotContainer {
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-        // turretSubsystem.setAngle(Degrees.of(0)));
+        // turretSubsystem.setAngle(Degrees.of(180)));
 
         // Let spindexer coast by default. Use the persistent stopHold() default
         // which disables closed-loop control and keeps the duty/voltage at zero
@@ -252,6 +266,16 @@ public class RobotContainer {
 
         // Left trigger immediately stops rollers and holds them stopped while pressed.
         driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
+
+        driverController
+                .a()
+                .whileTrue(
+                        shooterSystem.aim(
+                                () -> drive.getPose(),
+                                () -> drive.getChassisSpeeds(),
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                ShootingLookupTable.Mode.HUB));
 
         // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
         // controller.
@@ -360,12 +384,25 @@ public class RobotContainer {
      * <p>Disabled by default. To enable, call {@code setupAutoChooser()} from the constructor and
      * uncomment the implementation below.
      */
-    @SuppressWarnings("unused")
     private void setupAutoChooser() {
-        // Set up auto routines using AdvantageKit's LoggedDashboardChooser backed by
-        // an AutoBuilder. This mirrors the original project behavior.
-        // Note: This method is intentionally not called by default. Call it from
-        // the constructor to enable the auto chooser at runtime.
-        autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
+        // "Auto Chooser" matches the topic key the Elastic dashboard subscribes to.
+        autoChooser = new LoggedDashboardChooser<>("Auto Chooser", AutoBuilder.buildAutoChooser());
+
+        // Fire all 8 pre-loaded balls from the starting position — no driving.
+        autoChooser.addOption(
+                "Fire 8 Balls",
+                shooterSystem
+                        .aimAndShoot(
+                                drive::getPose,
+                                drive::getChassisSpeeds,
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                ShootingLookupTable.Mode.HUB)
+                        .withTimeout(13.0));
+    }
+
+    /** Returns the command selected on the dashboard to run during autonomous. */
+    public Command getAutonomousCommand() {
+        return autoChooser.get();
     }
 }

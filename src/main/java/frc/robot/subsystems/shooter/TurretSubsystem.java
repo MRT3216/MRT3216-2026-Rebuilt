@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kD;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kD_sim;
@@ -26,6 +27,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
@@ -103,6 +105,10 @@ public class TurretSubsystem extends SubsystemBase {
         turretInputs.volts = smartMotor.getVoltage();
         turretInputs.current = smartMotor.getStatorCurrent();
         turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
+        Logger.recordOutput("Shooter/Turret/PositionDegrees", turretInputs.angle.in(Degrees));
+        SmartDashboard.putBoolean(
+                "Mechanisms/TurretIsMoving",
+                Math.abs(turretInputs.setpoint.in(Degrees) - turretInputs.angle.in(Degrees)) > 1.0);
     }
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
@@ -111,9 +117,10 @@ public class TurretSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(kP, kI, kD)
+                        .withClosedLoopController(kP, kI, kD) // , kMaxVelocity, kMaxAccel)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         .withTelemetry(kTurretMotorTelemetry, Constants.telemetryVerbosity())
+                        .withClosedLoopRampRate(Seconds.of(0.5))
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
@@ -125,7 +132,6 @@ public class TurretSubsystem extends SubsystemBase {
         PivotConfig turretConfig =
                 new PivotConfig(smartMotor)
                         .withStartingPosition(kStartingPosition)
-                        // .withWrapping(Degrees.of(0), Degrees.of(360))
                         .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
                         .withMOI(kMOI)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)

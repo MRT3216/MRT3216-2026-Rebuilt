@@ -31,6 +31,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -128,6 +129,14 @@ public class FlywheelSubsystem extends SubsystemBase {
         flywheelInputs.volts = motor.getVoltage();
         flywheelInputs.current = motor.getStatorCurrent();
         flywheelInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
+
+        boolean atSpeed =
+                flywheelInputs.setpoint.in(RPM) > 100.0
+                        && Math.abs(flywheelInputs.velocity.in(RPM) - flywheelInputs.setpoint.in(RPM))
+                                <= kVelocityTolerance.in(RPM);
+        SmartDashboard.putBoolean("Shooter/FlywheelAtSpeed", atSpeed);
+        SmartDashboard.putBoolean(
+                "Mechanisms/FlywheelIsMoving", Math.abs(flywheelInputs.velocity.in(RPM)) > 10.0);
     }
 
     @Override

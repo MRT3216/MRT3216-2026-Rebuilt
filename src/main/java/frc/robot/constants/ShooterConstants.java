@@ -3,6 +3,8 @@ package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
@@ -15,6 +17,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
@@ -299,10 +302,14 @@ public final class ShooterConstants {
         // Inertia / dynamics
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.0502269403);
 
-        // PID
+        // PIDs
         public static final double kP = 6.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
+        public static final AngularVelocity kMaxVelocity =
+                DegreesPerSecond.of(180.0); // degrees per second
+        public static final AngularAcceleration kMaxAccel =
+                DegreesPerSecondPerSecond.of(180.0); // degrees per second squared
 
         // Simulation-tuned PID defaults (reduced to avoid oscillation in sim)
         public static final double kP_sim = 2.0;
@@ -320,12 +327,10 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Limits / presets
-        public static final Angle kHardLimitMax = Degrees.of(360);
+        public static final Angle kHardLimitMax = Degrees.of(315);
         public static final Angle kHardLimitMin = Degrees.of(0);
-        public static final Angle kSoftLimitMax = Degrees.of(90);
-        public static final Angle kSoftLimitMin = Degrees.of(-90);
-        // public static final Angle kSoftLimitMax = Degrees.of(360);
-        // public static final Angle kSoftLimitMin = Degrees.of(0);
+        public static final Angle kSoftLimitMax = Degrees.of(315);
+        public static final Angle kSoftLimitMin = Degrees.of(0);
         public static final Angle kStartingPosition = Degrees.of(0);
     }
 }

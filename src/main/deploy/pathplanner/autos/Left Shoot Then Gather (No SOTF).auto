@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Shoot First (No SOTF)"
+            "pathName": "Left Shoot First (No SOTF)"
           }
         },
         {
@@ -29,7 +29,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Shoot"
+                  "name": "Aim and Shoot"
                 }
               }
             ]
@@ -104,7 +104,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Shoot"
+                  "name": "Aim and Shoot"
                 }
               }
             ]
@@ -173,7 +173,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Shoot"
+                  "name": "Aim and Shoot"
                 }
               }
             ]
@@ -221,6 +221,6 @@
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Left",
   "choreoAuto": false
 }

@@ -6,7 +6,10 @@
     "Left",
     "Right"
   ],
-  "autoFolders": [],
+  "autoFolders": [
+    "Left",
+    "Right"
+  ],
   "defaultMaxVel": 3.0,
   "defaultMaxAccel": 3.0,
   "defaultMaxAngVel": 540.0,

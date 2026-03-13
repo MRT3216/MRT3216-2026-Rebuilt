@@ -47,7 +47,6 @@ import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import com.pathplanner.lib.auto.NamedCommands;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -77,18 +76,6 @@ public class RobotContainer {
     private final IntakeSystem intakeSystem =
             new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
 
-    // Register auto commands
-    NamedCommands.registerCommand("Start Intake", intakeSystem.intake());
-    NamedCommands.registerCommand("Aim and Shoot", 
-
-        shooterSystem.aimAndShoot(
-                () -> drive.getPose(),
-                () -> drive.getChassisSpeeds(),
-                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                3,
-                ShootingLookupTable.Mode.HUB));
-    NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
-
     // private final ZoneSystem zoneSystem;
 
     // Controller
@@ -107,6 +94,7 @@ public class RobotContainer {
         // first Vision.periodic() call does not eat the ~250-500ms file I/O cost.
         frc.robot.subsystems.vision.VisionConstants.aprilTagLayout.getFieldLength();
         RobotMapValidator.validate();
+
         switch (Constants.getMode()) {
             case REAL:
                 {
@@ -192,7 +180,19 @@ public class RobotContainer {
                     break;
                 }
         }
-        
+
+        // Register auto commands
+        NamedCommands.registerCommand("Start Intake", intakeSystem.intake());
+        NamedCommands.registerCommand(
+                "Aim and Shoot",
+                shooterSystem.aimAndShoot(
+                        () -> drive.getPose(),
+                        () -> drive.getChassisSpeeds(),
+                        () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                        3,
+                        ShootingLookupTable.Mode.HUB));
+        NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
+
         setupAutoChooser();
         configureDefaultCommands();
         configureButtonBindings();

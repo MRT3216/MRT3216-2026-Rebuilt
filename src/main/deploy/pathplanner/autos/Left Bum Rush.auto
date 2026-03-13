@@ -5,37 +5,44 @@
     "data": {
       "commands": [
         {
-          "type": "named",
-          "data": {
-            "name": "Start Intake"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left Enter"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left Leave"
-          }
-        },
-        {
           "type": "parallel",
           "data": {
             "commands": [
               {
                 "type": "named",
                 "data": {
-                  "name": "Aim and Shoot"
+                  "name": "Run Intake"
                 }
               },
               {
-                "type": "named",
+                "type": "path",
                 "data": {
-                  "name": "Agitate"
+                  "pathName": "Left Enter"
+                }
+              },
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Left Leave"
+                }
+              },
+              {
+                "type": "parallel",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "Aim and Shoot"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "Agitate"
+                      }
+                    }
+                  ]
                 }
               }
             ]

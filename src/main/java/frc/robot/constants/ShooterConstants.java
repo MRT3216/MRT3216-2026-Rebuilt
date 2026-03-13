@@ -112,8 +112,8 @@ public final class ShooterConstants {
         public static final Distance dMax = Inches.of(291.5);
 
         // Flywheel anchor speeds (RPM)
-        public static final AngularVelocity kRpmAtMin = RPM.of(2400.0);
-        public static final AngularVelocity kRpmAtMax = RPM.of(4200.0);
+        public static final AngularVelocity kRpmAtMin = RPM.of(2500.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(4300.0);
     }
 
     public static final class SpindexerConstants {

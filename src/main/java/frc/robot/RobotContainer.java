@@ -303,7 +303,7 @@ public class RobotContainer {
         // Left bumper immediately stops rollers and holds them stopped while pressed.
         operatorController.leftBumper().onTrue(intakeSystem.stopRollers());
 
-        operatorController.a().whileTrue(intakeSystem.agitate());
+        operatorController.a().whileTrue(intakeSystem.agitate()).whileFalse(intakeSystem.deploy());
         operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
 
         operatorController.x().whileTrue(intakeRollersSubsystem.ejectBalls());

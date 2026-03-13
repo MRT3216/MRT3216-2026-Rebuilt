@@ -74,8 +74,8 @@ public class IntakeSystem {
                         Commands.repeatingSequence(
                                 intakePivot
                                         .set(0.15)
-                                        .withTimeout(0.17)
-                                        .andThen(intakePivot.set(-0.15).withTimeout(0.17))));
+                                        .withTimeout(0.2)
+                                        .andThen(intakePivot.set(-0.15).withTimeout(0.18))));
     }
 
     /**
@@ -84,19 +84,20 @@ public class IntakeSystem {
      * @return a command to perform the intake action
      */
     public Command deploy() {
-        if (currentState == IntakeStates.Stowed) {
-            // Move the arm to the deployed angle, then update the logical state after the
-            // motion
-            // completes. This ensures the state reflects the physical position rather than
-            // the
-            // scheduled intention.
-            return intakePivot
-                    .set(-.20)
-                    .withTimeout(0.3)
-                    .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
-                    .withName("Intake.Deploy");
-        }
-        return Commands.none();
+        // if (currentState == IntakeStates.Stowed) {
+        // Move the arm to the deployed angle, then update the logical state after the
+        // motion
+        // completes. This ensures the state reflects the physical position rather than
+        // the
+        // scheduled intention.
+        return intakePivot
+                .set(-.20)
+                .withTimeout(0.3)
+                // .andThen(intakePivot.set(0))
+                // .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
+                .withName("Intake.Deploy");
+
+        // return Commands.none();
     }
 
     /**

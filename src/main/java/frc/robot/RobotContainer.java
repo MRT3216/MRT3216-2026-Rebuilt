@@ -182,7 +182,7 @@ public class RobotContainer {
         }
 
         // Register auto commands
-        NamedCommands.registerCommand("Start Intake", intakeSystem.intake());
+        NamedCommands.registerCommand("Run Intake", intakeSystem.intake());
         NamedCommands.registerCommand(
                 "Aim and Shoot",
                 shooterSystem.aimAndShoot(

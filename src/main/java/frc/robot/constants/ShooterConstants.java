@@ -326,11 +326,14 @@ public final class ShooterConstants {
                                 kTurretOffsetX.in(Meters), kTurretOffsetY.in(Meters), kTurretOffsetZ.in(Meters)),
                         new Rotation3d());
 
+        public static final Angle kTurretAngleOffset =
+                Degrees.of(-167); // degrees, added to turret angle to get actual heading
+
         // Limits / presets
         public static final Angle kHardLimitMax = Degrees.of(315);
         public static final Angle kHardLimitMin = Degrees.of(0);
-        public static final Angle kSoftLimitMax = Degrees.of(315);
-        public static final Angle kSoftLimitMin = Degrees.of(0);
+        public static final Angle kSoftLimitMax = Degrees.of(167);
+        public static final Angle kSoftLimitMin = Degrees.of(-167);
         public static final Angle kStartingPosition = Degrees.of(0);
     }
 }

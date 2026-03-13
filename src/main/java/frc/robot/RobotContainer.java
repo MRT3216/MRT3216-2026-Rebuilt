@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.constants.IntakeConstants.Rollers.kTargetAngularVelocity;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -196,6 +197,7 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooter());
 
         setupAutoChooser();
+        //setupSysid();
         configureDefaultCommands();
         configureButtonBindings();
     }
@@ -214,8 +216,8 @@ public class RobotContainer {
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         turretSubsystem.setDefaultCommand(
-                turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-        // turretSubsystem.setAngle(Degrees.of(180)));
+                // turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
+                turretSubsystem.setAngle(Degrees.of(0)));
 
         // Let spindexer coast by default. Use the persistent stopHold() default
         // which disables closed-loop control and keeps the duty/voltage at zero
@@ -303,7 +305,6 @@ public class RobotContainer {
         operatorController.leftBumper().onTrue(intakeSystem.stopRollers());
 
         operatorController.a().whileTrue(intakeSystem.agitate());
-
         operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
 
         operatorController.x().whileTrue(intakeRollersSubsystem.ejectBalls());
@@ -360,7 +361,9 @@ public class RobotContainer {
      */
     @SuppressWarnings("unused")
     private void setupSysid() {
+        // autoChooser = new LoggedDashboardChooser<>("Auto Chooser", AutoBuilder.buildAutoChooser());
         // Set up SysId routines
+        autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
         autoChooser.addOption(
                 "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
         autoChooser.addOption(

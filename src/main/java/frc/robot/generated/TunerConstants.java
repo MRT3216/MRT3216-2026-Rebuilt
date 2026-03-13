@@ -79,12 +79,17 @@ public class TunerConstants {
     public static final CANBus kCANBus = new CANBus("CANFD", "./logs/example.hoot");
 
     // Theoretical free speed (m/s) at 12 V applied output;
-    // This needs to be tuned to your individual robot
-    public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(5.72);
+    // Computed from Kraken X60 no-load RPM (6000 rpm at your 60A limit),
+    // drive gear ratio (4.666666666666667), and wheel radius (1.73 in).
+    // motor_rps = 6000 / 60 = 100 rps
+    // wheel_rps = motor_rps / kDriveGearRatio = 100 / 4.666666666666667
+    // linear_speed = wheel_rps * 2 * pi * wheel_radius_m
+    // = ~6.022849 m/s (computed from Kraken X60 at 6111 RPM with current gear/wheel)
+    public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(6.022849);
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot
-    private static final double kCoupleRatio = 0;
+    private static final double kCoupleRatio = 4.5;
 
     private static final double kDriveGearRatio = 4.666666666666667;
     private static final double kSteerGearRatio = 25.9;

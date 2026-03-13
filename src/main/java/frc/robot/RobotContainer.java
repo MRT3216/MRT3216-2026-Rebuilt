@@ -185,13 +185,17 @@ public class RobotContainer {
         NamedCommands.registerCommand("Run Intake", intakeSystem.intake());
         NamedCommands.registerCommand(
                 "Aim and Shoot",
-                shooterSystem.aimAndShoot(
-                        () -> drive.getPose(),
-                        () -> drive.getChassisSpeeds(),
-                        () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                        3,
-                        ShootingLookupTable.Mode.HUB));
-        // NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
+                shooterSystem
+                        .aimAndShoot(
+                                () -> drive.getPose(),
+                                () -> drive.getChassisSpeeds(),
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                ShootingLookupTable.Mode.HUB)
+                        .withTimeout(6.0));
+        NamedCommands.registerCommand("Stop Shooter", shooterSystem.interruptShooting());
+        NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
+        NamedCommands.registerCommand("Stop Agitate", intakeSystem.stopRollers());
 
         setupAutoChooser();
         configureDefaultCommands();
@@ -404,6 +408,6 @@ public class RobotContainer {
 
     /** Returns the command selected on the dashboard to run during autonomous. */
     public Command getAutonomousCommand() {
-        return autoChooser.get();
+        return autoChooser.get().repeatedly().withTimeout(20);
     }
 }

@@ -194,7 +194,13 @@ public class FlywheelSubsystem extends SubsystemBase {
      * finishes. Use when you need an imperative, non-blocking stop in a sequence.
      */
     public Command stopNow() {
-        return Commands.runOnce(() -> flywheel.set(0), this).withName("FlywheelStopNow");
+        return Commands.runOnce(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("FlywheelStopNow");
     }
 
     /**

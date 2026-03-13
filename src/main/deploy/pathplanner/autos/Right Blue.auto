@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right blue"
+            "pathName": "Right Blue Enter"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "right blue leave"
+            "pathName": "Right Blue Leave"
           }
         },
         {
@@ -25,19 +25,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right blue"
+            "pathName": "Right Blue Enter"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "right blue leave"
+            "pathName": "Right Blue Leave"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": null,
+  "folder": "Blue",
   "choreoAuto": false
 }

@@ -15,15 +15,22 @@
                 }
               },
               {
-                "type": "path",
+                "type": "sequential",
                 "data": {
-                  "pathName": "Left Enter"
-                }
-              },
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Left Leave"
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Left Enter"
+                      }
+                    },
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Left Leave"
+                      }
+                    }
+                  ]
                 }
               }
             ]

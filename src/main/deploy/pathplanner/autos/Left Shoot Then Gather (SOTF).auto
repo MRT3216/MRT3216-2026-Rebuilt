@@ -11,7 +11,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 3.0
+                  "waitTime": 6.0
                 }
               },
               {
@@ -27,6 +27,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Stop Shooter"
           }
         },
         {
@@ -52,50 +58,6 @@
           "type": "path",
           "data": {
             "pathName": "Left Leave (SOTF)"
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 6.0
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Aim and Shoot"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Agitate"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 0.5
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Stop Shooter"
-                }
-              }
-            ]
           }
         }
       ]

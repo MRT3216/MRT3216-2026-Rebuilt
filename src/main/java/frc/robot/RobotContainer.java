@@ -198,7 +198,7 @@ public class RobotContainer {
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         turretSubsystem.setDefaultCommand(
                 turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-        // turretSubsystem.setAngle(Degrees.of(0)));
+        // turretSubsystem.setAngle(Degrees.of(180)));
 
         // Let spindexer coast by default. Use the persistent stopHold() default
         // which disables closed-loop control and keeps the duty/voltage at zero
@@ -252,6 +252,16 @@ public class RobotContainer {
 
         // Left trigger immediately stops rollers and holds them stopped while pressed.
         driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
+
+        driverController
+                .a()
+                .whileTrue(
+                        shooterSystem.aim(
+                                () -> drive.getPose(),
+                                () -> drive.getChassisSpeeds(),
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                ShootingLookupTable.Mode.HUB));
 
         // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
         // controller.

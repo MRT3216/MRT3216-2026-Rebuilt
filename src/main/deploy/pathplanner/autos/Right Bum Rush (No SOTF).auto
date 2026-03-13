@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Left Enter (No SOTF)"
+                  "pathName": "Right Enter (No SOTF)"
                 }
               },
               {
@@ -26,7 +26,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Left Leave (No SOTF)"
+            "pathName": "Right Leave (No SOTF)"
           }
         },
         {
@@ -80,7 +80,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2nd Left Enter (No SOTF)"
+                  "pathName": "2nd Right Enter (No SOTF)"
                 }
               },
               {
@@ -95,7 +95,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2nd Left Leave (No SOTF)"
+            "pathName": "2nd Right Leave (No SOTF)"
           }
         },
         {
@@ -149,7 +149,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Left Reposition (No SOTF)"
+                  "pathName": "Right Reposition (No SOTF)"
                 }
               },
               {
@@ -165,6 +165,6 @@
     }
   },
   "resetOdom": true,
-  "folder": "Left",
+  "folder": "Right",
   "choreoAuto": false
 }

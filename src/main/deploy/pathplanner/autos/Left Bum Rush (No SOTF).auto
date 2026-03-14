@@ -86,6 +86,12 @@
           }
         },
         {
+          "type": "path",
+          "data": {
+            "pathName": "Left Shoot First (No SOTF)"
+          }
+        },
+        {
           "type": "race",
           "data": {
             "commands": [

@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": null
+            "pathName": "Right Shoot First (No SOTF)"
           }
         },
         {
@@ -17,7 +17,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 2.0
+                  "waitTime": 5.0
                 }
               },
               {
@@ -44,7 +44,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": null
+            "pathName": "Right Reposition (No SOTF)"
           }
         },
         {
@@ -54,7 +54,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": null
+                  "pathName": "Right Enter"
                 }
               },
               {
@@ -69,7 +69,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": null
+            "pathName": "Right Leave (No SOTF)"
           }
         },
         {
@@ -110,7 +110,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": null
+                  "pathName": "2nd Right Enter (No SOTF)"
                 }
               },
               {
@@ -125,7 +125,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": null
+            "pathName": "2nd Right Leave (No SOTF)"
           }
         },
         {
@@ -166,7 +166,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": null
+                  "pathName": "Right Reposition (No SOTF)"
                 }
               },
               {

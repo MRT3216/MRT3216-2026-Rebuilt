@@ -17,7 +17,7 @@
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 2.0
+                  "waitTime": 5.0
                 }
               },
               {
@@ -126,56 +126,6 @@
           "type": "path",
           "data": {
             "pathName": "2nd Left Leave (No SOTF)"
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 6.0
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Agitate"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Aim and Shoot"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stop Shooter"
-          }
-        },
-        {
-          "type": "deadline",
-          "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Left Reposition (No SOTF)"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Run Intake"
-                }
-              }
-            ]
           }
         }
       ]

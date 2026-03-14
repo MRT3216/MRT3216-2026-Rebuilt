@@ -219,7 +219,13 @@ public class KickerSubsystem extends SubsystemBase {
          * zero, then finishes. Use for imperative immediate stops (non-blocking). This does not hold
          * the subsystem at zero after completion.
          */
-        return Commands.runOnce(() -> kicker.set(0), this).withName("KickerStopNow");
+        return Commands.runOnce(
+                        () -> {
+                            kicker.set(0);
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("KickerStopNow");
     }
 
     /**

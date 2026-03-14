@@ -75,7 +75,7 @@ public class IntakeSystem {
                                 intakePivot
                                         .set(0.15)
                                         .withTimeout(0.2)
-                                        .andThen(intakePivot.set(-0.15).withTimeout(0.18))));
+                                        .andThen(intakePivot.set(-0.15).withTimeout(0.17))));
     }
 
     /**

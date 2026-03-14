@@ -313,5 +313,9 @@ public class ShooterSystem {
                 .withName("InterruptShooting");
     }
 
+    public Command stopShooting() {
+        return flywheel.stopNow().alongWith(kicker.stopNow()).alongWith(spindexer.stopNow());
+    }
+
     // endregion
 }

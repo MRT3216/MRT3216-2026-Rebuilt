@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Right Enter (SOTF)"
+                  "pathName": null
                 }
               },
               {
@@ -26,7 +26,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right Leave (SOTF)"
+            "pathName": null
           }
         },
         {

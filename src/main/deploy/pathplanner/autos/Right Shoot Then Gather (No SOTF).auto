@@ -7,7 +7,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right Shoot First (No SOTF)"
+            "pathName": null
           }
         },
         {
@@ -44,7 +44,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right Reposition (No SOTF)"
+            "pathName": null
           }
         },
         {
@@ -54,7 +54,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Right Enter (No SOTF)"
+                  "pathName": null
                 }
               },
               {
@@ -69,7 +69,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right Leave (No SOTF)"
+            "pathName": null
           }
         },
         {
@@ -110,7 +110,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2nd Right Enter (No SOTF)"
+                  "pathName": null
                 }
               },
               {
@@ -125,7 +125,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2nd Right Leave (No SOTF)"
+            "pathName": null
           }
         },
         {
@@ -166,7 +166,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Right Reposition (No SOTF)"
+                  "pathName": null
                 }
               },
               {

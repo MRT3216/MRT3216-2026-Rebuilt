@@ -7,35 +7,39 @@
 
 package frc.robot.constants;
 
-import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.InchesPerSecond;
-import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.Pounds;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Seconds;
 
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.units.measure.Mass;
-import edu.wpi.first.units.measure.MomentOfInertia;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.RobotBase;
+import frc.robot.generated.TunerConstants;
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 
 /**
  * Central repository of robot constants. Keep this file tidy: avoid duplicate nested classes and
  * prefer Javadoc over short inline comment headings.
  */
 public final class Constants {
+    // ---------------------------------------------------------------------
+    // Global / runtime settings
+    // ---------------------------------------------------------------------
+
     /** Selected robot hardware profile used at runtime (COMPBOT or SIMBOT). */
     public static final RobotType robot = RobotType.COMPBOT;
 
-    /** Whether the project is running in tuning mode (enables extra telemetry/tunables). */
-    public static final boolean tuningMode = false;
+    /**
+     * When true, enable runtime tuning/test bindings even if the Driver Station is not in Test mode.
+     * This flag allows enabling tuning behavior via code/config rather than relying on the Driver
+     * Station Test mode switch.
+     */
+    public static boolean tuningMode = false;
+
+    /**
+     * Use {@link #getMode()} to determine the runtime mode (REAL, SIM, REPLAY). Extra telemetry and
+     * interactive test bindings are enabled at runtime (for example from {@code Robot.testInit()})
+     * instead of via a compile-time boolean.
+     */
 
     /** Main control loop period (seconds). */
     public static final double loopPeriodSecs = 0.02;
@@ -43,8 +47,15 @@ public final class Constants {
     /** Watchdog period for loop monitoring (seconds). */
     public static final double loopPeriodWatchdogSecs = 0.2;
 
-    /** Currently active runtime mode (REAL, SIM, REPLAY). */
-    public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.SIM;
+    // Provide a Littleton-style runtime Mode getter. This returns REAL/REPLAY/SIM based on the
+    // selected `robot` profile and `RobotBase.isReal()` when appropriate.
+    public static Mode getMode() {
+        return switch (robot) {
+            case COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.SIM;
+            case SIMBOT -> Mode.SIM;
+            default -> RobotBase.isReal() ? Mode.REAL : Mode.SIM;
+        };
+    }
 
     /** Operation modes for the robot (simulation, real robot, etc.). */
     public enum Mode {
@@ -59,69 +70,27 @@ public final class Constants {
         SIMBOT
     }
 
-    // region Shooter
-    public static final class ShooterConstants {
-        public static final Distance kWheelDiameter = Inches.of(3);
-        public static final Mass kWheelMass = Pounds.of(3);
-        public static final double kGearReduction = 1.0;
-        public static final Current kStatorCurrentLimit = Amps.of(80);
-        public static final double kP = 1.0;
-        public static final double kI = 0.0;
-        public static final double kD = 0.0;
-        public static final double kS = 0.15;
-        public static final double kV = 0.00207;
-        public static final double kA = 0.0001;
-        public static final double kUpdateHz = 50.0;
-        public static final String kMotorTelemetry = "FlywheelMotor";
-        public static final String kMechTelemetry = "FlywheelMech";
+    /**
+     * Returns the YAMS telemetry verbosity to use for mechanisms. Centralized so it is easy to change
+     * behavior for REAL vs TUNING/SIM in one place.
+     */
+    public static TelemetryVerbosity telemetryVerbosity() {
+        switch (getMode()) {
+            case REAL:
+            case SIM:
+            case REPLAY:
+            default:
+                return TelemetryVerbosity.HIGH;
+        }
     }
 
-    // endregion
-
-    // region Turret
-    public static final class TurretConstants {
-        private TurretConstants() {}
-
-        public static final double kGearing = 32.4;
-        public static final boolean kMotorInverted = false;
-        public static final Current kStatorCurrentLimit = Amps.of(60);
-        public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.0502269403);
-        public static final double kP = 10.0;
-        public static final double kI = 0.0;
-        public static final double kD = 2.0;
-        public static final double kMaxVelocityDegPerSec = 90.0;
-        public static final double kMaxAccelDegPerSec2 = 45.0;
-        public static final double kS = 0.1;
-        public static final double kV = 0.12;
-        public static final double kA = 0.01;
-        public static final Distance kTurretOffsetX = Inches.of(0.0);
-        public static final Distance kTurretOffsetY = Inches.of(0.0);
-        public static final Distance kTurretOffsetZ = Inches.of(18.5);
-        public static final Transform3d kRobotToTurretTransform =
-                new Transform3d(
-                        new Translation3d(
-                                kTurretOffsetX.in(Meters), kTurretOffsetY.in(Meters), kTurretOffsetZ.in(Meters)),
-                        new Rotation3d());
-        public static final Angle kHardLimitMax = Degrees.of(180);
-        public static final Angle kHardLimitMin = Degrees.of(-180);
-        public static final Angle kSoftLimitMax = Degrees.of(170);
-        public static final Angle kSoftLimitMin = Degrees.of(-170);
-        public static final Angle kStartingPosition = Degrees.of(0);
-        public static final Distance kMinShootingDistance = Meters.of(1.5);
-        public static final Distance kMaxShootingDistance = Meters.of(12.0);
-        public static final LinearVelocity kBaseVel = InchesPerSecond.of(300);
-        public static final double kVelMultiplier = 0.5;
-        public static final double kVelPower = 1.2;
-        public static final Distance kDistanceAboveFunnel = Inches.of(12.0);
-        public static final Distance kFunnelRadius = Inches.of(24.0);
-        public static final Distance kFunnelHeight = Inches.of(104.0);
-        public static final String kMotorTelemetry = "TurretMotor";
-        public static final String kMechTelemetry = "TurretMech";
-    }
-
-    // endregion
+    // ---------------------------------------------------------------------
+    // Drive & motion-related constants
+    // ---------------------------------------------------------------------
 
     // region Drive
+
+    /** Drive-related physical constants used by the drivetrain and odometry. */
     public static final class DriveConstants {
         private DriveConstants() {}
 
@@ -132,20 +101,37 @@ public final class Constants {
         public static final double kOdometryFreqCAN = 100.0;
         public static final double kDefaultMotionMagicCruiseVelocity = 100.0;
         public static final double kMotionMagicAccelWindowSec = 0.100;
+
+        // TODO: tune this value on the robot. This is the time to rotate the robot to a Diagonal, used
+        // for predictive triggers in ZoneSystem.
+        public static final Time kRotateSnapDuration = Seconds.of(0.25);
     }
 
     // endregion
 
-    // region Communications
-    public static final class CommsConstants {
-        private CommsConstants() {}
+    // region DriveControl
 
-        public static final double kDefaultStatusSignalHz = 50.0;
+    /** Tunable control gains and limits used by drive controllers (angle/velocity controllers). */
+    public static final class DriveControlConstants {
+        private DriveControlConstants() {}
+
+        public static final double kDeadband = 0.1;
+        public static final double kAngleKP = 5.0;
+        public static final double kAngleKD = 0.4;
+        public static final double kAngleMaxVelocity = 8.0;
+        public static final double kAngleMaxAcceleration = 20.0;
+        public static final double kFFStartDelay = 2.0;
+        public static final double kFFRampRate = 0.1;
+        public static final double kWheelRadiusMaxVelocity =
+                TunerConstants.kSpeedAt12Volts.in(MetersPerSecond) / TunerConstants.kWheelRadius.in(Meters);
+        public static final double kWheelRadiusRampRate = 0.05;
     }
 
     // endregion
 
     // region PathPlanner
+
+    /** Path planner tuning gains used by autonomous path-following controllers. */
     public static final class PathPlannerConstants {
         private PathPlannerConstants() {}
 
@@ -159,24 +145,13 @@ public final class Constants {
 
     // endregion
 
-    // region DriveControl
-    public static final class DriveControlConstants {
-        private DriveControlConstants() {}
-
-        public static final double kDeadband = 0.1;
-        public static final double kAngleKP = 5.0;
-        public static final double kAngleKD = 0.4;
-        public static final double kAngleMaxVelocity = 8.0;
-        public static final double kAngleMaxAcceleration = 20.0;
-        public static final double kFFStartDelay = 2.0;
-        public static final double kFFRampRate = 0.1;
-        public static final double kWheelRadiusMaxVelocity = 0.25;
-        public static final double kWheelRadiusRampRate = 0.05;
-    }
-
-    // endregion
+    // ---------------------------------------------------------------------
+    // Safety / communications / misc infrastructure
+    // ---------------------------------------------------------------------
 
     // region RobotSafety
+
+    /** Robot-wide safety thresholds used by higher-level systems (battery, disable timeouts). */
     public static final class RobotSafetyConstants {
         private RobotSafetyConstants() {}
 
@@ -186,130 +161,40 @@ public final class Constants {
 
     // endregion
 
-    // region Physics
-    public static final class PhysicsConstants {
-        private PhysicsConstants() {}
+    // region LEDs
 
-        public static final double kStandardGravity = 9.80665;
+    /** LED configuration constants (length / effect tuning). */
+    public static final class LEDsConstants {
+        // TODO - update to led length
+        public static final int kNumLEDs = 60;
     }
 
     // endregion
 
-    // region Kicker
-    public static final class KickerConstants {
-        private KickerConstants() {}
+    // region Communications
 
-        public static final Distance kWheelDiameter = Inches.of(2);
-        public static final Mass kWheelMass = Pounds.of(1);
-        public static final double kGearReduction = 1.0;
-        public static final Current kStatorCurrentLimit = Amps.of(60);
-        public static final double kP = 1.0;
-        public static final double kI = 0.0;
-        public static final double kD = 0.0;
-        public static final double kS = 0.0;
-        public static final double kV = 0.0;
-        public static final double kA = 0.0;
-        public static final String kMotorTelemetry = "KickerMotor";
-        public static final String kMechTelemetry = "KickerMech";
+    /** Communication-related constants (status heartbeat frequencies, etc.). */
+    public static final class CommsConstants {
+        private CommsConstants() {}
+
+        // Default telemetry frequency (Hz) used for pushed Phoenix/status signals.
+        // Kept here as the single source of truth to avoid duplication.
+        public static final int DEFAULT_TELEMETRY_HZ = 50;
+        public static final int HIGH_TELEMETRY_HZ = 500;
+        // Backwards-compatible double-valued alias used by older callers that expect a
+        // floating-point value (preserves previous API shape).
+        public static final double kDefaultStatusSignalHz = DEFAULT_TELEMETRY_HZ;
     }
 
     // endregion
 
-    // region Spindexer
-    public static final class SpindexerConstants {
-        private SpindexerConstants() {}
-
-        public static final double kGearing = 5.0;
-        /** Backwards-compatible alias used by some subsystems. */
-        public static final double kGearReduction = kGearing;
-
-        /** Roller physical size used by FlyWheel configs. */
-        public static final Distance kWheelDiameter = Inches.of(2);
-
-        /** Roller mass used by FlyWheel configs. */
-        public static final Mass kWheelMass = Pounds.of(0.5);
-
-        public static final boolean kMotorInverted = false;
-        public static final Current kStatorCurrentLimit = Amps.of(30);
-        public static final double kP = 0.5;
-        public static final double kI = 0.0;
-        public static final double kD = 0.0;
-        public static final double kS = 0.05;
-        public static final double kV = 0.01;
-        public static final double kA = 0.0;
-        public static final String kMotorTelemetry = "SpindexerMotor";
-        public static final String kMechTelemetry = "SpindexerMech";
-    }
-
-    // endregion
-
-    // region ShooterLookupTables
-    public static final class ShooterLookupTables {
-        private ShooterLookupTables() {}
-
-        public static final double[][] HUB = {
-            {1.0, 80.0, 75.0, 0.45},
-            {2.0, 82.5, 72.0, 0.65},
-            {3.0, 85.0, 68.0, 0.85},
-            {4.0, 90.0, 65.0, 1.05},
-            {5.0, 95.0, 62.0, 1.25},
-            {6.0, 105.0, 60.0, 1.45},
-        };
-        public static final double[][] PASS = {{1.0, 75.0, 54.0, 0.35}, {5.5, 78.3, 45.0, 1.25}};
-    }
-
-    // endregion
-
-    // region Intake
-    public static final class IntakeConstants {
-        private IntakeConstants() {}
-
-        public static final Distance kWheelDiameter = Inches.of(3.5);
-        public static final Mass kWheelMass = Pounds.of(2);
-        public static final double kGearReduction = 1.0;
-        public static final Current kStatorCurrentLimit = Amps.of(80);
-        public static final double kP = 0.5;
-        public static final double kI = 0.0;
-        public static final double kD = 0.0;
-        public static final double kS = 0.15;
-        public static final double kV = 0.00207;
-        public static final double kA = 0.0001;
-        public static final double kUpdateHz = 50.0;
-        public static final String kMotorTelemetry = "IntakeRollersMotor";
-        public static final String kMechTelemetry = "IntakeRollersMech";
-    }
-
-    // endregion
-
-    // region IntakePivot
-    public static final class IntakePivotConstants {
-        private IntakePivotConstants() {}
-
-        public static final double kGearing = 30.0;
-        public static final Distance kLength = Inches.of(11.5);
-        public static final Mass kMass = Pounds.of(6.4);
-        public static final boolean kMotorInverted = false;
-        public static final Current kStatorCurrentLimit = Amps.of(60);
-        public static final double kP = 10.0;
-        public static final double kI = 0.0;
-        public static final double kD = 2.0;
-        public static final double kMaxVelocityDegPerSec = 20.0;
-        public static final double kMaxAccelDegPerSec2 = 20.0;
-        public static final double kS = 0.1;
-        public static final double kV = 0.12;
-        public static final double kA = 0.01;
-        public static final Angle kHardLimitMax = Degrees.of(360);
-        public static final Angle kHardLimitMin = Degrees.of(0);
-        public static final Angle kSoftLimitMax = Degrees.of(350);
-        public static final Angle kSoftLimitMin = Degrees.of(10);
-        public static final Angle kStartingPosition = Degrees.of(0);
-        public static final String kMotorTelemetry = "IntakeArmMotor";
-        public static final String kMechTelemetry = "IntakeArmMech";
-    }
-
-    // endregion
+    // ---------------------------------------------------------------------
+    // Utility / developer helpers
+    // ---------------------------------------------------------------------
 
     // region Utility
+
+    /** Small developer helpers and CLI checks used during deploys and PR gating. */
     private static boolean disableHAL = false;
 
     public static void setDisableHAL() {
@@ -335,7 +220,7 @@ public final class Constants {
 
     public static class CheckPullRequest {
         public static void main(String... args) {
-            if (robot != RobotType.COMPBOT || tuningMode) {
+            if (robot != RobotType.COMPBOT) {
                 System.err.println("Do not merge, non-default constants are configured.");
                 System.exit(1);
             }

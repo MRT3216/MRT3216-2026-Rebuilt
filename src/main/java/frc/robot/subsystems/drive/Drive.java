@@ -7,8 +7,7 @@
 
 package frc.robot.subsystems.drive;
 
-import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.Volts;
+import static edu.wpi.first.units.Units.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.ModuleConfig;
@@ -37,6 +36,8 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -49,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class DriveSubsystem extends SubsystemBase {
+public class Drive extends SubsystemBase {
     // TunerConstants doesn't include these constants, so they are declared locally
     static final double ODOMETRY_FREQUENCY = TunerConstants.kCANBus.isNetworkFD() ? 250.0 : 100.0;
     public static final double DRIVE_BASE_RADIUS =
@@ -99,7 +100,9 @@ public class DriveSubsystem extends SubsystemBase {
     private SwerveDrivePoseEstimator poseEstimator =
             new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePositions, Pose2d.kZero);
 
-    public DriveSubsystem(
+    private final Field2d m_field = new Field2d();
+
+    public Drive(
             GyroIO gyroIO,
             ModuleIO flModuleIO,
             ModuleIO frModuleIO,
@@ -129,6 +132,7 @@ public class DriveSubsystem extends SubsystemBase {
                 () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
                 this);
         Pathfinding.setPathfinder(new LocalADStarAK());
+        SmartDashboard.putData("Field", m_field);
         PathPlannerLogging.setLogActivePathCallback(
                 (activePath) -> {
                     Logger.recordOutput("Odometry/Trajectory", activePath.toArray(new Pose2d[0]));
@@ -206,7 +210,18 @@ public class DriveSubsystem extends SubsystemBase {
         }
 
         // Update gyro alert
-        gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
+        gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.getMode() != Mode.SIM);
+
+        // Keep Elastic Field2d widget in sync with estimated robot pose
+        m_field.setRobotPose(getPose());
+
+        // Publish drive activity for Elastic Mechanisms panel
+        ChassisSpeeds speeds = getChassisSpeeds();
+        SmartDashboard.putBoolean(
+                "Mechanisms/DriveIsMoving",
+                Math.abs(speeds.vxMetersPerSecond) > 0.05
+                        || Math.abs(speeds.vyMetersPerSecond) > 0.05
+                        || Math.abs(speeds.omegaRadiansPerSecond) > 0.05);
     }
 
     /**
@@ -289,9 +304,9 @@ public class DriveSubsystem extends SubsystemBase {
         return states;
     }
 
-    /** Returns the measured chassis speeds of the robot. */
+    /** Returns the measured chassis speeds of the robot (robot-relative). */
     @AutoLogOutput(key = "SwerveChassisSpeeds/Measured")
-    private ChassisSpeeds getChassisSpeeds() {
+    public ChassisSpeeds getChassisSpeeds() {
         return kinematics.toChassisSpeeds(getModuleStates());
     }
 

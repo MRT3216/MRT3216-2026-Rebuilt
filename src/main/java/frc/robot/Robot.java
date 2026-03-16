@@ -17,10 +17,15 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Watchdog;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj.simulation.RoboRioSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.RobotType;
+import frc.robot.util.Elastic;
+import frc.robot.util.Elastic.Notification;
+import frc.robot.util.Elastic.NotificationLevel;
+import frc.robot.util.HubShiftUtil;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +58,7 @@ public class Robot extends LoggedRobot {
     /** Construct the Robot, configure logging and instantiate RobotContainer. */
     public Robot() {
         // Set up data receivers & replay source
-        switch (Constants.currentMode) {
+        switch (Constants.getMode()) {
             case REAL:
                 // Running on a real robot, log to a USB stick ("/U/logs")
                 Logger.addDataReceiver(new WPILOGWriter());
@@ -138,6 +143,25 @@ public class Robot extends LoggedRobot {
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
 
+        // ── HubShift telemetry ────────────────────────────────────────────────
+        var officialShift = HubShiftUtil.getOfficialShiftInfo();
+        var shiftedShift = HubShiftUtil.getShiftedShiftInfo();
+        Logger.recordOutput("HubShift/CurrentShift", officialShift.currentShift().name());
+        Logger.recordOutput("HubShift/Active", officialShift.active());
+        Logger.recordOutput("HubShift/ElapsedTime", officialShift.elapsedTime());
+        Logger.recordOutput("HubShift/RemainingTime", officialShift.remainingTime());
+        Logger.recordOutput("HubShift/ShiftedActive", shiftedShift.active());
+        Logger.recordOutput("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
+
+        // Publish to SmartDashboard so Elastic widgets can subscribe.
+        SmartDashboard.putString("HubShift/CurrentShift", officialShift.currentShift().name());
+        SmartDashboard.putBoolean("HubShift/Active", officialShift.active());
+        SmartDashboard.putNumber("HubShift/RemainingTime", officialShift.remainingTime());
+        SmartDashboard.putNumber("HubShift/ElapsedTime", officialShift.elapsedTime());
+        SmartDashboard.putBoolean("HubShift/ShiftedActive", shiftedShift.active());
+        SmartDashboard.putNumber("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
+        SmartDashboard.putNumber("MatchTime", DriverStation.getMatchTime());
+
         if (RobotController.getBatteryVoltage() > 0.0
                 && RobotController.getBatteryVoltage() <= Constants.RobotSafetyConstants.kLowBatteryVoltage
                 && disabledTimer.hasElapsed(Constants.RobotSafetyConstants.kLowBatteryDisabledSecs)) {
@@ -152,7 +176,9 @@ public class Robot extends LoggedRobot {
 
     /** This function is called once when the robot is disabled. */
     @Override
-    public void disabledInit() {}
+    public void disabledInit() {
+        Elastic.selectTab("Disabled");
+    }
 
     /** This function is called periodically when disabled. */
     @Override
@@ -161,7 +187,8 @@ public class Robot extends LoggedRobot {
     /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
     @Override
     public void autonomousInit() {
-        // autonomousCommand = robotContainer.getAutonomousCommand();
+        Elastic.selectTab("Auto");
+        autonomousCommand = robotContainer.getAutonomousCommand();
 
         // schedule the autonomous command (example)
         if (autonomousCommand != null) {
@@ -171,7 +198,10 @@ public class Robot extends LoggedRobot {
 
     /** This function is called periodically during autonomous. */
     @Override
-    public void autonomousPeriodic() {}
+    public void autonomousPeriodic() {
+        CommandScheduler.getInstance().run();
+        CommandScheduler.getInstance().schedule(autonomousCommand);
+    }
 
     /** This function is called once when teleop is enabled. */
     @Override
@@ -183,6 +213,11 @@ public class Robot extends LoggedRobot {
         if (autonomousCommand != null) {
             autonomousCommand.cancel();
         }
+        HubShiftUtil.initialize();
+        Elastic.selectTab("Teleop");
+        Elastic.sendNotification(
+                new Notification(
+                        NotificationLevel.INFO, "Teleop Started", "Hub shift timer running.", 3000));
     }
 
     /** This function is called periodically during operator control. */
@@ -192,7 +227,6 @@ public class Robot extends LoggedRobot {
     /** This function is called once when test mode is enabled. */
     @Override
     public void testInit() {
-        // Cancels all running commands at the start of test mode.
         CommandScheduler.getInstance().cancelAll();
     }
 
@@ -202,7 +236,12 @@ public class Robot extends LoggedRobot {
 
     /** This function is called once when the robot is first started up. */
     @Override
-    public void simulationInit() {}
+    public void simulationInit() {
+        // Ensure the simulator starts on Blue1 by default. This runs when the
+        // simulation session begins which avoids UI/initialization ordering issues.
+        DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
+        DriverStationSim.notifyNewData();
+    }
 
     /** This function is called periodically whilst in simulation. */
     @Override

@@ -1,6 +1,7 @@
 package frc.robot.util;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.constants.RobotMap;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -9,19 +10,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Simple validator that scans {@code frc.robot.constants.RobotMap} for duplicated integer IDs and
- * reports warnings to DriverStation. Intended to run once at robot startup.
+ * Simple validator that scans {@link RobotMap} for duplicated integer IDs and reports warnings to
+ * DriverStation. Intended to run once at robot startup.
  */
 public final class RobotMapValidator {
     private RobotMapValidator() {}
 
     /**
-     * Scans nested classes under {@code frc.robot.constants.RobotMap} for public static integer
-     * fields and reports duplicates.
+     * Scans nested classes under {@link RobotMap} for public static integer fields and reports
+     * duplicates.
      */
     public static void validate() {
         try {
-            Class<?> root = Class.forName("frc.robot.constants.RobotMap");
+            Class<?> root = Class.forName(RobotMap.class.getName());
             Map<Integer, List<String>> ids = new HashMap<>();
             collectIdsRecursive(root, ids, root.getSimpleName());
 

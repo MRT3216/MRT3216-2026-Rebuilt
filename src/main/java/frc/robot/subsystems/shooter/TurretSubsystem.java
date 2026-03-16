@@ -3,18 +3,33 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kD;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kD_sim;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kGearing;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kHardLimitMax;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kHardLimitMin;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kI;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kI_sim;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kMOI;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kMotorInverted;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kP;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kP_sim;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kSoftLimitMax;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kSoftLimitMin;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kStartingPosition;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kStatorCurrentLimit;
+import static frc.robot.constants.TelemetryKeys.kTurretMechTelemetry;
+import static frc.robot.constants.TelemetryKeys.kTurretMotorTelemetry;
 
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.constants.Constants.TurretConstants;
+import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -25,23 +40,18 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
-import yams.motorcontrollers.remote.TalonFXWrapper;
+import yams.motorcontrollers.local.SparkWrapper;
 
-/** Subsystem responsible for turret rotation and hood control. */
 /**
  * AdvantageKit-ready Turret Subsystem for MRT 3216.
  *
- * <p>This subsystem manages a single-Kraken turret pivot using the YAMS library and Phoenix 6. It
+ * <p>This subsystem manages a single-NEO turret pivot using the YAMS library and RevLib. It
  * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
  * (Inputs) are separated from software commands (Outputs).
  */
 public class TurretSubsystem extends SubsystemBase {
+    // region Inputs & telemetry
 
-    /**
-     * Inputs for AdvantageKit recording for the turret pivot. Public fields are populated from the
-     * mechanism each loop and included in logs for replay and analysis.
-     */
     /**
      * Inputs for AdvantageKit recording for the turret pivot. Public fields are populated from the
      * mechanism each loop and included in logs for replay and analysis.
@@ -49,21 +59,13 @@ public class TurretSubsystem extends SubsystemBase {
     @AutoLog
     public static class TurretInputs {
         /** Current turret angle (degrees). */
-        /** Current turret angle (degrees). */
         public Angle angle = Degrees.of(0);
-
-        /** Target setpoint angle (degrees) if any. */
 
         /** Target setpoint angle (degrees) if any. */
         public Angle setpoint = Degrees.of(0);
 
-        /** Measured motor voltage. */
-
-        /** Measured motor voltage. */
         /** Applied voltage across the motor. */
         public Voltage volts = Volts.of(0);
-
-        /** Measured motor current draw. */
 
         /** Measured motor current draw. */
         public Current current = Amps.of(0);
@@ -71,34 +73,41 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final TurretInputsAutoLogged turretInputs = new TurretInputsAutoLogged();
 
-    private TalonFX pivotMotor = new TalonFX(RobotMap.Shooter.Turret.kMotorId);
-    private final StatusSignal<Angle> positionSignal = pivotMotor.getPosition();
-    private final StatusSignal<Double> referenceSignal = pivotMotor.getClosedLoopReference();
+    // endregion
+
+    // region Hardware & signals
+
+    private final SparkMax pivotMotor =
+            new SparkMax(RobotMap.Shooter.Turret.kMotorId, SparkMax.MotorType.kBrushless);
+
+    // endregion
+
+    // region Controller configuration / mechanism
 
     private final SmartMotorControllerConfig motorConfig;
 
     /** The SmartMotorController abstraction that allows for hardware/sim parity. */
     private final SmartMotorController smartMotor;
 
-    /* High-level mechanism configuration */
-    private final PivotConfig turretConfig;
-
     private final Pivot turret;
+
+    // endregion
+
+    // region Lifecycle / periodic
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
      * to ensure telemetry is time-aligned.
      */
     private void updateInputs() {
-        // Refresh all Phoenix 6 signals at once to minimize CAN latency jitter
-        BaseStatusSignal.refreshAll(positionSignal, referenceSignal);
-
         turretInputs.angle = turret.getAngle();
         turretInputs.volts = smartMotor.getVoltage();
         turretInputs.current = smartMotor.getStatorCurrent();
-
-        // Sets the setpoint input based on the current SMC state
         turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
+        Logger.recordOutput("Shooter/Turret/PositionDegrees", turretInputs.angle.in(Degrees));
+        SmartDashboard.putBoolean(
+                "Mechanisms/TurretIsMoving",
+                Math.abs(turretInputs.setpoint.in(Degrees) - turretInputs.angle.in(Degrees)) > 1.0);
     }
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
@@ -107,38 +116,43 @@ public class TurretSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants)
-                        .withClosedLoopController(TurretConstants.kP, TurretConstants.kI, TurretConstants.kD)
-                        .withSimClosedLoopController(TurretConstants.kP, TurretConstants.kI, TurretConstants.kD)
-                        // Feedforward Constants
-                        .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        TurretConstants.kS, TurretConstants.kV, TurretConstants.kA))
-                        .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        TurretConstants.kS, TurretConstants.kV, TurretConstants.kA))
-                        // Telemetry
-                        .withTelemetry("TurretMotor", TelemetryVerbosity.HIGH)
-                        .withGearing(TurretConstants.kGearing)
-                        .withMotorInverted(TurretConstants.kMotorInverted)
+                        .withClosedLoopController(kP, kI, kD) // , kMaxVelocity, kMaxAccel)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        .withTelemetry(kTurretMotorTelemetry, Constants.telemetryVerbosity())
+                        // .withClosedLoopRampRate(Seconds.of(0.5))
+                        .withGearing(kGearing)
+                        .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        .withStatorCurrentLimit(TurretConstants.kStatorCurrentLimit);
+                        .withVoltageCompensation(Volts.of(12))
+                        .withStatorCurrentLimit(kStatorCurrentLimit);
 
-        smartMotor = new TalonFXWrapper(pivotMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
+        smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);
 
-        turretConfig =
+        PivotConfig turretConfig =
                 new PivotConfig(smartMotor)
-                        .withMOI(TurretConstants.kMOI)
-                        .withTelemetry("TurretMech", TelemetryVerbosity.HIGH);
+                        .withStartingPosition(kStartingPosition)
+                        .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
+                        .withMOI(kMOI)
+                        .withHardLimit(kHardLimitMin, kHardLimitMax)
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         turret = new Pivot(turretConfig);
-
-        // High-frequency updates for PID tuning
-        BaseStatusSignal.setUpdateFrequencyForAll((int) 50.0, positionSignal, referenceSignal);
-
-        // Optimization: Disable unused signals to conserve CAN bus bandwidth
-        pivotMotor.getVelocity().setUpdateFrequency(0);
     }
+
+    /** Advance the turret simulation model by one simulation tick. */
+    @Override
+    public void simulationPeriodic() {
+        turret.simIterate();
+    }
+
+    @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Shooter/Turret", turretInputs);
+        turret.updateTelemetry();
+    }
+
+    // region Public API - queries & commands
 
     /**
      * Gets the current angle of the turret.
@@ -147,6 +161,21 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public Angle getPosition() {
         return turretInputs.angle;
+    }
+
+    /**
+     * Returns the current commanded target for the turret.
+     *
+     * <p>Reads the mechanism's stored setpoint (if present) and falls back to the measured position
+     * when no setpoint is available.
+     */
+    public Angle getTarget() {
+        return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
+    }
+
+    /** Convenience: long-running closed-loop hold of the current stored target (use as default). */
+    public Command stopHold() {
+        return setAngle(() -> getTarget()).withName("TurretStopHold");
     }
 
     /**
@@ -166,6 +195,8 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to run the turret at the specified duty cycle.
      */
     public Command setDutyCycle(double dutyCycle) {
+        // Allow open-loop duty outputs; mechanism-level hard/soft limits are applied
+        // via PivotConfig
         return turret.set(dutyCycle);
     }
 
@@ -176,38 +207,13 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to track the supplier's angle.
      */
     public Command setAngle(Supplier<Angle> angle) {
-        return turret.setAngle(
-                () -> {
-                    Logger.recordOutput("Shooter/Turret/Setpoint", angle.get());
-                    return angle.get();
-                });
+        return turret.setAngle(angle);
     }
 
-    /**
-     * Sets the duty cycle using a dynamic supplier.
-     *
-     * @param dutyCycle A supplier providing the target duty cycle.
-     * @return A command to track the supplier's duty cycle.
-     */
-    public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return turret.set(
-                () -> {
-                    Logger.recordOutput("Shooter/Turret/DutyCycle", dutyCycle.get());
-                    return dutyCycle.get();
-                });
-    }
+    // endregion
 
-    /** Advance the turret simulation model by one simulation tick. */
-    /** Advance the turret simulation model by one simulation tick. */
-    @Override
-    public void simulationPeriodic() {
-        turret.simIterate();
-    }
+    // region Triggers & events
 
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Shooter/Turret", turretInputs);
-        turret.updateTelemetry();
-    }
+    // endregion
+
 }

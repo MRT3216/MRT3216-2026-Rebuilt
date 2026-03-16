@@ -3,18 +3,36 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kD;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kD_sim;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kGearReduction;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kI;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kI_sim;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kP;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kP_sim;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSoftLimitMax;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSoftLimitMin;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kTunableIndexerRPM;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kWheelDiameter;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.kWheelMass;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.motorFeedforward;
+import static frc.robot.constants.ShooterConstants.SpindexerConstants.motorFeedforwardSim;
+import static frc.robot.constants.TelemetryKeys.kSpindexerMechTelemetry;
+import static frc.robot.constants.TelemetryKeys.kSpindexerMotorTelemetry;
 
 import com.revrobotics.spark.SparkFlex;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.constants.Constants.SpindexerConstants;
+import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -25,17 +43,11 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 
-/**
- * AdvantageKit Spindexer Subsystem for MRT 3216.
- *
- * <p>This subsystem manages a single Neo Vortex spindexer using the YAMS library. It utilizes an
- * IO-layer abstraction for full log replay capabilities, ensuring that hardware states (Inputs) are
- * separated from software commands (Outputs).
- */
+/** Spindexer subsystem (YAMS). Handles the spindexer motor and telemetry. */
 public class SpindexerSubsystem extends SubsystemBase {
+    // region Inputs & telemetry
 
     /**
      * IO inputs for the Spindexer. AutoLogged to provide synchronized data for AdvantageScope and log
@@ -55,9 +67,13 @@ public class SpindexerSubsystem extends SubsystemBase {
 
     private final SpindexerInputsAutoLogged spindexerInputs = new SpindexerInputsAutoLogged();
 
+    // endregion
+
+    // region Hardware & controller
+
     /* Hardware Objects */
-    private final SparkFlex motorController =
-            new SparkFlex(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
+    private final SparkMax motorController =
+            new SparkMax(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -66,9 +82,48 @@ public class SpindexerSubsystem extends SubsystemBase {
     private final SmartMotorController motor;
 
     /* High-level mechanism configuration */
+
     private final FlyWheelConfig spindexerConfig;
 
     private final FlyWheel spindexer;
+
+    // endregion
+
+    // region Initialization helpers
+
+    /** Initializes the subsystem and configures the motor controller with constants. */
+    public SpindexerSubsystem() {
+        // Initialize motor controller config in constructor to avoid object-escape
+        motorConfig =
+                new SmartMotorControllerConfig(this)
+                        .withControlMode(ControlMode.CLOSED_LOOP)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        .withFeedforward(motorFeedforward())
+                        .withSimFeedforward(motorFeedforwardSim())
+                        .withTelemetry(kSpindexerMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
+                        .withMotorInverted(true)
+                        .withIdleMode(MotorMode.COAST)
+                        .withVoltageCompensation(Volts.of(12))
+                        .withStatorCurrentLimit(kStatorCurrentLimit);
+
+        motor = new SparkWrapper(motorController, DCMotor.getNEO(1), motorConfig);
+
+        spindexerConfig =
+                new FlyWheelConfig(motor)
+                        .withDiameter(kWheelDiameter)
+                        .withMass(kWheelMass)
+                        .withTelemetry(kSpindexerMechTelemetry, Constants.telemetryVerbosity())
+                        .withUpperSoftLimit(kSoftLimitMax)
+                        .withLowerSoftLimit(kSoftLimitMin);
+
+        spindexer = new FlyWheel(spindexerConfig);
+    }
+
+    // endregion
+
+    // region Lifecycle / periodic
 
     /**
      * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry
@@ -79,45 +134,25 @@ public class SpindexerSubsystem extends SubsystemBase {
         spindexerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
         spindexerInputs.volts = motor.getVoltage();
         spindexerInputs.current = motor.getStatorCurrent();
+        SmartDashboard.putBoolean(
+                "Mechanisms/SpindexerIsMoving", Math.abs(spindexerInputs.velocity.in(RPM)) > 10.0);
     }
 
-    /** Initializes the subsystem and configures the motor controller with constants. */
-    public SpindexerSubsystem() {
-        // Initialize motor controller config in constructor to avoid object-escape
-        motorConfig =
-                new SmartMotorControllerConfig(this)
-                        .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants)
-                        .withClosedLoopController(
-                                SpindexerConstants.kP, SpindexerConstants.kI, SpindexerConstants.kD)
-                        .withSimClosedLoopController(
-                                SpindexerConstants.kP, SpindexerConstants.kI, SpindexerConstants.kD)
-                        // Feedforward Constants
-                        .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        SpindexerConstants.kS, SpindexerConstants.kV, SpindexerConstants.kA))
-                        .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        SpindexerConstants.kS, SpindexerConstants.kV, SpindexerConstants.kA))
-                        // Telemetry
-                        .withTelemetry(SpindexerConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
-                        .withGearing(
-                                new MechanismGearing(
-                                        GearBox.fromReductionStages(SpindexerConstants.kGearReduction)))
-                        .withMotorInverted(true)
-                        .withIdleMode(MotorMode.COAST)
-                        .withStatorCurrentLimit(SpindexerConstants.kStatorCurrentLimit);
-
-        motor = new SparkWrapper(motorController, DCMotor.getNeoVortex(1), motorConfig);
-
-        spindexerConfig =
-                new FlyWheelConfig(motor)
-                        .withDiameter(SpindexerConstants.kWheelDiameter)
-                        .withMass(SpindexerConstants.kWheelMass)
-                        .withTelemetry(SpindexerConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
-
-        spindexer = new FlyWheel(spindexerConfig);
+    @Override
+    public void simulationPeriodic() {
+        spindexer.simIterate();
     }
+
+    @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Spindexer", spindexerInputs);
+        spindexer.updateTelemetry();
+    }
+
+    // endregion
+
+    // region Public API (queries & commands)
 
     /**
      * Gets the current velocity of the spindexer.
@@ -138,6 +173,28 @@ public class SpindexerSubsystem extends SubsystemBase {
         return spindexer.setSpeed(speed);
     }
 
+    /** Supplier-backed overload for dynamic/tunable speeds. */
+    public Command setVelocity(java.util.function.Supplier<AngularVelocity> supplier) {
+        return spindexer.setSpeed(supplier);
+    }
+
+    /**
+     * Convenience helper: run the spindexer at the configured shooter feed velocity.
+     *
+     * @return a Command that sets the spindexer to the shooter feed speed
+     */
+    public Command feedShooter() {
+        // Read the LoggedTunableNumber at runtime so dashboard edits apply while
+        // the command is active.
+        return setVelocity(() -> RPM.of(kTunableIndexerRPM.get()));
+    }
+
+    public Command clearSpindexer() {
+        // Read the LoggedTunableNumber at runtime so dashboard edits apply while
+        // the command is active.
+        return setVelocity(() -> RPM.of(kTunableIndexerRPM.get() * -1));
+    }
+
     /**
      * Sets the duty cycle (percent output) for the spindexer.
      *
@@ -149,42 +206,39 @@ public class SpindexerSubsystem extends SubsystemBase {
     }
 
     /**
-     * Sets the target velocity using a dynamic supplier (e.g., from a Vision subsystem).
-     *
-     * @param speed A supplier providing the target AngularVelocity.
-     * @return A command to track the supplier's velocity.
+     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
+     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
+     * commands are running. If the motor idle mode is COAST, this allows the mechanism to freewheel.
      */
-    public Command setVelocity(Supplier<AngularVelocity> speed) {
-        return spindexer.setSpeed(
-                () -> {
-                    Logger.recordOutput("Spindexer/Setpoint", speed.get());
-                    return speed.get();
-                });
+    public Command stopHold() {
+        return Commands.run(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("SpindexerStopHold");
     }
 
     /**
-     * Sets the duty cycle using a dynamic supplier.
-     *
-     * @param dutyCycle A supplier providing the target duty cycle.
-     * @return A command to track the supplier's duty cycle.
+     * One-shot stop command: immediately disables closed-loop control and sets motor output to zero,
+     * then finishes. Use for imperative immediate stops (non-blocking). This does not hold the
+     * subsystem at zero after completion.
      */
-    public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return spindexer.set(
-                () -> {
-                    Logger.recordOutput("Spindexer/DutyCycle", dutyCycle.get());
-                    return dutyCycle.get();
-                });
+    public Command stopNow() {
+        /**
+         * One-shot stop command: immediately disables closed-loop control and sets motor output to
+         * zero, then finishes. Use for imperative immediate stops (non-blocking). This does not hold
+         * the subsystem at zero after completion.
+         */
+        return Commands.runOnce(
+                        () -> {
+                            spindexer.set(0);
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("SpindexerStopNow");
     }
 
-    @Override
-    public void simulationPeriodic() {
-        spindexer.simIterate();
-    }
-
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Spindexer", spindexerInputs);
-        spindexer.updateTelemetry();
-    }
+    // endregion
 }

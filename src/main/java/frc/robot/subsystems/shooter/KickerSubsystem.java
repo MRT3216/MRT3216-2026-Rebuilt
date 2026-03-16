@@ -4,17 +4,36 @@ import static edu.wpi.first.units.Units.Amps;
 // Diameter and mass are centralized in Constants.KickerConstants
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kD;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kD_sim;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kGearReduction;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kI;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kI_sim;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kP;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kP_sim;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMax;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMin;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kTunableKickerRPM;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelDiameter;
+import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelMass;
+import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforward;
+import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforwardSim;
+import static frc.robot.constants.TelemetryKeys.kKickerMechTelemetry;
+import static frc.robot.constants.TelemetryKeys.kKickerMotorTelemetry;
 
 import com.revrobotics.spark.SparkFlex;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -25,14 +44,12 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.local.SparkWrapper;
 
-/**
- * AdvantageKit Kicker Subsystem, capable of replaying the kicker. Subsystem that manages the ball
- * kicker intake/outtake mechanism.
- */
+/** Kicker subsystem: controls the kicker wheel and telemetry. */
 public class KickerSubsystem extends SubsystemBase {
+    // region Inputs & telemetry
+
     /**
      * AdvantageKit-visible inputs for the kicker mechanism. Updated each loop from the motor
      * controller and intended for replay/logging.
@@ -54,6 +71,10 @@ public class KickerSubsystem extends SubsystemBase {
 
     private final KickerInputsAutoLogged kickerInputs = new KickerInputsAutoLogged();
 
+    // endregion
+
+    // region Hardware & controller
+
     private final SparkFlex motorController =
             new SparkFlex(RobotMap.Shooter.Kicker.kMotorId, SparkFlex.MotorType.kBrushless);
 
@@ -65,13 +86,9 @@ public class KickerSubsystem extends SubsystemBase {
 
     private final FlyWheel kicker;
 
-    /** Update the AdvantageKit "inputs" (data coming from the SMC) */
-    private void updateInputs() {
-        kickerInputs.velocity = kicker.getSpeed();
-        kickerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-        kickerInputs.volts = motor.getVoltage();
-        kickerInputs.current = motor.getStatorCurrent();
-    }
+    // endregion
+
+    // region Initialization helpers
 
     /** Construct the KickerSubsystem and configure motor/telemetry settings. */
     public KickerSubsystem() {
@@ -79,55 +96,71 @@ public class KickerSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants)
-                        .withClosedLoopController(
-                                frc.robot.constants.Constants.KickerConstants.kP,
-                                frc.robot.constants.Constants.KickerConstants.kI,
-                                frc.robot.constants.Constants.KickerConstants.kD)
-                        .withSimClosedLoopController(
-                                frc.robot.constants.Constants.KickerConstants.kP,
-                                frc.robot.constants.Constants.KickerConstants.kI,
-                                frc.robot.constants.Constants.KickerConstants.kD)
-                        // Feedforward Constants
-                        .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        frc.robot.constants.Constants.KickerConstants.kS,
-                                        frc.robot.constants.Constants.KickerConstants.kV,
-                                        frc.robot.constants.Constants.KickerConstants.kA))
-                        .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        frc.robot.constants.Constants.KickerConstants.kS,
-                                        frc.robot.constants.Constants.KickerConstants.kV,
-                                        frc.robot.constants.Constants.KickerConstants.kA))
-                        // Telemetry name and verbosity level
-                        .withTelemetry(
-                                frc.robot.constants.Constants.KickerConstants.kMotorTelemetry,
-                                TelemetryVerbosity.HIGH)
-                        .withGearing(
-                                new MechanismGearing(
-                                        GearBox.fromReductionStages(
-                                                frc.robot.constants.Constants.KickerConstants.kGearReduction)))
+                        // Feedback Constants (PID Constants). Kicker is velocity-controlled
+                        // — use PID+feedforward rather than positional motion profiling.
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        // Feedforward Constants (use centralized factory to avoid parameter-order
+                        // mistakes)
+                        .withFeedforward(motorFeedforward())
+                        .withSimFeedforward(motorFeedforwardSim())
+                        // Telemetry name and verbosity levelP
+                        .withTelemetry(kKickerMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
-                        .withIdleMode(MotorMode.COAST)
-                        .withStatorCurrentLimit(
-                                frc.robot.constants.Constants.KickerConstants.kStatorCurrentLimit);
+                        // Kicker should actively stop when idle, use BRAKE so zero output
+                        // results in an immediate halt rather than freewheeling.
+                        .withIdleMode(MotorMode.BRAKE)
+                        .withVoltageCompensation(Volts.of(12))
+                        .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new SparkWrapper(motorController, DCMotor.getNeoVortex(1), motorConfig);
 
         kickerConfig =
                 new FlyWheelConfig(motor)
                         // Diameter of the kicker.
-                        .withDiameter(frc.robot.constants.Constants.KickerConstants.kWheelDiameter)
+                        .withDiameter(kWheelDiameter)
                         // Mass of the kicker.
-                        .withMass(frc.robot.constants.Constants.KickerConstants.kWheelMass)
-                        // Maximum speed of the shooter.
-                        // .withUpperSoftLimit(RPM.of(4000))
-                        .withTelemetry(
-                                frc.robot.constants.Constants.KickerConstants.kMechTelemetry,
-                                TelemetryVerbosity.HIGH);
+                        .withMass(kWheelMass)
+                        // Configure soft limits via YAMS so the mechanism enforces them
+                        .withUpperSoftLimit(kSoftLimitMax)
+                        .withLowerSoftLimit(kSoftLimitMin)
+                        .withTelemetry(kKickerMechTelemetry, Constants.telemetryVerbosity());
 
         kicker = new FlyWheel(kickerConfig);
     }
+
+    // endregion
+
+    // region Lifecycle / periodic
+
+    /** Update the AdvantageKit "inputs" (data coming from the SMC) */
+    private void updateInputs() {
+        kickerInputs.velocity = kicker.getSpeed();
+        kickerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
+        kickerInputs.volts = motor.getVoltage();
+        kickerInputs.current = motor.getStatorCurrent();
+        SmartDashboard.putBoolean(
+                "Mechanisms/KickerIsMoving", Math.abs(kickerInputs.velocity.in(RPM)) > 10.0);
+    }
+
+    // endregion
+
+    /** Advance the kicker simulation model by one simulation tick. */
+    @Override
+    public void simulationPeriodic() {
+        kicker.simIterate();
+    }
+
+    @Override
+    public void periodic() {
+        // Pull inputs, publish to AdvantageKit, and update mechanism telemetry
+        updateInputs();
+        Logger.processInputs("Kicker", kickerInputs);
+        kicker.updateTelemetry();
+    }
+
+    // region Public API (queries & commands)
 
     /**
      * Gets the current velocity of the kicker.
@@ -142,67 +175,71 @@ public class KickerSubsystem extends SubsystemBase {
      * Set the kicker velocity.
      *
      * @param speed Speed to set.
-     * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
+     * @return {@link RunCommand}
      */
     public Command setVelocity(AngularVelocity speed) {
-        Logger.recordOutput("Kicker/Setpoint", speed);
         return kicker.setSpeed(speed);
+    }
+
+    /** Supplier-backed overload for dynamic/tunable speeds. */
+    public Command setVelocity(java.util.function.Supplier<AngularVelocity> supplier) {
+        return kicker.setSpeed(supplier);
+    }
+
+    /**
+     * Convenience helper: run the kicker at the configured shooter feed velocity.
+     *
+     * @return a Command that sets the kicker to the shooter feed speed
+     */
+    public Command feedShooter() {
+        // Read the LoggedTunableNumber at runtime so dashboard edits apply while
+        // the command is active.
+        return setVelocity(() -> RPM.of(kTunableKickerRPM.get()));
+    }
+
+    public Command clearKicker() {
+        // Read the LoggedTunableNumber at runtime so dashboard edits apply while
+        // the command is active.
+        return setVelocity(() -> RPM.of(kTunableKickerRPM.get() * -1));
     }
 
     /**
      * Set the dutycycle of the kicker.
      *
      * @param dutyCycle DutyCycle to set.
-     * @return {@link edu.wpi.first.wpilibj2.command.RunCommand}
+     * @return {@link RunCommand}
      */
     public Command setDutyCycle(double dutyCycle) {
-        Logger.recordOutput("Kicker/DutyCycle", dutyCycle);
         return kicker.set(dutyCycle);
     }
 
-    /**
-     * Create a command that continuously sets the kicker velocity from a dynamic supplier. The
-     * supplier will be queried each scheduler run and the requested velocity will be applied to the
-     * mechanism. The requested value is also recorded to the logger.
-     *
-     * @param speed supplier that provides the desired AngularVelocity
-     * @return a Command that will track the supplied velocity while active
-     */
-    public Command setVelocity(Supplier<AngularVelocity> speed) {
-        return kicker.setSpeed(
-                () -> {
-                    Logger.recordOutput("Kicker/Setpoint", speed.get());
-                    return speed.get();
-                });
+    public Command stopNow() {
+        /**
+         * One-shot stop command: immediately disables closed-loop control and sets motor output to
+         * zero, then finishes. Use for imperative immediate stops (non-blocking). This does not hold
+         * the subsystem at zero after completion.
+         */
+        return Commands.runOnce(
+                        () -> {
+                            kicker.set(0);
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("KickerStopNow");
     }
 
     /**
-     * Create a command that continuously sets the kicker duty cycle from a supplier. The supplier
-     * will be queried each scheduler run and the resulting duty cycle will be applied. The value is
-     * also recorded to the logger for debugging.
-     *
-     * @param dutyCycle supplier providing the desired duty cycle (-1.0 to 1.0)
-     * @return a Command that will drive the kicker using the supplied duty cycle
+     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
+     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
+     * commands are running.
      */
-    public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return kicker.set(
-                () -> {
-                    Logger.recordOutput("Kicker/DutyCycle", dutyCycle.get());
-                    return dutyCycle.get();
-                });
-    }
-
-    /** Advance the kicker simulation model by one simulation tick. */
-    @Override
-    public void simulationPeriodic() {
-        kicker.simIterate();
-    }
-
-    @Override
-    public void periodic() {
-        // Pull inputs, publish to AdvantageKit, and update mechanism telemetry
-        updateInputs();
-        Logger.processInputs("Kicker", kickerInputs);
-        kicker.updateTelemetry();
+    public Command stopHold() {
+        return Commands.run(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("KickerStopHold");
     }
 }

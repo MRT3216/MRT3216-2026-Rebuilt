@@ -14,14 +14,16 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.vision.VisionIO.PoseObservationType;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.littletonrobotics.junction.Logger;
 
 public class Vision extends SubsystemBase {
@@ -50,6 +52,44 @@ public class Vision extends SubsystemBase {
     }
 
     /**
+     * Returns the Translation3d (position) of a field AprilTag from the known field layout. This does
+     * not depend on any camera observation and will return the canonical tag translation if the tag
+     * is present in the configured AprilTag layout.
+     *
+     * @param tagId fiducial ID of the AprilTag
+     * @return Optional containing the Translation3d when the tag is present in the layout
+     */
+    public Translation3d getTagTranslation3d(int tagId) {
+        return aprilTagLayout.getTagPose(tagId).map(Pose3d::getTranslation).orElse(null);
+    }
+
+    /**
+     * Returns the Translation3d (position) of a field AprilTag for a specific camera if that camera
+     * has recently observed the tag. This method first checks whether the given camera index has the
+     * tag listed in its latest `tagIds` array; if so, the canonical tag translation from the field
+     * layout is returned. If the cameraIndex is out of range or the camera has not seen the tag
+     * recently, an empty Optional is returned.
+     *
+     * <p>Note: currently camera observations do not carry per-tag full 3D translation data in the
+     * `VisionIOInputs` structure, so this method returns the canonical layout translation when the
+     * camera reports the tag is present.
+     *
+     * @param cameraIndex index of the camera (0..n-1)
+     * @param tagId fiducial ID of the AprilTag
+     * @return Optional containing the Translation3d when the camera has seen the tag and the tag is
+     *     in the layout
+     */
+    public Optional<Translation3d> getTagTranslation3d(int cameraIndex, int tagId) {
+        if (cameraIndex < 0 || cameraIndex >= inputs.length) return Optional.empty();
+        for (int id : inputs[cameraIndex].tagIds) {
+            if (id == tagId) {
+                return aprilTagLayout.getTagPose(tagId).map(Pose3d::getTranslation);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
      * Returns the X angle to the best target, which can be used for simple servoing with vision.
      *
      * @param cameraIndex The index of the camera to use.
@@ -66,10 +106,10 @@ public class Vision extends SubsystemBase {
         }
 
         // Initialize logging values
-        List<Pose3d> allTagPoses = new LinkedList<>();
-        List<Pose3d> allRobotPoses = new LinkedList<>();
-        List<Pose3d> allRobotPosesAccepted = new LinkedList<>();
-        List<Pose3d> allRobotPosesRejected = new LinkedList<>();
+        List<Pose3d> allTagPoses = new ArrayList<>();
+        List<Pose3d> allRobotPoses = new ArrayList<>();
+        List<Pose3d> allRobotPosesAccepted = new ArrayList<>();
+        List<Pose3d> allRobotPosesRejected = new ArrayList<>();
 
         // Loop over cameras
         for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
@@ -77,10 +117,10 @@ public class Vision extends SubsystemBase {
             disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
 
             // Initialize logging values
-            List<Pose3d> tagPoses = new LinkedList<>();
-            List<Pose3d> robotPoses = new LinkedList<>();
-            List<Pose3d> robotPosesAccepted = new LinkedList<>();
-            List<Pose3d> robotPosesRejected = new LinkedList<>();
+            List<Pose3d> tagPoses = new ArrayList<>();
+            List<Pose3d> robotPoses = new ArrayList<>();
+            List<Pose3d> robotPosesAccepted = new ArrayList<>();
+            List<Pose3d> robotPosesRejected = new ArrayList<>();
 
             // Add tag poses
             for (int tagId : inputs[cameraIndex].tagIds) {
@@ -160,12 +200,12 @@ public class Vision extends SubsystemBase {
         }
 
         // Log summary data
-        Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
-        Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
-        Logger.recordOutput(
-                "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
-        Logger.recordOutput(
-                "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
+        // Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
+        // Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
+        // Logger.recordOutput(
+        //         "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
+        // Logger.recordOutput(
+        //         "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
     }
 
     @FunctionalInterface

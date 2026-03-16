@@ -16,11 +16,15 @@ public final class RobotMap {
         }
 
         public final class Turret {
-            public static final int kMotorId = 53;
+            public static final int kMotorId = 54;
         }
 
         public final class Spindexer {
             public static final int kMotorId = 55;
+        }
+
+        public final class Hood {
+            public static final int kMotorId = 53;
         }
     }
 
@@ -31,7 +35,11 @@ public final class RobotMap {
         }
 
         public final class Roller {
-            public static final int kMotorId = 63;
+            public static final int kMotorId = 60;
         }
+    }
+
+    public final class LEDs {
+        public static final int kPort = 1;
     }
 }

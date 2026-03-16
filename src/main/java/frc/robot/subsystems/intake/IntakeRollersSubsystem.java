@@ -2,21 +2,41 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.IntakeConstants.Rollers.kD;
+import static frc.robot.constants.IntakeConstants.Rollers.kD_sim;
+import static frc.robot.constants.IntakeConstants.Rollers.kGearReduction;
+import static frc.robot.constants.IntakeConstants.Rollers.kI;
+import static frc.robot.constants.IntakeConstants.Rollers.kI_sim;
+import static frc.robot.constants.IntakeConstants.Rollers.kMotorInverted;
+import static frc.robot.constants.IntakeConstants.Rollers.kP;
+import static frc.robot.constants.IntakeConstants.Rollers.kP_sim;
+import static frc.robot.constants.IntakeConstants.Rollers.kSoftLimitMax;
+import static frc.robot.constants.IntakeConstants.Rollers.kSoftLimitMin;
+import static frc.robot.constants.IntakeConstants.Rollers.kStatorCurrentLimit;
+import static frc.robot.constants.IntakeConstants.Rollers.kWheelDiameter;
+import static frc.robot.constants.IntakeConstants.Rollers.kWheelMass;
+import static frc.robot.constants.IntakeConstants.Rollers.motorFeedforward;
+import static frc.robot.constants.IntakeConstants.Rollers.motorFeedforwardSim;
+import static frc.robot.constants.TelemetryKeys.kIntakeRollersMechTelemetry;
+import static frc.robot.constants.TelemetryKeys.kIntakeRollersMotorTelemetry;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.constants.Constants.IntakeConstants;
+import frc.robot.constants.Constants;
+import frc.robot.constants.IntakeConstants;
 import frc.robot.constants.RobotMap;
-import java.util.function.Supplier;
+import frc.robot.util.PhoenixUtil;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
 import yams.gearing.GearBox;
@@ -27,17 +47,11 @@ import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
-/**
- * AdvantageKit-ready Intake Rollers Subsystem for MRT 3216.
- *
- * <p>This subsystem manages dual-Kraken intake rollers using the YAMS library and Phoenix 6. It
- * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
- * (Inputs) are separated from software commands (Outputs).
- */
+/** Intake rollers subsystem: controls dual rollers and telemetry. */
 public class IntakeRollersSubsystem extends SubsystemBase {
+    // region Inputs & telemetry
 
     /**
      * IO inputs for the Intake Rollers. AutoLogged to provide synchronized data for AdvantageScope
@@ -58,12 +72,22 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     private final IntakeRollersInputsAutoLogged intakeRollersInputs =
             new IntakeRollersInputsAutoLogged();
 
+    // endregion
+
+    // Explicit Phoenix refreshes are required for telemetry; call directly.
+
+    // region Hardware & controller
+
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kMotorId);
 
     /* Phoenix 6 Status Signals (for high-frequency synchronized logging) */
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
+
+    // endregion
+
+    // region Initialization helpers
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -76,21 +100,9 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     private final FlyWheel intakeRollers;
 
-    /**
-     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
-     * to ensure telemetry is time-aligned.
-     */
-    private void updateInputs() {
-        // Refresh all Phoenix 6 signals at once to minimize CAN latency jitter
-        BaseStatusSignal.refreshAll(velocitySignal, referenceSignal);
+    // endregion
 
-        intakeRollersInputs.velocity = intakeRollers.getSpeed();
-        intakeRollersInputs.volts = motor.getVoltage();
-        intakeRollersInputs.current = motor.getStatorCurrent();
-
-        // Sets the setpoint input based on the current SMC state
-        intakeRollersInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-    }
+    // region Initialization helpers
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public IntakeRollersSubsystem() {
@@ -98,41 +110,83 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        // Feedback Constants (PID Constants)
-                        .withClosedLoopController(IntakeConstants.kP, IntakeConstants.kI, IntakeConstants.kD)
-                        .withSimClosedLoopController(IntakeConstants.kP, IntakeConstants.kI, IntakeConstants.kD)
-                        // Feedforward Constants
-                        .withFeedforward(
-                                new SimpleMotorFeedforward(
-                                        IntakeConstants.kS, IntakeConstants.kV, IntakeConstants.kA))
-                        .withSimFeedforward(
-                                new SimpleMotorFeedforward(
-                                        IntakeConstants.kS, IntakeConstants.kV, IntakeConstants.kA))
-                        // Telemetry
-                        .withTelemetry(IntakeConstants.kMotorTelemetry, TelemetryVerbosity.HIGH)
-                        .withGearing(
-                                new MechanismGearing(GearBox.fromReductionStages(IntakeConstants.kGearReduction)))
-                        .withMotorInverted(false)
-                        .withIdleMode(MotorMode.COAST)
-                        .withStatorCurrentLimit(IntakeConstants.kStatorCurrentLimit);
+                        .withMotorInverted(kMotorInverted)
+                        .withClosedLoopController(kP, kI, kD)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        .withFeedforward(motorFeedforward())
+                        .withSimFeedforward(motorFeedforwardSim())
+                        .withTelemetry(kIntakeRollersMotorTelemetry, Constants.telemetryVerbosity())
+                        .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
+                        // Intake rollers should stop when idle; use BRAKE to hold zero output.
+                        .withIdleMode(MotorMode.BRAKE)
+                        .withStatorCurrentLimit(kStatorCurrentLimit);
 
         motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
 
         intakeRollersConfig =
                 new FlyWheelConfig(motor)
-                        .withDiameter(IntakeConstants.kWheelDiameter)
-                        .withMass(IntakeConstants.kWheelMass)
-                        .withTelemetry(IntakeConstants.kMechTelemetry, TelemetryVerbosity.HIGH);
+                        .withDiameter(kWheelDiameter)
+                        .withMass(kWheelMass)
+                        .withUpperSoftLimit(kSoftLimitMax)
+                        .withLowerSoftLimit(kSoftLimitMin)
+                        .withTelemetry(kIntakeRollersMechTelemetry, Constants.telemetryVerbosity());
 
         intakeRollers = new FlyWheel(intakeRollersConfig);
 
-        // High-frequency updates for PID tuning
+        // High-frequency updates for PID tuning (use centralized telemetry constant)
         BaseStatusSignal.setUpdateFrequencyForAll(
-                (int) IntakeConstants.kUpdateHz, velocitySignal, referenceSignal);
+                Constants.CommsConstants.DEFAULT_TELEMETRY_HZ, velocitySignal, referenceSignal);
 
         // Optimization: Disable unused signals to conserve CAN bus bandwidth
         leftMotor.getPosition().setUpdateFrequency(0);
     }
+
+    // endregion
+
+    // region Lifecycle / periodic
+
+    /**
+     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
+     * to ensure telemetry is time-aligned.
+     */
+    private void updateInputs() {
+        // Refresh Phoenix signals to ensure telemetry is up-to-date for
+        // AdvantageKit/YAMS
+        PhoenixUtil.refresh(velocitySignal, referenceSignal);
+
+        // Phoenix-signal logging for debug (measured vs closed-loop reference)
+        Logger.recordOutput("IntakeRollers/FX/VelocityRPM", velocitySignal.getValue().in(RPM));
+        Logger.recordOutput(
+                "IntakeRollers/FX/ReferenceRPM",
+                RPM.convertFrom(referenceSignal.getValue(), RotationsPerSecond));
+
+        intakeRollersInputs.velocity = intakeRollers.getSpeed();
+        intakeRollersInputs.volts = motor.getVoltage();
+        intakeRollersInputs.current = motor.getStatorCurrent();
+
+        // Sets the setpoint input based on the current SMC state
+        intakeRollersInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
+        SmartDashboard.putBoolean(
+                "Mechanisms/IntakeRollersIsMoving", Math.abs(intakeRollersInputs.velocity.in(RPM)) > 10.0);
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        intakeRollers.simIterate();
+    }
+
+    // region Lifecycle / periodic
+
+    @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Intake/Rollers", intakeRollersInputs);
+        intakeRollers.updateTelemetry();
+    }
+
+    // endregion
+
+    // region Public API (queries & commands)
 
     /**
      * Gets the current velocity of the intake rollers.
@@ -163,43 +217,35 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.set(dutyCycle);
     }
 
-    /**
-     * Sets the target velocity using a dynamic supplier (e.g., from a Vision subsystem).
-     *
-     * @param speed A supplier providing the target AngularVelocity.
-     * @return A command to track the supplier's velocity.
-     */
-    public Command setVelocity(Supplier<AngularVelocity> speed) {
-        return intakeRollers.setSpeed(
-                () -> {
-                    Logger.recordOutput("Intake/Rollers/Setpoint", speed.get());
-                    return speed.get();
-                });
+    public Command intakeBalls() {
+        return intakeRollers.setSpeed(IntakeConstants.Rollers.kTargetAngularVelocity);
+    }
+
+    public Command ejectBalls() {
+        return intakeRollers.set(-1.0);
     }
 
     /**
-     * Sets the duty cycle using a dynamic supplier.
-     *
-     * @param dutyCycle A supplier providing the target duty cycle.
-     * @return A command to track the supplier's duty cycle.
+     * One-shot stop command: immediately disables closed-loop control and sets motor output to
+     * zero,then finishes. Use for imperative immediate stops (non-blocking). This does not hold the
+     * subsystem at zero after completion.
      */
-    public Command setDutyCycle(Supplier<Double> dutyCycle) {
-        return intakeRollers.set(
-                () -> {
-                    Logger.recordOutput("Intake/Rollers/DutyCycle", dutyCycle.get());
-                    return dutyCycle.get();
-                });
+    public Command stopNow() {
+        return Commands.runOnce(() -> intakeRollers.set(0), this).withName("IntakeRollersStopNow");
     }
 
-    @Override
-    public void simulationPeriodic() {
-        intakeRollers.simIterate();
-    }
-
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Intake/Rollers", intakeRollersInputs);
-        intakeRollers.updateTelemetry();
+    /**
+     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
+     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
+     * commands are running.
+     */
+    public Command stopHold() {
+        return Commands.run(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("IntakeRollersStopHold");
     }
 }

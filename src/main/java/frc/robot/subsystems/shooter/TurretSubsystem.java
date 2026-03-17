@@ -2,7 +2,10 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kA;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kA_sim;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kD;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kD_sim;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kGearing;
@@ -11,22 +14,28 @@ import static frc.robot.constants.ShooterConstants.TurretConstants.kHardLimitMin
 import static frc.robot.constants.ShooterConstants.TurretConstants.kI;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kI_sim;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kMOI;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kMaxAccel;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kMaxVelocity;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kMotorInverted;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kP;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kP_sim;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kS;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kS_sim;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kSoftLimitMax;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kSoftLimitMin;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kStartingPosition;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kStatorCurrentLimit;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kV;
+import static frc.robot.constants.ShooterConstants.TurretConstants.kV_sim;
 import static frc.robot.constants.TelemetryKeys.kTurretMechTelemetry;
 import static frc.robot.constants.TelemetryKeys.kTurretMotorTelemetry;
 
 import com.revrobotics.spark.SparkMax;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
@@ -104,10 +113,6 @@ public class TurretSubsystem extends SubsystemBase {
         turretInputs.volts = smartMotor.getVoltage();
         turretInputs.current = smartMotor.getStatorCurrent();
         turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
-        Logger.recordOutput("Shooter/Turret/PositionDegrees", turretInputs.angle.in(Degrees));
-        SmartDashboard.putBoolean(
-                "Mechanisms/TurretIsMoving",
-                Math.abs(turretInputs.setpoint.in(Degrees) - turretInputs.angle.in(Degrees)) > 1.0);
     }
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
@@ -116,10 +121,11 @@ public class TurretSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(kP, kI, kD) // , kMaxVelocity, kMaxAccel)
-                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
+                        .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
+                        .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
+                        .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
+                        .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
                         .withTelemetry(kTurretMotorTelemetry, Constants.telemetryVerbosity())
-                        // .withClosedLoopRampRate(Seconds.of(0.5))
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
@@ -131,6 +137,7 @@ public class TurretSubsystem extends SubsystemBase {
         PivotConfig turretConfig =
                 new PivotConfig(smartMotor)
                         .withStartingPosition(kStartingPosition)
+                        // .withWrapping(kSoftLimitMin, kSoftLimitMax)
                         .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
                         .withMOI(kMOI)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
@@ -179,16 +186,6 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     /**
-     * Sets the target angle for the turret.
-     *
-     * @param angle The target Angle.
-     * @return A command to set and maintain the requested angle.
-     */
-    public Command setAngle(Angle angle) {
-        return turret.setAngle(angle);
-    }
-
-    /**
      * Sets the duty cycle (percent output) for the turret.
      *
      * @param dutyCycle The output percentage (-1.0 to 1.0).
@@ -210,10 +207,19 @@ public class TurretSubsystem extends SubsystemBase {
         return turret.setAngle(angle);
     }
 
+    /**
+     * Sets the target angle for the turret.
+     *
+     * @param angle The target Angle.
+     * @return A command to set and maintain the requested angle.
+     */
+    public Command setAngle(Angle angle) {
+        return turret.setAngle(angle);
+    }
+
     // endregion
 
     // region Triggers & events
 
     // endregion
-
 }

@@ -216,9 +216,26 @@ public class RobotContainer {
         // Kicker should stop (do not coast) when idle — use persistent stopHold()
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
-        turretSubsystem.setDefaultCommand(
-                // turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-                turretSubsystem.setAngle(Degrees.of(0)));
+        if (Constants.tuningMode) {
+            turretSubsystem.setDefaultCommand(
+                    turretSubsystem.setAngle(
+                            () -> {
+                                // Map right-stick to turret angle in degrees (-180..180).
+                                // Use a small deadband so the turret doesn't snap when the stick is centered.
+                                double x = -driverController.getRightX();
+                                double y = -driverController.getRightY();
+                                double deadband = 0.1;
+                                if (Math.hypot(x, y) < deadband) {
+                                    return turretSubsystem.getTarget();
+                                }
+                                double radians = Math.atan2(-y, -x); // match previous sign convention
+                                return Degrees.of(Math.toDegrees(-radians));
+                            }));
+        } else {
+            turretSubsystem.setDefaultCommand(
+                    // turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
+                    turretSubsystem.setAngle(Degrees.of(0)));
+        }
 
         // Let spindexer coast by default. Use the persistent stopHold() default
         // which disables closed-loop control and keeps the duty/voltage at zero
@@ -326,14 +343,7 @@ public class RobotContainer {
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
 
         driverController.leftBumper().whileTrue(intakePivotSubsystem.set(-.40).withTimeout(0.5));
-        driverController
-                .rightBumper()
-                .whileTrue(
-                        Commands.repeatingSequence(
-                                intakePivotSubsystem
-                                        .set(0.15)
-                                        .withTimeout(0.15)
-                                        .andThen(intakePivotSubsystem.set(-0.15).withTimeout(0.15))));
+        driverController.rightBumper().whileTrue(intakeSystem.agitate());
 
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
     }
@@ -363,7 +373,7 @@ public class RobotContainer {
     @SuppressWarnings("unused")
     private void setupSysid() {
         // Set up SysId routines
-        autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
+        autoChooser = new LoggedDashboardChooser<>("Tuning", AutoBuilder.buildAutoChooser());
         autoChooser.addOption(
                 "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
         autoChooser.addOption(

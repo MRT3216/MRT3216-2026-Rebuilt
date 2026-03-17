@@ -303,18 +303,25 @@ public final class ShooterConstants {
         public static final MomentOfInertia kMOI = KilogramSquareMeters.of(0.0502269403);
 
         // PIDs
-        public static final double kP = 6.0;
+        public static final double kP = 3.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
+        public static final double kS = 0.0;
+        public static final double kV = 1.0;
+        public static final double kA = 0.05;
         public static final AngularVelocity kMaxVelocity =
-                DegreesPerSecond.of(180.0); // degrees per second
+                DegreesPerSecond.of(1440.0); // degrees per second
         public static final AngularAcceleration kMaxAccel =
-                DegreesPerSecondPerSecond.of(180.0); // degrees per second squared
+                DegreesPerSecondPerSecond.of(14400.0); // degrees per second
+        // squared
 
         // Simulation-tuned PID defaults (reduced to avoid oscillation in sim)
-        public static final double kP_sim = 2.0;
+        public static final double kP_sim = 3.5;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
+        public static final double kS_sim = 0.0;
+        public static final double kV_sim = 2.0;
+        public static final double kA_sim = 0.03;
 
         // Robot / turret pose offsets
         public static final Distance kTurretOffsetX = Inches.of(-5.5);
@@ -327,13 +334,14 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         public static final Angle kTurretAngleOffset =
-                Degrees.of(-167); // degrees, added to turret angle to get actual heading
+                Degrees.of(-167); // degrees, added to turret angle to get actual
+        // heading
 
         // Limits / presets
-        public static final Angle kHardLimitMax = Degrees.of(315);
-        public static final Angle kHardLimitMin = Degrees.of(0);
-        public static final Angle kSoftLimitMax = Degrees.of(167);
-        public static final Angle kSoftLimitMin = Degrees.of(-167);
+        public static final Angle kHardLimitMax = Degrees.of(180);
+        public static final Angle kHardLimitMin = Degrees.of(-180);
+        public static final Angle kSoftLimitMax = Degrees.of(180);
+        public static final Angle kSoftLimitMin = Degrees.of(-180);
         public static final Angle kStartingPosition = Degrees.of(0);
     }
 }

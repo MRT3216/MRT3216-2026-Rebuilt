@@ -206,9 +206,7 @@ public class ShooterSystem {
 
         // Return a command that dynamically tracks the computed turret azimuth.
         var turretCmd =
-                // turret.setAngle(() -> solutionSupplier.get().turretAzimuth()); //
-                // .plus(Degrees.of(167)));
-                turret.setAngle(Degrees.of(0));
+                turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
 
         return turretCmd.withName("Aim");
     }

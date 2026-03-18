@@ -205,8 +205,7 @@ public class ShooterSystem {
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
         // Return a command that dynamically tracks the computed turret azimuth.
-        var turretCmd =
-                turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
+        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
 
         return turretCmd.withName("Aim");
     }

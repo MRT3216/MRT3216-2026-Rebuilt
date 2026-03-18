@@ -57,6 +57,20 @@ public class Robot extends LoggedRobot {
 
     /** Construct the Robot, configure logging and instantiate RobotContainer. */
     public Robot() {
+        // Record metadata
+        Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
+        Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
+        Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+        Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
+        Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
+        Logger.recordMetadata(
+                "GitDirty",
+                switch (BuildConstants.DIRTY) {
+                    case 0 -> "All changes committed";
+                    case 1 -> "Uncommitted changes";
+                    default -> "Unknown";
+                });
+
         // Set up data receivers & replay source
         switch (Constants.getMode()) {
             case REAL:
@@ -91,7 +105,7 @@ public class Robot extends LoggedRobot {
         } catch (Exception e) {
             DriverStation.reportWarning("Failed to disable loop overrun warnings.", false);
         }
-        CommandScheduler.getInstance().setPeriod(Constants.loopPeriodWatchdogSecs);
+        CommandScheduler.getInstance().setPeriod(Constants.loopPeriodSecs);
 
         // Silence joystick alerts
         DriverStation.silenceJoystickConnectionWarning(true);
@@ -177,6 +191,7 @@ public class Robot extends LoggedRobot {
     /** This function is called once when the robot is disabled. */
     @Override
     public void disabledInit() {
+        disabledTimer.restart();
         Elastic.selectTab("Disabled");
     }
 
@@ -198,10 +213,7 @@ public class Robot extends LoggedRobot {
 
     /** This function is called periodically during autonomous. */
     @Override
-    public void autonomousPeriodic() {
-        CommandScheduler.getInstance().run();
-        CommandScheduler.getInstance().schedule(autonomousCommand);
-    }
+    public void autonomousPeriodic() {}
 
     /** This function is called once when teleop is enabled. */
     @Override

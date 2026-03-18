@@ -288,10 +288,10 @@ public class RobotContainer {
     public void configureRealButtonBindings() {
         // Right trigger toggles intake on/off (press once to start, press again to
         // cancel).
-        //.rightTrigger().onTrue(intakeSystem.intake());
+        // .rightTrigger().onTrue(intakeSystem.intake());
 
         // Left trigger immediately stops rollers and holds them stopped while pressed.
-        //driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
+        // driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
 
         driverController
                 .a()
@@ -316,7 +316,7 @@ public class RobotContainer {
                                 ShootingLookupTable.Mode.HUB));
 
         // Left trigger remains a manual stop if needed
-       driverController.leftTrigger().onTrue(shooterSystem.interruptShooting());
+        driverController.leftTrigger().onTrue(shooterSystem.interruptShooting());
 
         // Right bumper toggles intake on/off (press once to start, press again to
         // cancel).

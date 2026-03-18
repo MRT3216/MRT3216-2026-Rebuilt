@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.constants.Constants.DriveControlConstants;
 import frc.robot.subsystems.drive.Drive;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -31,15 +32,17 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class DriveCommands {
-    private static final double DEADBAND = 0.1;
-    private static final double ANGLE_KP = 5.0;
-    private static final double ANGLE_KD = 0.4;
-    private static final double ANGLE_MAX_VELOCITY = 8.0;
-    private static final double ANGLE_MAX_ACCELERATION = 20.0;
-    private static final double FF_START_DELAY = 2.0; // Secs
-    private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
-    private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
-    private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
+    private static final double DEADBAND = DriveControlConstants.kDeadband;
+    private static final double ANGLE_KP = DriveControlConstants.kAngleKP;
+    private static final double ANGLE_KD = DriveControlConstants.kAngleKD;
+    private static final double ANGLE_MAX_VELOCITY = DriveControlConstants.kAngleMaxVelocity;
+    private static final double ANGLE_MAX_ACCELERATION = DriveControlConstants.kAngleMaxAcceleration;
+    private static final double FF_START_DELAY = DriveControlConstants.kFFStartDelay; // Secs
+    private static final double FF_RAMP_RATE = DriveControlConstants.kFFRampRate; // Volts/Sec
+    private static final double WHEEL_RADIUS_MAX_VELOCITY =
+            DriveControlConstants.kWheelRadiusMaxVelocity; // Rad/Sec
+    private static final double WHEEL_RADIUS_RAMP_RATE =
+            DriveControlConstants.kWheelRadiusRampRate; // Rad/Sec^2
 
     private DriveCommands() {}
 

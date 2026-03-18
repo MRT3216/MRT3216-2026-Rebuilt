@@ -221,15 +221,18 @@ public class RobotContainer {
                     turretSubsystem.setAngle(
                             () -> {
                                 // Map right-stick to turret angle in degrees (-180..180).
-                                // Use a small deadband so the turret doesn't snap when the stick is centered.
-                                double x = -driverController.getRightX();
-                                double y = -driverController.getRightY();
+                                // Raw stick: X right = +1, Y up = -1 (standard Xbox convention).
+                                // We negate Y so that stick-forward (−Y) = positive turret angle
+                                // (forward/away from driver). atan2(y, x) gives standard math angle
+                                // (CCW positive, 0° = right). Adjust sign/offset here if turret
+                                // direction doesn't match expectation on hardware.
+                                double x = driverController.getRightX();
+                                double y = -driverController.getRightY(); // invert so forward = positive
                                 double deadband = 0.1;
                                 if (Math.hypot(x, y) < deadband) {
                                     return turretSubsystem.getTarget();
                                 }
-                                double radians = Math.atan2(-y, -x); // match previous sign convention
-                                return Degrees.of(Math.toDegrees(-radians));
+                                return Degrees.of(Math.toDegrees(Math.atan2(y, x)));
                             }));
         } else {
             turretSubsystem.setDefaultCommand(

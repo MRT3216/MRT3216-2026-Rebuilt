@@ -2,7 +2,6 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kA;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kA_sim;
@@ -130,6 +129,8 @@ public class TurretSubsystem extends SubsystemBase {
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
                         .withVoltageCompensation(Volts.of(12))
+                        // .withContinuousWrapping(
+                        //         Rotations.of(-0.45833333333333337), Rotations.of(0.5416666666666666))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);

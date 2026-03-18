@@ -306,7 +306,7 @@ public final class ShooterConstants {
         public static final double kP = 3.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
-        public static final double kS = 0.0;
+        public static final double kS = 0.1; // small static friction offset; tune on hardware
         public static final double kV = 1.0;
         public static final double kA = 0.05;
         public static final AngularVelocity kMaxVelocity =
@@ -334,14 +334,14 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         public static final Angle kTurretAngleOffset =
-                Degrees.of(-167); // degrees, added to turret angle to get actual
+                Degrees.of(0); // degrees, added to turret angle to get actual
         // heading
 
         // Limits / presets
-        public static final Angle kHardLimitMax = Degrees.of(180);
-        public static final Angle kHardLimitMin = Degrees.of(-180);
-        public static final Angle kSoftLimitMax = Degrees.of(180);
-        public static final Angle kSoftLimitMin = Degrees.of(-180);
+        public static final Angle kHardLimitMax = Degrees.of(200);
+        public static final Angle kHardLimitMin = Degrees.of(-200);
+        public static final Angle kSoftLimitMax = Degrees.of(195);
+        public static final Angle kSoftLimitMin = Degrees.of(-195);
         public static final Angle kStartingPosition = Degrees.of(0);
     }
 }

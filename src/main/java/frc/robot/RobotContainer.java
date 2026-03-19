@@ -9,12 +9,14 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.constants.IntakeConstants.Rollers.kTargetAngularVelocity;
+import static frc.robot.constants.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -54,6 +56,7 @@ import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
+import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -235,9 +238,52 @@ public class RobotContainer {
                                 return Degrees.of(Math.toDegrees(Math.atan2(y, x)));
                             }));
         } else {
+            // Shift-aware turret tracking default command.
+            //
+            // When the hub shift is active the turret continuously tracks the alliance
+            // hub center (HUB table). When the shift is inactive it tracks the nearest
+            // trench opening (PASS table). Motion-compensated via
+            // HybridTurretUtil.computeMovingShot() each periodic loop.
+            //
+            // This default is preempted by aimAndShoot / aimAndShootTrench when the
+            // driver holds a trigger — the subsystem requirement ensures the trigger
+            // command takes priority, and tracking resumes automatically on release.
+
+            // Build the two lookup tables once — reused every loop by the turret default.
+            var hubTable = new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
+            var passTable = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
+
             turretSubsystem.setDefaultCommand(
-                    // turretSubsystem.setAngle(() -> turretSubsystem.getPosition()));
-                    turretSubsystem.setAngle(Degrees.of(0)));
+                    turretSubsystem.setAngle(
+                            () -> {
+                                var shift = HubShiftUtil.getShiftedShiftInfo();
+                                var pose = drive.getPose();
+                                var speeds = drive.getChassisSpeeds();
+
+                                Translation3d target;
+                                ShootingLookupTable table;
+                                if (shift.active()) {
+                                    target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                                    table = hubTable;
+                                } else {
+                                    var left = FieldConstants.LeftTrench.openingTopLeft;
+                                    var right = FieldConstants.RightTrench.openingTopLeft;
+                                    double robotY = pose.getY();
+                                    target =
+                                            Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
+                                                    ? AllianceFlipUtil.apply(left)
+                                                    : AllianceFlipUtil.apply(right);
+                                    table = passTable;
+                                }
+                                return HybridTurretUtil.computeMovingShot(
+                                                pose, speeds, target, 3, kRefinementConvergenceEpsilon, table)
+                                        .turretAzimuth();
+                            }));
+
+            // Hood returns to 0° when not actively shooting — prevents decapitation
+            // under the trench. Hood tracking only happens inside aimAndShoot /
+            // aimAndShootTrench while the driver holds a trigger.
+            hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(Degrees.of(0)));
         }
 
         // Let spindexer coast by default. Use the persistent stopHold() default
@@ -267,9 +313,6 @@ public class RobotContainer {
         intakePivotSubsystem.setDefaultCommand(
                 // intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getPosition()));
                 intakePivotSubsystem.set(0));
-
-        // Return hood to 0° when not commanded — prevents decapitation under the trench.
-        hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(Degrees.of(0)));
     }
 
     private void configureButtonBindings() {
@@ -323,20 +366,8 @@ public class RobotContainer {
         // driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
 
         driverController
-                .a()
-                .whileTrue(
-                        shooterSystem.aim(
-                                () -> drive.getPose(),
-                                () -> drive.getChassisSpeeds(),
-                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                                3,
-                                ShootingLookupTable.Mode.HUB));
-
-        // REAL: right trigger toggles aim+shoot (press once to start, press again to cancel).
-        // Left trigger is an immediate hard stop as a fallback.
-        driverController
                 .rightTrigger()
-                .toggleOnTrue(
+                .whileTrue(
                         shooterSystem.aimAndShoot(
                                 () -> drive.getPose(),
                                 () -> drive.getChassisSpeeds(),
@@ -344,8 +375,14 @@ public class RobotContainer {
                                 3,
                                 ShootingLookupTable.Mode.HUB));
 
-        // Left trigger is a hard stop fallback — cancels aimAndShoot if it gets stuck.
-        driverController.leftTrigger().onTrue(shooterSystem.interruptShooting());
+        // Left trigger: hold to aim + feed a trench/pass shot. Not shift-gated —
+        // feeds freely while held regardless of hub shift state. Turret and hood
+        // track the nearest trench opening for the duration.
+        driverController
+                .leftTrigger()
+                .whileTrue(
+                        shooterSystem.aimAndShootTrench(
+                                () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
 
         // Right bumper toggles intake on/off (press once to start, press again to
         // cancel).

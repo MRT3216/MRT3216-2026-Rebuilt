@@ -210,6 +210,47 @@ public class ShooterSystem {
         return turretCmd.withName("Aim");
     }
 
+    /**
+     * Aim, spin up the flywheel, and feed for a trench/pass shot.
+     *
+     * <p>Automatically selects the nearest trench opening (left or right) from the robot's current Y
+     * position and uses the PASS lookup table. Feeding is NOT gated on the hub shift — the robot will
+     * continue feeding as long as the trigger is held, regardless of shift state.
+     *
+     * @param robotPose supplier of the robot pose
+     * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
+     * @param refinementIterations number of solver refinement iterations
+     * @return a command that aims and feeds a trench shot while scheduled
+     */
+    public Command aimAndShootTrench(
+            Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, int refinementIterations) {
+        var table = makeLookupTable(ShootingLookupTable.Mode.PASS);
+
+        // Select the nearest trench opening by robot Y position each loop.
+        Supplier<Translation3d> targetSupplier =
+                () -> {
+                    var left = FieldConstants.LeftTrench.openingTopLeft;
+                    var right = FieldConstants.RightTrench.openingTopLeft;
+                    double robotY = robotPose.get().getY();
+                    return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
+                            ? AllianceFlipUtil.apply(left)
+                            : AllianceFlipUtil.apply(right);
+                };
+
+        var solutionSupplier =
+                makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
+
+        // Turret actively tracks the trench target while trigger is held — overrides the
+        // default command tracking for the duration of the trench shot.
+        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
+        var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
+        var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
+        var feedSeq = makeFeedSequenceUngated(solutionSupplier);
+        var telemetryCmd = makeTelemetryCmd(robotPose, solutionSupplier);
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
+                .withName("TrenchShoot");
+    }
+
     // Small helper factories to keep the main flow concise and easier to read.
     private ShootingLookupTable makeLookupTable(ShootingLookupTable.Mode mode) {
         return new ShootingLookupTable(mode);
@@ -248,6 +289,15 @@ public class ShooterSystem {
                 .withName("FeedSequence");
     }
 
+    private Command makeFeedSequenceUngated(
+            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        // Feed freely without shift-gating — used for trench/pass shots where there
+        // is no hub shift boundary to respect. Feeds until the command is cancelled
+        // (i.e. while the trigger is held).
+        return Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()))
+                .withName("FeedSequenceUngated");
+    }
+
     /**
      * Compute the turret origin (world XY) from the robot pose using the configured robot->turret
      * transform. This avoids allocations and keeps the telemetry math tidy.
@@ -262,14 +312,14 @@ public class ShooterSystem {
     }
 
     private Command makeTelemetryCmd(
-            Supplier<Pose2d> robotPose,
-            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+            Supplier<Pose2d> robotPose, Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         return Commands.run(
                         () -> {
                             var sol = solutionSupplier.get();
 
                             // Lead distance (includes motion-predicted lead)
-                            Logger.recordOutput("ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
+                            Logger.recordOutput(
+                                    "ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
 
                             // Distance from turret origin to alliance hub center
                             var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
@@ -281,7 +331,8 @@ public class ShooterSystem {
                             var model = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
                             Logger.recordOutput("ShooterTelemetry/lutFlywheelRPM", sol.flywheelSpeed().in(RPM));
                             Logger.recordOutput("ShooterTelemetry/modelFlywheelRPM", model.in(RPM));
-                            Logger.recordOutput("ShooterTelemetry/deltaRPM", model.in(RPM) - sol.flywheelSpeed().in(RPM));
+                            Logger.recordOutput(
+                                    "ShooterTelemetry/deltaRPM", model.in(RPM) - sol.flywheelSpeed().in(RPM));
                             Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
                             Logger.recordOutput("ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());

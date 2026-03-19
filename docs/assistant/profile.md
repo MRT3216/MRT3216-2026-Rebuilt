@@ -31,6 +31,10 @@ YAMS supports four `SmartMotorController` wrapper implementations:
 
 **TorqueCurrentFOC via YAMS**: Use `.withVendorControlRequest(new VelocityTorqueCurrentFOC(0))` (or the relevant FOC request) on `SmartMotorControllerConfig` before building your wrapper. YAMS will then dispatch that request in `setVelocity()` / `setPosition()`. The vendor control request must be a `ControlRequest` whose `.getName()` matches one of the supported switch-case entries.
 
+**FOC commutation (EnableFOC flag) via YAMS**: YAMS enables FOC commutation automatically based on the `DCMotor` constant you pass to the wrapper constructor. If you pass a FOC-capable motor (e.g., `DCMotor.getKrakenX60Foc(2)`, `DCMotor.getKrakenX44Foc(1)`), YAMS sets `EnableFOC = true` on the underlying `VelocityVoltage` / `MotionMagicVoltage` requests — giving you ~15% more peak power with no gain changes. This is **separate from and cheaper than** switching to `VelocityTorqueCurrentFOC`. Confirmed by nstrike (YAMS author) in Discord: *"The only middle ground i could do is if u supplied FOC motors as your DCMotor — then i could optionally enable FOC."*
+
+**This project's current state**: `FlywheelSubsystem` uses `DCMotor.getKrakenX60Foc(2)` and `HoodSubsystem` uses `DCMotor.getKrakenX44Foc(1)` → both already have FOC commutation enabled via YAMS. Neither uses `VelocityTorqueCurrentFOC` (torque-current control mode), which would require retuning gains.
+
 > **Note:** YAMS itself **does not** require Phoenix Pro — it will call `setControl()` with whatever request you provide. But TorqueCurrentFOC will only work on a licensed device; an unlicensed TalonFX/TalonFXS will disable output and set the `UnlicensedFeatureInUse` fault.
 
 YAMS API Reference (from official docs — yagsl.gitbook.io/yams)

@@ -143,7 +143,6 @@ public class SpindexerSubsystem extends SubsystemBase {
         spindexerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
         spindexerInputs.volts = motor.getVoltage();
         spindexerInputs.current = motor.getStatorCurrent();
-    
     }
 
     @Override

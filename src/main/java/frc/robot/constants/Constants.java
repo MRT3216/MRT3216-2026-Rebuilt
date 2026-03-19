@@ -9,6 +9,7 @@ package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+
 import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.generated.TunerConstants;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;

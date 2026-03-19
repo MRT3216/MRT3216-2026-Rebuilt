@@ -78,7 +78,8 @@ public class HubShiftUtil {
 
     // TOF bounds read directly from the HUB lookup table so they stay in sync when
     // ShooterLookupTables.java is updated — do not hardcode these values here.
-    private static final ShootingLookupTable HUB_TABLE = new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
+    private static final ShootingLookupTable HUB_TABLE =
+            new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
     private static final double MIN_TOF = HUB_TABLE.getMinTimeOfFlight();
     private static final double MAX_TOF = HUB_TABLE.getMaxTimeOfFlight();
 

@@ -121,7 +121,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
-        motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
+        motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
 
         intakeRollersConfig =
                 new FlyWheelConfig(motor)

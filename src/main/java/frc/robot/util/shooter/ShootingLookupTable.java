@@ -102,4 +102,22 @@ public class ShootingLookupTable {
     public Distance getMaxDistance() {
         return lookupTable.isEmpty() ? null : lookupTable.lastKey();
     }
+
+    /**
+     * Returns the minimum time-of-flight (seconds) across all entries — the TOF at the closest
+     * distance in the table. Used by HubShiftUtil to compute shift fudge factors.
+     */
+    public double getMinTimeOfFlight() {
+        if (lookupTable.isEmpty()) return 0.0;
+        return lookupTable.get(lookupTable.firstKey()).timeOfFlight.in(Seconds);
+    }
+
+    /**
+     * Returns the maximum time-of-flight (seconds) across all entries — the TOF at the farthest
+     * distance in the table. Used by HubShiftUtil to compute shift fudge factors.
+     */
+    public double getMaxTimeOfFlight() {
+        if (lookupTable.isEmpty()) return 0.0;
+        return lookupTable.get(lookupTable.lastKey()).timeOfFlight.in(Seconds);
+    }
 }

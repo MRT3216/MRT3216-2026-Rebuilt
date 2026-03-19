@@ -2,7 +2,9 @@
 // https://github.com/Mechanical-Advantage/RobotCode2026Public/blob/main/src/main/java/org/littletonrobotics/frc2026/util/HubShiftUtil.java
 //
 // Modifications for MRT3216:
-//   - Removed LaunchCalculator dependency; TOF bounds are hardcoded constants
+//   - TOF bounds sourced from ShootingLookupTable (HUB mode) instead of LaunchCalculator,
+//     so they stay correct automatically when ShooterLookupTables.java is updated.
+//     Do NOT re-hardcode MIN_TOF / MAX_TOF here — edit ShooterLookupTables.java instead.
 //   - Made ShiftInfo / ShiftEnum public for Robot.java logging
 //   - Added FMS clock-sync and alliance-win override supplier
 
@@ -11,6 +13,7 @@ package frc.robot.util;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
+import frc.robot.util.shooter.ShootingLookupTable;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -73,9 +76,11 @@ public class HubShiftUtil {
     private static final double MAX_FUEL_COUNT_DELAY = 2.0;
     private static final double SHIFT_END_EXTENSION = 3.0;
 
-    // TOF bounds from MRT3216 ShooterLookupTables HUB table (1.55 m → 0.82 s, 7.40 m → 2.14 s).
-    private static final double MIN_TOF = 0.82;
-    private static final double MAX_TOF = 2.14;
+    // TOF bounds read directly from the HUB lookup table so they stay in sync when
+    // ShooterLookupTables.java is updated — do not hardcode these values here.
+    private static final ShootingLookupTable HUB_TABLE = new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
+    private static final double MIN_TOF = HUB_TABLE.getMinTimeOfFlight();
+    private static final double MAX_TOF = HUB_TABLE.getMaxTimeOfFlight();
 
     private static final double APPROACHING_FUDGE = -1.0 * (MIN_TOF + MIN_FUEL_COUNT_DELAY);
     private static final double ENDING_FUDGE = SHIFT_END_EXTENSION - (MAX_TOF + MAX_FUEL_COUNT_DELAY);

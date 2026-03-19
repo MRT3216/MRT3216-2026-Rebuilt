@@ -78,8 +78,6 @@ public class RobotContainer {
     private final IntakeSystem intakeSystem =
             new IntakeSystem(intakeRollersSubsystem, intakePivotSubsystem);
 
-    // private final ZoneSystem zoneSystem;
-
     // Controller
     private final CommandXboxController driverController = new CommandXboxController(0);
     private final CommandXboxController operatorController = new CommandXboxController(1);
@@ -121,11 +119,6 @@ public class RobotContainer {
                                     new VisionIOPhotonVision(
                                             VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
 
-                    // zoneSystem =
-                    // new ZoneSystem(
-                    // drive::getPose, drive::getChassisSpeeds, shooterSystem, drive,
-                    // driverController);
-
                     break;
                 }
             case SIM:
@@ -159,11 +152,6 @@ public class RobotContainer {
                                             VisionConstants.robotToCameraBack,
                                             drive::getPose));
 
-                    // zoneSystem =
-                    // new ZoneSystem(
-                    // drive::getPose, drive::getChassisSpeeds, shooterSystem, drive,
-                    // driverController);
-
                     break;
                 }
 
@@ -185,10 +173,6 @@ public class RobotContainer {
                                     new VisionIO() {},
                                     new VisionIO() {},
                                     new VisionIO() {});
-                    // zoneSystem =
-                    // new ZoneSystem(
-                    // drive::getPose, drive::getChassisSpeeds, shooterSystem, drive,
-                    // driverController);
                     break;
                 }
         }
@@ -214,7 +198,6 @@ public class RobotContainer {
     }
 
     public void configureDefaultCommands() {
-        // drive.setDefaultCommand(zoneSystem);
         // Default command, normal field-relative drive
         drive.setDefaultCommand(
                 DriveCommands.joystickDrive(

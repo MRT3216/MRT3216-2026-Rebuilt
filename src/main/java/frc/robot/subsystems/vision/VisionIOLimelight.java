@@ -16,8 +16,8 @@ import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.RobotController;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -69,7 +69,7 @@ public class VisionIOLimelight implements VisionIO {
 
         // Read new pose observations from NetworkTables
         Set<Integer> tagIds = new HashSet<>();
-        List<PoseObservation> poseObservations = new LinkedList<>();
+        List<PoseObservation> poseObservations = new ArrayList<>();
         for (var rawSample : megatag1Subscriber.readQueue()) {
             if (rawSample.value.length == 0) continue;
             for (int i = 11; i < rawSample.value.length; i += 7) {

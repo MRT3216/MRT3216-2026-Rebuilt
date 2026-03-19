@@ -92,7 +92,7 @@ public class ShooterSystem {
         var feedAfterClear =
                 clearKicker().andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()));
         return hoodRun
-                .andThen(flywheel.runToTunedVelocity().alongWith(feedAfterClear))
+                .andThen(flywheel.setToTunedVelocity().alongWith(feedAfterClear))
                 .withName("TestShoot");
     }
 

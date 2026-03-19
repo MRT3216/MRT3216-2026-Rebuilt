@@ -73,20 +73,18 @@ public class HubShiftUtil {
     private static final double MAX_FUEL_COUNT_DELAY = 2.0;
     private static final double SHIFT_END_EXTENSION = 3.0;
 
-    // TOF bounds estimated from the MRT3216 lookup table (~0.4 s near, ~1.2 s far).
-    private static final double MIN_TOF = 0.4;
-    private static final double MAX_TOF = 1.2;
+    // TOF bounds from MRT3216 ShooterLookupTables HUB table (1.55 m → 0.82 s, 7.40 m → 2.14 s).
+    private static final double MIN_TOF = 0.82;
+    private static final double MAX_TOF = 2.14;
 
     private static final double APPROACHING_FUDGE = -1.0 * (MIN_TOF + MIN_FUEL_COUNT_DELAY);
     private static final double ENDING_FUDGE = SHIFT_END_EXTENSION - (MAX_TOF + MAX_FUEL_COUNT_DELAY);
-
-    // ── Runtime state ───────────────────────────────────────────────────────────
 
     private static final Timer shiftTimer = new Timer();
     private static double shiftTimerOffset = 0.0;
     private static final double TIME_RESET_THRESHOLD = 3.0;
 
-    private static Supplier<Optional<Boolean>> allianceWinOverride = Optional::empty;
+    private static Supplier<Optional<Boolean>> allianceWinOverride = () -> Optional.empty();
 
     private HubShiftUtil() {}
 
@@ -198,7 +196,7 @@ public class HubShiftUtil {
 
     private static ShiftInfo computeShiftInfo(boolean[] schedule, double[] starts, double[] ends) {
         double raw = shiftTimer.get();
-        double current = raw - shiftTimerOffset;
+        double current = raw + shiftTimerOffset;
 
         if (DriverStation.isAutonomousEnabled()) {
             return new ShiftInfo(ShiftEnum.AUTO, current, AUTO_END_TIME - current, true);
@@ -211,7 +209,7 @@ public class HubShiftUtil {
                     && fieldTime <= 135.0
                     && DriverStation.isFMSAttached()) {
                 shiftTimerOffset += current - fieldTime;
-                current = raw - shiftTimerOffset;
+                current = raw + shiftTimerOffset;
             }
 
             // Find which shift we're in (default to last = endgame).
@@ -235,7 +233,8 @@ public class HubShiftUtil {
             }
 
             // ShiftEnum indices: 0=TRANSITION,1=SHIFT1,2=SHIFT2,3=SHIFT3,4=SHIFT4,5=ENDGAME
-            ShiftEnum shift = ShiftEnum.values()[idx + 1]; // +1 to skip TRANSITION
+            // idx 0–4 map to SHIFT1–SHIFT4; idx 5 (endgame window) maps to ENDGAME.
+            ShiftEnum shift = idx < 5 ? ShiftEnum.values()[idx + 1] : ShiftEnum.ENDGAME;
             return new ShiftInfo(shift, elapsed, remaining, schedule[idx]);
         }
 

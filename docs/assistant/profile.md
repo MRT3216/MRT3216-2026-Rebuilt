@@ -710,6 +710,71 @@ Useful local references (already in repo)
  - `docs/guides/telemetry.md` — AdvantageKit and telemetry guidance used by this project.
  - `docs/assistant/history-2026-02-27.md` — conversation backup created on 2026-02-27 (timestamped archive).
 
+Competition Status & Pre-Boise Priorities (updated 2026-03-17)
+--------------------------------------------------------------
+
+### Post-Flagstaff Summary
+- Robot functioned well despite minimal pre-competition testing (shooter calibrated and lookup table built in hotel parking lot).
+- Finished **4th highest EPA** at Arizona; currently predicted **5th highest EPA in Idaho**.
+- **Highest world EPA ranking ever for the team**: 513th in the world (top 13.6%) as of Flagstaff.
+- Won the **Quality Award**. Still in contention for Worlds — likely needs top-5 qualification + Semifinals/Finals run in Boise, or another award.
+- Entire competition ran with **turret locked aiming backwards** and still among the most efficient scorers.
+
+### Known Robot Issues & Status
+
+**Intake (primary failure point)**
+- Original carbon fiber dead-axle rollers with 3D-printed inserts → inserts broke under hits.
+- Second form (churro through CF tube) → CF tubes began snapping.
+- Competed on PVC pipe rollers at end of event — worked acceptably.
+- **Fix**: Moving to polycarbonate rollers with metal inserts (WCP inserts + axles from Braeden Hunt / Bear Metal 2046). 8ft polycarb from McMaster, 4ft from AndyMark. Backup 3D-printed inserts also prepared.
+- Potential "bash bar" mod: polycarbonate maxspline tube on intake front to absorb impact hits (Ben investigating).
+
+**Turret**
+- Wiring not functional without a mechanically designed cable chain — wires blocked shots and prevented feeding.
+- **Fix**: 3D printing bidirectional cable chain links; Ben also investigating solutions.
+- Turret tracking code nearly complete (was intentionally locked for Flagstaff).
+
+**Shooter Wheels**
+- Thrifty Bot shooter wheels wore out fast in the center at Flagstaff.
+- **Fix**: 8 AndyMark Stealth Wheels in various durometers ordered (arriving Thursday). Need to test for best shooting consistency and rebuild lookup table after wheel swap.
+
+**Spindexer / Hopper**
+- Polycarbonate on spindexer jammed in final match.
+- Need to test spindexer without the polycarbonate to evaluate feed performance.
+- Balls getting caught in front corners of robot — needs a better solution.
+- Hopper should ideally retract with intake to prevent ball jams during agitation.
+
+**Electrical / Batteries**
+- Significant voltage drops at Flagstaff from: battery mistreatment (deep discharged), insufficient load testing, no current limiting in code.
+- **Fix**: Automotive load tester + SkyRC BD250 discharger (20A vs old CBA V at 7.5A) for thorough battery testing.
+- 14 new Energizer batteries inbound for Idaho (8 from Braeden Hunt, 6 from parents).
+- Battery test procedure: BatteryBeak check → CBA IV discharge at 7.5A to 10.8V → BD250 at 20A to 10.8V × 2 → drive in robot gently to 11V. All recorded in spreadsheet.
+
+**CAN Bus**
+- CANivore CAN FD bus issue occurred in the last match at Flagstaff (fixed during match, reappeared at end).
+- Must be diagnosed and corrected before Boise. Pigeon also needs recalibration.
+
+### Programming Priorities for Boise (in order)
+1. Review AdvantageKit match logs (identify current draws, anomalies)
+2. **Implement current limiting** on all subsystems (stator + supply)
+3. **Turret tracking code** — nearly complete, needs testing
+4. **Rebuild shooter lookup table** with new AndyMark Stealth Wheels + build tweaks
+5. **Retune PID and FF** for all subsystems (intake pivot especially)
+6. Reprint camera mounts (stronger, cameras right-side-up), lower PhotonVision resolution for higher FPS
+7. Refine and test autonomous routines (never tested on real robot before Flagstaff — add real-robot validation)
+8. **Create Elastic Dashboard** for in-match feedback
+9. Add passing settings
+10. Fix CANivore / CAN bus issues
+11. Clean up wiring
+12. Miscellaneous tweaks (agitator timing, etc.)
+
+### Key Programming Context for This Week
+- **Lookup table**: `src/main/resources/shooter_lookup.json` — will need to be rebuilt after new shooter wheels are installed and tested. Distance-to-RPM mapping.
+- **Current limiting**: add `withStatorCurrentLimit` and `withSupplyCurrentLimit` to YAMS `SmartMotorControllerConfig` for all TalonFX and SparkMAX/Flex motors. Review AdvantageKit logs first to set appropriate limits.
+- **Turret tracking**: code "nearly complete" — likely needs to be wired up to vision pose data and tested on real robot with the new cable chain.
+- **PhotonVision**: lower resolution setting in PhotonVision web UI (not in robot code). Camera mount reprint may shift extrinsics — re-run camera calibration if angles change.
+- **Intake pivot PID**: identified as needing the most retuning. Use YAMS tuning order: kG → kV → kA → kP → kD.
+
 Backup & transcript policy
 -------------------------
 - Prefer appending user+assistant transcripts to `docs/assistant/history.md` when requested. Avoid committing secrets — redact before committing or instruct the assistant to redact automatically.
@@ -726,4 +791,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-03-19 — added Phoenix 6 Pro, TalonFX swerve template, vision template, AK 2026 what's-new sections, and YAMS deep reference (SmartMotorControllerConfig, tuning order, SysId, profiles, simulation requirements).*
+*Last edited: 2026-03-19 — added Phoenix 6 Pro, TalonFX swerve template, vision template, AK 2026 what's-new sections, YAMS deep reference, and post-Flagstaff competition status + Boise priorities.*

@@ -14,11 +14,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
@@ -31,6 +29,7 @@ import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShooterModel;
 import frc.robot.util.shooter.ShootingLookupTable;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Aggregated shooter system (high-level grouping of shooter subsystems).
@@ -173,7 +172,7 @@ public class ShooterSystem {
         // helpers.
         var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
         var feedSeq = makeFeedSequence(solutionSupplier);
-        var telemetryCmd = makeTelemetryCmd(robotPose, targetSupplier, solutionSupplier);
+        var telemetryCmd = makeTelemetryCmd(robotPose, solutionSupplier);
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd);
     }
 
@@ -256,34 +255,28 @@ public class ShooterSystem {
 
     private Command makeTelemetryCmd(
             Supplier<Pose2d> robotPose,
-            Supplier<Translation3d> targetSupplier,
             Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         return Commands.run(
                         () -> {
-                            if (!(Constants.tuningMode || Constants.getMode() == Constants.Mode.SIM)) return;
                             var sol = solutionSupplier.get();
-                            var tableNt = NetworkTableInstance.getDefault().getTable("ShooterTelemetry");
-                            // Lead distance (includes motion-predicted lead)
-                            tableNt.getEntry("leadDistanceMeters").setDouble(sol.leadDistance().in(Meters));
 
-                            // Distance to the alliance hub center measured from the turret origin.
-                            // Rotate the turret translation into field coordinates instead of
-                            // allocating a Pose3d so telemetry matches the shooter model.
+                            // Lead distance (includes motion-predicted lead)
+                            Logger.recordOutput("ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
+
+                            // Distance from turret origin to alliance hub center
                             var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                            var rp = robotPose.get();
-                            var turretXY = turretOrigin(rp);
+                            var turretXY = turretOrigin(robotPose.get());
                             double hubDx = hub.toTranslation2d().getX() - turretXY.getX();
                             double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
-                            double hubDistMeters = Math.hypot(hubDx, hubDy);
-                            tableNt.getEntry("hubDistanceMeters").setDouble(hubDistMeters);
+                            Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
 
-                            tableNt.getEntry("lutFlywheelRPM").setDouble(sol.flywheelSpeed().in(RPM));
                             var model = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
-                            tableNt.getEntry("modelFlywheelRPM").setDouble(model.in(RPM));
-                            tableNt.getEntry("lutHoodDegrees").setDouble(sol.hoodAngle().in(Degrees));
-                            tableNt.getEntry("lutToFSeconds").setDouble(sol.timeOfFlight().in(Seconds));
-                            tableNt.getEntry("isValid").setBoolean(sol.isValid());
-                            tableNt.getEntry("deltaRPM").setDouble(model.in(RPM) - sol.flywheelSpeed().in(RPM));
+                            Logger.recordOutput("ShooterTelemetry/lutFlywheelRPM", sol.flywheelSpeed().in(RPM));
+                            Logger.recordOutput("ShooterTelemetry/modelFlywheelRPM", model.in(RPM));
+                            Logger.recordOutput("ShooterTelemetry/deltaRPM", model.in(RPM) - sol.flywheelSpeed().in(RPM));
+                            Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
+                            Logger.recordOutput("ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
+                            Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());
                         })
                 .withName("ShooterTelemetryPublisher");
     }

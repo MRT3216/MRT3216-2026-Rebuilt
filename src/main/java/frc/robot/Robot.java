@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Watchdog;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj.simulation.RoboRioSim;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.Constants;
@@ -166,15 +165,7 @@ public class Robot extends LoggedRobot {
         Logger.recordOutput("HubShift/RemainingTime", officialShift.remainingTime());
         Logger.recordOutput("HubShift/ShiftedActive", shiftedShift.active());
         Logger.recordOutput("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
-
-        // Publish to SmartDashboard so Elastic widgets can subscribe.
-        SmartDashboard.putString("HubShift/CurrentShift", officialShift.currentShift().name());
-        SmartDashboard.putBoolean("HubShift/Active", officialShift.active());
-        SmartDashboard.putNumber("HubShift/RemainingTime", officialShift.remainingTime());
-        SmartDashboard.putNumber("HubShift/ElapsedTime", officialShift.elapsedTime());
-        SmartDashboard.putBoolean("HubShift/ShiftedActive", shiftedShift.active());
-        SmartDashboard.putNumber("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
-        SmartDashboard.putNumber("MatchTime", DriverStation.getMatchTime());
+        Logger.recordOutput("MatchTime", DriverStation.getMatchTime());
 
         if (RobotController.getBatteryVoltage() > 0.0
                 && RobotController.getBatteryVoltage() <= Constants.RobotSafetyConstants.kLowBatteryVoltage

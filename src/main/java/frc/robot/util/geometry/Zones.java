@@ -13,7 +13,6 @@ import frc.robot.constants.Dimensions;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.ShooterConstants.HoodConstants;
 import java.util.function.Supplier;
-import org.littletonrobotics.junction.Logger;
 
 public class Zones {
     public static interface Zone {
@@ -241,25 +240,4 @@ public class Zones {
 
     public static final PredictiveXZoneCollection NEUTRAL_ZONES =
             new PredictiveXZoneCollection(NEUTRAL_ZONE);
-
-    public static void logAllZones() {
-        Logger.recordOutput("Zones/Trenches/Blue Bottom", BLUE_BOTTOM_TRENCH.getCorners());
-        Logger.recordOutput("Zones/Trenches/Blue Top", BLUE_TOP_TRENCH.getCorners());
-        Logger.recordOutput("Zones/Trenches/Red Bottom", RED_BOTTOM_TRENCH.getCorners());
-        Logger.recordOutput("Zones/Trenches/Red Top", RED_TOP_TRENCH.getCorners());
-
-        Logger.recordOutput("Zones/Trenches Duck/Blue Bottom", BLUE_BOTTOM_TRENCH_DUCK.getCorners());
-        Logger.recordOutput("Zones/Trenches Duck/Blue Top", BLUE_TOP_TRENCH_DUCK.getCorners());
-        Logger.recordOutput("Zones/Trenches Duck/Red Bottom", RED_BOTTOM_TRENCH_DUCK.getCorners());
-        Logger.recordOutput("Zones/Trenches Duck/Red Top", RED_TOP_TRENCH_DUCK.getCorners());
-
-        Logger.recordOutput("Zones/Bumps/Blue Bottom", BLUE_BOTTOM_BUMP.getCorners());
-        Logger.recordOutput("Zones/Bumps/Blue Top", BLUE_TOP_BUMP.getCorners());
-        Logger.recordOutput("Zones/Bumps/Red Bottom", RED_BOTTOM_BUMP.getCorners());
-        Logger.recordOutput("Zones/Bumps/Red Top", RED_TOP_BUMP.getCorners());
-
-        Logger.recordOutput("Zones/Alliance Zones/Blue", BLUE_ALLIANCE_ZONE.getCorners());
-        Logger.recordOutput("Zones/Alliance Zones/Red", RED_ALLIANCE_ZONE.getCorners());
-        Logger.recordOutput("Zones/Neutral Zone", NEUTRAL_ZONE.getCorners());
-    }
 }

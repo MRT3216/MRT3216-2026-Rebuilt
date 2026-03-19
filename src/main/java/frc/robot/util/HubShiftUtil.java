@@ -196,7 +196,7 @@ public class HubShiftUtil {
 
     private static ShiftInfo computeShiftInfo(boolean[] schedule, double[] starts, double[] ends) {
         double raw = shiftTimer.get();
-        double current = raw + shiftTimerOffset;
+        double current = raw - shiftTimerOffset;
 
         if (DriverStation.isAutonomousEnabled()) {
             return new ShiftInfo(ShiftEnum.AUTO, current, AUTO_END_TIME - current, true);
@@ -209,7 +209,7 @@ public class HubShiftUtil {
                     && fieldTime <= 135.0
                     && DriverStation.isFMSAttached()) {
                 shiftTimerOffset += current - fieldTime;
-                current = raw + shiftTimerOffset;
+                current = raw - shiftTimerOffset;
             }
 
             // Find which shift we're in (default to last = endgame).
@@ -232,9 +232,8 @@ public class HubShiftUtil {
                 remaining = ends[idx + 1] - current;
             }
 
-            // ShiftEnum indices: 0=TRANSITION,1=SHIFT1,2=SHIFT2,3=SHIFT3,4=SHIFT4,5=ENDGAME
-            // idx 0–4 map to SHIFT1–SHIFT4; idx 5 (endgame window) maps to ENDGAME.
-            ShiftEnum shift = idx < 5 ? ShiftEnum.values()[idx + 1] : ShiftEnum.ENDGAME;
+            // ShiftEnum: idx 0=TRANSITION, 1=SHIFT1, 2=SHIFT2, 3=SHIFT3, 4=SHIFT4, 5=ENDGAME
+            ShiftEnum shift = ShiftEnum.values()[idx];
             return new ShiftInfo(shift, elapsed, remaining, schedule[idx]);
         }
 

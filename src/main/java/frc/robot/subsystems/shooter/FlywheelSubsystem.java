@@ -130,11 +130,6 @@ public class FlywheelSubsystem extends SubsystemBase {
         flywheelInputs.current = motor.getStatorCurrent();
         flywheelInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
 
-        boolean atSpeed =
-                flywheelInputs.setpoint.in(RPM) > 100.0
-                        && Math.abs(flywheelInputs.velocity.in(RPM) - flywheelInputs.setpoint.in(RPM))
-                                <= kVelocityTolerance.in(RPM);
-        SmartDashboard.putBoolean("Shooter/FlywheelAtSpeed", atSpeed);
         SmartDashboard.putBoolean(
                 "Mechanisms/FlywheelIsMoving", Math.abs(flywheelInputs.velocity.in(RPM)) > 10.0);
     }

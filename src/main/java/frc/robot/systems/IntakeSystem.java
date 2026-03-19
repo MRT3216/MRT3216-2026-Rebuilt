@@ -39,37 +39,37 @@ public class IntakeSystem {
 
     // region Public API (queries & commands)
 
+    /** Returns the current logical state of the intake. */
+    public IntakeStates getState() {
+        return currentState;
+    }
+
     /**
-     * Deploy if stowed, then run the intake rollers.
+     * Deploy if stowed, then run the intake rollers. The state check is deferred so it is evaluated
+     * at runtime rather than at command-creation time.
      *
      * @return a command to perform the intake action
      */
     public Command intake() {
-        switch (currentState) {
-            case Stowed:
-                // Deploy then run rollers. deploy() is side-effect free and returns a Command.
-                return deploy().andThen(intakeRollers.intakeBalls());
-            case Deployed:
-                return intakeRollers.intakeBalls();
-            default:
-                return Commands.none();
-        }
+        return Commands.either(
+                        intakeRollers.intakeBalls(),
+                        deploy().andThen(intakeRollers.intakeBalls()),
+                        () -> currentState == IntakeStates.Deployed)
+                .withName("Intake.Intake");
     }
 
     /**
-     * Eject (reverse) the intake: deploy if needed and run rollers in reverse.
+     * Eject (reverse) the intake: deploy if needed and run rollers in reverse. The state check is
+     * deferred so it is evaluated at runtime.
      *
      * @return a command to perform the eject action
      */
     public Command eject() {
-        switch (currentState) {
-            case Stowed:
-                return deploy().andThen(intakeRollers.ejectBalls());
-            case Deployed:
-                return intakeRollers.ejectBalls();
-            default:
-                return Commands.none();
-        }
+        return Commands.either(
+                        intakeRollers.ejectBalls(),
+                        deploy().andThen(intakeRollers.ejectBalls()),
+                        () -> currentState == IntakeStates.Deployed)
+                .withName("Intake.Eject");
     }
 
     /**
@@ -89,29 +89,34 @@ public class IntakeSystem {
     }
 
     /**
-     * Deploy the intake arm by driving the pivot down briefly.
+     * Deploy the intake arm using positional control and update the logical state.
+     *
+     * <p>TODO: once PID/FF are tuned, verify kDeployedAngle reaches the correct physical position.
      *
      * @return a command that deploys the intake
      */
     public Command deploy() {
-        return intakePivot.set(-.20).withTimeout(0.3).withName("Intake.Deploy");
+        return intakePivot
+                .setAngle(IntakeConstants.Pivot.kDeployedAngle)
+                .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
+                .withName("Intake.Deploy");
     }
 
     /**
-     * Stow the intake arm if currently deployed.
+     * Stow the intake arm using positional control and update the logical state. The state check is
+     * deferred so it is evaluated at runtime.
      *
      * @return a command to move the intake to the stowed angle, or a no-op if already stowed
      */
     public Command stow() {
-        if (currentState == IntakeStates.Deployed) {
-            // Move the arm to the stowed angle, then update the logical state after motion
-            // completes so other callers observe the true physical state.
-            return intakePivot
-                    .setAngle(IntakeConstants.Pivot.kStowedAngle)
-                    .andThen(Commands.runOnce(() -> currentState = IntakeStates.Stowed))
-                    .withName("Intake.Stow");
-        }
-        return Commands.none();
+        return Commands.either(
+                        intakePivot
+                                .setAngle(IntakeConstants.Pivot.kStowedAngle)
+                                .andThen(Commands.runOnce(() -> currentState = IntakeStates.Stowed))
+                                .withName("Intake.Stow"),
+                        Commands.none(),
+                        () -> currentState == IntakeStates.Deployed)
+                .withName("Intake.Stow");
     }
 
     /** Convenience command to stop the rollers (persistent hold). */

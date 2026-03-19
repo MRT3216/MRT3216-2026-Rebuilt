@@ -106,11 +106,68 @@ public Command followTarget(Supplier<AngularVelocity> supplier) {
 }
 ```
 
+WPILib + Oblarg Command-Based Best Practices (from ChiefDelphi + frc-docs)
+--------------------------------------------------------------------------
+Sources: https://www.chiefdelphi.com/t/command-based-best-practices-for-2025-community-feedback/465602
+         https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html
+
+COMMANDS:
+- Never manually schedule commands (use Triggers or command compositions instead).
+- Never store command instances as fields/members — each use should get a fresh instance from a factory method.
+- Use factory methods on subsystems to return new Command instances. Do NOT put "Factory" in the method name (e.g., `setVelocity(speed)` not `setVelocityFactory()`). Suffix with `Command` only if disambiguation is needed (e.g., `runIntakeCommand()`).
+- Single-subsystem commands → instance factory methods on the subsystem class (`this.run(...)`, `this.startEnd(...)`).
+- Multi-subsystem commands → static or instance factory methods on a separate `ShooterSystem` / auto routines class.
+- Do NOT put multi-subsystem command logic in a single subsystem class (causes circular dependencies and race conditions).
+- Command groups (`.alongWith`, `.andThen`, `Commands.parallel`, `Commands.sequence`) block ALL involved subsystems for their entire duration — default commands do NOT run during a composition. Use `Trigger` for loose coupling instead when this is too rigid.
+- Use `.withInterruptBehavior(Command.InterruptBehavior.kCancelIncoming)` to protect critical sequences (e.g., handoffs, collision avoidance).
+- Always `.withName(...)` composed commands for readable scheduler traces.
+
+SUBSYSTEMS:
+- All access to protected hardware/state MUST go through Commands — no public imperative methods that directly write to motors/actuators (or if present, clearly document the concurrency risk).
+- Expose boolean states as `public final Trigger` instance fields for easy loose coupling:
+  ```java
+  public final Trigger atSpeed = new Trigger(() -> Math.abs(getVelocity().in(RPM) - setpoint.in(RPM)) < 50);
+  ```
+- Do NOT inject references to other subsystems into a subsystem constructor. Cross-subsystem coordination belongs in `ShooterSystem` / `RobotContainer`.
+- `subsystem.periodic()` is acceptable for telemetry, odometry updates, and YAMS `updateTelemetry()` — but motor outputs should be driven by commands, not periodic. Avoid full state machines in `periodic()`.
+
+TRIGGERS:
+- `Trigger` represents any boolean robot state, not just buttons (sensor readings, at-speed checks, game states, etc.).
+- Prefer `Trigger` over tight command group composition when two subsystems interact but don't need to be simultaneous mutex-holders:
+  ```java
+  new Trigger(m_feeder::hasGamepiece)
+      .and(controller.rightTrigger())
+      .whileTrue(flywheel.spinup().alongWith(turret.aim()))
+      .and(flywheel::atSpeed).and(turret::onTarget)
+      .whileTrue(spindexer.feedShooter());
+  ```
+- Triggers do NOT need to be stored as variables if immediately bound — the event loop holds the reference.
+- Declare reusable triggers as `public final Trigger` fields in the narrowest scope that has the relevant state (usually the subsystem itself).
+
+PROJECT STRUCTURE (WPILib canonical):
+- `Robot.java` — minimal; only `CommandScheduler.getInstance().run()` in `robotPeriodic()`.
+- `RobotContainer.java` — all subsystem instantiation, button bindings, auto selector. Subsystems are `private final` fields (not globals/singletons).
+- `ShooterSystem.java` (or similar) — multi-subsystem command factories, injected with subsystem instances via constructor (the "non-static factory" pattern).
+- `Constants.java` — `public static final` grouped by subsystem in inner classes. Use `import static` to avoid verbose prefixes.
+- Commands are factory methods, not stored instances.
+
+OBLARG'S RULES (direct from ChiefDelphi post, verbatim):
+1. Commands should not be manually scheduled.
+2. Commands should not be stored as instances/members.
+3. Commands should be returned from factory functions.
+4. Commands should not be composed too deeply across subsystems — use Triggers for loose coupling.
+5. Subsystems should only expose protected state interactions through Command factories.
+6. Subsystems should expose boolean state as public final Trigger members.
+7. Subsystems should not receive injected references to other subsystems.
+8. Triggers should represent general robot states (not just buttons).
+9. Triggers should be used to coordinate cross-subsystem interactions when compositions would be too rigid.
+10. Triggers should live as public final fields in the narrowest scope with access to the relevant state.
+
 Starter prompt (paste to assistant)
 ----------------------------------
 Copy this exact block into a new assistant session to rehydrate behavior and expectations:
 
-"Project assistant profile: MRT3216 repo. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning when supplier-backed YAMS commands do not re-evaluate. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
+"Project assistant profile: MRT3216 repo. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning when supplier-backed YAMS commands do not re-evaluate. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. Follow Oblarg command-based best practices: no stored command instances, all motor access through commands, boolean subsystem state exposed as public final Trigger fields, cross-subsystem coordination in ShooterSystem not in individual subsystems. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
 
 Useful local references (already in repo)
  - `docs/guides/yams.md` — vendor install, links to YAMS docs, and licensing notes.

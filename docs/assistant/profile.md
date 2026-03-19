@@ -163,11 +163,123 @@ OBLARG'S RULES (direct from ChiefDelphi post, verbatim):
 9. Triggers should be used to coordinate cross-subsystem interactions when compositions would be too rigid.
 10. Triggers should live as public final fields in the narrowest scope with access to the relevant state.
 
+AdvantageKit IO Interface Pattern (from docs.advantagekit.org)
+--------------------------------------------------------------
+AdvantageKit's key value: logs ALL inputs on every loop cycle. On replay, the simulator re-runs robot code with logged inputs — so you can add new log fields or modify pipelines post-hoc and see exactly what would have happened.
+
+Standard subsystem structure with IO layers:
+1. **IO Interface** (`SubsystemIO`) — defines an `updateInputs(SubsystemInputs inputs)` method + default no-op implementations for all output methods (e.g., `setVoltage(double)`, `setSetpoint(double)`).
+2. **IO Implementations** — `SubsystemIOReal` (uses vendor libs) and `SubsystemIOSim` (uses WPILib simulation classes). Switch in `RobotContainer` constructor based on `Robot.isReal()`.
+3. **Inputs class** — a flat POJO annotated with `@AutoLog` that holds all sensor readings as primitives/WPILib structs. `@AutoLog` auto-generates `toLog()`/`fromLog()` methods.
+4. **Subsystem class** — holds `io` and `inputs` fields. Each cycle: `io.updateInputs(inputs); Logger.processInputs("Name", inputs);`. All control logic reads from `inputs.*`, not directly from the IO layer.
+
+Key rules:
+- Outputs (setVoltage, setSetpoint, etc.) are simple methods on the IO interface — no logging needed for outputs.
+- Inputs flow through the `inputs` struct ONLY. Never read hardware directly in the subsystem's control logic — only via `inputs.*`.
+- Use anonymous IO classes (`new SubsystemIO() {}`) in sim to get all-zero no-op hardware behavior.
+- Timestamp/latency compensation: since all inputs are captured atomically per cycle, latency compensation with odometry works correctly.
+
+Example (condensed):
+```java
+// In subsystem constructor:
+io.updateInputs(inputs);
+Logger.processInputs("Flywheel", inputs);
+
+// Control logic uses inputs:
+double error = inputs.velocityRadPerSec - setpointRadPerSec;
+```
+
+SysId / Feedforward Gain Reference (from docs.wpilib.org)
+---------------------------------------------------------
+Three WPILib feedforward classes (all use `setVoltage()` for physical accuracy):
+- `SimpleMotorFeedforward(kS, kV, kA)` — flywheels, drivetrain, turrets, horizontal sliders. Model: V = kS·sgn(v̇) + kV·v̇ + kA·v̈
+- `ElevatorFeedforward(kS, kG, kV, kA)` — vertical elevators. Model adds constant kG term.
+- `ArmFeedforward(kS, kG, kV, kA)` — arms. Model: V = kG·cos(θ) + kS·sgn(ω) + kV·ω + kA·α
+
+Gain meanings:
+- `kS` (V) — static friction; must be measured empirically (SysId). Cannot be modeled.
+- `kV` (V·s/unit) — velocity coefficient. Can be estimated from motor free speed.
+- `kA` (V·s²/unit) — acceleration coefficient. Often zero for low-inertia mechanisms.
+- `kG` (V) — gravity compensation for elevators (constant) or arms (times cos(θ)).
+
+SysId workflow: deploy routine → run quasistatic + dynamic tests in both directions → load `.wpilog` in SysId app → read kS, kV, kA, kG → plug into feedforward + PID controller. YAMS has a built-in `sysId()` routine.
+
+Important: always use `motor.setVoltage()`, not `motor.set()`, when applying feedforward — `set()` doesn't compensate for battery sag.
+
+PathPlanner 2026 Key Notes (from pathplanner.dev)
+-------------------------------------------------
+- `AutoBuilder.configure(getPose, resetPose, getRobotRelativeSpeeds, drive, controller, config, allianceFlip, this)` — configure in drive subsystem constructor.
+- `RobotConfig.fromGUISettings()` — loads robot mass, MOI, wheel positions from PathPlanner GUI. Store result in Constants.
+- `PPHolonomicDriveController(translationPID, rotationPID)` — swerve controller. Typical starting gains: kP=5.0 for both translation and rotation.
+- Always load autos at startup (in `RobotContainer` constructor), not in `getAutonomousCommand()`. Complex autos cause long delays if loaded at enable time.
+- `AutoBuilder.buildAutoChooser()` — auto-populates `SendableChooser` with every auto in deploy dir. Add `deleteOldFiles = true` to `build.gradle` to avoid stale auto options.
+- Hot reload: paths can be updated and regenerated without redeploying code.
+- `PathPlannerAuto` is a Command — schedule it directly.
+- **Named commands** are registered with `NamedCommands.registerCommand("name", command)` before auto routines are built. Essential for event markers in GUI paths.
+- Alliance mirroring: PathPlanner mirrors paths to red side automatically. Origin always stays blue side. If you need additional color transforms, do them yourself.
+
+PhotonVision / Vision Integration Notes (from docs.photonvision.org)
+--------------------------------------------------------------------
+Core API:
+- `PhotonCamera(cameraName)` — one instance per physical camera. Name must match PhotonVision UI nickname.
+- `camera.getAllUnreadResults()` — preferred over `getLatestResult()` for pose estimation; processes all queued frames for latency accuracy.
+- `result.hasTargets()` — ALWAYS check before getting targets in Java/C++ to avoid NPE.
+- `result.getBestTarget()` — best target per configured sort criteria.
+- `target.getFiducialId()` — AprilTag ID.
+- `target.getPoseAmbiguity()` — lower is better; filter out high-ambiguity readings (>0.2 threshold common).
+- `target.getBestCameraToTarget()` — Transform3d in camera space (X=forward, Y=left, Z=up).
+
+Pose estimation with `PhotonPoseEstimator`:
+- Create one `PhotonPoseEstimator` per camera.
+- Constructor: `new PhotonPoseEstimator(fieldLayout, robotToCamTransform)`.
+- Strategy priority: first try `estimateCoprocMultiTagPose()` (best accuracy, requires multi-tag enabled in UI), fall back to `estimateLowestAmbiguityPose()` for single-tag.
+- Returns `Optional<EstimatedRobotPose>` — empty if no tags seen, solver failed, or ambiguity too high.
+- Feed result into drivetrain: `drivetrain.addVisionMeasurement(estPose.toPose2d(), estTimestamp, stdDevs)`.
+- Scale standard deviations (`stdDevs`) with distance and tag count — farther/fewer tags → larger stdDevs (less trust).
+- New 2025+ strategy: `estimateConstrainedSolvepnpPose()` — constrains robot to be flat on floor for improved accuracy; requires heading data via `addHeadingData()` each frame.
+
+Camera transform: `new Transform3d(new Translation3d(x, y, z), new Rotation3d(roll, pitch, yaw))` where units are meters and radians.
+
+Nuanced Best Practices from Community Discussion (narmstro/viggy96/spacey_sooty, Sep 2024)
+------------------------------------------------------------------------------------------
+Additional patterns gleaned from the "best practices example" thread:
+
+1. **`runOnce().andThen(waitUntil(condition))` pattern** for positional commands that wait to complete:
+   ```java
+   public Command setGoal(double meters) {
+     return runOnce(() -> feedback.setGoal(meters))
+         .andThen(Commands.waitUntil(feedback::atGoal))
+         .withName("ElevatorSetGoal");
+   }
+   ```
+   *(Don't use `.until()` on an `InstantCommand` — it ends before the condition can become true.)*
+
+2. **Named setpoints > generic `setGoal`**: wrap `setGoal()` with semantic methods:
+   ```java
+   public Command toSpeaker() { return setGoal(Constants.SPEAKER_HEIGHT); }
+   public Command toAmp()     { return setGoal(Constants.AMP_HEIGHT); }
+   ```
+   Or use an enum: `public Command moveTo(ElevatorState state) { return setGoal(state.heightM); }`
+
+3. **`asProxy()` for large sequences**: if a command group includes a subsystem but earlier steps don't need to block it, use `.asProxy()` on the subsystem's command so the sequence doesn't inherit its requirement.
+
+4. **`BooleanSupplier` vs `Trigger` as public fields**: for boolean states, use `public final Trigger` directly (same API). For non-boolean sensor values (e.g., pose, velocity), expose as `public final Supplier<T>` fields.
+
+5. **`periodic()` for motor output is OK IF** the subsystem clearly guards access and you use disable flags controlled by commands (e.g., `manualControl` boolean field toggled by command `initialize()`/`end()`). Pure command-execute approach is preferred but periodic is acceptable with discipline.
+
+6. **`RobotContainer` vs `Robot.java` for bindings**: WPILib is moving toward putting bindings in `Robot.java` directly, which makes `TimedRobot.addPeriodic()` easier to use. `RobotContainer` is still accepted but watch for deprecation.
+
+7. **`atGoal` Trigger field example**:
+   ```java
+   public final Trigger atGoal = new Trigger(feedback::atGoal);
+   public final Trigger atSpeed = new Trigger(() -> getVelocity().isNear(setpoint, Percent.of(5)));
+   ```
+
 Starter prompt (paste to assistant)
 ----------------------------------
 Copy this exact block into a new assistant session to rehydrate behavior and expectations:
 
-"Project assistant profile: MRT3216 repo. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning when supplier-backed YAMS commands do not re-evaluate. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. Follow Oblarg command-based best practices: no stored command instances, all motor access through commands, boolean subsystem state exposed as public final Trigger fields, cross-subsystem coordination in ShooterSystem not in individual subsystems. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
+"Project assistant profile: MRT3216 repo. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning when supplier-backed YAMS commands do not re-evaluate. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. Follow Oblarg command-based best practices: no stored command instances, all motor access through commands, boolean subsystem state exposed as public final Trigger fields, cross-subsystem coordination in ShooterSystem not in individual subsystems. Use AdvantageKit IO layer pattern (io/inputs separation, @AutoLog). For vision, use PhotonPoseEstimator with multi-tag strategy falling back to lowest ambiguity; scale stdDevs by distance. For autos, use PathPlanner AutoBuilder configured in drive subsystem; load all autos at startup. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
 
 Useful local references (already in repo)
  - `docs/guides/yams.md` — vendor install, links to YAMS docs, and licensing notes.

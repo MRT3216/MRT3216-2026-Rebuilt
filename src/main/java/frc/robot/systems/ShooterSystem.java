@@ -125,7 +125,7 @@ public class ShooterSystem {
         // var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
         var flywheelCmd = flywheel.setVelocity(makeFlywheelModelSupplier(solution));
-        var feedCmd = makeFeedSequence();
+        var feedCmd = makeFeedSequence(solution);
         var telemetryCmd = makeTelemetryCmd(robotPose, solution);
 
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
@@ -245,15 +245,19 @@ public class ShooterSystem {
         return () -> ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
     }
 
-    private Command makeFeedSequence() {
-        // Feed only while the shifted shift is active — stops automatically at shift
-        // boundary without requiring driver input. Flywheel keeps spinning in parallel.
+    private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        // Feed only while the shifted shift is active AND the solution is within LUT
+        // range. If the robot is too far / too close the feed stops, preventing wasted
+        // game pieces on shots that won't score.
         return Commands.sequence(
                         clearKicker(),
                         spindexer
                                 .feedShooter()
                                 .alongWith(kicker.feedShooter())
-                                .onlyWhile(() -> HubShiftUtil.getShiftedShiftInfo().active()))
+                                .onlyWhile(
+                                        () ->
+                                                HubShiftUtil.getShiftedShiftInfo().active()
+                                                        && solutionSupplier.get().isValid()))
                 .withName("FeedSequence");
     }
 

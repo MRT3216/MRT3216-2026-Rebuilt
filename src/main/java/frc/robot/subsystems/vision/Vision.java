@@ -59,8 +59,8 @@ public class Vision extends SubsystemBase {
      * @param tagId fiducial ID of the AprilTag
      * @return Optional containing the Translation3d when the tag is present in the layout
      */
-    public Translation3d getTagTranslation3d(int tagId) {
-        return aprilTagLayout.getTagPose(tagId).map(Pose3d::getTranslation).orElse(null);
+    public Optional<Translation3d> getTagTranslation3d(int tagId) {
+        return aprilTagLayout.getTagPose(tagId).map(Pose3d::getTranslation);
     }
 
     /**

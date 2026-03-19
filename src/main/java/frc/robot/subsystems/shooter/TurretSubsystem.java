@@ -181,11 +181,6 @@ public class TurretSubsystem extends SubsystemBase {
         return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
 
-    /** Convenience: long-running closed-loop hold of the current stored target (use as default). */
-    public Command stopHold() {
-        return setAngle(() -> getTarget()).withName("TurretStopHold");
-    }
-
     /**
      * Sets the duty cycle (percent output) for the turret.
      *

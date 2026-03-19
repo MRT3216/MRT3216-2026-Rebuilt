@@ -1,0 +1,360 @@
+======================================================================
+ALL SIGNALS matching keywords (akit_26-03-14_22-34-39_azfg_e9.wpilog):
+======================================================================
+  structschema         /.schema/struct:ChassisSpeeds
+  double               /Drive/Gyro/YawVelocityRadPerSec
+  double               /Drive/Module0/DriveVelocityRadPerSec
+  double               /Drive/Module0/TurnVelocityRadPerSec
+  double               /Drive/Module1/DriveVelocityRadPerSec
+  double               /Drive/Module1/TurnVelocityRadPerSec
+  double               /Drive/Module2/DriveVelocityRadPerSec
+  double               /Drive/Module2/TurnVelocityRadPerSec
+  double               /Drive/Module3/DriveVelocityRadPerSec
+  double               /Drive/Module3/TurnVelocityRadPerSec
+  int64                /DriverStation/AllianceStation
+  boolean              /DriverStation/Autonomous
+  boolean              /DriverStation/DSAttached
+  boolean              /DriverStation/EmergencyStop
+  boolean              /DriverStation/Enabled
+  string               /DriverStation/EventName
+  boolean              /DriverStation/FMSAttached
+  string               /DriverStation/GameSpecificMessage
+  int64[]              /DriverStation/Joystick0/AxisTypes
+  float[]              /DriverStation/Joystick0/AxisValues
+  int64                /DriverStation/Joystick0/ButtonCount
+  int64                /DriverStation/Joystick0/ButtonValues
+  string               /DriverStation/Joystick0/Name
+  int64[]              /DriverStation/Joystick0/POVs
+  int64                /DriverStation/Joystick0/Type
+  boolean              /DriverStation/Joystick0/Xbox
+  int64[]              /DriverStation/Joystick1/AxisTypes
+  float[]              /DriverStation/Joystick1/AxisValues
+  int64                /DriverStation/Joystick1/ButtonCount
+  int64                /DriverStation/Joystick1/ButtonValues
+  string               /DriverStation/Joystick1/Name
+  int64[]              /DriverStation/Joystick1/POVs
+  int64                /DriverStation/Joystick1/Type
+  boolean              /DriverStation/Joystick1/Xbox
+  int64[]              /DriverStation/Joystick2/AxisTypes
+  float[]              /DriverStation/Joystick2/AxisValues
+  int64                /DriverStation/Joystick2/ButtonCount
+  int64                /DriverStation/Joystick2/ButtonValues
+  string               /DriverStation/Joystick2/Name
+  int64[]              /DriverStation/Joystick2/POVs
+  int64                /DriverStation/Joystick2/Type
+  boolean              /DriverStation/Joystick2/Xbox
+  int64[]              /DriverStation/Joystick3/AxisTypes
+  float[]              /DriverStation/Joystick3/AxisValues
+  int64                /DriverStation/Joystick3/ButtonCount
+  int64                /DriverStation/Joystick3/ButtonValues
+  string               /DriverStation/Joystick3/Name
+  int64[]              /DriverStation/Joystick3/POVs
+  int64                /DriverStation/Joystick3/Type
+  boolean              /DriverStation/Joystick3/Xbox
+  int64[]              /DriverStation/Joystick4/AxisTypes
+  float[]              /DriverStation/Joystick4/AxisValues
+  int64                /DriverStation/Joystick4/ButtonCount
+  int64                /DriverStation/Joystick4/ButtonValues
+  string               /DriverStation/Joystick4/Name
+  int64[]              /DriverStation/Joystick4/POVs
+  int64                /DriverStation/Joystick4/Type
+  boolean              /DriverStation/Joystick4/Xbox
+  int64[]              /DriverStation/Joystick5/AxisTypes
+  float[]              /DriverStation/Joystick5/AxisValues
+  int64                /DriverStation/Joystick5/ButtonCount
+  int64                /DriverStation/Joystick5/ButtonValues
+  string               /DriverStation/Joystick5/Name
+  int64[]              /DriverStation/Joystick5/POVs
+  int64                /DriverStation/Joystick5/Type
+  boolean              /DriverStation/Joystick5/Xbox
+  int64                /DriverStation/MatchNumber
+  double               /DriverStation/MatchTime
+  int64                /DriverStation/MatchType
+  int64                /DriverStation/ReplayNumber
+  boolean              /DriverStation/Test
+  double               /Hood/Angle
+  double               /Hood/Current
+  double               /Hood/Setpoint
+  double               /Hood/Volts
+  double               /Intake/Pivot/Velocity
+  double               /Intake/Rollers/Velocity
+  double               /Kicker/Current
+  double               /Kicker/Setpoint
+  double               /Kicker/Velocity
+  double               /Kicker/Volts
+  string               /RealOutputs/Alerts/.type
+  string[]             /RealOutputs/Alerts/errors
+  string[]             /RealOutputs/Alerts/infos
+  string[]             /RealOutputs/Alerts/warnings
+  boolean              /RealOutputs/CommandsAll/FlywheelStopHold
+  boolean              /RealOutputs/CommandsAll/HoodSubsystem SetAngle
+  boolean              /RealOutputs/CommandsAll/Intake.Deploy
+  boolean              /RealOutputs/CommandsAll/IntakePivotSubsystem SetDutyCycle
+  boolean              /RealOutputs/CommandsAll/IntakeRollersStopHold
+  boolean              /RealOutputs/CommandsAll/IntakeRollersSubsystem IntakeRollersMech SetSpeed
+  boolean              /RealOutputs/CommandsAll/IntakeRollersSubsystem SetDutyCycle
+  boolean              /RealOutputs/CommandsAll/InterruptShooting
+  boolean              /RealOutputs/CommandsAll/KickerStopHold
+  boolean              /RealOutputs/CommandsAll/Left Bum Rush (No SOTF)
+  boolean              /RealOutputs/CommandsAll/ParallelCommandGroup
+  boolean              /RealOutputs/CommandsAll/RunCommand
+  boolean              /RealOutputs/CommandsAll/SequentialCommandGroup
+  boolean              /RealOutputs/CommandsAll/SpindexerStopHold
+  boolean              /RealOutputs/CommandsAll/TurretSubsystem SetAngle
+  boolean              /RealOutputs/CommandsUnique/FlywheelStopHold_1cf3f8b
+  boolean              /RealOutputs/CommandsUnique/HoodSubsystem SetAngle_6f2363
+  boolean              /RealOutputs/CommandsUnique/Intake.Deploy_5f09de
+  boolean              /RealOutputs/CommandsUnique/IntakePivotSubsystem SetDutyCycle_c6460c
+  boolean              /RealOutputs/CommandsUnique/IntakeRollersStopHold_6f885f
+  boolean              /RealOutputs/CommandsUnique/IntakeRollersSubsystem IntakeRollersMech SetSpeed_13e019b
+  boolean              /RealOutputs/CommandsUnique/IntakeRollersSubsystem SetDutyCycle_13b3b7a
+  boolean              /RealOutputs/CommandsUnique/InterruptShooting_e1b5e
+  boolean              /RealOutputs/CommandsUnique/KickerStopHold_1eb3298
+  boolean              /RealOutputs/CommandsUnique/Left Bum Rush (No SOTF)_4b0e5d
+  boolean              /RealOutputs/CommandsUnique/ParallelCommandGroup_16df867
+  boolean              /RealOutputs/CommandsUnique/ParallelCommandGroup_b0b7
+  boolean              /RealOutputs/CommandsUnique/ParallelCommandGroup_ec50a1
+  boolean              /RealOutputs/CommandsUnique/RunCommand_1130eaf
+  boolean              /RealOutputs/CommandsUnique/SequentialCommandGroup_a17ab0
+  boolean              /RealOutputs/CommandsUnique/SpindexerStopHold_abdee4
+  boolean              /RealOutputs/CommandsUnique/TurretSubsystem SetAngle_15bc39d
+  string               /RealOutputs/Console
+  double               /RealOutputs/Flywheel/FX/ReferenceRPM
+  double               /RealOutputs/Flywheel/FX/VelocityRPM
+  double               /RealOutputs/Hood/FX/PositionDegrees
+  double               /RealOutputs/Hood/FX/ReferenceDegrees
+  boolean              /RealOutputs/HubShift/Active
+  string               /RealOutputs/HubShift/CurrentShift
+  double               /RealOutputs/HubShift/ElapsedTime
+  double               /RealOutputs/HubShift/RemainingTime
+  boolean              /RealOutputs/HubShift/ShiftedActive
+  double               /RealOutputs/HubShift/ShiftedRemainingTime
+  double               /RealOutputs/IntakeRollers/FX/ReferenceRPM
+  double               /RealOutputs/IntakeRollers/FX/VelocityRPM
+  double               /RealOutputs/LoggedRobot/FullCycleMS
+  double               /RealOutputs/LoggedRobot/GCCounts
+  double               /RealOutputs/LoggedRobot/GCTimeMS
+  double               /RealOutputs/LoggedRobot/LogPeriodicMS
+  double               /RealOutputs/LoggedRobot/UserCodeMS
+  double               /RealOutputs/Logger/AlertLogMS
+  double               /RealOutputs/Logger/AutoLogMS
+  double               /RealOutputs/Logger/ConduitCaptureMS
+  double               /RealOutputs/Logger/ConduitSaveMS
+  double               /RealOutputs/Logger/ConsoleMS
+  double               /RealOutputs/Logger/DashboardInputsMS
+  double               /RealOutputs/Logger/DriverStationMS
+  double               /RealOutputs/Logger/EntryUpdateMS
+  int64                /RealOutputs/Logger/QueuedCycles
+  double               /RealOutputs/Logger/RadioLogMS
+  struct:Pose2d        /RealOutputs/Odometry/Robot
+  struct:Pose2d[]      /RealOutputs/Odometry/Trajectory
+  struct:Pose2d        /RealOutputs/Odometry/TrajectorySetpoint
+  string               /RealOutputs/PathPlanner/.type
+  string[]             /RealOutputs/PathPlanner/errors
+  string[]             /RealOutputs/PathPlanner/infos
+  string[]             /RealOutputs/PathPlanner/warnings
+  string               /RealOutputs/PhotonAlerts/.type
+  string[]             /RealOutputs/PhotonAlerts/errors
+  string[]             /RealOutputs/PhotonAlerts/infos
+  string[]             /RealOutputs/PhotonAlerts/warnings
+  double               /RealOutputs/Shooter/Turret/PositionDegrees
+  struct:ChassisSpeeds /RealOutputs/SwerveChassisSpeeds/Measured
+  struct:ChassisSpeeds /RealOutputs/SwerveChassisSpeeds/Setpoints
+  struct:SwerveModuleState[] /RealOutputs/SwerveStates/Measured
+  struct:SwerveModuleState[] /RealOutputs/SwerveStates/Setpoints
+  struct:SwerveModuleState[] /RealOutputs/SwerveStates/SetpointsOptimized
+  struct:Pose3d[]      /RealOutputs/Vision/Camera0/RobotPoses
+  struct:Pose3d[]      /RealOutputs/Vision/Camera0/RobotPosesAccepted
+  struct:Pose3d[]      /RealOutputs/Vision/Camera0/RobotPosesRejected
+  struct:Pose3d[]      /RealOutputs/Vision/Camera0/TagPoses
+  struct:Pose3d[]      /RealOutputs/Vision/Camera1/RobotPoses
+  struct:Pose3d[]      /RealOutputs/Vision/Camera1/RobotPosesAccepted
+  struct:Pose3d[]      /RealOutputs/Vision/Camera1/RobotPosesRejected
+  struct:Pose3d[]      /RealOutputs/Vision/Camera1/TagPoses
+  struct:Pose3d[]      /RealOutputs/Vision/Camera2/RobotPoses
+  struct:Pose3d[]      /RealOutputs/Vision/Camera2/RobotPosesAccepted
+  struct:Pose3d[]      /RealOutputs/Vision/Camera2/RobotPosesRejected
+  struct:Pose3d[]      /RealOutputs/Vision/Camera2/TagPoses
+  struct:Pose3d[]      /RealOutputs/Vision/Camera3/RobotPoses
+  struct:Pose3d[]      /RealOutputs/Vision/Camera3/RobotPosesAccepted
+  struct:Pose3d[]      /RealOutputs/Vision/Camera3/RobotPosesRejected
+  struct:Pose3d[]      /RealOutputs/Vision/Camera3/TagPoses
+  double               /Shooter/Flywheel/Current
+  double               /Shooter/Flywheel/Setpoint
+  double               /Shooter/Flywheel/Velocity
+  double               /Shooter/Flywheel/Volts
+  double               /Spindexer/Current
+  double               /Spindexer/Setpoint
+  double               /Spindexer/Velocity
+  double               /Spindexer/Volts
+  boolean              /SystemStats/3v3Rail/Active
+  double               /SystemStats/3v3Rail/Current
+  int64                /SystemStats/3v3Rail/CurrentFaults
+  double               /SystemStats/3v3Rail/Voltage
+  boolean              /SystemStats/5vRail/Active
+  double               /SystemStats/5vRail/Current
+  int64                /SystemStats/5vRail/CurrentFaults
+  double               /SystemStats/5vRail/Voltage
+  boolean              /SystemStats/6vRail/Active
+  double               /SystemStats/6vRail/Current
+  int64                /SystemStats/6vRail/CurrentFaults
+  double               /SystemStats/6vRail/Voltage
+  double               /SystemStats/BatteryCurrent
+  double               /SystemStats/BatteryVoltage
+  boolean              /SystemStats/BrownedOut
+  double               /SystemStats/BrownoutVoltage
+  int64                /SystemStats/CANBus/OffCount
+  int64                /SystemStats/CANBus/ReceiveErrorCount
+  int64                /SystemStats/CANBus/TransmitErrorCount
+  int64                /SystemStats/CANBus/TxFullCount
+  float                /SystemStats/CANBus/Utilization
+  double               /SystemStats/CPUTempCelsius
+  string               /SystemStats/Comments
+  int64                /SystemStats/CommsDisableCount
+  int64                /SystemStats/EpochTimeMicros
+  boolean              /SystemStats/FPGAButton
+  int64                /SystemStats/FPGARevision
+  int64                /SystemStats/FPGAVersion
+  boolean              /SystemStats/NTClients/Elastic@3/Connected
+  string               /SystemStats/NTClients/Elastic@3/IPAddress
+  raw                  /SystemStats/NTClients/Elastic@3/ProtocolVersion
+  int64                /SystemStats/NTClients/Elastic@3/RemotePort
+  boolean              /SystemStats/NTClients/OrangePI-Left@2/Connected
+  string               /SystemStats/NTClients/OrangePI-Left@2/IPAddress
+  raw                  /SystemStats/NTClients/OrangePI-Left@2/ProtocolVersion
+  int64                /SystemStats/NTClients/OrangePI-Left@2/RemotePort
+  boolean              /SystemStats/NTClients/OrangePI-Right@1/Connected
+  string               /SystemStats/NTClients/OrangePI-Right@1/IPAddress
+  raw                  /SystemStats/NTClients/OrangePI-Right@1/ProtocolVersion
+  int64                /SystemStats/NTClients/OrangePI-Right@1/RemotePort
+  boolean              /SystemStats/RSLState
+  string               /SystemStats/SerialNumber
+  boolean              /SystemStats/SystemActive
+  boolean              /SystemStats/SystemTimeValid
+  int64                /SystemStats/TeamNumber
+  boolean              /Vision/Camera0/Connected
+  struct:TargetObservation /Vision/Camera0/LatestTargetObservation
+  struct:PoseObservation[] /Vision/Camera0/PoseObservations
+  int64[]              /Vision/Camera0/TagIds
+  boolean              /Vision/Camera1/Connected
+  struct:TargetObservation /Vision/Camera1/LatestTargetObservation
+  struct:PoseObservation[] /Vision/Camera1/PoseObservations
+  int64[]              /Vision/Camera1/TagIds
+  boolean              /Vision/Camera2/Connected
+  struct:TargetObservation /Vision/Camera2/LatestTargetObservation
+  struct:PoseObservation[] /Vision/Camera2/PoseObservations
+  int64[]              /Vision/Camera2/TagIds
+  boolean              /Vision/Camera3/Connected
+  struct:TargetObservation /Vision/Camera3/LatestTargetObservation
+  struct:PoseObservation[] /Vision/Camera3/PoseObservations
+  int64[]              /Vision/Camera3/TagIds
+
+======================================================================
+ALL SIGNAL PREFIXES (top 2 levels):
+======================================================================
+  .schema/struct:ChassisSpeeds
+  .schema/struct:Pose2d
+  .schema/struct:Pose3d
+  .schema/struct:PoseObservation
+  .schema/struct:Quaternion
+  .schema/struct:Rotation2d
+  .schema/struct:Rotation3d
+  .schema/struct:SwerveModuleState
+  .schema/struct:TargetObservation
+  .schema/struct:Translation2d
+  .schema/struct:Translation3d
+  Drive/Gyro
+  Drive/Module0
+  Drive/Module1
+  Drive/Module2
+  Drive/Module3
+  DriverStation/AllianceStation
+  DriverStation/Autonomous
+  DriverStation/DSAttached
+  DriverStation/EmergencyStop
+  DriverStation/Enabled
+  DriverStation/EventName
+  DriverStation/FMSAttached
+  DriverStation/GameSpecificMessage
+  DriverStation/Joystick0
+  DriverStation/Joystick1
+  DriverStation/Joystick2
+  DriverStation/Joystick3
+  DriverStation/Joystick4
+  DriverStation/Joystick5
+  DriverStation/MatchNumber
+  DriverStation/MatchTime
+  DriverStation/MatchType
+  DriverStation/ReplayNumber
+  DriverStation/Test
+  Hood/Angle
+  Hood/Current
+  Hood/Setpoint
+  Hood/Volts
+  Intake/Pivot
+  Intake/Rollers
+  Kicker/Current
+  Kicker/Setpoint
+  Kicker/Velocity
+  Kicker/Volts
+  NetworkInputs/SmartDashboard
+  PowerDistribution/ChannelCount
+  PowerDistribution/ChannelCurrent
+  PowerDistribution/Faults
+  PowerDistribution/StickyFaults
+  PowerDistribution/Temperature
+  PowerDistribution/TotalCurrent
+  PowerDistribution/TotalEnergy
+  PowerDistribution/TotalPower
+  PowerDistribution/Voltage
+  RadioStatus/Connected
+  RadioStatus/Status
+  RealOutputs/Alerts
+  RealOutputs/CommandsAll
+  RealOutputs/CommandsUnique
+  RealOutputs/Console
+  RealOutputs/Flywheel
+  RealOutputs/Hood
+  RealOutputs/HubShift
+  RealOutputs/IntakeRollers
+  RealOutputs/LoggedRobot
+  RealOutputs/Logger
+  RealOutputs/Odometry
+  RealOutputs/PathPlanner
+  RealOutputs/PhotonAlerts
+  RealOutputs/Shooter
+  RealOutputs/SwerveChassisSpeeds
+  RealOutputs/SwerveStates
+  RealOutputs/Vision
+  Shooter/Flywheel
+  Shooter/Turret
+  Spindexer/Current
+  Spindexer/Setpoint
+  Spindexer/Velocity
+  Spindexer/Volts
+  SystemStats/3v3Rail
+  SystemStats/5vRail
+  SystemStats/6vRail
+  SystemStats/BatteryCurrent
+  SystemStats/BatteryVoltage
+  SystemStats/BrownedOut
+  SystemStats/BrownoutVoltage
+  SystemStats/CANBus
+  SystemStats/CPUTempCelsius
+  SystemStats/Comments
+  SystemStats/CommsDisableCount
+  SystemStats/EpochTimeMicros
+  SystemStats/FPGAButton
+  SystemStats/FPGARevision
+  SystemStats/FPGAVersion
+  SystemStats/NTClients
+  SystemStats/RSLState
+  SystemStats/SerialNumber
+  SystemStats/SystemActive
+  SystemStats/SystemTimeValid
+  SystemStats/TeamNumber
+  Timestamp
+  Vision/Camera0
+  Vision/Camera1
+  Vision/Camera2
+  Vision/Camera3

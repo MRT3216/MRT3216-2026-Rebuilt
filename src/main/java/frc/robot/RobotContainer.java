@@ -144,6 +144,10 @@ public class RobotContainer {
                                     drive::addVisionMeasurement,
                                     new VisionIOPhotonVisionSim(
                                             VisionConstants.cameraFrontName,
+                                            VisionConstants.robotToCameraFront,
+                                            drive::getPose),
+                                    new VisionIOPhotonVisionSim(
+                                            VisionConstants.cameraLeftName,
                                             VisionConstants.robotToCameraLeft,
                                             drive::getPose),
                                     new VisionIOPhotonVisionSim(
@@ -174,7 +178,13 @@ public class RobotContainer {
                                     new ModuleIO() {},
                                     new ModuleIO() {});
                     // (Use same number of dummy implementations as the real robot)
-                    vision = new Vision(drive::addVisionMeasurement, new VisionIO() {}, new VisionIO() {});
+                    vision =
+                            new Vision(
+                                    drive::addVisionMeasurement,
+                                    new VisionIO() {},
+                                    new VisionIO() {},
+                                    new VisionIO() {},
+                                    new VisionIO() {});
                     // zoneSystem =
                     // new ZoneSystem(
                     // drive::getPose, drive::getChassisSpeeds, shooterSystem, drive,
@@ -258,8 +268,8 @@ public class RobotContainer {
                 // intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getPosition()));
                 intakePivotSubsystem.set(0));
 
-        // Have hood hold its current commanded target using the positional controller
-        hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(hoodSubsystem.getPosition()));
+        // Return hood to 0° when not commanded — prevents decapitation under the trench.
+        hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(Degrees.of(0)));
     }
 
     private void configureButtonBindings() {
@@ -303,11 +313,11 @@ public class RobotContainer {
                                 3,
                                 ShootingLookupTable.Mode.HUB));
 
-        // REAL: right trigger holds aim+shoot (uses live odometry); left trigger stops
-        // controller.
+        // REAL: right trigger toggles aim+shoot (press once to start, press again to cancel).
+        // Left trigger is an immediate hard stop as a fallback.
         driverController
                 .rightTrigger()
-                .onTrue(
+                .toggleOnTrue(
                         shooterSystem.aimAndShoot(
                                 () -> drive.getPose(),
                                 () -> drive.getChassisSpeeds(),
@@ -315,7 +325,7 @@ public class RobotContainer {
                                 3,
                                 ShootingLookupTable.Mode.HUB));
 
-        // Left trigger remains a manual stop if needed
+        // Left trigger is a hard stop fallback — cancels aimAndShoot if it gets stuck.
         driverController.leftTrigger().onTrue(shooterSystem.interruptShooting());
 
         // Right bumper toggles intake on/off (press once to start, press again to
@@ -325,7 +335,7 @@ public class RobotContainer {
         // Left bumper immediately stops rollers and holds them stopped while pressed.
         operatorController.leftBumper().onTrue(intakeSystem.stopRollers());
 
-        operatorController.a().whileTrue(intakeSystem.agitate()).whileFalse(intakeSystem.deploy());
+        operatorController.a().whileTrue(intakeSystem.agitate()).onFalse(intakeSystem.deploy());
         operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
 
         operatorController.x().whileTrue(intakeRollersSubsystem.ejectBalls());

@@ -57,6 +57,8 @@ public class SpindexerSubsystem extends SubsystemBase {
     public static class SpindexerInputs {
         /** Actual velocity of the spindexer mechanism. */
         public AngularVelocity velocity = RPM.of(0);
+
+        public AngularVelocity motorVelocity = RPM.of(0);
         /** Current target velocity requested from the motor controller. */
         public AngularVelocity setpoint = RPM.of(0);
         /** Applied voltage across the motor. */
@@ -131,6 +133,7 @@ public class SpindexerSubsystem extends SubsystemBase {
      */
     private void updateInputs() {
         spindexerInputs.velocity = spindexer.getSpeed();
+        spindexerInputs.motorVelocity = motor.getRotorVelocity();
         spindexerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
         spindexerInputs.volts = motor.getVoltage();
         spindexerInputs.current = motor.getStatorCurrent();

@@ -297,6 +297,13 @@ public class ShooterSystem {
         return new Translation2d(turretX, turretY);
     }
 
+    /**
+     * Creates a background telemetry command that logs shot solution data each loop cycle.
+     *
+     * @param robotPose supplier of the robot pose
+     * @param solutionSupplier supplier of the current shot solution
+     * @return a command that publishes shooter telemetry while scheduled
+     */
     private Command makeTelemetryCmd(
             Supplier<Pose2d> robotPose, Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         // Rate-limit the DriverStation warning to avoid flooding at 50 Hz.

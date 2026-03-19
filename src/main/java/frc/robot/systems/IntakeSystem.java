@@ -12,7 +12,7 @@ public class IntakeSystem {
 
     public final IntakeRollersSubsystem intakeRollers;
     public final IntakePivotSubsystem intakePivot;
-    public IntakeStates currentState;
+    private IntakeStates currentState;
 
     // endregion
 
@@ -39,6 +39,11 @@ public class IntakeSystem {
 
     // region Public API (queries & commands)
 
+    /**
+     * Deploy if stowed, then run the intake rollers.
+     *
+     * @return a command to perform the intake action
+     */
     public Command intake() {
         switch (currentState) {
             case Stowed:
@@ -67,6 +72,11 @@ public class IntakeSystem {
         }
     }
 
+    /**
+     * Agitate the intake by oscillating the pivot while running the rollers.
+     *
+     * @return a repeating agitation command
+     */
     public Command agitate() {
         return intakeRollers
                 .intakeBalls()
@@ -79,31 +89,18 @@ public class IntakeSystem {
     }
 
     /**
-     * Deploy and run the intake rollers (or run rollers if already deployed).
+     * Deploy the intake arm by driving the pivot down briefly.
      *
-     * @return a command to perform the intake action
+     * @return a command that deploys the intake
      */
     public Command deploy() {
-        // if (currentState == IntakeStates.Stowed) {
-        // Move the arm to the deployed angle, then update the logical state after the
-        // motion
-        // completes. This ensures the state reflects the physical position rather than
-        // the
-        // scheduled intention.
-        return intakePivot
-                .set(-.20)
-                .withTimeout(0.3)
-                // .andThen(intakePivot.set(0))
-                // .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
-                .withName("Intake.Deploy");
-
-        // return Commands.none();
+        return intakePivot.set(-.20).withTimeout(0.3).withName("Intake.Deploy");
     }
 
     /**
-     * Deploy the intake arm if currently stowed.
+     * Stow the intake arm if currently deployed.
      *
-     * @return a command to move the intake to the deployed angle, or null if already deployed
+     * @return a command to move the intake to the stowed angle, or a no-op if already stowed
      */
     public Command stow() {
         if (currentState == IntakeStates.Deployed) {

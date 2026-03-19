@@ -266,13 +266,16 @@ public class RobotContainer {
                                     target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
                                     table = hubTable;
                                 } else {
-                                    var left = FieldConstants.PassTarget.left;
-                                    var right = FieldConstants.PassTarget.right;
+                                    // Flip targets to current alliance BEFORE comparing Y
+                                    // so the nearest-target pick works correctly on both
+                                    // alliances.
+                                    var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
+                                    var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
                                     double robotY = pose.getY();
                                     target =
                                             Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
-                                                    ? AllianceFlipUtil.apply(left)
-                                                    : AllianceFlipUtil.apply(right);
+                                                    ? left
+                                                    : right;
                                     table = passTable;
                                 }
                                 return HybridTurretUtil.computeMovingShot(

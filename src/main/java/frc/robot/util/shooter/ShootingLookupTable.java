@@ -9,6 +9,7 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Time;
 import frc.robot.constants.ShooterLookupTables;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.TreeMap;
 
 /** Shooting lookup table: loads embedded constants and provides unit-aware interpolation. */
@@ -87,12 +88,12 @@ public class ShootingLookupTable {
         return start + (end - start) * ratio;
     }
 
-    public Distance getMinDistance() {
-        return lookupTable.isEmpty() ? null : lookupTable.firstKey();
+    public Optional<Distance> getMinDistance() {
+        return lookupTable.isEmpty() ? Optional.empty() : Optional.of(lookupTable.firstKey());
     }
 
-    public Distance getMaxDistance() {
-        return lookupTable.isEmpty() ? null : lookupTable.lastKey();
+    public Optional<Distance> getMaxDistance() {
+        return lookupTable.isEmpty() ? Optional.empty() : Optional.of(lookupTable.lastKey());
     }
 
     /**

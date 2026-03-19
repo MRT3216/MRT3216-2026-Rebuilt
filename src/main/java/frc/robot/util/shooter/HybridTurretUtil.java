@@ -99,11 +99,11 @@ public final class HybridTurretUtil {
         Angle azimuth = Radians.of(Math.atan2(predictedY - turretY, predictedX - turretX) - theta);
 
         // --- LUT lookup with clamping -------------------------------------------
-        Distance min = table.getMinDistance();
-        Distance max = table.getMaxDistance();
         double clampedM = leadDistM;
-        if (min != null) clampedM = Math.max(clampedM, min.in(Meters));
-        if (max != null) clampedM = Math.min(clampedM, max.in(Meters));
+        var min = table.getMinDistance();
+        var max = table.getMaxDistance();
+        if (min.isPresent()) clampedM = Math.max(clampedM, min.get().in(Meters));
+        if (max.isPresent()) clampedM = Math.min(clampedM, max.get().in(Meters));
 
         boolean isValid = (clampedM == leadDistM);
         var clampedDist = Meters.of(clampedM);

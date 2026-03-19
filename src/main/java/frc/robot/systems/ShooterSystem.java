@@ -15,6 +15,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.FieldConstants;
@@ -25,7 +26,6 @@ import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HubShiftUtil;
-import frc.robot.util.geometry.Zones;
 import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShooterModel;
 import frc.robot.util.shooter.ShootingLookupTable;
@@ -96,44 +96,6 @@ public class ShooterSystem {
     }
 
     /**
-     * Automatically choose HUB vs PASS mode based on the robot pose (zones) and aim accordingly. Zone
-     * evaluation happens each loop — the mode may switch if the robot crosses a zone boundary while
-     * the command is running.
-     */
-    public Command realShoot(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds) {
-        // Evaluate zone membership per-loop so the mode follows the robot if it
-        // crosses a zone boundary during the command.
-        Supplier<ShootingLookupTable.Mode> modeSupplier =
-                () -> {
-                    boolean inTrench =
-                            Zones.TRENCH_ZONES.contains(robotPose).getAsBoolean()
-                                    || Zones.TRENCH_DUCK_ZONES.contains(robotPose).getAsBoolean()
-                                    || Zones.BUMP_ZONES.contains(robotPose).getAsBoolean();
-                    return inTrench ? ShootingLookupTable.Mode.PASS : ShootingLookupTable.Mode.HUB;
-                };
-
-        // Target follows both the mode and the robot position each loop.
-        Supplier<Translation3d> targetSupplier =
-                () -> {
-                    if (modeSupplier.get() == ShootingLookupTable.Mode.HUB)
-                        return AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                    var pose = robotPose.get();
-                    var left = FieldConstants.LeftTrench.openingTopLeft;
-                    var right = FieldConstants.RightTrench.openingTopLeft;
-                    double robotY = pose.getTranslation().getY();
-                    return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
-                            ? AllianceFlipUtil.apply(left)
-                            : AllianceFlipUtil.apply(right);
-                };
-
-        // Because the lookup table must be fixed at construction time, use HUB as
-        // the table — realShoot is rarely used in practice; prefer aimAndShoot or
-        // aimAndShootTrench for explicit mode control.
-        return aimAndShoot(robotPose, fieldSpeeds, targetSupplier, 3, ShootingLookupTable.Mode.HUB)
-                .withName("RealShoot");
-    }
-
-    /**
      * Aim the turret and hood, spin the flywheel to the computed speed, and feed when the hub shift
      * is active.
      *
@@ -163,7 +125,7 @@ public class ShooterSystem {
         // var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
         var flywheelCmd = flywheel.setVelocity(makeFlywheelModelSupplier(solution));
-        var feedCmd = makeFeedSequence(solution);
+        var feedCmd = makeFeedSequence();
         var telemetryCmd = makeTelemetryCmd(robotPose, solution);
 
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
@@ -193,25 +155,27 @@ public class ShooterSystem {
     }
 
     /**
-     * Aim, spin up the flywheel, and feed for a trench/pass shot.
+     * Aim, spin up the flywheel, and feed for a pass shot.
      *
-     * <p>Automatically selects the nearest trench opening (left or right) from the robot's current Y
-     * position each loop and uses the PASS lookup table. Feeding is <em>not</em> shift-gated — fires
-     * freely while the trigger is held regardless of hub shift state.
+     * <p>Automatically selects the nearest pass target landing zone (left or right side of our
+     * alliance) from the robot's current Y position each loop and uses the PASS lookup table. Feeding
+     * is <em>not</em> shift-gated — fires freely while the trigger is held regardless of hub shift
+     * state.
      *
      * @param robotPose supplier of the robot pose
      * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
      * @param refinementIterations number of solver refinement iterations
-     * @return a command that aims and feeds a trench shot while scheduled
+     * @return a command that aims and feeds a pass shot while scheduled
      */
-    public Command aimAndShootTrench(
+    public Command aimAndShootPass(
             Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, int refinementIterations) {
         var table = makeLookupTable(ShootingLookupTable.Mode.PASS);
 
+        // Select the nearest pass target landing zone by robot Y position each loop.
         Supplier<Translation3d> targetSupplier =
                 () -> {
-                    var left = FieldConstants.LeftTrench.openingTopLeft;
-                    var right = FieldConstants.RightTrench.openingTopLeft;
+                    var left = FieldConstants.PassTarget.left;
+                    var right = FieldConstants.PassTarget.right;
                     double robotY = robotPose.get().getY();
                     return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
                             ? AllianceFlipUtil.apply(left)
@@ -224,11 +188,11 @@ public class ShooterSystem {
         var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
         var flywheelCmd = flywheel.setVelocity(makeFlywheelModelSupplier(solution));
-        var feedCmd = makeFeedSequenceUngated(solution);
+        var feedCmd = makeFeedSequenceUngated();
         var telemetryCmd = makeTelemetryCmd(robotPose, solution);
 
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
-                .withName("TrenchShoot");
+                .withName("PassShoot");
     }
 
     /** Clear and unjam the full shooter pipeline (flywheel, kicker, spindexer). */
@@ -281,7 +245,7 @@ public class ShooterSystem {
         return () -> ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
     }
 
-    private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+    private Command makeFeedSequence() {
         // Feed only while the shifted shift is active — stops automatically at shift
         // boundary without requiring driver input. Flywheel keeps spinning in parallel.
         return Commands.sequence(
@@ -293,8 +257,7 @@ public class ShooterSystem {
                 .withName("FeedSequence");
     }
 
-    private Command makeFeedSequenceUngated(
-            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+    private Command makeFeedSequenceUngated() {
         // Feed freely without shift-gating — used for trench/pass shots where there
         // is no hub shift boundary to respect. Feeds until the command is cancelled
         // (i.e. while the trigger is held).
@@ -340,6 +303,14 @@ public class ShooterSystem {
                             Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
                             Logger.recordOutput("ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());
+
+                            if (!sol.isValid()) {
+                                DriverStation.reportWarning(
+                                        "Shot solution out of LUT range (lead="
+                                                + String.format("%.2f", sol.leadDistance().in(Meters))
+                                                + " m)",
+                                        false);
+                            }
                         })
                 .withName("ShooterTelemetryPublisher");
     }

@@ -242,10 +242,10 @@ public class RobotContainer {
             //
             // When the hub shift is active the turret continuously tracks the alliance
             // hub center (HUB table). When the shift is inactive it tracks the nearest
-            // trench opening (PASS table). Motion-compensated via
+            // pass target landing zone (PASS table). Motion-compensated via
             // HybridTurretUtil.computeMovingShot() each periodic loop.
             //
-            // This default is preempted by aimAndShoot / aimAndShootTrench when the
+            // This default is preempted by aimAndShoot / aimAndShootPass when the
             // driver holds a trigger — the subsystem requirement ensures the trigger
             // command takes priority, and tracking resumes automatically on release.
 
@@ -266,8 +266,8 @@ public class RobotContainer {
                                     target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
                                     table = hubTable;
                                 } else {
-                                    var left = FieldConstants.LeftTrench.openingTopLeft;
-                                    var right = FieldConstants.RightTrench.openingTopLeft;
+                                    var left = FieldConstants.PassTarget.left;
+                                    var right = FieldConstants.PassTarget.right;
                                     double robotY = pose.getY();
                                     target =
                                             Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
@@ -282,7 +282,7 @@ public class RobotContainer {
 
             // Hood returns to 0° when not actively shooting — prevents decapitation
             // under the trench. Hood tracking only happens inside aimAndShoot /
-            // aimAndShootTrench while the driver holds a trigger.
+            // aimAndShootPass while the driver holds a trigger.
             hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(Degrees.of(0)));
         }
 
@@ -375,13 +375,13 @@ public class RobotContainer {
                                 3,
                                 ShootingLookupTable.Mode.HUB));
 
-        // Left trigger: hold to aim + feed a trench/pass shot. Not shift-gated —
+        // Left trigger: hold to aim + feed a pass shot. Not shift-gated —
         // feeds freely while held regardless of hub shift state. Turret and hood
-        // track the nearest trench opening for the duration.
+        // track the nearest pass target landing zone for the duration.
         driverController
                 .leftTrigger()
                 .whileTrue(
-                        shooterSystem.aimAndShootTrench(
+                        shooterSystem.aimAndShootPass(
                                 () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
 
         // Right bumper toggles intake on/off (press once to start, press again to

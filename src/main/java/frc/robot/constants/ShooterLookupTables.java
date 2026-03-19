@@ -47,19 +47,16 @@ public final class ShooterLookupTables {
             {5.5, 45.0, 1.25}
         };
 
-        double[][] hub = hubDefault;
-        double[][] pass = passDefault;
-
         // Convert raw double arrays into typed lookup rows to expose unit-aware values.
-        HUB = new LookupRow[hub.length];
-        for (int i = 0; i < hub.length; i++) {
-            var r = hub[i];
+        HUB = new LookupRow[hubDefault.length];
+        for (int i = 0; i < hubDefault.length; i++) {
+            var r = hubDefault[i];
             HUB[i] = new LookupRow(Meters.of(r[0]), Degrees.of(r[1]), Seconds.of(r[2]));
         }
 
-        PASS = new LookupRow[pass.length];
-        for (int i = 0; i < pass.length; i++) {
-            var r = pass[i];
+        PASS = new LookupRow[passDefault.length];
+        for (int i = 0; i < passDefault.length; i++) {
+            var r = passDefault[i];
             PASS[i] = new LookupRow(Meters.of(r[0]), Degrees.of(r[1]), Seconds.of(r[2]));
         }
     }

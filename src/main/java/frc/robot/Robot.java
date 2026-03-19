@@ -157,14 +157,24 @@ public class Robot extends LoggedRobot {
         CommandScheduler.getInstance().run();
 
         // ── HubShift telemetry ────────────────────────────────────────────────
+        // Official shift — for logging/replay only.
         var officialShift = HubShiftUtil.getOfficialShiftInfo();
-        var shiftedShift = HubShiftUtil.getShiftedShiftInfo();
         Logger.recordOutput("HubShift/CurrentShift", officialShift.currentShift().name());
         Logger.recordOutput("HubShift/Active", officialShift.active());
         Logger.recordOutput("HubShift/ElapsedTime", officialShift.elapsedTime());
         Logger.recordOutput("HubShift/RemainingTime", officialShift.remainingTime());
+
+        // Shifted shift — all co-pilot dashboard widgets use these keys.
+        var shiftedShift = HubShiftUtil.getShiftedShiftInfo();
         Logger.recordOutput("HubShift/ShiftedActive", shiftedShift.active());
         Logger.recordOutput("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
+        Logger.recordOutput("HubShift/ShiftedCurrentShift", shiftedShift.currentShift().name());
+
+        // Whether our alliance is active first (SHIFT1). Shown as "Active First?" on dashboard.
+        Logger.recordOutput(
+                "HubShift/ActiveFirst",
+                HubShiftUtil.getFirstActiveAlliance()
+                        == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue));
         Logger.recordOutput("MatchTime", DriverStation.getMatchTime());
 
         if (RobotController.getBatteryVoltage() > 0.0

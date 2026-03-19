@@ -116,8 +116,7 @@ public class HoodSubsystem extends SubsystemBase {
                         // Ensure Arm has a known starting angle for simulation and replay
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
-                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
-                        .withMOI(kLength, kMass);
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         hood = new Pivot(hoodConfig);
 

@@ -233,11 +233,6 @@ public class SpindexerSubsystem extends SubsystemBase {
      * subsystem at zero after completion.
      */
     public Command stopNow() {
-        /**
-         * One-shot stop command: immediately disables closed-loop control and sets motor output to
-         * zero, then finishes. Use for imperative immediate stops (non-blocking). This does not hold
-         * the subsystem at zero after completion.
-         */
         return Commands.runOnce(
                         () -> {
                             spindexer.set(0);

@@ -1,7 +1,6 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
-// Diameter and mass are centralized in Constants.KickerConstants
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kD;
@@ -212,12 +211,12 @@ public class KickerSubsystem extends SubsystemBase {
         return kicker.set(dutyCycle);
     }
 
+    /**
+     * One-shot stop command: immediately disables closed-loop control and sets motor output to zero,
+     * then finishes. Use for imperative immediate stops (non-blocking). This does not hold the
+     * subsystem at zero after completion.
+     */
     public Command stopNow() {
-        /**
-         * One-shot stop command: immediately disables closed-loop control and sets motor output to
-         * zero, then finishes. Use for imperative immediate stops (non-blocking). This does not hold
-         * the subsystem at zero after completion.
-         */
         return Commands.runOnce(
                         () -> {
                             kicker.set(0);

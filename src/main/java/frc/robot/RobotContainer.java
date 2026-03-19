@@ -16,14 +16,20 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.net.WebServer;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.Mode;
 import frc.robot.constants.FieldConstants;
+import frc.robot.constants.ShooterConstants.FlywheelConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -46,6 +52,7 @@ import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
+import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -238,8 +245,18 @@ public class RobotContainer {
         // while scheduled (the motor idle mode is COAST so it will freewheel).
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.stopHold());
 
-        // Let flywheel coast by default rather than forcing a zero setpoint.
-        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
+        // Flywheel pre-spins automatically when the shifted shift is active or within
+        // 5 seconds of becoming active — no button required. When the driver holds the
+        // right trigger, aimAndShoot preempts this default and tracks the exact speed.
+        flywheelSubsystem.setDefaultCommand(
+                flywheelSubsystem.setVelocity(
+                        () -> {
+                            var shift = HubShiftUtil.getShiftedShiftInfo();
+                            if (shift.active() || shift.remainingTime() < 5.0) {
+                                return FlywheelConstants.kFlywheelDefaultVelocity;
+                            }
+                            return edu.wpi.first.units.Units.RPM.of(0);
+                        }));
 
         // Ensure intake rollers default to stopped when no command is running —
         // they should not coast, so use the persistent stopHold() default.
@@ -266,9 +283,28 @@ public class RobotContainer {
 
         // Reset gyro to 0° when the Start button is pressed (available in both REAL and
         // SIM). Use the controller "start()" binding here intentionally — if you prefer
-        // Back
-        // change the binding to driverController.back().
+        // Back change the binding to driverController.back().
         driverController.start().onTrue(resetGyroZeroCommand());
+
+        // Warn both controllers with continuous rumble if FMS has not sent game-specific
+        // data (hub winner) within 1 second of teleop start and no manual override is set.
+        // Mirrors 6328's autoWinnerNotSet alert.
+        Timer teleopElapsedTimer = new Timer();
+        RobotModeTriggers.teleop().onTrue(Commands.runOnce(teleopElapsedTimer::restart));
+        RobotModeTriggers.teleop()
+                .and(() -> DriverStation.getGameSpecificMessage().isEmpty())
+                .and(() -> HubShiftUtil.getAllianceWinOverride().isEmpty())
+                .and(() -> teleopElapsedTimer.hasElapsed(1.0))
+                .whileTrue(
+                        Commands.runEnd(
+                                () -> {
+                                    driverController.setRumble(RumbleType.kBothRumble, 1.0);
+                                    operatorController.setRumble(RumbleType.kBothRumble, 1.0);
+                                },
+                                () -> {
+                                    driverController.setRumble(RumbleType.kBothRumble, 0.0);
+                                    operatorController.setRumble(RumbleType.kBothRumble, 0.0);
+                                }));
     }
 
     /**
@@ -323,6 +359,21 @@ public class RobotContainer {
 
         operatorController.x().whileTrue(intakeRollersSubsystem.ejectBalls());
         operatorController.y().whileTrue(intakeRollersSubsystem.intakeBalls());
+
+        // Pulse right rumble once per second in the last 5s of an active shift —
+        // mirrors 6328's end-of-shift warning. Triggers on remainingTime threshold
+        // regardless of active state so the driver is warned before both active→inactive
+        // and inactive→active transitions.
+        for (int i = 1; i <= 5; i++) {
+            final double seconds = i;
+            new Trigger(() -> HubShiftUtil.getShiftedShiftInfo().remainingTime() < seconds)
+                    .and(RobotModeTriggers.teleop())
+                    .onTrue(
+                            Commands.runEnd(
+                                            () -> driverController.setRumble(RumbleType.kRightRumble, 1.0),
+                                            () -> driverController.setRumble(RumbleType.kRightRumble, 0.0))
+                                    .withTimeout(0.25));
+        }
     }
 
     /**

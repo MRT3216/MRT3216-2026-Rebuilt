@@ -24,6 +24,7 @@ import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.util.AllianceFlipUtil;
+import frc.robot.util.HubShiftUtil;
 import frc.robot.util.geometry.Zones;
 import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShooterModel;
@@ -236,7 +237,14 @@ public class ShooterSystem {
     }
 
     private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
-        return Commands.sequence(clearKicker(), spindexer.feedShooter().alongWith(kicker.feedShooter()))
+        // Feed only while the shifted shift is active — stops automatically at shift
+        // boundary without requiring driver input. Flywheel keeps spinning in parallel.
+        return Commands.sequence(
+                        clearKicker(),
+                        spindexer
+                                .feedShooter()
+                                .alongWith(kicker.feedShooter())
+                                .onlyWhile(() -> HubShiftUtil.getShiftedShiftInfo().active()))
                 .withName("FeedSequence");
     }
 

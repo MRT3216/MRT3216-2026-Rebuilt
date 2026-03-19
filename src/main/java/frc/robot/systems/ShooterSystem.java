@@ -16,6 +16,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.FieldConstants;
@@ -172,14 +173,14 @@ public class ShooterSystem {
         var table = makeLookupTable(ShootingLookupTable.Mode.PASS);
 
         // Select the nearest pass target landing zone by robot Y position each loop.
+        // Flip BOTH targets to the current alliance first so the comparison is in the
+        // same coordinate frame as the robot pose (critical on red alliance).
         Supplier<Translation3d> targetSupplier =
                 () -> {
-                    var left = FieldConstants.PassTarget.left;
-                    var right = FieldConstants.PassTarget.right;
+                    var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
+                    var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
                     double robotY = robotPose.get().getY();
-                    return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
-                            ? AllianceFlipUtil.apply(left)
-                            : AllianceFlipUtil.apply(right);
+                    return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY()) ? left : right;
                 };
 
         var solution =
@@ -230,14 +231,28 @@ public class ShooterSystem {
             Supplier<Translation3d> targetSupplier,
             int refinementIterations,
             ShootingLookupTable table) {
-        return () ->
-                HybridTurretUtil.computeMovingShot(
-                        robotPose.get(),
-                        fieldSpeeds.get(),
-                        targetSupplier.get(),
-                        refinementIterations,
-                        kRefinementConvergenceEpsilon,
-                        table);
+        // Memoize the solution: compute once per FPGA timestamp, then return the
+        // cached value for every subsequent call in the same loop cycle.  This avoids
+        // re-running the iterative solver for every parallel command (turret, hood,
+        // flywheel, feed, telemetry) that reads the solution each tick.
+        final HybridTurretUtil.ShotSolution[] cache = new HybridTurretUtil.ShotSolution[1];
+        final double[] cacheTimestamp = {-1};
+
+        return () -> {
+            double now = Timer.getFPGATimestamp();
+            if (cache[0] == null || now != cacheTimestamp[0]) {
+                cache[0] =
+                        HybridTurretUtil.computeMovingShot(
+                                robotPose.get(),
+                                fieldSpeeds.get(),
+                                targetSupplier.get(),
+                                refinementIterations,
+                                kRefinementConvergenceEpsilon,
+                                table);
+                cacheTimestamp[0] = now;
+            }
+            return cache[0];
+        };
     }
 
     private Supplier<AngularVelocity> makeFlywheelModelSupplier(
@@ -284,6 +299,10 @@ public class ShooterSystem {
 
     private Command makeTelemetryCmd(
             Supplier<Pose2d> robotPose, Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        // Rate-limit the DriverStation warning to avoid flooding at 50 Hz.
+        final double WARNING_INTERVAL_SECS = 1.0;
+        final double[] lastWarningTime = {0};
+
         return Commands.run(
                         () -> {
                             var sol = solutionSupplier.get();
@@ -309,11 +328,15 @@ public class ShooterSystem {
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());
 
                             if (!sol.isValid()) {
-                                DriverStation.reportWarning(
-                                        "Shot solution out of LUT range (lead="
-                                                + String.format("%.2f", sol.leadDistance().in(Meters))
-                                                + " m)",
-                                        false);
+                                double now = Timer.getFPGATimestamp();
+                                if (now - lastWarningTime[0] >= WARNING_INTERVAL_SECS) {
+                                    DriverStation.reportWarning(
+                                            "Shot solution out of LUT range (lead="
+                                                    + String.format("%.2f", sol.leadDistance().in(Meters))
+                                                    + " m)",
+                                            false);
+                                    lastWarningTime[0] = now;
+                                }
                             }
                         })
                 .withName("ShooterTelemetryPublisher");

@@ -48,20 +48,17 @@ public class ShootingLookupTable {
         Distance upperKey = lookupTable.ceilingKey(distance);
 
         if (lowerKey == null && upperKey == null) {
-            var modelSpeed = ShooterModel.flywheelSpeedForDistance(distance);
-            return new ShootingParameters(modelSpeed, Degrees.of(Double.NaN), Seconds.of(Double.NaN));
+            return new ShootingParameters(Degrees.of(Double.NaN), Seconds.of(Double.NaN));
         }
 
         if (lowerKey == null) {
             var upper = lookupTable.get(upperKey);
-            var modelSpeed = ShooterModel.flywheelSpeedForDistance(distance);
-            return new ShootingParameters(modelSpeed, upper.trajectoryAngle, upper.timeOfFlight);
+            return new ShootingParameters(upper.trajectoryAngle(), upper.timeOfFlight());
         }
 
         if (upperKey == null) {
             var lower = lookupTable.get(lowerKey);
-            var modelSpeed = ShooterModel.flywheelSpeedForDistance(distance);
-            return new ShootingParameters(modelSpeed, lower.trajectoryAngle, lower.timeOfFlight);
+            return new ShootingParameters(lower.trajectoryAngle(), lower.timeOfFlight());
         }
 
         double lowerMeters = lowerKey.in(Meters);
@@ -70,25 +67,20 @@ public class ShootingLookupTable {
         ShootingParameters lower = lookupTable.get(lowerKey);
         ShootingParameters upper = lookupTable.get(upperKey);
 
-        double lowerDeg = lower.trajectoryAngle.in(Degrees);
-        double upperDeg = upper.trajectoryAngle.in(Degrees);
-        double interpDeg = lerp(lowerDeg, upperDeg, ratio);
+        double interpDeg =
+                lerp(lower.trajectoryAngle().in(Degrees), upper.trajectoryAngle().in(Degrees), ratio);
+        double interpTof =
+                lerp(lower.timeOfFlight().in(Seconds), upper.timeOfFlight().in(Seconds), ratio);
 
-        double lowerTof = lower.timeOfFlight.in(Seconds);
-        double upperTof = upper.timeOfFlight.in(Seconds);
-        double interpTof = lerp(lowerTof, upperTof, ratio);
-
-        var modelSpeed = ShooterModel.flywheelSpeedForDistance(distance);
-        return new ShootingParameters(modelSpeed, Degrees.of(interpDeg), Seconds.of(interpTof));
+        return new ShootingParameters(Degrees.of(interpDeg), Seconds.of(interpTof));
     }
 
     public Time getTimeOfFlight(Distance distance) {
-        return getParameters(distance).timeOfFlight;
+        return getParameters(distance).timeOfFlight();
     }
 
     private void addEntry(Distance distance, Angle angleDeg, Time tofSec) {
-        var modelSpeed = ShooterModel.flywheelSpeedForDistance(distance);
-        lookupTable.put(distance, new ShootingParameters(modelSpeed, angleDeg, tofSec));
+        lookupTable.put(distance, new ShootingParameters(angleDeg, tofSec));
     }
 
     private double lerp(double start, double end, double ratio) {
@@ -109,7 +101,7 @@ public class ShootingLookupTable {
      */
     public double getMinTimeOfFlight() {
         if (lookupTable.isEmpty()) return 0.0;
-        return lookupTable.get(lookupTable.firstKey()).timeOfFlight.in(Seconds);
+        return lookupTable.get(lookupTable.firstKey()).timeOfFlight().in(Seconds);
     }
 
     /**
@@ -118,6 +110,6 @@ public class ShootingLookupTable {
      */
     public double getMaxTimeOfFlight() {
         if (lookupTable.isEmpty()) return 0.0;
-        return lookupTable.get(lookupTable.lastKey()).timeOfFlight.in(Seconds);
+        return lookupTable.get(lookupTable.lastKey()).timeOfFlight().in(Seconds);
     }
 }

@@ -1,19 +1,12 @@
 package frc.robot.util.shooter;
 
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Time;
 
-/** Unit-aware, immutable data holder for shooting parameters returned by lookup tables. */
-public class ShootingParameters {
-    public final AngularVelocity shooterSpeed;
-    public final Angle trajectoryAngle;
-    public final Time timeOfFlight;
-
-    public ShootingParameters(
-            AngularVelocity shooterSpeed, Angle trajectoryAngle, Time timeOfFlight) {
-        this.shooterSpeed = shooterSpeed;
-        this.trajectoryAngle = trajectoryAngle;
-        this.timeOfFlight = timeOfFlight;
-    }
-}
+/**
+ * Immutable data holder for LUT shooting parameters: hood angle and time-of-flight.
+ *
+ * <p>Flywheel RPM is intentionally excluded — it always comes from {@link ShooterModel}, not the
+ * lookup table.
+ */
+public record ShootingParameters(Angle trajectoryAngle, Time timeOfFlight) {}

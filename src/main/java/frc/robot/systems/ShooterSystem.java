@@ -318,11 +318,8 @@ public class ShooterSystem {
                             double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
                             Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
 
-                            var model = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
-                            Logger.recordOutput("ShooterTelemetry/lutFlywheelRPM", sol.flywheelSpeed().in(RPM));
-                            Logger.recordOutput("ShooterTelemetry/modelFlywheelRPM", model.in(RPM));
-                            Logger.recordOutput(
-                                    "ShooterTelemetry/deltaRPM", model.in(RPM) - sol.flywheelSpeed().in(RPM));
+                            var modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
+                            Logger.recordOutput("ShooterTelemetry/flywheelRPM", modelRpm.in(RPM));
                             Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
                             Logger.recordOutput("ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());

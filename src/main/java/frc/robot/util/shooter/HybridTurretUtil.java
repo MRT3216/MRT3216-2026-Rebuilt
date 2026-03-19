@@ -106,14 +106,15 @@ public final class HybridTurretUtil {
         if (max != null) clampedM = Math.min(clampedM, max.in(Meters));
 
         boolean isValid = (clampedM == leadDistM);
-        var finalParams = table.getParameters(Meters.of(clampedM));
+        var clampedDist = Meters.of(clampedM);
+        var finalParams = table.getParameters(clampedDist);
 
         return new ShotSolution(
-                Meters.of(clampedM),
+                clampedDist,
                 azimuth,
-                finalParams.trajectoryAngle,
-                finalParams.shooterSpeed,
-                finalParams.timeOfFlight,
+                finalParams.trajectoryAngle(),
+                ShooterModel.flywheelSpeedForDistance(clampedDist),
+                finalParams.timeOfFlight(),
                 isValid);
     }
 
@@ -124,7 +125,7 @@ public final class HybridTurretUtil {
      *     LUT bounds)
      * @param turretAzimuth robot-relative azimuth the turret should point
      * @param hoodAngle hood/trajectory angle from the LUT
-     * @param flywheelSpeed flywheel angular velocity from the LUT
+     * @param flywheelSpeed flywheel angular velocity from the {@link ShooterModel}
      * @param timeOfFlight estimated ball flight time from the LUT
      * @param isValid {@code true} when the lead distance fell within the LUT range (not clamped)
      */

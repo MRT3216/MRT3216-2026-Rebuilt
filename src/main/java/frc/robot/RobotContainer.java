@@ -420,7 +420,16 @@ public class RobotContainer {
      * experimenting.
      */
     public void configureTestButtonBindings() {
-        driverController.a().whileTrue(flywheelSubsystem.setToTunedVelocity());
+        driverController
+                .a()
+                .whileTrue(
+                        shooterSystem.aim(
+                                () -> drive.getPose(),
+                                () -> drive.getChassisSpeeds(),
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                ShootingLookupTable.Mode.HUB));
+
         driverController.b().whileTrue(intakeRollersSubsystem.setVelocity(kTargetAngularVelocity));
 
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());

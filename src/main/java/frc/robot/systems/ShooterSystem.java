@@ -66,22 +66,14 @@ public class ShooterSystem {
 
     // endregion
 
-    // region Public API (queries & commands)
-
-    private Command clearThenFeed() {
-        // Run a short reverse clear, then feed. Do not wait for flywheel spin-up here.
-        return clearKicker()
-                .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()))
-                .withName("ClearThenFeed");
-    }
+    // region Public commands
 
     /**
-     * Clear the shooter: run the kicker and spindexer briefly in reverse to remove jams.
+     * Clear the shooter: run the kicker briefly in reverse to dislodge jams.
      *
      * @return a command that executes the clear routine
      */
     public Command clearKicker() {
-        // Brief closed-loop reverse motion to clear jams, then stop.
         return kicker
                 .setVelocity(kKickerClearAngularVelocity)
                 .withTimeout(kClearDurationSecs)
@@ -96,33 +88,35 @@ public class ShooterSystem {
      */
     public Command testShoot() {
         var hoodRun = hood.setAngle(() -> Degrees.of(kTunableHoodAngleDeg.get())).withTimeout(5);
-
-        var sequence = hoodRun.andThen(flywheel.runToTunedVelocity().alongWith(clearThenFeed()));
-
-        return Commands.parallel(sequence).withName("TestShoot");
+        var feedAfterClear =
+                clearKicker().andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()));
+        return hoodRun
+                .andThen(flywheel.runToTunedVelocity().alongWith(feedAfterClear))
+                .withName("TestShoot");
     }
 
     /**
-     * Real shoot: automatically choose HUB vs PASS mode based on the robot pose (zones) and aim
-     * accordingly. Builds a target supplier from field constants and delegates to {@link
-     * #aimAndShoot(Supplier, Supplier, Supplier, int, ShootingLookupTable.Mode)}.
+     * Automatically choose HUB vs PASS mode based on the robot pose (zones) and aim accordingly. Zone
+     * evaluation happens each loop — the mode may switch if the robot crosses a zone boundary while
+     * the command is running.
      */
     public Command realShoot(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds) {
-        // Determine whether we are in a trench/pass-like zone. Treat trench,
-        // trench-duck, and
-        // bump collections as PASS mode; otherwise use HUB.
-        boolean inTrench =
-                Zones.TRENCH_ZONES.contains(robotPose).getAsBoolean()
-                        || Zones.TRENCH_DUCK_ZONES.contains(robotPose).getAsBoolean()
-                        || Zones.BUMP_ZONES.contains(robotPose).getAsBoolean();
+        // Evaluate zone membership per-loop so the mode follows the robot if it
+        // crosses a zone boundary during the command.
+        Supplier<ShootingLookupTable.Mode> modeSupplier =
+                () -> {
+                    boolean inTrench =
+                            Zones.TRENCH_ZONES.contains(robotPose).getAsBoolean()
+                                    || Zones.TRENCH_DUCK_ZONES.contains(robotPose).getAsBoolean()
+                                    || Zones.BUMP_ZONES.contains(robotPose).getAsBoolean();
+                    return inTrench ? ShootingLookupTable.Mode.PASS : ShootingLookupTable.Mode.HUB;
+                };
 
-        var tableMode = inTrench ? ShootingLookupTable.Mode.PASS : ShootingLookupTable.Mode.HUB;
-
-        // Target supplier: hub center for HUB mode; nearest trench opening for PASS
-        // mode.
+        // Target follows both the mode and the robot position each loop.
         Supplier<Translation3d> targetSupplier =
                 () -> {
-                    if (!inTrench) return AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                    if (modeSupplier.get() == ShootingLookupTable.Mode.HUB)
+                        return AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
                     var pose = robotPose.get();
                     var left = FieldConstants.LeftTrench.openingTopLeft;
                     var right = FieldConstants.RightTrench.openingTopLeft;
@@ -132,22 +126,26 @@ public class ShooterSystem {
                             : AllianceFlipUtil.apply(right);
                 };
 
-        return aimAndShoot(robotPose, fieldSpeeds, targetSupplier, 3, tableMode).withName("RealShoot");
+        // Because the lookup table must be fixed at construction time, use HUB as
+        // the table — realShoot is rarely used in practice; prefer aimAndShoot or
+        // aimAndShootTrench for explicit mode control.
+        return aimAndShoot(robotPose, fieldSpeeds, targetSupplier, 3, ShootingLookupTable.Mode.HUB)
+                .withName("RealShoot");
     }
 
     /**
-     * Dynamically aim the turret and hood, spin the flywheel, and run the feed pipeline.
+     * Aim the turret and hood, spin the flywheel to the computed speed, and feed when the hub shift
+     * is active.
      *
-     * <p>The returned command continuously tracks a motion-compensated {@code ShotSolution} computed
-     * from the provided pose, chassis speeds, and target supplier. It moves the turret and hood,
-     * updates flywheel setpoints, runs the feed sequence, and publishes telemetry while active.
+     * <p>Feeding is shift-gated: it stops automatically when the scoring window closes and resumes
+     * when the window reopens — as long as the trigger remains held.
      *
      * @param robotPose supplier of the robot pose
      * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
      * @param targetSupplier supplier of the 3D target point
      * @param refinementIterations number of solver refinement iterations for the shot solution
      * @param tableMode lookup table mode (HUB or PASS)
-     * @return a command that aims and executes a shot when scheduled
+     * @return a command that aims and feeds while scheduled
      */
     public Command aimAndShoot(
             Supplier<Pose2d> robotPose,
@@ -155,41 +153,32 @@ public class ShooterSystem {
             Supplier<Translation3d> targetSupplier,
             int refinementIterations,
             ShootingLookupTable.Mode tableMode) {
-        // Build a lookup table for the requested mode
         var table = makeLookupTable(tableMode);
-
-        // Live solution supplier (motion-compensated shot solution)
-        var solutionSupplier =
+        var solution =
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
-        // Commands to track dynamic targets for turret and hood.
-        // Track turret azimuth dynamically from the computed shot solution rather
-        // than using a fixed placeholder angle.
+        // Turret tracking intentionally held at 0° until full turret control is
+        // validated on hardware — swap the commented line to enable azimuth tracking.
         var turretCmd = turret.setAngle(Degrees.of(0));
-        // () -> solutionSupplier.get().turretAzimuth()); // .plus(Degrees.of(167)));
-        var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
+        // var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
+        var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
+        var flywheelCmd = flywheel.setVelocity(makeFlywheelModelSupplier(solution));
+        var feedCmd = makeFeedSequence(solution);
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution);
 
-        // Flywheel follow, feed sequence, and telemetry publisher composed from
-        // helpers.
-        var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
-        var feedSeq = makeFeedSequence(solutionSupplier);
-        var telemetryCmd = makeTelemetryCmd(robotPose, solutionSupplier);
-        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd);
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
+                .withName("AimAndShoot");
     }
 
     /**
-     * Dynamically aim the turret and hood, spin the flywheel, and run the feed pipeline.
-     *
-     * <p>The returned command continuously tracks a motion-compensated {@code ShotSolution} computed
-     * from the provided pose, chassis speeds, and target supplier. It moves the turret and hood,
-     * updates flywheel setpoints, runs the feed sequence, and publishes telemetry while active.
+     * Aim the turret only (no feed, no flywheel). Useful for verifying turret tracking in test mode.
      *
      * @param robotPose supplier of the robot pose
      * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
      * @param targetSupplier supplier of the 3D target point
-     * @param refinementIterations number of solver refinement iterations for the shot solution
+     * @param refinementIterations number of solver refinement iterations
      * @param tableMode lookup table mode (HUB or PASS)
-     * @return a command that aims and executes a shot when scheduled
+     * @return a command that tracks the computed turret azimuth while scheduled
      */
     public Command aim(
             Supplier<Pose2d> robotPose,
@@ -197,25 +186,18 @@ public class ShooterSystem {
             Supplier<Translation3d> targetSupplier,
             int refinementIterations,
             ShootingLookupTable.Mode tableMode) {
-        // Build a lookup table for the requested mode
         var table = makeLookupTable(tableMode);
-
-        // Live solution supplier (motion-compensated shot solution)
-        var solutionSupplier =
+        var solution =
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
-
-        // Return a command that dynamically tracks the computed turret azimuth.
-        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
-
-        return turretCmd.withName("Aim");
+        return turret.setAngle(() -> solution.get().turretAzimuth()).withName("Aim");
     }
 
     /**
      * Aim, spin up the flywheel, and feed for a trench/pass shot.
      *
      * <p>Automatically selects the nearest trench opening (left or right) from the robot's current Y
-     * position and uses the PASS lookup table. Feeding is NOT gated on the hub shift — the robot will
-     * continue feeding as long as the trigger is held, regardless of shift state.
+     * position each loop and uses the PASS lookup table. Feeding is <em>not</em> shift-gated — fires
+     * freely while the trigger is held regardless of hub shift state.
      *
      * @param robotPose supplier of the robot pose
      * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
@@ -226,7 +208,6 @@ public class ShooterSystem {
             Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, int refinementIterations) {
         var table = makeLookupTable(ShootingLookupTable.Mode.PASS);
 
-        // Select the nearest trench opening by robot Y position each loop.
         Supplier<Translation3d> targetSupplier =
                 () -> {
                     var left = FieldConstants.LeftTrench.openingTopLeft;
@@ -237,21 +218,44 @@ public class ShooterSystem {
                             : AllianceFlipUtil.apply(right);
                 };
 
-        var solutionSupplier =
+        var solution =
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
-        // Turret actively tracks the trench target while trigger is held — overrides the
-        // default command tracking for the duration of the trench shot.
-        var turretCmd = turret.setAngle(() -> solutionSupplier.get().turretAzimuth());
-        var hoodCmd = hood.setAngle(() -> solutionSupplier.get().hoodAngle());
-        var flywheelFollow = flywheel.setVelocity(makeFlywheelModelSupplier(solutionSupplier));
-        var feedSeq = makeFeedSequenceUngated(solutionSupplier);
-        var telemetryCmd = makeTelemetryCmd(robotPose, solutionSupplier);
-        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelFollow, feedSeq, telemetryCmd)
+        var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
+        var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
+        var flywheelCmd = flywheel.setVelocity(makeFlywheelModelSupplier(solution));
+        var feedCmd = makeFeedSequenceUngated(solution);
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution);
+
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
                 .withName("TrenchShoot");
     }
 
-    // Small helper factories to keep the main flow concise and easier to read.
+    /** Clear and unjam the full shooter pipeline (flywheel, kicker, spindexer). */
+    public Command clearShooterSystem() {
+        return flywheel
+                .clearFlywheel()
+                .alongWith(kicker.clearKicker().alongWith(spindexer.clearSpindexer()));
+    }
+
+    /**
+     * Interrupt any active shooting commands without commanding zero setpoints (mechanisms coast).
+     * Use {@code stopNow()} / {@code stopHold()} on individual subsystems for explicit stops.
+     */
+    public Command interruptShooting() {
+        return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood)
+                .withName("InterruptShooting");
+    }
+
+    /** Stop flywheel, kicker, and spindexer immediately. */
+    public Command stopShooting() {
+        return flywheel.stopNow().alongWith(kicker.stopNow()).alongWith(spindexer.stopNow());
+    }
+
+    // endregion
+
+    // region Private helpers
+
     private ShootingLookupTable makeLookupTable(ShootingLookupTable.Mode mode) {
         return new ShootingLookupTable(mode);
     }
@@ -338,32 +342,6 @@ public class ShooterSystem {
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());
                         })
                 .withName("ShooterTelemetryPublisher");
-    }
-
-    public Command clearShooterSystem() {
-        return flywheel
-                .clearFlywheel()
-                .alongWith(kicker.clearKicker().alongWith(spindexer.clearSpindexer()));
-    }
-
-    // endregion
-
-    // region Private helpers
-
-    /**
-     * Interrupt any active shooting commands. This cancels pipelines but does not command zero
-     * setpoints (allowing flywheel/spindexer to coast). Use {@code stopNow()} / {@code stopHold()} on
-     * subsystems when an explicit stop is required.
-     *
-     * @return a Command that cancels shooting activity and brings mechanisms to a safe idle
-     */
-    public Command interruptShooting() {
-        return Commands.runOnce(() -> {}, flywheel, kicker, spindexer, turret, hood)
-                .withName("InterruptShooting");
-    }
-
-    public Command stopShooting() {
-        return flywheel.stopNow().alongWith(kicker.stopNow()).alongWith(spindexer.stopNow());
     }
 
     // endregion

@@ -275,11 +275,249 @@ Additional patterns gleaned from the "best practices example" thread:
    public final Trigger atSpeed = new Trigger(() -> getVelocity().isNear(setpoint, Percent.of(5)));
    ```
 
+Phoenix 6 Pro — TalonFX Control, StatusSignals, and Configuration
+------------------------------------------------------------------
+Sources: v6.docs.ctr-electronics.com  (status-signals, configuration, control-requests, talonfx-control-intro, closed-loop-requests)
+**Project uses Phoenix Pro (team has license). All devices are on a CANivore.**
+
+### Control Output Types
+Three base output types, named `{ClosedLoopMode}{OutputType}` (e.g., `VelocityVoltage`, `VelocityTorqueCurrentFOC`):
+- **DutyCycle** — proportion of supply voltage (−1.0 → +1.0). Simple but battery-dependent.
+- **Voltage** — compensates for supply voltage; more stable than DutyCycle. Use this as the default.
+- **TorqueCurrentFOC** *(Pro required)* — FOC commutation directly controlling torque/current (i.e., acceleration). ~15% more peak power than non-FOC. Advantages:
+  - `kV` is generally unnecessary (0 torque = constant velocity with no external forces).
+  - `kA` tunable independently of other gains.
+  - Gains are in force/torque units, more physically meaningful.
+  - Falls back to non-FOC commutation automatically if device is unlicensed; `TorqueCurrentFOC` (without fallback) will disable output + set `UnlicensedFeatureInUse` fault if unlicensed.
+
+FOC can also be enabled for non-torque requests via the `EnableFOC` field:
+```java
+new VelocityVoltage(0).withEnableFOC(true)  // Voltage + FOC commutation (Pro)
+```
+
+Key control request classes for swerve:
+| Request | Type | Notes |
+|---|---|---|
+| `VelocityVoltage` | velocity closed-loop | default for drive wheels |
+| `VelocityTorqueCurrentFOC` | velocity closed-loop | Pro; for drive with torque-current |
+| `PositionVoltage` | position closed-loop | default for turn motors |
+| `MotionMagicVoltage` | profiled position | turn motors; profiled for smoothness |
+| `MotionMagicTorqueCurrentFOC` | profiled position, Pro | turn motors with TorqueCurrentFOC |
+| `TorqueCurrentFOC` | open-loop torque | drive open-loop characterization |
+| `DutyCycleOut` | open-loop duty cycle | simple open-loop |
+| `NeutralOut` | neutral | coast/brake per config |
+
+Control output type for AK swerve template is set by `kSteerClosedLoopOutput` and `kDriveClosedLoopOutput` in `TunerConstants.java`:
+```java
+// Switch to TorqueCurrentFOC for drive (Pro only; requires re-tuning gains):
+public static final ClosedLoopOutputType kDriveClosedLoopOutput = ClosedLoopOutputType.TorqueCurrentFOC;
+```
+> **Note: TorqueCurrentFOC requires different gains than voltage control. Re-tune after switching.**
+
+### Control Request API
+```java
+// Declare as member field (reuse to avoid GC pressure)
+private final VelocityVoltage driveRequest = new VelocityVoltage(0);
+private final PositionVoltage steerRequest = new PositionVoltage(0);
+
+// Apply in periodic (setControl is lightweight, not blocking)
+driveTalon.setControl(driveRequest.withVelocity(RotationsPerSecond.of(targetRPS)));
+steerTalon.setControl(steerRequest.withPosition(Rotations.of(targetRot)));
+
+// One-shot (no periodic auto-resend): set UpdateFreqHz=0 and call setControl() in periodic manually
+driveRequest.UpdateFreqHz = 0;  // one-shot mode — YOU must call setControl() periodically
+```
+
+### Closed-Loop Gain Slots
+- TalonFX supports multiple gain slots (0, 1, 2). Select with `.withSlot(n)` on the control request.
+- Configured via `Slot0Configs`, `Slot1Configs`, `Slot2Configs` inside `TalonFXConfiguration`.
+- **`GravityType`** in slot config: `Elevator_Static` or `Arm_Cosine` — adds kG feedforward automatically.
+- **`StaticFeedforwardSign`**: `UseVelocitySign` (for velocity loops and motion-profiled position) vs `UseClosedLoopSign` (unprofiled position loops — use with caution, can dither near target).
+- **`ContinuousWrap`**: enable in `ClosedLoopGeneralConfigs` for continuous mechanisms (swerve steer, turrets) — shortest-path position tracking within 1 rotation.
+
+### StatusSignal API
+```java
+// Cache signal references (do NOT call getVelocity() every loop — allocates)
+private final StatusSignal<AngularVelocity> velSignal = motor.getVelocity();
+private final StatusSignal<Angle>           posSignal = motor.getPosition();
+
+// Refresh (blocking until data arrives — use in odometry thread, not in periodic directly)
+BaseStatusSignal.refreshAll(posSignal, velSignal);
+
+// CANivore Timesync (Pro) — blocks until all signals arrive synchronously
+BaseStatusSignal.waitForAll(0.020 /*timeout s*/, posSignal, velSignal, gyroYaw);
+
+// Get typed values (WPILib units)
+AngularVelocity vel = velSignal.getValue();
+double velRps       = velSignal.getValueAsDouble();  // in canonical units (rotations/sec for velocity)
+
+// Latency compensation (for odometry — compensates for signal age)
+double compensated = BaseStatusSignal.getLatencyCompensatedValue(
+    motor.getPosition(), motor.getVelocity());
+
+// Set update frequency BEFORE calling optimizeBusUtilization()
+BaseStatusSignal.setUpdateFrequencyForAll(250, posSignal, velSignal);  // 250 Hz for odometry
+BaseStatusSignal.setUpdateFrequencyForAll(50, currentSignal);          // 50 Hz for telemetry
+
+// Minimize CAN bus — disables all signals NOT explicitly registered with setUpdateFrequency
+motor.optimizeBusUtilization();
+ParentDevice.optimizeBusUtilizationForAll(driveMotor, steerMotor, cancoder);
+
+// StatusSignalCollection (cleaner batched API)
+final StatusSignalCollection signals = new StatusSignalCollection();
+signals.addSignals(motor.getPosition(false), cancoder.getPosition(false), pigeon.getYaw(false));
+signals.setUpdateFrequencyForAll(Hertz.of(200));
+signals.waitForAll(0.010);
+```
+> The `false` parameter on `getPosition(false)` / `getVelocity(false)` skips auto-refresh when caching — necessary for signals managed by batched `refreshAll` / `waitForAll`.
+
+### Configuration API
+```java
+// Full config with method chaining (withXxx returns this for chaining)
+final TalonFXConfiguration cfg = new TalonFXConfiguration()
+    .withMotorOutput(new MotorOutputConfigs()
+        .withNeutralMode(NeutralModeValue.Brake)
+        .withInverted(InvertedValue.Clockwise_Positive))
+    .withCurrentLimits(new CurrentLimitsConfigs()
+        .withStatorCurrentLimit(Amps.of(120))
+        .withStatorCurrentLimitEnable(true))
+    .withSlot0(new Slot0Configs()
+        .withKS(0.1).withKV(0.12).withKP(0.1));
+
+// Clone for leader/follower with different invert
+final TalonFXConfiguration followerCfg = cfg.clone()
+    .withMotorOutput(cfg.MotorOutput.clone()
+        .withInverted(InvertedValue.CounterClockwise_Positive));
+
+// Apply (BLOCKING — do in constructor/init only, never in periodic)
+motor.getConfigurator().apply(cfg);
+
+// Factory default (clears all settings)
+motor.getConfigurator().apply(new TalonFXConfiguration());
+
+// Read back config (also blocking)
+var readCfg = new TalonFXConfiguration();
+motor.getConfigurator().refresh(readCfg);
+```
+> **CRITICAL: `apply()` and `refresh()` are blocking CAN operations. NEVER call in `periodic()`.**
+
+### CANivore Timesync (Pro required)
+- All devices on a CANivore auto-synchronize their time bases when Pro-licensed.
+- Use `BaseStatusSignal.waitForAll(timeout, signals...)` to block until all synchronized signals arrive together — ideal for swerve odometry.
+- All odometry signals (drive position, steer position, gyro yaw) should share the same update frequency for synchronous acquisition (250 Hz on CAN FD, 100 Hz on RIO CAN bus).
+- The AK TalonFX swerve template handles this in `PhoenixOdometryThread`.
+
+---
+
+AdvantageKit TalonFX(S) Swerve Template — Architecture Reference
+----------------------------------------------------------------
+Source: docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template
+**This is the drive subsystem architecture we use.**
+
+### Key Files
+- `Drive.java` — main drive subsystem. Holds `SwerveDrivePoseEstimator`, PathPlanner `AutoBuilder` config, and `PhoenixOdometryThread`.
+- `Module.java` — one instance per swerve module, delegates to `ModuleIO`.
+- `ModuleIO.java` — IO interface for one module (drive + steer motor + encoder).
+- `ModuleIOTalonFX.java` — real hardware: TalonFX drive, TalonFX steer, CANcoder. **CTRE-only devices.**
+- `ModuleIOSim.java` — simulation implementation (gains stored here, NOT in `TunerConstants`).
+- `GyroIO.java` / `GyroIOPigeon2.java` / `GyroIONavX.java` — gyro IO layer. Switch in `RobotContainer`.
+- `TunerConstants.java` — generated by Tuner X. Contains: module positions, gear ratios, `kSlipCurrent`, `kSpeedAt12Volts`, `kWheelRadius`, PID gains (`steerGains`, `driveGains`), `kDriveClosedLoopOutput`, `kSteerClosedLoopOutput`.
+- `PhoenixOdometryThread.java` — dedicated high-frequency odometry thread. Reads signals at 250 Hz (CAN FD) or 100 Hz (RIO CAN); uses `waitForAll()` with CANivore timesync.
+
+### Important Template Gotchas
+- **Gear ratio applied in TalonFX firmware** (via `SensorToMechanismRatio`/`RotorToSensorRatio` configs), NOT on the RIO. AK template gains differ from CTRE's default swerve gains for this reason.
+- **Do NOT use `Utils.fpgaToCurrentTime()`** for vision timestamps — AK template uses standard FPGA timestamps for `SwerveDrivePoseEstimator`, so PhotonVision/Limelight timestamps can be passed directly to `addVisionMeasurement()` without conversion.
+- **Odometry frequency**: stored at top of `Drive.java`. Default: 250 Hz on CAN FD (CANivore), 100 Hz on RIO CAN bus. Customize carefully; monitor CAN bus utilization.
+- **Module IO implementations available**:
+  - `ModuleIOTalonFX` — TalonFX + TalonFX + CANcoder (default)
+  - `ModuleIOTalonFXS` — TalonFXS + TalonFXS + CANdi
+  - Can mix/match. Non-Phoenix encoders: use `PhoenixOdometryThread.registerSignal(doubleSupplier)` to add them to the odometry queue.
+  - For non-absolute encoders: set `FeedbackSensorSource = RotorSensor`, use `SensorToMechanismRatio` instead of `RotorToSensorRatio`, reset at startup with `tryUntilOk(5, () -> turnTalon.setPosition(encoder.getPositionRotations(), 0.25))`.
+
+### Characterization / Tuning Workflow
+1. **Feedforward (drive kS, kV)**: Run "Drive Simple FF Characterization" auto routine — robot slowly accelerates forward. Check console for kS/kV. Copy to `driveGains` in `TunerConstants.java`. No SysId needed for basic use.
+2. **Wheel radius**: Run "Drive Wheel Radius Characterization" auto routine on carpet — robot rotates in place. Check console; copy to `kWheelRadius`.
+3. **Max speed**: Set `kSpeedAt12Volts` to theoretical max first, drive at full speed, measure actual max in AdvantageScope (`/RealOutputs/SwerveChassisSpeeds/Measured`), update value.
+4. **Slip current**: Drive into a wall, watch `/Drive/Module.../DriveCurrentAmps` and velocity. Note current at wheel slip; set `kSlipCurrent`.
+5. **PID tuning**: Watch `SwerveStates/Measured` vs `SwerveStates/SetpointsOptimized` in AdvantageScope.
+6. **TorqueCurrentFOC**: Set `kDriveClosedLoopOutput = ClosedLoopOutputType.TorqueCurrentFOC` in `TunerConstants`. Re-characterize and re-tune all drive gains (different units). TalonFXS does NOT support TorqueCurrentFOC.
+
+### Vision Integration in Drive Subsystem
+- `Drive.addVisionMeasurement(Pose2d pose, double timestamp, Matrix<N3,N1> stdDevs)` — call from vision subsystem.
+- Timestamp must be in FPGA time (seconds). PhotonVision results use `result.getTimestampSeconds()` — no conversion needed (unlike CTRE swerve library).
+- Scale stdDevs: farther/fewer tags → larger stdDevs (less trust in vision).
+
+### Optional Customizations
+- **Profiled turning PID**: Replace `PositionVoltage` request with `MotionMagicVoltage` or `MotionMagicTorqueCurrentFOC` in `ModuleIOTalonFX`. Constraints already configured in constructor.
+  ```java
+  private final MotionMagicVoltage positionVoltageRequest = new MotionMagicVoltage(0.0);
+  private final MotionMagicTorqueCurrentFOC positionTorqueCurrentRequest = new MotionMagicTorqueCurrentFOC(0.0);
+  ```
+- **Swerve setpoint generator** (Team 254 / PathPlanner): Add `SwerveSetpointGenerator` in `Drive`, use in `runVelocity()` for anti-skid control.
+- **Real-time thread priority**: Uncomment in `Robot.java` for tighter loop timing — test carefully, can starve NT/CAN threads.
+- **maple-sim (Team 5516)**: Full rigid-body swerve simulation library, easily integrates with AK template.
+- **PathPlanner**: already configured in `Drive.java` constructor. Tune: robot mass/MOI/wheel coefficient at top of `Drive.java`; drive/turn PIDs in `AutoBuilder`.
+
+---
+
+AdvantageKit Vision Template — Architecture Reference
+----------------------------------------------------
+Source: docs.advantagekit.org/getting-started/template-projects/vision-template
+**This is the vision subsystem architecture we use, combined with the TalonFX swerve template.**
+
+### Features
+- Supports both Limelight and PhotonVision out of the box.
+- Vision simulation via PhotonLib.
+- High-frequency sampling — every observation is processed, none duplicated.
+- Advanced filtering with automatic stdDev scaling.
+- Detailed filter logging for replay-based tuning.
+- Simple targeting (getTargetX) + full pose estimation.
+- Deterministic replay.
+
+### Key Files
+- `Vision.java` — vision subsystem. Configured primarily via `VisionConstants`.
+- `VisionConstants.java` — camera names, robot-to-camera transforms, filter thresholds.
+- `VisionIO.java` — IO interface (real vs sim/replay).
+- `VisionIOPhotonVision.java` / `VisionIOLimelight.java` — real implementations.
+- `VisionIOSim.java` — simulation using PhotonLib `VisionSystemSim`.
+
+### Logging Fields (per camera)
+- `TagPoses` — 3D poses of visible tags → use "Vision Target" in AdvantageScope 3D field view.
+- `RobotPoses` — raw pose estimates from last cycle → use "Ghost" in AdvantageScope.
+- `RobotPosesAccepted` — subset of `RobotPoses` that passed all filters.
+- `RobotPosesRejected` — subset removed during filtering.
+- `Summary` table — same fields but aggregated across all cameras.
+
+### Limelight 4 / MegaTag 2
+- Template publishes robot orientation every loop cycle (required for MegaTag 2 heading-assisted mode).
+- For Limelight 4 built-in IMU: configure `imumode_set` key in NT, or import LimelightLib.
+
+### Integration with TalonFX Swerve Template
+- Vision `Drive.addVisionMeasurement()` — call from `Vision.periodic()` or via a callback.
+- Use FPGA-timestamped results directly (no `Utils.fpgaToCurrentTime()` needed with AK drive template).
+- See `getTargetX()` in `Vision.java` and `configureButtonBindings()` in `RobotContainer` for simple targeting example.
+
+---
+
+AdvantageKit 2026 — What's New
+------------------------------
+Source: docs.advantagekit.org/whats-new
+
+- **Unit Logging**: `@AutoLog` inputs can use WPILib unit types directly (e.g., `public Current current = Amps.of(63.28)`). `Logger.recordOutput("key", value, "unit")` for primitive+unit. `@AutoLogOutput(unit = "inches")` for annotation-based.
+- **NetworkTables client logging**: `SystemStats` table auto-logs connected NT clients (dashboards, vision coprocessors) — no user code needed.
+- **Improved console logging**: AK now captures exceptions thrown during robot code execution. Console output shown during Replay Watch.
+- **3D mechanism logging**: `LoggedMechanism2d.generate3dMechanism()` auto-generates 3D poses from 2D mechanism layouts.
+- **Color logging**: WPILib `Color` objects can be logged as hex strings in inputs/outputs.
+- **TalonFX(S) swerve template updated**: now includes `ModuleIOTalonFXS` alternative module implementation for TalonFXS + CANdi hardware.
+- **Online API docs**: available at docs.advantagekit.org/javadoc.
+
+---
+
 Starter prompt (paste to assistant)
 ----------------------------------
 Copy this exact block into a new assistant session to rehydrate behavior and expectations:
 
-"Project assistant profile: MRT3216 repo. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning when supplier-backed YAMS commands do not re-evaluate. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. Follow Oblarg command-based best practices: no stored command instances, all motor access through commands, boolean subsystem state exposed as public final Trigger fields, cross-subsystem coordination in ShooterSystem not in individual subsystems. Use AdvantageKit IO layer pattern (io/inputs separation, @AutoLog). For vision, use PhotonPoseEstimator with multi-tag strategy falling back to lowest ambiguity; scale stdDevs by distance. For autos, use PathPlanner AutoBuilder configured in drive subsystem; load all autos at startup. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
+"Project assistant profile: MRT3216 repo. Drive uses AdvantageKit TalonFX swerve template (ModuleIOTalonFX + PhoenixOdometryThread) with Phoenix Pro licensed — CANivore timesync available, TorqueCurrentFOC available. Vision uses AdvantageKit vision template (VisionIOPhotonVision / VisionIOLimelight). Mechanism subsystems (shooter, intake, etc.) use YAMS-first APIs. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. Follow Oblarg command-based best practices: no stored command instances, all motor access through commands, boolean subsystem state exposed as public final Trigger fields, cross-subsystem coordination in ShooterSystem not in individual subsystems. Use AdvantageKit IO layer pattern (io/inputs separation, @AutoLog). For drive, gains are in TunerConstants.java; gear ratio is applied in TalonFX firmware (SensorToMechanismRatio). For vision, use addVisionMeasurement() on Drive with FPGA timestamps (no Utils.fpgaToCurrentTime() conversion needed). For Phoenix 6 configs, apply() and refresh() are blocking — constructor only, never periodic. For autos, use PathPlanner AutoBuilder configured in drive subsystem; load all autos at startup. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
 
 Useful local references (already in repo)
  - `docs/guides/yams.md` — vendor install, links to YAMS docs, and licensing notes.
@@ -302,4 +540,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-02-27 — pushed to `mechanisms`.*
+*Last edited: 2026-03-19 — added Phoenix 6 Pro, TalonFX swerve template, vision template, and AK 2026 what's-new sections.*

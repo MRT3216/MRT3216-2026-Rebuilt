@@ -11,7 +11,7 @@ import edu.wpi.first.units.measure.Time;
 /**
  * Shooter lookup tables (embedded defaults).
  *
- * <p>+ * Each row is {distance (m), hood angle (deg), time-of-flight (s)} and uses the project
+ * <p>Each row is {distance (m), hood angle (deg), time-of-flight (s)} and uses the project
  * convention where 0° = horizontal.
  */
 public final class ShooterLookupTables {

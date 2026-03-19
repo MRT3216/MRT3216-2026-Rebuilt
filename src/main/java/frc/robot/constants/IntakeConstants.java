@@ -17,10 +17,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 
-/**
- * Intake rollers constants extracted from {@code Constants.java} so they live next to the subsystem
- * implementation under `subsystems/intake`.
- */
+/** Intake constants (rollers and pivot). Tuned by the team. */
 public final class IntakeConstants {
     private IntakeConstants() {}
 
@@ -129,8 +126,6 @@ public final class IntakeConstants {
         // public static final Angle kEncoderOffset = Rotation.of(0.65784466);
 
         // Telemetry keys are centralized in TelemetryKeys
-
-        /** Gearing used specifically for external encoder wiring (motor:mechanism). */
 
         // Arm position presets
         public static final Angle kStowedAngle = Degrees.of(125);

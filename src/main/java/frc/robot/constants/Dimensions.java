@@ -4,7 +4,9 @@ import static edu.wpi.first.units.Units.Inches;
 
 import edu.wpi.first.units.measure.Distance;
 
-public class Dimensions {
+public final class Dimensions {
+    private Dimensions() {}
+
     public static final Distance BUMPER_THICKNESS = Inches.of(3); // frame to edge of bumper
     public static final Distance BUMPER_HEIGHT = Inches.of(7); // height from floor to top of bumper
     public static final Distance FRAME_SIZE_Y = Inches.of(26.25); // left to right (y-axis)

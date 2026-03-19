@@ -130,7 +130,7 @@ public final class ShooterConstants {
 
         // Motor wiring and limits
         public static final boolean kMotorInverted = false;
-        public static final Current kStatorCurrentLimit = Amps.of(60);
+        public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID and feedforward
         public static final double kP = 0.02;
@@ -149,10 +149,11 @@ public final class ShooterConstants {
         public static final double kD_sim = 0.0;
 
         // Recommended velocities
-        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(1200.0);
+        // 700 RPM mechanism × 5.0 gear reduction = ~3500 RPM at the NEO shaft.
+        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(500.0);
 
         /** Soft limit (RPM). */
-        public static final AngularVelocity kSoftLimitMax = RPM.of(1500.0);
+        public static final AngularVelocity kSoftLimitMax = RPM.of(1000.0);
 
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
@@ -181,7 +182,7 @@ public final class ShooterConstants {
         public static final double kGearReduction = 1.0;
 
         // Electrical limits
-        public static final Current kStatorCurrentLimit = Amps.of(60);
+        public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID
         public static final double kP = 0.0;
@@ -306,7 +307,7 @@ public final class ShooterConstants {
         public static final double kP = 3.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
-        public static final double kS = 0.1; // small static friction offset; tune on hardware
+        public static final double kS = 0.0;
         public static final double kV = 1.0;
         public static final double kA = 0.05;
         public static final AngularVelocity kMaxVelocity =

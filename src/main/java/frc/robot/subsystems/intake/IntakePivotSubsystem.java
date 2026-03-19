@@ -150,8 +150,8 @@ public class IntakePivotSubsystem extends SubsystemBase {
     // region Lifecycle / periodic
 
     /**
-     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
-     * to ensure telemetry is time-aligned.
+     * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry
+     * for log replay.
      */
     private void updateInputs() {
         intakePivotInputs.angle = intakePivot.getAngle();
@@ -189,6 +189,12 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.run(angle);
     }
 
+    /**
+     * Move the intake arm to the requested angle and finish when within tolerance.
+     *
+     * @param angle target arm angle
+     * @return a command that completes when the arm reaches the target
+     */
     public Command setAngleAndStop(Angle angle) {
         return intakePivot.runTo(angle, kTolerance);
     }
@@ -203,6 +209,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.set(dutyCycle);
     }
 
+    /** Run a YAMS SysId routine for feedforward characterization. */
     public Command sysId() {
         return intakePivot.sysId(Volts.of(7), Volts.of(2).per(Second), Seconds.of(4));
     }

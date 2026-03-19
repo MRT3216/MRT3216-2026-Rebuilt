@@ -196,6 +196,7 @@ public class SpindexerSubsystem extends SubsystemBase {
         return setVelocity(() -> RPM.of(kTunableIndexerRPM.get()));
     }
 
+    /** Convenience helper: run the spindexer in reverse to clear jams. */
     public Command clearSpindexer() {
         // Read the LoggedTunableNumber at runtime so dashboard edits apply while
         // the command is active.

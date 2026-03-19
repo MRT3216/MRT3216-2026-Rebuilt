@@ -28,7 +28,6 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -102,7 +101,7 @@ public class KickerSubsystem extends SubsystemBase {
                         // mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
-                        // Telemetry name and verbosity levelP
+                        // Telemetry name and verbosity level
                         .withTelemetry(kKickerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
@@ -173,7 +172,7 @@ public class KickerSubsystem extends SubsystemBase {
      * Set the kicker velocity.
      *
      * @param speed Speed to set.
-     * @return {@link RunCommand}
+     * @return a command that maintains the requested speed while scheduled
      */
     public Command setVelocity(AngularVelocity speed) {
         return kicker.setSpeed(speed);
@@ -195,6 +194,7 @@ public class KickerSubsystem extends SubsystemBase {
         return setVelocity(() -> RPM.of(kTunableKickerRPM.get()));
     }
 
+    /** Convenience helper: run the kicker in reverse to clear jams. */
     public Command clearKicker() {
         // Read the LoggedTunableNumber at runtime so dashboard edits apply while
         // the command is active.
@@ -202,10 +202,10 @@ public class KickerSubsystem extends SubsystemBase {
     }
 
     /**
-     * Set the dutycycle of the kicker.
+     * Set the duty cycle of the kicker.
      *
      * @param dutyCycle DutyCycle to set.
-     * @return {@link RunCommand}
+     * @return a command that applies the given duty cycle while scheduled
      */
     public Command setDutyCycle(double dutyCycle) {
         return kicker.set(dutyCycle);

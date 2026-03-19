@@ -73,8 +73,6 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // Explicit Phoenix refreshes are required for telemetry; call directly.
-
     // region Hardware & controller
 
     /* Hardware Objects */
@@ -174,8 +172,6 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         intakeRollers.simIterate();
     }
 
-    // region Lifecycle / periodic
-
     @Override
     public void periodic() {
         updateInputs();
@@ -216,10 +212,12 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.set(dutyCycle);
     }
 
+    /** Run the intake rollers at the configured intake velocity. */
     public Command intakeBalls() {
         return intakeRollers.setSpeed(IntakeConstants.Rollers.kTargetAngularVelocity);
     }
 
+    /** Run the intake rollers in reverse at full duty to eject game pieces. */
     public Command ejectBalls() {
         return intakeRollers.set(-1.0);
     }

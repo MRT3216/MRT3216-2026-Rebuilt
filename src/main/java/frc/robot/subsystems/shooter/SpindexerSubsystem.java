@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kD;
 import static frc.robot.constants.ShooterConstants.SpindexerConstants.kD_sim;
@@ -55,11 +56,13 @@ public class SpindexerSubsystem extends SubsystemBase {
      */
     @AutoLog
     public static class SpindexerInputs {
-        /** Actual velocity of the spindexer mechanism. */
-        public AngularVelocity velocity = RPM.of(0);
-
+        /** Mechanism velocity (roller, after gear reduction). Logged in native YAMS units (RPS). */
+        public AngularVelocity mechanismVelocity = RPM.of(0);
+        /**
+         * Motor rotor velocity (before gear reduction), derived as mechanismVelocity × kGearReduction.
+         */
         public AngularVelocity motorVelocity = RPM.of(0);
-        /** Current target velocity requested from the motor controller. */
+        /** Closed-loop velocity setpoint sent to the motor controller (mechanism RPS). */
         public AngularVelocity setpoint = RPM.of(0);
         /** Applied voltage across the motor. */
         public Voltage volts = Volts.of(0);
@@ -132,13 +135,16 @@ public class SpindexerSubsystem extends SubsystemBase {
      * for log replay.
      */
     private void updateInputs() {
-        spindexerInputs.velocity = spindexer.getSpeed();
-        spindexerInputs.motorVelocity = motor.getRotorVelocity();
+        spindexerInputs.mechanismVelocity = spindexer.getSpeed();
+        // Motor velocity = mechanism velocity × gear reduction.
+        // Use RotationsPerSecond (native YAMS unit) to avoid unit conversion ambiguity.
+        spindexerInputs.motorVelocity =
+                RotationsPerSecond.of(
+                        spindexerInputs.mechanismVelocity.in(RotationsPerSecond) * kGearReduction);
         spindexerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
         spindexerInputs.volts = motor.getVoltage();
         spindexerInputs.current = motor.getStatorCurrent();
-        SmartDashboard.putBoolean(
-                "Mechanisms/SpindexerIsMoving", Math.abs(spindexerInputs.velocity.in(RPM)) > 10.0);
+    
     }
 
     @Override
@@ -163,7 +169,7 @@ public class SpindexerSubsystem extends SubsystemBase {
      * @return The current AngularVelocity measured by the encoder.
      */
     public AngularVelocity getVelocity() {
-        return spindexerInputs.velocity;
+        return spindexerInputs.mechanismVelocity;
     }
 
     /**

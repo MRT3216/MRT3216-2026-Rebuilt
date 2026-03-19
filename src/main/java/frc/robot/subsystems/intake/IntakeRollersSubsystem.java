@@ -230,7 +230,13 @@ public class IntakeRollersSubsystem extends SubsystemBase {
      * subsystem at zero after completion.
      */
     public Command stopNow() {
-        return Commands.runOnce(() -> intakeRollers.set(0), this).withName("IntakeRollersStopNow");
+        return Commands.runOnce(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("IntakeRollersStopNow");
     }
 
     /**

@@ -235,7 +235,7 @@ public class SpindexerSubsystem extends SubsystemBase {
     public Command stopNow() {
         return Commands.runOnce(
                         () -> {
-                            spindexer.set(0);
+                            motor.stopClosedLoopController();
                             motor.setDutyCycle(0);
                         },
                         this)

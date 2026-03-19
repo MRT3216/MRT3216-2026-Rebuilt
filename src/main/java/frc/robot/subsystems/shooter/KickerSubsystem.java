@@ -219,7 +219,7 @@ public class KickerSubsystem extends SubsystemBase {
     public Command stopNow() {
         return Commands.runOnce(
                         () -> {
-                            kicker.set(0);
+                            motor.stopClosedLoopController();
                             motor.setDutyCycle(0);
                         },
                         this)

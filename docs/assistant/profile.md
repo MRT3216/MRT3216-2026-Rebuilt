@@ -538,6 +538,173 @@ Copy this exact block into a new assistant session to rehydrate behavior and exp
 
 "Project assistant profile: MRT3216 repo. Drive uses AdvantageKit TalonFX swerve template (ModuleIOTalonFX + PhoenixOdometryThread) with Phoenix Pro licensed — CANivore timesync available, TorqueCurrentFOC available. Vision uses AdvantageKit vision template (VisionIOPhotonVision / VisionIOLimelight). Mechanism subsystems (shooter, intake, etc.) use YAMS-first APIs. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. Follow Oblarg command-based best practices: no stored command instances, all motor access through commands, boolean subsystem state exposed as public final Trigger fields, cross-subsystem coordination in ShooterSystem not in individual subsystems. Use AdvantageKit IO layer pattern (io/inputs separation, @AutoLog). For drive, gains are in TunerConstants.java; gear ratio is applied in TalonFX firmware (SensorToMechanismRatio). For vision, use addVisionMeasurement() on Drive with FPGA timestamps (no Utils.fpgaToCurrentTime() conversion needed). For Phoenix 6 configs, apply() and refresh() are blocking — constructor only, never periodic. For autos, use PathPlanner AutoBuilder configured in drive subsystem; load all autos at startup. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
 
+YAMS Deep Reference — SmartMotorControllerConfig & Tuning (from official YAMS presentation by 9658, 6911, and YASS team)
+--------------------------------------------------------------------------------------------------------------------
+
+### Motor Types
+- **Brushless only** — YAMS does NOT support brushed motors.
+- Supported hardware: SparkMax, SparkFlex, ThriftyNova, TalonFX, TalonFXS.
+- All brushless motors have an integrated relative encoder.
+
+### SmartMotorController — Four Control Modes
+1. **Position** — Angle-based (arms, turrets, wrists) or Distance-based (elevators, linear actuators).
+2. **Velocity** — Angle-based or Distance-based.
+3. **DutyCycle** — Open-loop, proportion of supply voltage.
+4. **Voltage** — Open-loop, compensated for battery sag.
+
+### SmartMotorControllerConfig — Five Config Categories
+1. **Motor** — `withControlMode`, `withFollowers`, `withIdleMode`, `withMomentOfInertia`, `withMotorInverted`, `withOpenLoopRampRate`, `withClosedLoopRampRate`, `withStatorCurrentLimit`, `withSupplyCurrentLimit`, `withVoltageCompensation`, `withTemperatureCutoff`
+2. **Closed Loop** — `withClosedLoopController(kP, kI, kD [, maxVel, maxAccel])`, `withSimClosedLoopController(...)`, `withFeedforward(SimpleMotorFeedforward | ArmFeedforward | ElevatorFeedforward)`, `withSimFeedforward(...)`, motion profiles (Trapezoidal, Exponential)
+3. **Encoder** — `withGearing(MechanismGearing | double)`, `withMechanismCircumference(Distance)`, `withContinuousWrapping(range)`, `withSoftLimit(min, max)`, `withHardLimit(...)`
+4. **External Encoder** — `withExternalEncoder(encoder)`, `withExternalEncoderZeroOffset(angle/distance)`. Only same-vendor absolute encoders supported. External gearing only supported if encoder is geared UP (absolute encoder must never require >1 rotation).
+5. **Telemetry** — `withTelemetry("Name", TelemetryVerbosity.HIGH/LOW/NONE)`
+
+### Key Motor Config Notes
+
+**Followers**: Only alike-vendor motor controllers can follow a leader. Define with `withFollowers(SmartMotorController...)`, invert individual followers in the same call.
+
+**Moment of Inertia**: Used for more accurate simulation. Composed of mechanism mass and distance from pivot/axis.
+
+**Stator vs Supply Current**:
+- *Stator Current* — current seen by the spinning part of the motor (includes motor brake as negative current). Use `withStatorCurrentLimit` to protect against stalling.
+- *Supply Current* — current the controller pulls from the 12V bus. Use `withSupplyCurrentLimit` to protect the PDP/PDH.
+
+**Voltage Compensation**: Compensates for bus voltage sag under load. Keeps control loop output constant despite battery droop. Cannot increase voltage beyond what is available — if the actuator is already saturating, you must address mechanism gearing or motor sizing instead.
+
+**Actuator Saturation**: Occurs when gains are too aggressive and the controller demands motion faster than the mechanism can achieve. Results in erratic behavior. Fix by modifying gearing or using a more powerful motor.
+
+**Temperature Cutoff**: Only supported on SparkMax and SparkFlex. Sets output to 0 in closed loop if temperature threshold is exceeded.
+
+**Ramp Rates**: NOT RECOMMENDED — they slow control response. Use stator current limits and motion profiles (Trapezoidal or Exponential) instead. Two types: open-loop (for voltage/dutyCycle) and closed-loop (interpolates setpoint over X seconds).
+
+**Idle Modes**:
+- `Brake` — shorts motor wires at 0 power; holds position against moderate torque.
+- `Coast` — no braking at 0 power.
+
+### Gearing & Measurement
+- `reductionRatio` = number of motor rotations per one mechanism rotation (e.g., 10.0 for 10:1 reduction).
+- `withGearing(new MechanismGearing(GearBox.fromReductionStages(a, b)))` — supports multi-stage compound gearboxes.
+- Applied in firmware for TalonFX; YAMS reads back mechanism position/velocity (post-gearbox).
+- `withMechanismCircumference(Distance)` — for linear mechanisms, converts rotations → meters.
+- All position/velocity readings from YAMS are at the **mechanism** level (post-gearbox), not the rotor.
+
+### Encoder Wrapping / Continuous Wrapping
+- Use `withContinuousWrapping(range)` for absolute encoders on continuously rotating mechanisms (turrets, swerve steer).
+- Valid ranges: `[-0.5, 0.5)`, `[-1, 0)`, `[0, 1)` in Rotations. The PID will take the shortest path across the wrap boundary.
+- Note: the mechanism will never actually reach the max boundary value — it wraps just before.
+
+### Soft vs Hard Limits
+- **SoftLimit**: Encoder-based digital barrier. Requires correct encoder setup. Applied via YAMS config.
+- **HardLimit**: Physical button at mechanism extremes. YAMS simulation prevents movement past hard limits.
+- **HardStop**: Physical bumper/metal stop. Last resort if motors are commanded past limits.
+
+### Feedforward Recap (from YAMS presentation)
+- `kS` — voltage to overcome static friction. Same regardless of velocity. Use `signum(velocity)`.
+- `kV` — voltage to maintain a given constant velocity (counters back-EMF + viscous drag). Nearly perfectly linear for FRC motors.
+- `kA` — voltage to produce a given acceleration. Nearly perfectly linear for FRC motors.
+- `kG` — voltage to resist gravity (constant for elevators; `kG × cos(θ)` for arms).
+- In sim: `kS` will always read as invalid (no friction in sim). Do not worry about it in simulation.
+
+### Motion Profiles
+**Trapezoidal Profile** — limits both acceleration and velocity; smoother than raw PID.
+- Constraints: `maxVelocity`, `maxAcceleration`.
+- Benefits: full control throughout motion, manages inertia at setpoint transitions, improved repeatability under battery/motor load changes.
+- Configure via `.withClosedLoopController(kP, kI, kD, maxVel, maxAccel)`.
+
+**Exponential Profile** — better for mechanisms with significant friction the feedforward can't fully overcome.
+- Constraints: `kV` (Voltage/AngularVelocity), `kA` (Voltage/AngularAcceleration).
+- `kV` determines max profile velocity: max velocity = supplyVoltage / kV. Higher kV → slower max velocity (safer to start high).
+- Factory methods:
+  - `ExponentialProfilePIDController.createArmConstraints(maxVolts, DCMotor, weight, armLength, gearing)`
+  - `ExponentialProfilePIDController.createElevatorConstraints(maxVolts, DCMotor, carriageWeight, height, gearing)`
+  - `ExponentialProfilePIDController.createFlywheelConstraints(maxVolts, DCMotor, flywheelWeight, wheelRadius, gearing)`
+  - `ExponentialProfilePIDController.createConstraints(maxVolts, maxAngularVelocity_kV, maxAngularAcceleration_kA)`
+
+### Tuning Order (YAMS official)
+1. Set kG, kV, kA, kP, kI, kD all to **zero**. Limit max velocity and acceleration to prevent damage (Elevators: 0.3 m/s, 0.3 m/s²; Arms: 90 deg/s, 90 deg/s²).
+2. **kG**: Increase until mechanism starts moving, then back off until it stops. Tune to 2–3 decimal places.
+3. **kV**: Start at 0.1, increase in larger steps. Match the slope of position graph to reference graph during motion.
+4. **kA**: Start at 0.001. Match the acceleration portion of the position graph to the reference. Generally very small.
+5. **kP**: Increase until mechanism overshoots, then back off until overshoot stops.
+6. **kD** (optional): Increase max velocity/acceleration to full speed first. Add kD to allow kP to be raised higher — mechanism moves fast then "slams the brakes." On lightweight/slow mechanisms, P alone may suffice.
+7. **kI** (optional): Error accumulator. Clear the accumulator before enabling kI from zero.
+- Note: `kS` is not needed in simulation and rarely needed on well-designed mechanisms. More useful for arms/pivots than elevators.
+
+### SysId via YAMS
+- YAMS provides a built-in `sysId()` routine on all mechanisms — runs quasistatic forward/reverse + dynamic forward/reverse automatically.
+- **Bind to `.whileTrue()`** — releasing the button stops the test. If you release early, **discard the log and restart**.
+- Soft limits must be set correctly — YAMS uses them to know when to reverse direction.
+- CTRE users must manually start/stop the CTRE signal logger. Modify the YAMS SysId command to call the logger:
+  ```java
+  // Wrap with signal logger start/stop for CTRE hoot logs
+  mechanism.sysId(volts, voltsPerSec, seconds)
+      .beforeStarting(SignalLogger::start)
+      .finallyDo(SignalLogger::stop);
+  ```
+- Hoot log → Phoenix "Log Extractor" → convert to WPILOG → open in SysId app (select: State, MotorVoltage, Velocity, Position for the leader motor; state signal is not stored under any motor).
+- REV logs use `.revlog` format; must also be converted.
+- In SysId analyzer: change loop type from Velocity to **Position**. Gain preset: **Default** (YAMS handles unit conversions).
+- Run SysId in **simulation first** to validate mechanism config before running on real hardware.
+
+### Mixing Closed-Loop and Open-Loop Control
+Some motor controllers (especially SparkMAX/SparkFlex) run PID+feedforward on the roboRIO when they lack on-board support. YAMS calls `setVoltage()` every 20ms in closed-loop mode on these devices. This means you **cannot** call `setVoltage()` out-of-band while the closed-loop is running.
+
+To use open-loop control temporarily:
+```java
+// Command-based pattern:
+subsystem.startRun(
+    () -> smc.stopClosedLoopController(),
+    () -> smc.setDutyCycle(0.5)
+).finallyDo(() -> smc.startClosedLoopController());
+```
+
+### Simulation & Telemetry — Required Calls
+```java
+@Override
+public void periodic() {
+    mechanism.updateTelemetry();  // REQUIRED — telemetry does NOT auto-update
+}
+
+@Override
+public void simulationPeriodic() {
+    mechanism.simIterate();  // REQUIRED — sim physics do NOT update without this
+}
+```
+
+### CTRE Tuning in AdvantageScope
+To tune CTRE motors in AdvantageScope without Phoenix Tuner splitscreen, publish Phoenix 6 signals via AK logging after creating the motor in the subsystem constructor, then add them to `periodic()` (requires AK vendor dep):
+```java
+// After motor creation in constructor:
+BaseStatusSignal.setUpdateFrequencyForAll(50, motor.getPosition(), motor.getVelocity());
+motor.optimizeBusUtilization();
+
+// In periodic():
+Logger.recordOutput("Subsystem/PositionRot", motor.getPosition().getValueAsDouble());
+Logger.recordOutput("Subsystem/VelocityRps", motor.getVelocity().getValueAsDouble());
+Logger.recordOutput("Subsystem/ReferenceRot", setpointRotations);
+```
+Open a line graph in AdvantageScope, drag position + reference to left axis. Click the 3-line button (turns purple) to enable live tuning via AdvantageScope.
+
+### Live Tuning Mode
+- Requires **Test Mode** (in Driver Station) for both SIM and REAL.
+- In Elastic: add the YAMS Live Tuning widget to toggle on/off.
+- In AdvantageScope: use the 3-line button on a graph (turns purple when active) to type in new gain values live.
+
+### External Encoder Zero Offset
+1. Ensure absolute encoder is connected and reflected in code.
+2. Open Elastic or similar telemetry app, read absolute encoder value.
+3. Hold mechanism at its true "zero" position (e.g., arm parallel to floor = 0°, pointing up = 90°).
+4. Record the encoder reading at that position.
+5. Pass to `.withExternalEncoderZeroOffset(angle/distance)` in config.
+
+If absolute encoder is not compatible with YAMS, periodically seed the relative encoder:
+```java
+// In periodic() or on enable — position is MECHANISM (post-gearbox), not rotor:
+smc.setMechanismPosition(absoluteEncoder.getPosition());
+```
+
+---
+
 Useful local references (already in repo)
  - `docs/guides/yams.md` — vendor install, links to YAMS docs, and licensing notes.
  - `docs/guides/telemetry.md` — AdvantageKit and telemetry guidance used by this project.
@@ -559,4 +726,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-03-19 — added Phoenix 6 Pro, TalonFX swerve template, vision template, and AK 2026 what's-new sections.*
+*Last edited: 2026-03-19 — added Phoenix 6 Pro, TalonFX swerve template, vision template, AK 2026 what's-new sections, and YAMS deep reference (SmartMotorControllerConfig, tuning order, SysId, profiles, simulation requirements).*

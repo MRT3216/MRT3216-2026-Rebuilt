@@ -29,7 +29,6 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
-import frc.robot.constants.Constants.Mode;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.ShooterConstants.FlywheelConstants;
 import frc.robot.generated.TunerConstants;
@@ -198,7 +197,6 @@ public class RobotContainer {
                         3,
                         ShootingLookupTable.Mode.HUB));
         NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
-        // NamedCommands.registerCommand("Stop Shooter", shooterSystem.interruptShooting());
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooting());
 
         setupAutoChooser();
@@ -321,9 +319,7 @@ public class RobotContainer {
     private void configureButtonBindings() {
         if (Constants.tuningMode) {
             configureTestButtonBindings();
-        } else if (Constants.getMode() == Mode.SIM) {
-            configureRealButtonBindings();
-        } else if (Constants.getMode() == Mode.REAL) {
+        } else {
             configureRealButtonBindings();
         }
 
@@ -364,13 +360,6 @@ public class RobotContainer {
      * #configureTestButtonBindings()} and should be enabled only in tuning mode.
      */
     public void configureRealButtonBindings() {
-        // Right trigger toggles intake on/off (press once to start, press again to
-        // cancel).
-        // .rightTrigger().onTrue(intakeSystem.intake());
-
-        // Left trigger immediately stops rollers and holds them stopped while pressed.
-        // driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
-
         driverController
                 .rightTrigger()
                 .whileTrue(
@@ -494,10 +483,8 @@ public class RobotContainer {
     }
 
     /**
-     * AutoChooser helper: creates the dashboard auto chooser.
-     *
-     * <p>Disabled by default. To enable, call {@code setupAutoChooser()} from the constructor and
-     * uncomment the implementation below.
+     * AutoChooser helper: creates the dashboard auto chooser and populates it with available
+     * autonomous routines.
      */
     private void setupAutoChooser() {
         // "Auto Chooser" matches the topic key the Elastic dashboard subscribes to.

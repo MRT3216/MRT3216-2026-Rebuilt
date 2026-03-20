@@ -61,22 +61,9 @@ public class LEDSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Singleton
-
-    private static LEDSubsystem instance;
-
-    public static LEDSubsystem getInstance() {
-        if (instance == null) {
-            instance = new LEDSubsystem();
-        }
-        return instance;
-    }
-
-    // endregion
-
     // region Constructor
 
-    private LEDSubsystem() {
+    public LEDSubsystem() {
         led = new AddressableLED(LEDs.kPort);
         ledBuffer = new AddressableLEDBuffer(LEDsConstants.kNumLEDs);
         led.setLength(ledBuffer.getLength());

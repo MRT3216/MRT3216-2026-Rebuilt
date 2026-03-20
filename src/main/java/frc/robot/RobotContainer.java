@@ -81,6 +81,11 @@ public class RobotContainer {
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
     private final IntakeRollersSubsystem intakeRollersSubsystem = new IntakeRollersSubsystem();
 
+    // TODO: Uncomment when LEDs are physically wired to the roboRIO PWM port.
+    // Verify RobotMap.LEDs.kPort and Constants.LEDsConstants.kNumLEDs match the
+    // actual hardware before enabling.
+    // private final LEDSubsystem ledSubsystem = new LEDSubsystem();
+
     // Aggregated shooter system
     private final ShooterSystem shooterSystem =
             new ShooterSystem(
@@ -209,13 +214,6 @@ public class RobotContainer {
         // setupSysid();
         configureDefaultCommands();
         configureButtonBindings();
-
-        // TODO: Uncomment when LEDs are physically wired to the roboRIO PWM port.
-        // Instantiates the LED subsystem singleton so its periodic() runs each loop
-        // and drives the LED strip based on robot state and hub shift timing.
-        // Verify RobotMap.LEDs.kPort and Constants.LEDsConstants.kNumLEDs match the
-        // actual hardware before enabling.
-        // LEDSubsystem.getInstance();
     }
 
     // endregion
@@ -400,8 +398,8 @@ public class RobotContainer {
         // TODO: Wire aim-lock LED when shooting is active:
         // driverController
         //         .rightTrigger()
-        //         .onTrue(LEDSubsystem.getInstance().setAimLockLEDCommand(() -> true))
-        //         .onFalse(LEDSubsystem.getInstance().setAimLockLEDCommand(() -> false));
+        //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+        //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
         // Left trigger: hold to aim + feed a pass shot. Not shift-gated —
         // feeds freely while held regardless of hub shift state. Turret and hood
@@ -414,8 +412,8 @@ public class RobotContainer {
         // TODO: Wire aim-lock LED when pass shooting is active:
         // driverController
         //         .leftTrigger()
-        //         .onTrue(LEDSubsystem.getInstance().setAimLockLEDCommand(() -> true))
-        //         .onFalse(LEDSubsystem.getInstance().setAimLockLEDCommand(() -> false));
+        //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+        //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
         // Right bumper toggles intake on/off (press once to start, press again to
         // cancel).
@@ -423,8 +421,8 @@ public class RobotContainer {
         // TODO: Wire intaking LED when intake is running:
         // operatorController
         //         .rightBumper()
-        //         .onTrue(LEDSubsystem.getInstance().setIntakingLEDCommand(() -> true))
-        //         .onFalse(LEDSubsystem.getInstance().setIntakingLEDCommand(() -> false));
+        //         .onTrue(ledSubsystem.setIntakingLEDCommand(() -> true))
+        //         .onFalse(ledSubsystem.setIntakingLEDCommand(() -> false));
 
         // Left bumper immediately stops rollers and holds them stopped while pressed.
         operatorController.leftBumper().onTrue(intakeSystem.stopRollers());

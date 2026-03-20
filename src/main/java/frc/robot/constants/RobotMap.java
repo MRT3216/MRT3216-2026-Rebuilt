@@ -46,6 +46,8 @@ public final class RobotMap {
     }
 
     public static final class LEDs {
+        // TODO: Verify this matches the actual roboRIO PWM port the LED data line is
+        // wired to.
         public static final int kPort = 1;
     }
 }

@@ -209,6 +209,13 @@ public class RobotContainer {
         // setupSysid();
         configureDefaultCommands();
         configureButtonBindings();
+
+        // TODO: Uncomment when LEDs are physically wired to the roboRIO PWM port.
+        // Instantiates the LED subsystem singleton so its periodic() runs each loop
+        // and drives the LED strip based on robot state and hub shift timing.
+        // Verify RobotMap.LEDs.kPort and Constants.LEDsConstants.kNumLEDs match the
+        // actual hardware before enabling.
+        // LEDSubsystem.getInstance();
     }
 
     // endregion
@@ -390,6 +397,11 @@ public class RobotContainer {
                                 () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                                 3,
                                 ShootingLookupTable.Mode.HUB));
+        // TODO: Wire aim-lock LED when shooting is active:
+        // driverController
+        //         .rightTrigger()
+        //         .onTrue(LEDSubsystem.getInstance().setAimLockLEDCommand(() -> true))
+        //         .onFalse(LEDSubsystem.getInstance().setAimLockLEDCommand(() -> false));
 
         // Left trigger: hold to aim + feed a pass shot. Not shift-gated —
         // feeds freely while held regardless of hub shift state. Turret and hood
@@ -399,10 +411,20 @@ public class RobotContainer {
                 .whileTrue(
                         shooterSystem.aimAndShootPass(
                                 () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
+        // TODO: Wire aim-lock LED when pass shooting is active:
+        // driverController
+        //         .leftTrigger()
+        //         .onTrue(LEDSubsystem.getInstance().setAimLockLEDCommand(() -> true))
+        //         .onFalse(LEDSubsystem.getInstance().setAimLockLEDCommand(() -> false));
 
         // Right bumper toggles intake on/off (press once to start, press again to
         // cancel).
         operatorController.rightBumper().onTrue(intakeSystem.intake());
+        // TODO: Wire intaking LED when intake is running:
+        // operatorController
+        //         .rightBumper()
+        //         .onTrue(LEDSubsystem.getInstance().setIntakingLEDCommand(() -> true))
+        //         .onFalse(LEDSubsystem.getInstance().setIntakingLEDCommand(() -> false));
 
         // Left bumper immediately stops rollers and holds them stopped while pressed.
         operatorController.leftBumper().onTrue(intakeSystem.stopRollers());

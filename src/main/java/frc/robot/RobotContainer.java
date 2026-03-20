@@ -360,6 +360,13 @@ public class RobotContainer {
      * #configureTestButtonBindings()} and should be enabled only in tuning mode.
      */
     public void configureRealButtonBindings() {
+        // Right trigger toggles intake on/off (press once to start, press again to
+        // cancel).
+        // .rightTrigger().onTrue(intakeSystem.intake());
+
+        // Left trigger immediately stops rollers and holds them stopped while pressed.
+        // driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
+
         driverController
                 .rightTrigger()
                 .whileTrue(

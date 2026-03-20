@@ -40,7 +40,7 @@ public class ShootingLookupTable {
         }
 
         for (var row : data) {
-            addEntry(row.distance, row.trajectoryAngle, row.timeOfFlight);
+            addEntry(row.distance(), row.trajectoryAngle(), row.timeOfFlight());
         }
     }
 

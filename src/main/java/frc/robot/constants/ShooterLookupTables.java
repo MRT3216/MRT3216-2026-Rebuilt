@@ -17,17 +17,8 @@ import edu.wpi.first.units.measure.Time;
 public final class ShooterLookupTables {
     private ShooterLookupTables() {}
 
-    public static final class LookupRow {
-        public final Distance distance;
-        public final Angle trajectoryAngle;
-        public final Time timeOfFlight;
-
-        public LookupRow(Distance distance, Angle trajectoryAngle, Time timeOfFlight) {
-            this.distance = distance;
-            this.trajectoryAngle = trajectoryAngle;
-            this.timeOfFlight = timeOfFlight;
-        }
-    }
+    /** Immutable row: distance, hood/trajectory angle, and time-of-flight. */
+    public record LookupRow(Distance distance, Angle trajectoryAngle, Time timeOfFlight) {}
 
     public static final LookupRow[] HUB;
     public static final LookupRow[] PASS;

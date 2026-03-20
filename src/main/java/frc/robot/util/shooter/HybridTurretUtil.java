@@ -9,7 +9,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Time;
 
@@ -110,12 +109,7 @@ public final class HybridTurretUtil {
         var finalParams = table.getParameters(clampedDist);
 
         return new ShotSolution(
-                clampedDist,
-                azimuth,
-                finalParams.trajectoryAngle(),
-                ShooterModel.flywheelSpeedForDistance(clampedDist),
-                finalParams.timeOfFlight(),
-                isValid);
+                clampedDist, azimuth, finalParams.trajectoryAngle(), finalParams.timeOfFlight(), isValid);
     }
 
     /**
@@ -125,7 +119,6 @@ public final class HybridTurretUtil {
      *     LUT bounds)
      * @param turretAzimuth robot-relative azimuth the turret should point
      * @param hoodAngle hood/trajectory angle from the LUT
-     * @param flywheelSpeed flywheel angular velocity from the {@link ShooterModel}
      * @param timeOfFlight estimated ball flight time from the LUT
      * @param isValid {@code true} when the lead distance fell within the LUT range (not clamped)
      */
@@ -133,7 +126,6 @@ public final class HybridTurretUtil {
             Distance leadDistance,
             Angle turretAzimuth,
             Angle hoodAngle,
-            AngularVelocity flywheelSpeed,
             Time timeOfFlight,
             boolean isValid) {}
 }

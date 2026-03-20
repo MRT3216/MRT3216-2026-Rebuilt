@@ -14,7 +14,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -116,7 +115,7 @@ public class ShooterSystem {
             Supplier<Translation3d> targetSupplier,
             int refinementIterations,
             ShootingLookupTable.Mode tableMode) {
-        var table = makeLookupTable(tableMode);
+        var table = new ShootingLookupTable(tableMode);
         var solution =
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
@@ -125,7 +124,9 @@ public class ShooterSystem {
         var turretCmd = turret.setAngle(Degrees.of(0));
         // var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd = flywheel.setVelocity(makeFlywheelModelSupplier(solution));
+        var flywheelCmd =
+                flywheel.setVelocity(
+                        () -> ShooterModel.flywheelSpeedForDistance(solution.get().leadDistance()));
         var feedCmd = makeFeedSequence(solution);
         var telemetryCmd = makeTelemetryCmd(robotPose, solution);
 
@@ -149,7 +150,7 @@ public class ShooterSystem {
             Supplier<Translation3d> targetSupplier,
             int refinementIterations,
             ShootingLookupTable.Mode tableMode) {
-        var table = makeLookupTable(tableMode);
+        var table = new ShootingLookupTable(tableMode);
         var solution =
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
         return turret.setAngle(() -> solution.get().turretAzimuth()).withName("Aim");
@@ -170,7 +171,7 @@ public class ShooterSystem {
      */
     public Command aimAndShootPass(
             Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, int refinementIterations) {
-        var table = makeLookupTable(ShootingLookupTable.Mode.PASS);
+        var table = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
 
         // Select the nearest pass target landing zone by robot Y position each loop.
         // Flip BOTH targets to the current alliance first so the comparison is in the
@@ -188,7 +189,9 @@ public class ShooterSystem {
 
         var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd = flywheel.setVelocity(makeFlywheelModelSupplier(solution));
+        var flywheelCmd =
+                flywheel.setVelocity(
+                        () -> ShooterModel.flywheelSpeedForDistance(solution.get().leadDistance()));
         var feedCmd = makeFeedSequenceUngated();
         var telemetryCmd = makeTelemetryCmd(robotPose, solution);
 
@@ -221,10 +224,6 @@ public class ShooterSystem {
 
     // region Private helpers
 
-    private ShootingLookupTable makeLookupTable(ShootingLookupTable.Mode mode) {
-        return new ShootingLookupTable(mode);
-    }
-
     private Supplier<HybridTurretUtil.ShotSolution> makeSolutionSupplier(
             Supplier<Pose2d> robotPose,
             Supplier<ChassisSpeeds> fieldSpeeds,
@@ -253,11 +252,6 @@ public class ShooterSystem {
             }
             return cache[0];
         };
-    }
-
-    private Supplier<AngularVelocity> makeFlywheelModelSupplier(
-            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
-        return () -> ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
     }
 
     private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {

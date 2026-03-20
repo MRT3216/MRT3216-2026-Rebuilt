@@ -4,23 +4,21 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.IntakeConstants.Rollers.kD;
-import static frc.robot.constants.IntakeConstants.Rollers.kD_sim;
-import static frc.robot.constants.IntakeConstants.Rollers.kGearReduction;
-import static frc.robot.constants.IntakeConstants.Rollers.kI;
-import static frc.robot.constants.IntakeConstants.Rollers.kI_sim;
-import static frc.robot.constants.IntakeConstants.Rollers.kMotorInverted;
-import static frc.robot.constants.IntakeConstants.Rollers.kP;
-import static frc.robot.constants.IntakeConstants.Rollers.kP_sim;
-import static frc.robot.constants.IntakeConstants.Rollers.kSoftLimitMax;
-import static frc.robot.constants.IntakeConstants.Rollers.kSoftLimitMin;
-import static frc.robot.constants.IntakeConstants.Rollers.kStatorCurrentLimit;
-import static frc.robot.constants.IntakeConstants.Rollers.kWheelDiameter;
-import static frc.robot.constants.IntakeConstants.Rollers.kWheelMass;
-import static frc.robot.constants.IntakeConstants.Rollers.motorFeedforward;
-import static frc.robot.constants.IntakeConstants.Rollers.motorFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kIntakeRollersMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kIntakeRollersMotorTelemetry;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kD;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kD_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kGearReduction;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kI;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kI_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kMotorInverted;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kP;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kP_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kSoftLimitMax;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kSoftLimitMin;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kStatorCurrentLimit;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kWheelDiameter;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kWheelMass;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.motorFeedforward;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.motorFeedforwardSim;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -33,7 +31,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
-import frc.robot.constants.IntakeConstants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
 import org.littletonrobotics.junction.AutoLog;
@@ -50,6 +47,9 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /** Intake rollers subsystem: controls dual rollers and telemetry. */
 public class IntakeRollersSubsystem extends SubsystemBase {
+    private static final String kIntakeRollersMotorTelemetry = "IntakeRollersMotor";
+    private static final String kIntakeRollersMechTelemetry = "IntakeRollersMech";
+
     // region Inputs & telemetry
 
     /**

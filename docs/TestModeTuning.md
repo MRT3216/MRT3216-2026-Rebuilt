@@ -2,18 +2,17 @@
 
 ## Overview
 
-Interactive tuning controls are enabled by setting `Constants.tuningMode = true` in `Constants.java`. This flag allows tuning/test bindings to be active regardless of Driver Station mode. The code that enables the test/tuning bindings lives in `RobotContainer.enableTestBindings()` and is invoked from `Robot.testInit()`.
+Interactive tuning controls are enabled by setting `Constants.tuningMode = true` in `Constants.java`, or by toggling the `/Tuning/tuningMode` key from the dashboard (e.g., Elastic). All tuning/test bindings are gated on this flag—Driver Station "Test" mode is not used.
 
 ## How to Enable Tuning Controls
-- Set `Constants.tuningMode = true` in `Constants.java` to enable tuning controls.
-- Robot lifecycle will call `Robot.testInit()` and enable interactive bindings if tuning mode is active.
+- Set `Constants.tuningMode = true` in `Constants.java` **or** toggle `/Tuning/tuningMode` from the dashboard to enable tuning controls.
 - Simulation (`Mode.SIM`) keeps a subset of test bindings active for development.
 - Robot hardware profile (COMPBOT vs SIMBOT) is selected at compile time via `Constants.robot`.
 
 ## Shooter Calibration Workflow
 
 ### Prerequisites
-- Driver Station connected, robot enabled, and `Constants.tuningMode` set to `true`
+- Driver Station connected, robot enabled, and `Constants.tuningMode` set to `true` (or `/Tuning/tuningMode` set true from dashboard)
 - Dashboard (AdvantageScope/Elastic) viewing `TestShoot/*` and `Tuning/*` keys
 - Balls ready to feed
 
@@ -29,8 +28,8 @@ Interactive tuning controls are enabled by setting `Constants.tuningMode = true`
 - `rpmOverrideActive`: `true` when `Shooter/FlywheelRPM` differs from its default
 
 ## Notes & Troubleshooting
-- If you don't see test bindings activate, ensure Driver Station is connected and `Constants.tuningMode` is set to `true`.
-- For programmatic activation (integration tests), call `robotContainer.enableTestBindings()` from a lifecycle-safe location.
+- If you don't see test bindings activate, ensure Driver Station is connected and `Constants.tuningMode` (or `/Tuning/tuningMode`) is set to `true`.
+- For programmatic activation (integration tests), ensure `Constants.tuningMode` is set to `true` before robot code starts.
 
 ## Contact
 If you want further cleanup or clarification, say so and I'll prepare it.

@@ -5,7 +5,7 @@ import static edu.wpi.first.units.Units.RPM;
 
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
-import frc.robot.constants.ShooterConstants;
+import frc.robot.subsystems.shooter.ShooterConstants;
 
 /** Two-point linear shooter model used for quick RPM lookups. */
 public final class ShooterModel {

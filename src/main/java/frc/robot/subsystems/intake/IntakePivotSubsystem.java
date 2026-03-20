@@ -6,26 +6,24 @@ import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.IntakeConstants.Pivot.kD;
-import static frc.robot.constants.IntakeConstants.Pivot.kD_sim;
-import static frc.robot.constants.IntakeConstants.Pivot.kGearing;
-import static frc.robot.constants.IntakeConstants.Pivot.kHardLimitMax;
-import static frc.robot.constants.IntakeConstants.Pivot.kHardLimitMin;
-import static frc.robot.constants.IntakeConstants.Pivot.kI;
-import static frc.robot.constants.IntakeConstants.Pivot.kI_sim;
-import static frc.robot.constants.IntakeConstants.Pivot.kLength;
-import static frc.robot.constants.IntakeConstants.Pivot.kMass;
-import static frc.robot.constants.IntakeConstants.Pivot.kMaxAccel;
-import static frc.robot.constants.IntakeConstants.Pivot.kMaxVelocity;
-import static frc.robot.constants.IntakeConstants.Pivot.kMotorInverted;
-import static frc.robot.constants.IntakeConstants.Pivot.kP;
-import static frc.robot.constants.IntakeConstants.Pivot.kP_sim;
-import static frc.robot.constants.IntakeConstants.Pivot.kSoftLimitMax;
-import static frc.robot.constants.IntakeConstants.Pivot.kSoftLimitMin;
-import static frc.robot.constants.IntakeConstants.Pivot.kStatorCurrentLimit;
-import static frc.robot.constants.IntakeConstants.Pivot.kTolerance;
-import static frc.robot.constants.TelemetryKeys.kIntakeArmMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kIntakeArmMotorTelemetry;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kGearing;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMax;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMin;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kI;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kI_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kLength;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMass;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMaxAccel;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMaxVelocity;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMotorInverted;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kP;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kP_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kSoftLimitMax;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kSoftLimitMin;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kStatorCurrentLimit;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kTolerance;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.Pair;
@@ -58,6 +56,9 @@ import yams.motorcontrollers.local.SparkWrapper;
  * states (Inputs) are separated from software commands (Outputs).
  */
 public class IntakePivotSubsystem extends SubsystemBase {
+    private static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
+    private static final String kIntakeArmMechTelemetry = "IntakeArmMech";
+
     // region Inputs & telemetry
 
     /**

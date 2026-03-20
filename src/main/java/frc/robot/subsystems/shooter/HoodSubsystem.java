@@ -7,27 +7,25 @@ import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kD;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kGearing;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMax;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMin;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kI;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kLength;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kMass;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kMotorInverted;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kP;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kP_sim;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kStartingPosition;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kStatorCurrentLimit;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kTolerance;
-import static frc.robot.constants.ShooterConstants.HoodConstants.pivotFeedforward;
-import static frc.robot.constants.ShooterConstants.HoodConstants.pivotFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kHoodMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kHoodMotorTelemetry;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kD;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kD_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kGearing;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kHardLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kHardLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kI;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kI_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kLength;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMass;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMotorInverted;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kP;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kP_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kStartingPosition;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kTolerance;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.pivotFeedforward;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.pivotFeedforwardSim;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -40,7 +38,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-import frc.robot.constants.ShooterConstants.HoodConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -55,6 +53,9 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /** Hood subsystem: positional pivot for the shooter hood angle. */
 public class HoodSubsystem extends SubsystemBase {
+    private static final String kHoodMotorTelemetry = "HoodMotor";
+    private static final String kHoodMechTelemetry = "HoodMech";
+
     // region Inputs & telemetry
 
     @AutoLog

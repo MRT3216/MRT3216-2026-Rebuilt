@@ -1,5 +1,5 @@
 // Shooter constants (flywheel, spindexer, kicker, hood, turret). Tuned by the team.
-package frc.robot.constants;
+package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
@@ -24,6 +24,7 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.units.measure.Time;
+import frc.robot.constants.Constants;
 import frc.robot.util.LoggedTunableNumber;
 
 /** Flywheel shooter constants: wheel geometry, control gains, and velocities. */
@@ -65,8 +66,6 @@ public final class ShooterConstants {
     public static final LoggedTunableNumber kRPMFudgePercent =
             new LoggedTunableNumber("Shooter/RPMFudgePercent", 0.0, true);
 
-    // Group flywheel-specific constants under a Flywheel section to improve
-    // organization.
     public static final class FlywheelConstants {
         private FlywheelConstants() {}
 
@@ -95,8 +94,6 @@ public final class ShooterConstants {
         public static final double kP_sim = 0.1;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
-
-        // Telemetry keys are centralized in TelemetryKeys
 
         // Recommended target velocities
         public static final AngularVelocity kFlywheelDefaultVelocity = RPM.of(3000);
@@ -293,8 +290,6 @@ public final class ShooterConstants {
         public static final Angle kSoftLimitMax = Degrees.of(30);
         public static final Angle kSoftLimitMin = Degrees.of(0);
 
-        // public static final Angle kHoodHorizontalOffset = Degrees.of(16.574);
-
         public static final Angle kStartingPosition = Degrees.of(0);
 
         /** Position tolerance for runTo (degrees). */
@@ -303,8 +298,6 @@ public final class ShooterConstants {
         public static final LoggedTunableNumber kTunableHoodAngleDeg =
                 new LoggedTunableNumber(
                         "Shooter/HoodAngleDeg", kStartingPosition.in(Degrees), Constants.tuningMode);
-
-        // Manual distance tunable removed — use spreadsheet/model constants instead.
 
         /** Returns a SimpleMotorFeedforward for the hood pivot. */
         public static SimpleMotorFeedforward pivotFeedforward() {

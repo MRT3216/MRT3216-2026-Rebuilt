@@ -1,4 +1,4 @@
-package frc.robot.constants;
+package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
@@ -51,8 +51,6 @@ public final class IntakeConstants {
         public static final double kP_sim = 0.01;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
-
-        // Telemetry keys are centralized in TelemetryKeys
 
         /** Returns a preconfigured SimpleMotorFeedforward for the intake rollers. */
         public static SimpleMotorFeedforward motorFeedforward() {
@@ -122,10 +120,6 @@ public final class IntakeConstants {
         public static final Angle kHardLimitMin = Degrees.of(0);
         public static final Angle kSoftLimitMax = Degrees.of(360);
         public static final Angle kSoftLimitMin = Degrees.of(0);
-
-        // public static final Angle kEncoderOffset = Rotation.of(0.65784466);
-
-        // Telemetry keys are centralized in TelemetryKeys
 
         // Arm position presets
         public static final Angle kStowedAngle = Degrees.of(125);

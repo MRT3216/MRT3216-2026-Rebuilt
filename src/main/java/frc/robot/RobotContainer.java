@@ -8,8 +8,8 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static frc.robot.constants.IntakeConstants.Rollers.kTargetAngularVelocity;
-import static frc.robot.constants.ShooterConstants.kRefinementConvergenceEpsilon;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kTargetAngularVelocity;
+import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -30,8 +30,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
-import frc.robot.constants.ShooterConstants.FlywheelConstants;
-import frc.robot.constants.ShooterConstants.ShootMode;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -44,6 +42,8 @@ import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
+import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.ShootMode;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.vision.Vision;

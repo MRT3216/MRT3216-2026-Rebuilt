@@ -3,7 +3,7 @@ package frc.robot.util.shooter;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Seconds;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kRobotToTurretTransform;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kRobotToTurretTransform;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation3d;

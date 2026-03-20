@@ -4,23 +4,21 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kD;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kGearReduction;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kI;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kP;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kP_sim;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kStatorCurrentLimit;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kTunableIndexerRPM;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kWheelDiameter;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.kWheelMass;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.motorFeedforward;
-import static frc.robot.constants.ShooterConstants.SpindexerConstants.motorFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kSpindexerMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kSpindexerMotorTelemetry;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kD;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kD_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kGearReduction;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kI;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kI_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kP;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kP_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kTunableIndexerRPM;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kWheelDiameter;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.kWheelMass;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.motorFeedforward;
+import static frc.robot.subsystems.shooter.ShooterConstants.SpindexerConstants.motorFeedforwardSim;
 
 import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -46,6 +44,9 @@ import yams.motorcontrollers.local.SparkWrapper;
 
 /** Spindexer subsystem (YAMS). Handles the spindexer motor and telemetry. */
 public class SpindexerSubsystem extends SubsystemBase {
+    private static final String kSpindexerMotorTelemetry = "SpindexerMotor";
+    private static final String kSpindexerMechTelemetry = "SpindexerMech";
+
     // region Inputs & telemetry
 
     /**

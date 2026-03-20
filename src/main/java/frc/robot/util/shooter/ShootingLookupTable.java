@@ -7,7 +7,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Time;
-import frc.robot.constants.ShooterLookupTables;
+import frc.robot.subsystems.shooter.ShooterLookupTables;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.TreeMap;

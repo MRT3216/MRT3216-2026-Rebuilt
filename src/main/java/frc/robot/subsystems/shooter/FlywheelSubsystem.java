@@ -4,24 +4,22 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kGearReduction;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kP;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kP_sim;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kStatorCurrentLimit;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kVelocityTolerance;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelDiameter;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelMass;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforward;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kFlywheelMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kFlywheelMotorTelemetry;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kD;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kD_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kGearReduction;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kI;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kI_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kP;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kP_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kVelocityTolerance;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kWheelDiameter;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kWheelMass;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.motorFeedforward;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.motorFeedforwardSim;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -51,6 +49,9 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /** Flywheel subsystem: velocity control, open-loop duty, and telemetry helpers. */
 public class FlywheelSubsystem extends SubsystemBase {
+    private static final String kFlywheelMotorTelemetry = "FlywheelMotor";
+    private static final String kFlywheelMechTelemetry = "FlywheelMech";
+
     // region Inputs & telemetry
 
     @AutoLog

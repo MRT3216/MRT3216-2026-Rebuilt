@@ -3,31 +3,29 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kA;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kA_sim;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kD;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kGearing;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kHardLimitMax;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kHardLimitMin;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kI;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kMOI;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kMaxAccel;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kMaxVelocity;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kMotorInverted;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kP;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kP_sim;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kS;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kS_sim;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kStartingPosition;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kStatorCurrentLimit;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kV;
-import static frc.robot.constants.ShooterConstants.TurretConstants.kV_sim;
-import static frc.robot.constants.TelemetryKeys.kTurretMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kTurretMotorTelemetry;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kA;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kA_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kD;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kD_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kGearing;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kHardLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kHardLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kI;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kI_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kMOI;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kMaxAccel;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kMaxVelocity;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kMotorInverted;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kP;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kP_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kS;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kS_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kStartingPosition;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV_sim;
 
 import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -58,6 +56,9 @@ import yams.motorcontrollers.local.SparkWrapper;
  * (Inputs) are separated from software commands (Outputs).
  */
 public class TurretSubsystem extends SubsystemBase {
+    private static final String kTurretMotorTelemetry = "TurretMotor";
+    private static final String kTurretMechTelemetry = "TurretMech";
+
     // region Inputs & telemetry
 
     /**

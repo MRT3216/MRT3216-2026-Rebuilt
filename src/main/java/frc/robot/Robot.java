@@ -146,8 +146,8 @@ public class Robot extends LoggedRobot {
     /** This function is called periodically during all modes. */
     @Override
     public void robotPeriodic() {
-    // Sync tuningMode with NetworkTables for dashboard control
-    TuningModeSync.periodic();
+        // Sync tuningMode with NetworkTables for dashboard control
+        TuningModeSync.periodic();
         // Optionally switch the thread to high priority to improve loop
         // timing (see the template project documentation for details)
         // Threads.setCurrentThreadPriority(true, 99);

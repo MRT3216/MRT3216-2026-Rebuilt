@@ -3,23 +3,21 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kD;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kGearReduction;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kI;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kP;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kP_sim;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kStatorCurrentLimit;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kTunableKickerRPM;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelDiameter;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelMass;
-import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforward;
-import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kKickerMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kKickerMotorTelemetry;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kD;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kD_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kGearReduction;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kI;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kI_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kP;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kP_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kTunableKickerRPM;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kWheelDiameter;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kWheelMass;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.motorFeedforward;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.motorFeedforwardSim;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -45,6 +43,9 @@ import yams.motorcontrollers.local.SparkWrapper;
 
 /** Kicker subsystem: controls the kicker wheel and telemetry. */
 public class KickerSubsystem extends SubsystemBase {
+    private static final String kKickerMotorTelemetry = "KickerMotor";
+    private static final String kKickerMechTelemetry = "KickerMech";
+
     // region Inputs & telemetry
 
     /**

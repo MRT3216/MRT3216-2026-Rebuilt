@@ -62,11 +62,36 @@ before the shift starts.
 
 ---
 
+## LED Patterns (Teleop)
+
+The LED strip provides at-a-glance feedback during a match. No driver input is
+needed — patterns run automatically based on robot state. See the
+[Controller Cheat Sheet](guides/controller-cheat-sheet.md) for the full pattern
+list including disabled and autonomous modes.
+
+| Priority | Condition | Pattern |
+|----------|-----------|---------|
+| 1 | Intaking | Purple strobe (fast) |
+| 2 | Aim lock (shooting) | Solid green |
+| 3 | Shift ending (≤ 5 s left) | Orange strobe (fast warning) |
+| 4 | Shift active | Green / black wave ("go score!") |
+| 5 | Shift inactive | Dim alliance color (25%) |
+
+**Read the LEDs like a traffic light:**
+- 🟢 **Green wave** = your shift is live, go score
+- 🟠 **Orange strobe** = shift is about to change, wrap up
+- 🔵 **Dim cyan/red** = not your shift, hold or pass
+- 🟣 **Purple strobe** = intake is running
+- 🟢 **Solid green** = aim locked, trigger held
+
+---
+
 ## Quick Summary
 
 ```
-TURRET     →  auto-tracks hub (shift active) or trench (shift inactive)
+TURRET     →  auto-tracks hub (shift active) or pass target (shift inactive)
 FLYWHEEL   →  auto spins 5s before each window
 RIGHT TRIGGER (hold)  →  hub shot, shift-gated feed, auto-stops at boundary
-LEFT TRIGGER  (hold)  →  trench/pass shot, free feed, tracks trench opening
+LEFT TRIGGER  (hold)  →  pass shot, free feed, tracks nearest pass target
+LEDs       →  green wave = go, orange strobe = hurry, dim = wait
 ```

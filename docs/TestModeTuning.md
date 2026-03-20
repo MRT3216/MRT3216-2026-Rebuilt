@@ -2,18 +2,18 @@
 
 ## Overview
 
-Interactive tuning controls are enabled at runtime by entering Driver Station's Test mode. The code that enables the test/tuning bindings lives in `RobotContainer.enableTestBindings()` and is invoked from `Robot.testInit()`.
+Interactive tuning controls are enabled by setting `Constants.tuningMode = true` in `Constants.java`. This flag allows tuning/test bindings to be active regardless of Driver Station mode. The code that enables the test/tuning bindings lives in `RobotContainer.enableTestBindings()` and is invoked from `Robot.testInit()`.
 
 ## How to Enable Tuning Controls
-- Open WPILib Driver Station and switch to "Test" mode.
-- Robot lifecycle will call `Robot.testInit()` and enable interactive bindings.
+- Set `Constants.tuningMode = true` in `Constants.java` to enable tuning controls.
+- Robot lifecycle will call `Robot.testInit()` and enable interactive bindings if tuning mode is active.
 - Simulation (`Mode.SIM`) keeps a subset of test bindings active for development.
 - Robot hardware profile (COMPBOT vs SIMBOT) is selected at compile time via `Constants.robot`.
 
 ## Shooter Calibration Workflow
 
 ### Prerequisites
-- Driver Station connected, robot enabled in **Test** mode
+- Driver Station connected, robot enabled, and `Constants.tuningMode` set to `true`
 - Dashboard (AdvantageScope/Elastic) viewing `TestShoot/*` and `Tuning/*` keys
 - Balls ready to feed
 
@@ -29,7 +29,7 @@ Interactive tuning controls are enabled at runtime by entering Driver Station's 
 - `rpmOverrideActive`: `true` when `Shooter/FlywheelRPM` differs from its default
 
 ## Notes & Troubleshooting
-- If you don't see test bindings activate, ensure Driver Station is connected and in Test mode.
+- If you don't see test bindings activate, ensure Driver Station is connected and `Constants.tuningMode` is set to `true`.
 - For programmatic activation (integration tests), call `robotContainer.enableTestBindings()` from a lifecycle-safe location.
 
 ## Contact

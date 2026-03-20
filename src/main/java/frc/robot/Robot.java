@@ -25,6 +25,7 @@ import frc.robot.util.Elastic;
 import frc.robot.util.Elastic.Notification;
 import frc.robot.util.Elastic.NotificationLevel;
 import frc.robot.util.HubShiftUtil;
+import frc.robot.util.TuningModeSync;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -145,6 +146,8 @@ public class Robot extends LoggedRobot {
     /** This function is called periodically during all modes. */
     @Override
     public void robotPeriodic() {
+    // Sync tuningMode with NetworkTables for dashboard control
+    TuningModeSync.periodic();
         // Optionally switch the thread to high priority to improve loop
         // timing (see the template project documentation for details)
         // Threads.setCurrentThreadPriority(true, 99);

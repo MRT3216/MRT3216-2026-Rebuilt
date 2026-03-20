@@ -10,29 +10,74 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.LEDsConstants;
 import frc.robot.constants.RobotMap.LEDs;
-import java.util.Optional;
+import frc.robot.util.HubShiftUtil;
 import java.util.function.BooleanSupplier;
 
+/**
+ * LED subsystem — drives addressable LEDs based on robot state and hub shift timing.
+ *
+ * <p>Pattern priority (highest first):
+ *
+ * <ol>
+ *   <li>Disabled — slow blue/orange alliance wave
+ *   <li>Autonomous — fast orange/blue wave
+ *   <li>Climbing — rainbow
+ *   <li>Intaking — purple strobe
+ *   <li>Aim lock — solid green
+ *   <li>Shift ending (≤5 s remaining) — fast orange strobe warning
+ *   <li>Shift active — green/black wave ("go score!")
+ *   <li>Shift inactive — dim alliance color
+ * </ol>
+ */
 public class LEDSubsystem extends SubsystemBase {
-    private final AddressableLEDBuffer ledBuffer;
-    private final AddressableLED led;
-    private int rainbowFirstPixelHue = 0;
-    private Optional<Alliance> alliance = Optional.empty();
-    private Color allianceColor = Color.kTurquoise;
-    private Color secondaryDisabledColor = Color.kDarkBlue;
-    private static LEDSubsystem instance;
+    // region Hardware
 
-    private static final double waveExponent = 0.4;
-    private static final double waveFastCycleLength = 25.0;
-    private static final double waveFastDuration = 0.25;
-    private static final double waveAllianceCycleLength = 15.0;
-    private static final double waveAllianceDuration = 2.0;
-    private static final double strobeFastDuration = 0.1;
-    private static final double strobeSlowDuration = 0.2;
-    private boolean hopperFull = false;
+    private final AddressableLED led;
+    private final AddressableLEDBuffer ledBuffer;
+
+    // endregion
+
+    // region State
+
+    private int rainbowFirstPixelHue = 0;
+    private Color allianceColor = Color.kTurquoise;
+
+    /** Flags set by external commands to override the default shift-based pattern. */
     private boolean intaking = false;
+
     private boolean climbing = false;
     private boolean aimLock = false;
+
+    // endregion
+
+    // region Constants
+
+    private static final double WAVE_EXPONENT = 0.4;
+    private static final double WAVE_FAST_CYCLE_LENGTH = 25.0;
+    private static final double WAVE_FAST_DURATION = 0.25;
+    private static final double WAVE_ALLIANCE_CYCLE_LENGTH = 15.0;
+    private static final double WAVE_ALLIANCE_DURATION = 2.0;
+    private static final double STROBE_FAST_DURATION = 0.1;
+
+    /** Seconds before a shift transition at which the warning strobe begins. */
+    private static final double SHIFT_WARNING_SECS = 5.0;
+
+    // endregion
+
+    // region Singleton
+
+    private static LEDSubsystem instance;
+
+    public static LEDSubsystem getInstance() {
+        if (instance == null) {
+            instance = new LEDSubsystem();
+        }
+        return instance;
+    }
+
+    // endregion
+
+    // region Constructor
 
     private LEDSubsystem() {
         led = new AddressableLED(LEDs.kPort);
@@ -42,53 +87,112 @@ public class LEDSubsystem extends SubsystemBase {
         led.start();
     }
 
+    // endregion
+
     // region Lifecycle
 
     @Override
     public void periodic() {
-        // Select LED mode
-        setColor(Color.kBlack); // Default to off
+        // Default to off — overwritten by whichever pattern wins below.
+        setColor(Color.kBlack);
 
-        // Update alliance color
+        // Keep alliance color up to date when connected to FMS.
         if (DriverStation.isFMSAttached()) {
-            alliance = DriverStation.getAlliance();
             allianceColor =
-                    alliance
-                            .map(alliance -> alliance == Alliance.Blue ? Color.kDarkBlue : Color.kRed)
+                    DriverStation.getAlliance()
+                            .map(a -> a == Alliance.Blue ? Color.kDarkBlue : Color.kRed)
                             .orElse(Color.kTurquoise);
         }
 
         if (DriverStation.isDisabled()) {
-            wave(Color.kBlue, Color.kDarkOrange, waveAllianceCycleLength, waveAllianceDuration);
+            // Slow team-spirit wave while waiting on the field.
+            wave(Color.kBlue, Color.kDarkOrange, WAVE_ALLIANCE_CYCLE_LENGTH, WAVE_ALLIANCE_DURATION);
         } else if (DriverStation.isAutonomous()) {
-            wave(Color.kDarkOrange, Color.kDarkBlue, waveFastCycleLength, waveFastDuration);
+            // Fast wave so the audience knows auto is running.
+            wave(Color.kDarkOrange, Color.kDarkBlue, WAVE_FAST_CYCLE_LENGTH, WAVE_FAST_DURATION);
         } else {
-            // Teleop
+            // ── Teleop ──────────────────────────────────────────────────────
+            // Command-driven overrides (climbing > intaking > aimLock) take
+            // priority, then shift-aware patterns fill the gaps.
             if (climbing) {
                 rainbow();
             } else if (intaking) {
-                strobe(Color.kPurple, strobeFastDuration);
+                strobe(Color.kPurple, STROBE_FAST_DURATION);
             } else if (aimLock) {
                 setColor(Color.kGreen);
-            } else if (hopperFull) {
-                wave(Color.kGreen, Color.kBlack, waveFastCycleLength, waveFastDuration);
             } else {
-                setColor(allianceColor);
+                applyShiftPattern();
             }
         }
 
-        // Update LEDs
+        // Push the buffer to the LED strip.
         led.setData(ledBuffer);
+    }
+
+    // endregion
+
+    // region Public API
+
+    /** Command to set the intaking LED flag. */
+    public Command setIntakingLEDCommand(BooleanSupplier on) {
+        return this.runOnce(
+                () -> {
+                    clearState();
+                    intaking = on.getAsBoolean();
+                });
+    }
+
+    /** Command to set the aim-lock LED flag. */
+    public Command setAimLockLEDCommand(BooleanSupplier on) {
+        return this.runOnce(
+                () -> {
+                    clearState();
+                    aimLock = on.getAsBoolean();
+                });
+    }
+
+    /** Command to set the climbing LED flag. */
+    public Command setClimbingLEDCommand(BooleanSupplier on) {
+        return this.runOnce(() -> climbing = on.getAsBoolean());
     }
 
     // endregion
 
     // region Private helpers
 
-    private void setRGBValue(int r, int g, int b) {
-        for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
-            ledBuffer.setRGB(i, r, g, b);
+    /**
+     * Hub-shift-aware teleop pattern.
+     *
+     * <ul>
+     *   <li>Shift ending (≤5 s) — fast orange strobe so the driver prepares for the transition
+     *   <li>Shift active — green wave = "go score!"
+     *   <li>Shift inactive — dim alliance color = "hold / pass"
+     * </ul>
+     */
+    private void applyShiftPattern() {
+        var shift = HubShiftUtil.getShiftedShiftInfo();
+
+        if (shift.remainingTime() <= SHIFT_WARNING_SECS && shift.remainingTime() > 0) {
+            // Approaching a shift boundary — fast warning strobe.
+            strobe(Color.kOrange, STROBE_FAST_DURATION);
+        } else if (shift.active()) {
+            // Our shift is live — green wave signals "go score!"
+            wave(Color.kGreen, Color.kBlack, WAVE_FAST_CYCLE_LENGTH, WAVE_FAST_DURATION);
+        } else {
+            // Not our shift — dim alliance color.
+            setColor(dim(allianceColor, 0.25));
         }
+    }
+
+    private void clearState() {
+        intaking = false;
+        aimLock = false;
+        climbing = false;
+    }
+
+    /** Return a dimmed copy of the given color (brightness 0.0–1.0). */
+    private static Color dim(Color color, double brightness) {
+        return new Color(color.red * brightness, color.green * brightness, color.blue * brightness);
     }
 
     private void setColor(Color color) {
@@ -102,9 +206,9 @@ public class LEDSubsystem extends SubsystemBase {
         double xDiffPerLed = (2.0 * Math.PI) / cycleLength;
         for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
             x += xDiffPerLed;
-            double ratio = (Math.pow(Math.sin(x), waveExponent) + 1.0) / 2.0;
+            double ratio = (Math.pow(Math.sin(x), WAVE_EXPONENT) + 1.0) / 2.0;
             if (Double.isNaN(ratio)) {
-                ratio = (-Math.pow(Math.sin(x + Math.PI), waveExponent) + 1.0) / 2.0;
+                ratio = (-Math.pow(Math.sin(x + Math.PI), WAVE_EXPONENT) + 1.0) / 2.0;
             }
             if (Double.isNaN(ratio)) {
                 ratio = 0.5;
@@ -122,77 +226,12 @@ public class LEDSubsystem extends SubsystemBase {
     }
 
     private void rainbow() {
-        // For every pixel
         for (var i = 0; i < ledBuffer.getLength(); i++) {
-            // Calculate the hue - hue is easier for rainbows because the color
-            // shape is a circle so only one value needs to precess
             final var hue = (rainbowFirstPixelHue + (i * 180 / ledBuffer.getLength())) % 180;
-            // Set the value
             ledBuffer.setHSV(i, hue, 255, 128);
         }
-        // Increase by to make the rainbow "move"
         rainbowFirstPixelHue += 3;
-        // Check bounds
         rainbowFirstPixelHue %= 180;
-    }
-
-    private void setOff() {
-        setColor(Color.kBlack);
-    }
-
-    // endregion
-
-    // region Public API
-
-    public boolean hasNote() {
-        return hopperFull;
-    }
-
-    public Command setHubLEDCommand(BooleanSupplier on) {
-        return this.runOnce(
-                () -> {
-                    clearState();
-                    aimLock = on.getAsBoolean();
-                });
-    }
-
-    public Command setIntakingLEDCommand(BooleanSupplier on) {
-        return this.runOnce(
-                () -> {
-                    clearState();
-                    intaking = on.getAsBoolean();
-                });
-    }
-
-    public Command setLEDCommand(BooleanSupplier on) {
-        return this.runOnce(
-                () -> {
-                    clearState();
-                    hopperFull = on.getAsBoolean();
-                });
-    }
-
-    public Command setClimbingLEDCommand(BooleanSupplier on) {
-        return this.runOnce(() -> climbing = on.getAsBoolean());
-    }
-
-    private void clearState() {
-        intaking = false;
-        hopperFull = false;
-        aimLock = false;
-        climbing = false;
-    }
-
-    // endregion
-
-    // region Singleton
-
-    public static LEDSubsystem getInstance() {
-        if (instance == null) {
-            // if instance is null, initialize
-            instance = new LEDSubsystem();
-        }
-        return instance;
     }
 
     // endregion

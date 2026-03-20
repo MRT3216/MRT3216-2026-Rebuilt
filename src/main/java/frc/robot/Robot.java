@@ -181,8 +181,6 @@ public class Robot extends LoggedRobot {
                 && RobotController.getBatteryVoltage() <= Constants.RobotSafetyConstants.kLowBatteryVoltage
                 && disabledTimer.hasElapsed(Constants.RobotSafetyConstants.kLowBatteryDisabledSecs)) {
             lowBatteryAlert.set(true);
-            // TODO: Add this back if we have LEDs
-            // Leds.getGlobal().lowBatteryAlert = true;
         }
 
         // Return to non-RT thread priority (do not modify the first argument)

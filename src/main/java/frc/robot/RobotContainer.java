@@ -215,7 +215,7 @@ public class RobotContainer {
 
     // region Default commands
 
-    public void configureDefaultCommands() {
+    private void configureDefaultCommands() {
         // Default command, normal field-relative drive
         drive.setDefaultCommand(
                 DriveCommands.joystickDrive(
@@ -373,7 +373,7 @@ public class RobotContainer {
      * on the right trigger). Longer-lived or tuning helpers belong in {@link
      * #configureTestButtonBindings()} and should be enabled only in tuning mode.
      */
-    public void configureRealButtonBindings() {
+    private void configureRealButtonBindings() {
         // Right trigger toggles intake on/off (press once to start, press again to
         // cancel).
         // .rightTrigger().onTrue(intakeSystem.intake());
@@ -435,7 +435,7 @@ public class RobotContainer {
      * higher-level flows (constructor only currently). Add more bindings here as needed when
      * experimenting.
      */
-    public void configureTestButtonBindings() {
+    private void configureTestButtonBindings() {
         driverController
                 .a()
                 .whileTrue(

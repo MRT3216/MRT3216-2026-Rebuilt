@@ -76,11 +76,6 @@ public class HoodSubsystem extends SubsystemBase {
     private final StatusSignal<Angle> positionSignal = motor.getPosition();
     private final StatusSignal<Double> referenceSignal = motor.getClosedLoopReference();
 
-    // Hood subsystem: positional pivot controlled via YAMS Pivot. This subsystem exposes
-    // command-returning APIs (setAngle, runTo) and keeps telemetry updated. There are no
-    // hardware limit-switches assumed here; any external limits are enforced via the
-    // mechanism soft/hard limits configured in ShooterConstants.
-
     // endregion
 
     // region Controller & mechanism

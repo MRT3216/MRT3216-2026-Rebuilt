@@ -22,7 +22,6 @@ import static frc.robot.constants.ShooterConstants.SpindexerConstants.motorFeedf
 import static frc.robot.constants.TelemetryKeys.kSpindexerMechTelemetry;
 import static frc.robot.constants.TelemetryKeys.kSpindexerMotorTelemetry;
 
-import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -77,7 +76,7 @@ public class SpindexerSubsystem extends SubsystemBase {
 
     /* Hardware Objects */
     private final SparkMax motorController =
-            new SparkMax(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
+            new SparkMax(RobotMap.Shooter.Spindexer.kMotorId, SparkMax.MotorType.kBrushless);
 
     // endregion
 

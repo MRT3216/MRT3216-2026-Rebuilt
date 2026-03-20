@@ -19,9 +19,8 @@ import java.util.function.BooleanSupplier;
  * <p>Pattern priority (highest first):
  *
  * <ol>
- *   <li>Disabled — slow blue/orange alliance wave
- *   <li>Autonomous — fast orange/blue wave
- *   <li>Climbing — rainbow
+ *   <li>Disabled — slow teal/orange team wave
+ *   <li>Autonomous — fast orange/cyan wave
  *   <li>Intaking — purple strobe
  *   <li>Aim lock — solid green
  *   <li>Shift ending (≤5 s remaining) — fast orange strobe warning
@@ -39,13 +38,11 @@ public class LEDSubsystem extends SubsystemBase {
 
     // region State
 
-    private int rainbowFirstPixelHue = 0;
-    private Color allianceColor = Color.kTurquoise;
+    private Color allianceColor = Color.kCyan;
 
     /** Flags set by external commands to override the default shift-based pattern. */
     private boolean intaking = false;
 
-    private boolean climbing = false;
     private boolean aimLock = false;
 
     // endregion
@@ -100,23 +97,21 @@ public class LEDSubsystem extends SubsystemBase {
         if (DriverStation.isFMSAttached()) {
             allianceColor =
                     DriverStation.getAlliance()
-                            .map(a -> a == Alliance.Blue ? Color.kDarkBlue : Color.kRed)
-                            .orElse(Color.kTurquoise);
+                            .map(a -> a == Alliance.Blue ? Color.kCyan : Color.kRed)
+                            .orElse(Color.kCyan);
         }
 
         if (DriverStation.isDisabled()) {
             // Slow team-spirit wave while waiting on the field.
-            wave(Color.kBlue, Color.kDarkOrange, WAVE_ALLIANCE_CYCLE_LENGTH, WAVE_ALLIANCE_DURATION);
+            wave(Color.kCyan, Color.kDarkOrange, WAVE_ALLIANCE_CYCLE_LENGTH, WAVE_ALLIANCE_DURATION);
         } else if (DriverStation.isAutonomous()) {
             // Fast wave so the audience knows auto is running.
-            wave(Color.kDarkOrange, Color.kDarkBlue, WAVE_FAST_CYCLE_LENGTH, WAVE_FAST_DURATION);
+            wave(Color.kDarkOrange, Color.kCyan, WAVE_FAST_CYCLE_LENGTH, WAVE_FAST_DURATION);
         } else {
             // ── Teleop ──────────────────────────────────────────────────────
-            // Command-driven overrides (climbing > intaking > aimLock) take
-            // priority, then shift-aware patterns fill the gaps.
-            if (climbing) {
-                rainbow();
-            } else if (intaking) {
+            // Command-driven overrides (intaking > aimLock) take priority,
+            // then shift-aware patterns fill the gaps.
+            if (intaking) {
                 strobe(Color.kPurple, STROBE_FAST_DURATION);
             } else if (aimLock) {
                 setColor(Color.kGreen);
@@ -151,11 +146,6 @@ public class LEDSubsystem extends SubsystemBase {
                 });
     }
 
-    /** Command to set the climbing LED flag. */
-    public Command setClimbingLEDCommand(BooleanSupplier on) {
-        return this.runOnce(() -> climbing = on.getAsBoolean());
-    }
-
     // endregion
 
     // region Private helpers
@@ -187,7 +177,6 @@ public class LEDSubsystem extends SubsystemBase {
     private void clearState() {
         intaking = false;
         aimLock = false;
-        climbing = false;
     }
 
     /** Return a dimmed copy of the given color (brightness 0.0–1.0). */
@@ -223,15 +212,6 @@ public class LEDSubsystem extends SubsystemBase {
     private void strobe(Color color, double duration) {
         boolean on = ((Timer.getFPGATimestamp() % duration) / duration) > 0.5;
         setColor(on ? color : Color.kBlack);
-    }
-
-    private void rainbow() {
-        for (var i = 0; i < ledBuffer.getLength(); i++) {
-            final var hue = (rainbowFirstPixelHue + (i * 180 / ledBuffer.getLength())) % 180;
-            ledBuffer.setHSV(i, hue, 255, 128);
-        }
-        rainbowFirstPixelHue += 3;
-        rainbowFirstPixelHue %= 180;
     }
 
     // endregion

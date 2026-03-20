@@ -10,18 +10,21 @@ import static frc.robot.constants.ShooterConstants.FlywheelConstants.kTunableFly
 import static frc.robot.constants.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kRobotToTurretTransform;
+import static frc.robot.constants.ShooterConstants.kRPMFudgePercent;
 import static frc.robot.constants.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.FieldConstants;
+import frc.robot.constants.ShooterConstants.ShootMode;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -167,11 +170,25 @@ public class ShooterSystem {
      * <p>Feeding is shift-gated: it stops automatically when the scoring window closes and resumes
      * when the window reopens — as long as the trigger remains held.
      *
+     * <p>The {@code shootMode} supplier controls how the shot solution is computed each loop:
+     *
+     * <ul>
+     *   <li>{@link ShootMode#FULL} — full shoot-on-the-fly with lead compensation.
+     *   <li>{@link ShootMode#STATIC_DISTANCE} — raw hub distance (no lead), turret still tracks
+     *       azimuth.
+     *   <li>{@link ShootMode#FULL_STATIC} — raw hub distance, turret locked at 0°. Battle-tested comp
+     *       fallback.
+     * </ul>
+     *
+     * <p>The RPM fudge factor ({@code Shooter/RPMFudgePercent}) is always applied on top of the model
+     * RPM regardless of mode.
+     *
      * @param robotPose supplier of the robot pose
-     * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
+     * @param fieldSpeeds supplier of chassis speeds (for lead compensation in FULL mode)
      * @param targetSupplier supplier of the 3D target point
      * @param refinementIterations number of solver refinement iterations for the shot solution
      * @param tableMode lookup table mode (HUB or PASS)
+     * @param shootMode supplier of the current {@link ShootMode} (may change mid-command)
      * @return a command that aims and feeds while scheduled
      */
     public Command aimAndShoot(
@@ -179,21 +196,44 @@ public class ShooterSystem {
             Supplier<ChassisSpeeds> fieldSpeeds,
             Supplier<Translation3d> targetSupplier,
             int refinementIterations,
-            ShootingLookupTable.Mode tableMode) {
+            ShootingLookupTable.Mode tableMode,
+            Supplier<ShootMode> shootMode) {
         var table = new ShootingLookupTable(tableMode);
-        var solution =
-                makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
-        // Turret tracking intentionally held at 0° until full turret control is
-        // validated on hardware — swap the commented line to enable azimuth tracking.
-        var turretCmd = turret.setAngle(Degrees.of(0));
-        // var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
+        // Solution supplier that switches between moving and static solvers each loop
+        // based on the current shoot mode.
+        var solution =
+                makeModeAwareSolutionSupplier(
+                        robotPose, fieldSpeeds, targetSupplier, refinementIterations, table, shootMode);
+
+        // Turret: tracks computed azimuth in FULL and STATIC_DISTANCE modes, locks
+        // at 0° in FULL_STATIC (the proven comp fallback).
+        var turretCmd =
+                turret.setAngle(
+                        () -> {
+                            if (shootMode.get() == ShootMode.FULL_STATIC) {
+                                return Degrees.of(0);
+                            }
+                            return solution.get().turretAzimuth();
+                        });
+
+        // NOTE: turret tracking is currently held at 0° for all modes in
+        // aimAndShoot until full azimuth control is validated on hardware. The
+        // commented line below enables azimuth tracking for FULL / STATIC_DISTANCE.
+        // Uncomment it and remove the turretCmd above when ready.
+        // var turretCmd =
+        //         turret.setAngle(
+        //                 () -> {
+        //                     if (shootMode.get() == ShootMode.FULL_STATIC) {
+        //                         return Degrees.of(0);
+        //                     }
+        //                     return solution.get().turretAzimuth();
+        //                 });
+
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd =
-                flywheel.setVelocity(
-                        () -> ShooterModel.flywheelSpeedForDistance(solution.get().leadDistance()));
+        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
         var feedCmd = makeFeedSequence(solution);
-        var telemetryCmd = makeTelemetryCmd(robotPose, solution);
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution, shootMode);
 
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
                 .withName("AimAndShoot");
@@ -254,11 +294,9 @@ public class ShooterSystem {
 
         var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd =
-                flywheel.setVelocity(
-                        () -> ShooterModel.flywheelSpeedForDistance(solution.get().leadDistance()));
+        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
         var feedCmd = makeFeedSequenceUngated();
-        var telemetryCmd = makeTelemetryCmd(robotPose, solution);
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
 
         return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
                 .withName("PassShoot");
@@ -288,6 +326,44 @@ public class ShooterSystem {
     // endregion
 
     // region Private helpers
+
+    /**
+     * Create a memoized solution supplier that selects between the moving-shot and static-shot
+     * solvers based on the current {@link ShootMode} each loop cycle.
+     */
+    private Supplier<HybridTurretUtil.ShotSolution> makeModeAwareSolutionSupplier(
+            Supplier<Pose2d> robotPose,
+            Supplier<ChassisSpeeds> fieldSpeeds,
+            Supplier<Translation3d> targetSupplier,
+            int refinementIterations,
+            ShootingLookupTable table,
+            Supplier<ShootMode> shootMode) {
+        final HybridTurretUtil.ShotSolution[] cache = new HybridTurretUtil.ShotSolution[1];
+        final double[] cacheTimestamp = {-1};
+
+        return () -> {
+            double now = Timer.getFPGATimestamp();
+            if (cache[0] == null || now != cacheTimestamp[0]) {
+                var mode = shootMode.get();
+                if (mode == ShootMode.FULL) {
+                    cache[0] =
+                            HybridTurretUtil.computeMovingShot(
+                                    robotPose.get(),
+                                    fieldSpeeds.get(),
+                                    targetSupplier.get(),
+                                    refinementIterations,
+                                    kRefinementConvergenceEpsilon,
+                                    table);
+                } else {
+                    // STATIC_DISTANCE and FULL_STATIC both use raw distance
+                    cache[0] =
+                            HybridTurretUtil.computeStaticShot(robotPose.get(), targetSupplier.get(), table);
+                }
+                cacheTimestamp[0] = now;
+            }
+            return cache[0];
+        };
+    }
 
     private Supplier<HybridTurretUtil.ShotSolution> makeSolutionSupplier(
             Supplier<Pose2d> robotPose,
@@ -357,14 +433,28 @@ public class ShooterSystem {
     }
 
     /**
+     * Apply the RPM fudge factor to the model speed for the given solution. Returns the final
+     * flywheel target: {@code modelRPM × (1 + fudge/100)}.
+     */
+    private static AngularVelocity applyFudge(
+            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        var modelSpeed = ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
+        double fudge = kRPMFudgePercent.get();
+        return RPM.of(modelSpeed.in(RPM) * (1.0 + fudge / 100.0));
+    }
+
+    /**
      * Creates a background telemetry command that logs shot solution data each loop cycle.
      *
      * @param robotPose supplier of the robot pose
      * @param solutionSupplier supplier of the current shot solution
+     * @param shootMode supplier of the active shoot mode
      * @return a command that publishes shooter telemetry while scheduled
      */
     private Command makeTelemetryCmd(
-            Supplier<Pose2d> robotPose, Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+            Supplier<Pose2d> robotPose,
+            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier,
+            Supplier<ShootMode> shootMode) {
         // Rate-limit the DriverStation warning to avoid flooding at 50 Hz.
         final double WARNING_INTERVAL_SECS = 1.0;
         final double[] lastWarningTime = {0};
@@ -372,8 +462,14 @@ public class ShooterSystem {
         return Commands.run(
                         () -> {
                             var sol = solutionSupplier.get();
+                            var mode = shootMode.get();
 
-                            // Lead distance (includes motion-predicted lead)
+                            // Active mode and fudge
+                            Logger.recordOutput("ShooterTelemetry/shootMode", mode.name());
+                            Logger.recordOutput("ShooterTelemetry/rpmFudgePercent", kRPMFudgePercent.get());
+
+                            // Lead distance (includes motion-predicted lead in FULL mode,
+                            // raw hub distance in STATIC modes)
                             Logger.recordOutput(
                                     "ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
 
@@ -384,8 +480,10 @@ public class ShooterSystem {
                             double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
                             Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
 
-                            var modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance());
-                            Logger.recordOutput("ShooterTelemetry/flywheelRPM", modelRpm.in(RPM));
+                            double modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance()).in(RPM);
+                            double fudgedRpm = modelRpm * (1.0 + kRPMFudgePercent.get() / 100.0);
+                            Logger.recordOutput("ShooterTelemetry/modelRPM", modelRpm);
+                            Logger.recordOutput("ShooterTelemetry/fudgedRPM", fudgedRpm);
                             Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
                             Logger.recordOutput("ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());

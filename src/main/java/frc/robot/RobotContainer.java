@@ -31,6 +31,7 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.ShooterConstants.FlywheelConstants;
+import frc.robot.constants.ShooterConstants.ShootMode;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
@@ -57,6 +58,7 @@ import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShootingLookupTable;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -97,6 +99,13 @@ public class RobotContainer {
     // Controller
     private final CommandXboxController driverController = new CommandXboxController(0);
     private final CommandXboxController operatorController = new CommandXboxController(1);
+
+    /**
+     * Current shoot mode — toggled by operator stick presses during teleop. Starts at {@link
+     * ShootMode#FULL} (full SOTF). Read by {@code aimAndShoot} each loop cycle so changes take effect
+     * immediately, even mid-shot.
+     */
+    private ShootMode currentShootMode = ShootMode.FULL;
 
     // Dashboard inputs (initialized by setupAutoChooser when enabled)
     private LoggedDashboardChooser<Command> autoChooser;
@@ -206,7 +215,8 @@ public class RobotContainer {
                         () -> drive.getChassisSpeeds(),
                         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                         3,
-                        ShootingLookupTable.Mode.HUB));
+                        ShootingLookupTable.Mode.HUB,
+                        () -> currentShootMode));
         NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooting());
 
@@ -394,7 +404,8 @@ public class RobotContainer {
                                 () -> drive.getChassisSpeeds(),
                                 () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                                 3,
-                                ShootingLookupTable.Mode.HUB));
+                                ShootingLookupTable.Mode.HUB,
+                                () -> currentShootMode));
         // TODO: Wire aim-lock LED when shooting is active:
         // driverController
         //         .rightTrigger()
@@ -433,6 +444,34 @@ public class RobotContainer {
         operatorController.x().whileTrue(intakeRollersSubsystem.ejectBalls());
         operatorController.y().whileTrue(intakeRollersSubsystem.intakeBalls());
 
+        // Operator stick toggles for shoot mode
+        // Left stick press: toggle STATIC_DISTANCE mode
+        operatorController
+                .leftStick()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    if (currentShootMode == ShootMode.STATIC_DISTANCE) {
+                                        currentShootMode = ShootMode.FULL;
+                                    } else {
+                                        currentShootMode = ShootMode.STATIC_DISTANCE;
+                                    }
+                                    Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
+                                }));
+
+        // Right stick press: toggle FULL_STATIC mode (battle-tested comp fallback)
+        operatorController
+                .rightStick()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    if (currentShootMode == ShootMode.FULL_STATIC) {
+                                        currentShootMode = ShootMode.FULL;
+                                    } else {
+                                        currentShootMode = ShootMode.FULL_STATIC;
+                                    }
+                                    Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
+                                }));
         // Pulse right rumble once per second in the last 5s of an active shift —
         // mirrors 6328's end-of-shift warning. Triggers on remainingTime threshold
         // regardless of active state so the driver is warned before both active→inactive

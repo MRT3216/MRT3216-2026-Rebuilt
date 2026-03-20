@@ -30,8 +30,40 @@ import frc.robot.util.LoggedTunableNumber;
 public final class ShooterConstants {
     private ShooterConstants() {}
 
+    /**
+     * Competition shoot modes, toggled by operator stick presses.
+     *
+     * <ul>
+     *   <li>{@link #FULL} — full SOTF: lead-compensated distance for RPM/hood, turret tracks azimuth
+     *       (when azimuth tracking is enabled).
+     *   <li>{@link #STATIC_DISTANCE} — SOTF disabled: uses raw turret-to-hub distance for RPM/hood,
+     *       but turret still tracks azimuth (future-proofing for when azimuth is enabled).
+     *   <li>{@link #FULL_STATIC} — proven comp mode: raw distance AND turret locked at 0°.
+     * </ul>
+     */
+    public enum ShootMode {
+        /** Full shoot-on-the-fly with lead compensation. */
+        FULL,
+        /** Raw hub distance (no lead), turret still tracks azimuth. */
+        STATIC_DISTANCE,
+        /** Raw hub distance, turret locked at 0°. Battle-tested comp fallback. */
+        FULL_STATIC
+    }
+
     /** Convergence threshold (meters) for shot refinement. */
     public static final Distance kRefinementConvergenceEpsilon = Meters.of(0.01); // 1 cm
+
+    /**
+     * Mid-match RPM fudge factor (percentage). Applied as a multiplier to the flywheel RPM computed
+     * by the two-point model: {@code finalRPM = modelRPM × (1 + fudge/100)}.
+     *
+     * <p>Positive values increase RPM (shots landing short → increase), negative values decrease RPM
+     * (shots overshooting → decrease). Always active regardless of {@link ShootMode}. Published to
+     * NetworkTables unconditionally (not gated by {@code tuningMode}) so the operator can adjust
+     * mid-match from the dashboard.
+     */
+    public static final LoggedTunableNumber kRPMFudgePercent =
+            new LoggedTunableNumber("Shooter/RPMFudgePercent", 0.0, true);
 
     // Group flywheel-specific constants under a Flywheel section to improve
     // organization.

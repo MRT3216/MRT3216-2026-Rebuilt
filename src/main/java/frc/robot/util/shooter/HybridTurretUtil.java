@@ -113,6 +113,48 @@ public final class HybridTurretUtil {
     }
 
     /**
+     * Compute a stationary (no-lead) shot solution.
+     *
+     * <p>Uses the straight-line distance from the turret origin to the target with no velocity
+     * compensation. This is the battle-tested comp mode — the same math the team ran successfully
+     * without shoot-on-the-fly.
+     *
+     * @param robotPose current field-relative robot pose
+     * @param target 3-D field-relative target point
+     * @param table lookup table for hood angle and time-of-flight
+     * @return a {@link ShotSolution} with raw distance and turret azimuth (no lead)
+     */
+    public static ShotSolution computeStaticShot(
+            Pose2d robotPose, Translation3d target, ShootingLookupTable table) {
+
+        double theta = robotPose.getRotation().getRadians();
+        double ox = kRobotToTurretTransform.getTranslation().getX();
+        double oy = kRobotToTurretTransform.getTranslation().getY();
+        double turretX = robotPose.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
+        double turretY = robotPose.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
+
+        double dx = target.getX() - turretX;
+        double dy = target.getY() - turretY;
+        double distM = Math.hypot(dx, dy);
+
+        Angle azimuth = Radians.of(Math.atan2(dy, dx) - theta);
+
+        // Clamp to LUT bounds
+        double clampedM = distM;
+        var min = table.getMinDistance();
+        var max = table.getMaxDistance();
+        if (min.isPresent()) clampedM = Math.max(clampedM, min.get().in(Meters));
+        if (max.isPresent()) clampedM = Math.min(clampedM, max.get().in(Meters));
+
+        boolean isValid = (clampedM == distM);
+        var clampedDist = Meters.of(clampedM);
+        var params = table.getParameters(clampedDist);
+
+        return new ShotSolution(
+                clampedDist, azimuth, params.trajectoryAngle(), params.timeOfFlight(), isValid);
+    }
+
+    /**
      * Immutable result of a moving-shot computation.
      *
      * @param leadDistance motion-compensated distance from turret to virtual aim point (clamped to

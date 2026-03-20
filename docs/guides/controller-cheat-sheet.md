@@ -78,6 +78,28 @@ top-to-bottom; the first matching condition wins.
 
 ### Disabled
 
+---
+
+## Shooting Modes & Fallbacks
+
+### Operator Stick Toggles
+
+During teleop, the operator can toggle between three shooting modes using the left/right stick presses:
+
+| Stick Press | Mode | Description |
+|-------------|------|-------------|
+| Left Stick   | Static Distance | Disables shoot-on-the-fly (SOTF): uses raw hub distance for RPM/hood, turret still tracks azimuth |
+| Right Stick  | Full Static     | Proven comp fallback: raw hub distance AND turret locked at 0° |
+| (Default)    | Full SOTF       | Lead-compensated distance for RPM/hood, turret tracks azimuth (when enabled) |
+
+Press again to return to Full SOTF mode. The current mode is logged to NetworkTables as `ShooterTelemetry/shootMode`.
+
+### RPM Fudge Factor
+
+The operator can adjust the flywheel RPM mid-match using the dashboard key `Shooter/RPMFudgePercent`.
+This applies a percentage offset to the computed RPM: positive = more RPM (shots short), negative = less RPM (shots long).
+Default is 0%. Changes take effect immediately.
+
 | Pattern | Description |
 |---------|-------------|
 | **Teal / orange wave** (slow) | Team colors — on whenever the robot is disabled |

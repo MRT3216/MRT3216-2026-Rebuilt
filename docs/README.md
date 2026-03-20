@@ -9,6 +9,7 @@ This folder contains documentation for the MRT3216 codebase. Files were reorgani
 
 - `docs/guides/` — human-facing guides and team notes
   - `controller-cheat-sheet.md` — controller binding & LED pattern quick reference
+  - `SHOOTING_CONTROLS.md` — shooting modes, operator fallbacks, RPM fudge factor (NEW)
   - `shooter-calibration.md` — step-by-step shooter calibration (two-point model + LUT)
   - `telemetry.md` — telemetry conventions and examples
   - `yams.md` — YAMS installation & references

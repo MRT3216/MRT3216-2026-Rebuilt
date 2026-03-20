@@ -95,3 +95,36 @@ RIGHT TRIGGER (hold)  →  hub shot, shift-gated feed, auto-stops at boundary
 LEFT TRIGGER  (hold)  →  pass shot, free feed, tracks nearest pass target
 LEDs       →  green wave = go, orange strobe = hurry, dim = wait
 ```
+
+---
+
+## Shooting Modes & Fallbacks
+
+### Shoot Mode Toggles
+
+Operator can toggle between three shooting modes during teleop:
+
+| Stick Press | Mode | Description |
+|-------------|------|-------------|
+| Left Stick   | Static Distance | SOTF disabled: uses raw hub distance for RPM/hood, turret tracks azimuth |
+| Right Stick  | Full Static     | SOTF disabled: raw hub distance AND turret locked at 0° |
+| (Default)    | Full SOTF       | Lead-compensated distance for RPM/hood, turret tracks azimuth |
+
+Pressing either stick toggles the mode; press again to return to Full SOTF. Mode is logged to NetworkTables as `ShooterTelemetry/shootMode`.
+
+### RPM Fudge Factor
+
+Operator can adjust flywheel RPM mid-match using dashboard key `Shooter/RPMFudgePercent`.
+This applies a percentage offset to the computed RPM:
+- Positive = more RPM (shots short)
+- Negative = less RPM (shots long)
+- Default is 0%. Changes take effect immediately.
+
+---
+
+## Fallback Logic
+
+If SOTF is unreliable or disabled, fallback modes ensure robust shooting:
+- Static Distance: Uses raw hub distance for interpolation, turret still tracks.
+- Full Static: Uses raw hub distance, turret locked at 0° (comp-proven fallback).
+All modes are accessible via operator stick toggles for rapid mid-match adjustment.

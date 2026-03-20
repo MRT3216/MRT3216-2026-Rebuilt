@@ -68,6 +68,8 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * <p>Container for robot subsystems, commands and button bindings.
  */
 public class RobotContainer {
+    // region Subsystems & systems
+
     // Subsystems
     private final Drive drive;
     private final Vision vision;
@@ -93,6 +95,10 @@ public class RobotContainer {
 
     // Dashboard inputs (initialized by setupAutoChooser when enabled)
     private LoggedDashboardChooser<Command> autoChooser;
+
+    // endregion
+
+    // region Constructor
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
@@ -205,6 +211,10 @@ public class RobotContainer {
         configureButtonBindings();
     }
 
+    // endregion
+
+    // region Default commands
+
     public void configureDefaultCommands() {
         // Default command, normal field-relative drive
         drive.setDefaultCommand(
@@ -315,6 +325,10 @@ public class RobotContainer {
                 // intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getPosition()));
                 intakePivotSubsystem.set(0));
     }
+
+    // endregion
+
+    // region Button bindings
 
     private void configureButtonBindings() {
         if (Constants.tuningMode) {
@@ -443,6 +457,10 @@ public class RobotContainer {
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
     }
 
+    // endregion
+
+    // region Private helpers
+
     // Centralized reset-gyro command so multiple bindings can reuse the same
     // behavior.
     private Command resetGyroZeroCommand() {
@@ -502,8 +520,14 @@ public class RobotContainer {
                 "Left Bum Rush (No SOTF)", new PathPlannerAuto("Left Bum Rush (No SOTF)"));
     }
 
+    // endregion
+
+    // region Autonomous
+
     /** Returns the command selected on the dashboard to run during autonomous. */
     public Command getAutonomousCommand() {
         return autoChooser.get();
     }
+
+    // endregion
 }

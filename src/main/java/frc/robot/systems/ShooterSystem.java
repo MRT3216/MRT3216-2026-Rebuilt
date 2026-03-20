@@ -39,7 +39,7 @@ import org.littletonrobotics.junction.Logger;
  * higher-level commands that coordinate them (e.g. shooting routines).
  */
 public class ShooterSystem {
-    // region Hardware & signals
+    // region Subsystems
 
     public final FlywheelSubsystem flywheel;
     public final KickerSubsystem kicker;
@@ -49,7 +49,7 @@ public class ShooterSystem {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     public ShooterSystem(
             FlywheelSubsystem flywheel,
@@ -66,7 +66,7 @@ public class ShooterSystem {
 
     // endregion
 
-    // region Public commands
+    // region Public API
 
     /**
      * Clear the shooter: run the kicker briefly in reverse to dislodge jams.

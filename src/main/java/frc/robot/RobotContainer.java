@@ -474,7 +474,7 @@ public class RobotContainer {
         driverController.leftBumper().whileTrue(intakePivotSubsystem.set(-.40).withTimeout(0.5));
         driverController.rightBumper().whileTrue(intakeSystem.agitate());
 
-        driverController.rightTrigger().whileTrue(shooterSystem.testShoot());
+        driverController.rightTrigger().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
     }
 
     // endregion

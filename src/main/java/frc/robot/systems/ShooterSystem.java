@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.constants.ShooterConstants.FlywheelConstants.kClearDurationSecs;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kFlywheelDefaultVelocity;
+import static frc.robot.constants.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
 import static frc.robot.constants.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
 import static frc.robot.constants.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
 import static frc.robot.constants.ShooterConstants.TurretConstants.kRobotToTurretTransform;
@@ -14,6 +16,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -82,16 +85,78 @@ public class ShooterSystem {
     }
 
     /**
-     * Test-mode shoot: use the dashboard tunable for hood angle and a tuned flywheel velocity. Does a
-     * short clear then feeds. The hood angle is read from the LoggedTunableNumber at runtime via a
-     * Supplier so dashboard edits take effect immediately while this command is active.
+     * Test-mode shoot: a stationary calibration routine for building the two-point flywheel model and
+     * populating the hood-angle LUT.
+     *
+     * <p>Behavior:
+     *
+     * <ul>
+     *   <li><b>Turret</b> — locked at 0° so the robot faces the hub directly.
+     *   <li><b>Hood</b> — driven by {@code kTunableHoodAngleDeg} on the dashboard. Adjust until balls
+     *       land in the hub, then record the distance and angle into the LUT.
+     *   <li><b>Flywheel RPM</b> — automatically computed from the turret-to-hub distance via {@link
+     *       ShooterModel}. If you change {@code kTunableFlywheelRPM} on the dashboard (away from its
+     *       default), the tunable value is used instead — this lets you manually dial in RPM for the
+     *       closest/farthest shot to create the two-point model.
+     *   <li><b>Distance</b> — turret-to-hub distance is logged to {@code TestShoot/distanceMeters} in
+     *       NetworkTables every loop so you can read it from the dashboard.
+     *   <li><b>Feed</b> — clears the kicker, then feeds (spindexer + kicker).
+     * </ul>
+     *
+     * @param robotPose supplier of the current robot pose (needed to compute distance)
+     * @return a command that runs the test-shoot routine while scheduled
      */
-    public Command testShoot() {
-        var hoodRun = hood.setAngle(() -> Degrees.of(kTunableHoodAngleDeg.get())).withTimeout(5);
-        var feedAfterClear =
-                clearKicker().andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()));
-        return hoodRun
-                .andThen(flywheel.setToTunedVelocity().alongWith(feedAfterClear))
+    public Command testShoot(Supplier<Pose2d> robotPose) {
+        var turretCmd = turret.setAngle(Degrees.of(0));
+        var hoodCmd = hood.setAngle(() -> Degrees.of(kTunableHoodAngleDeg.get()));
+
+        // Compute turret-to-hub distance each loop and decide RPM source.
+        Supplier<Distance> distanceSupplier =
+                () -> {
+                    var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                    var tOrigin = turretOrigin(robotPose.get());
+                    double dx = hub.toTranslation2d().getX() - tOrigin.getX();
+                    double dy = hub.toTranslation2d().getY() - tOrigin.getY();
+                    return Meters.of(Math.hypot(dx, dy));
+                };
+
+        // If the tunable has been edited away from its default, use the manual
+        // override; otherwise auto-compute from the two-point model.
+        var flywheelCmd =
+                flywheel.setVelocity(
+                        () -> {
+                            double tunableRPM = kTunableFlywheelRPM.get();
+                            double defaultRPM = kFlywheelDefaultVelocity.in(RPM);
+                            if (Math.abs(tunableRPM - defaultRPM) > 1.0) {
+                                // Manual override — use dashboard value.
+                                return RPM.of(tunableRPM);
+                            }
+                            // Auto — two-point model from distance.
+                            return ShooterModel.flywheelSpeedForDistance(distanceSupplier.get());
+                        });
+
+        var feedCmd = clearKicker().andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()));
+
+        // Telemetry: log distance and effective RPM each loop.
+        var telemetryCmd =
+                Commands.run(
+                        () -> {
+                            var dist = distanceSupplier.get();
+                            Logger.recordOutput("TestShoot/distanceMeters", dist.in(Meters));
+                            Logger.recordOutput("TestShoot/distanceInches", dist.in(Meters) * 39.3701);
+
+                            double tunableRPM = kTunableFlywheelRPM.get();
+                            double defaultRPM = kFlywheelDefaultVelocity.in(RPM);
+                            boolean isOverride = Math.abs(tunableRPM - defaultRPM) > 1.0;
+                            Logger.recordOutput("TestShoot/rpmOverrideActive", isOverride);
+                            Logger.recordOutput(
+                                    "TestShoot/effectiveRPM",
+                                    isOverride ? tunableRPM : ShooterModel.flywheelRPMForDistance(dist));
+                            Logger.recordOutput("TestShoot/modelRPM", ShooterModel.flywheelRPMForDistance(dist));
+                            Logger.recordOutput("TestShoot/hoodAngleDeg", kTunableHoodAngleDeg.get());
+                        });
+
+        return Commands.parallel(turretCmd, hoodCmd, flywheelCmd, feedCmd, telemetryCmd)
                 .withName("TestShoot");
     }
 

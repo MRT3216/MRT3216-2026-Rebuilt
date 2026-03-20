@@ -42,7 +42,7 @@ public class LEDSubsystem extends SubsystemBase {
         led.start();
     }
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     @Override
     public void periodic() {
@@ -140,13 +140,13 @@ public class LEDSubsystem extends SubsystemBase {
         setColor(Color.kBlack);
     }
 
+    // endregion
+
+    // region Public API
+
     public boolean hasNote() {
         return hopperFull;
     }
-
-    // endregion
-
-    // region Public API - command factories
 
     public Command setHubLEDCommand(BooleanSupplier on) {
         return this.runOnce(
@@ -185,6 +185,8 @@ public class LEDSubsystem extends SubsystemBase {
 
     // endregion
 
+    // region Singleton
+
     public static LEDSubsystem getInstance() {
         if (instance == null) {
             // if instance is null, initialize
@@ -192,4 +194,6 @@ public class LEDSubsystem extends SubsystemBase {
         }
         return instance;
     }
+
+    // endregion
 }

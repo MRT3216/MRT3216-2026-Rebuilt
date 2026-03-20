@@ -73,11 +73,15 @@ public class SpindexerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & controller
+    // region Hardware
 
     /* Hardware Objects */
     private final SparkMax motorController =
             new SparkMax(RobotMap.Shooter.Spindexer.kMotorId, SparkFlex.MotorType.kBrushless);
+
+    // endregion
+
+    // region Controller & mechanism
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -93,7 +97,7 @@ public class SpindexerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     /** Initializes the subsystem and configures the motor controller with constants. */
     public SpindexerSubsystem() {
@@ -127,7 +131,7 @@ public class SpindexerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     /**
      * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry
@@ -146,20 +150,20 @@ public class SpindexerSubsystem extends SubsystemBase {
     }
 
     @Override
-    public void simulationPeriodic() {
-        spindexer.simIterate();
-    }
-
-    @Override
     public void periodic() {
         updateInputs();
         Logger.processInputs("Spindexer", spindexerInputs);
         spindexer.updateTelemetry();
     }
 
+    @Override
+    public void simulationPeriodic() {
+        spindexer.simIterate();
+    }
+
     // endregion
 
-    // region Public API (queries & commands)
+    // region Public API
 
     /**
      * Gets the current velocity of the spindexer.
@@ -214,21 +218,6 @@ public class SpindexerSubsystem extends SubsystemBase {
     }
 
     /**
-     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
-     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
-     * commands are running. If the motor idle mode is COAST, this allows the mechanism to freewheel.
-     */
-    public Command stopHold() {
-        return Commands.run(
-                        () -> {
-                            motor.stopClosedLoopController();
-                            motor.setDutyCycle(0);
-                        },
-                        this)
-                .withName("SpindexerStopHold");
-    }
-
-    /**
      * One-shot stop command: immediately disables closed-loop control and sets motor output to zero,
      * then finishes. Use for imperative immediate stops (non-blocking). This does not hold the
      * subsystem at zero after completion.
@@ -241,6 +230,21 @@ public class SpindexerSubsystem extends SubsystemBase {
                         },
                         this)
                 .withName("SpindexerStopNow");
+    }
+
+    /**
+     * Persistent stop command: while scheduled, disables closed-loop control and sets motor output to
+     * zero. Use this as a long-running default so the mechanism remains at zero output while no other
+     * commands are running. If the motor idle mode is COAST, this allows the mechanism to freewheel.
+     */
+    public Command stopHold() {
+        return Commands.run(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("SpindexerStopHold");
     }
 
     // endregion

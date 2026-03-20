@@ -65,11 +65,15 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & controller
+    // region Hardware
 
     private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
+
+    // endregion
+
+    // region Controller & mechanism
 
     private final SmartMotorControllerConfig motorConfig;
     private final TalonFXWrapper motor;
@@ -78,7 +82,7 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     public FlywheelSubsystem() {
         motorConfig =
@@ -115,7 +119,7 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     private void updateInputs() {
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
@@ -133,19 +137,20 @@ public class FlywheelSubsystem extends SubsystemBase {
     }
 
     @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Shooter/Flywheel", flywheelInputs);
+        flywheel.updateTelemetry();
+    }
+
+    @Override
     public void simulationPeriodic() {
         flywheel.simIterate();
     }
 
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Shooter/Flywheel", flywheelInputs);
-    }
-
     // endregion
 
-    // region Public API (queries & commands)
+    // region Public API
 
     /**
      * Command-returning API: set the flywheel closed-loop velocity while the returned Command is

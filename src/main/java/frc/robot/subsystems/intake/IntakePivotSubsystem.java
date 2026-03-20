@@ -82,7 +82,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & controllers
+    // region Hardware
 
     /* Hardware controllers (left master, right follower) */
     private final SparkFlex leftPivotMotor =
@@ -92,7 +92,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Controller configuration / mechanism
+    // region Controller & mechanism
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -107,7 +107,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public IntakePivotSubsystem() {
@@ -147,7 +147,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     /**
      * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry
@@ -165,19 +165,20 @@ public class IntakePivotSubsystem extends SubsystemBase {
     }
 
     @Override
-    public void simulationPeriodic() {
-        intakePivot.simIterate();
-    }
-
-    @Override
     public void periodic() {
         updateInputs();
         Logger.processInputs("Intake/Pivot", intakePivotInputs);
         intakePivot.updateTelemetry();
     }
+
+    @Override
+    public void simulationPeriodic() {
+        intakePivot.simIterate();
+    }
+
     // endregion
 
-    // region Public API (queries & commands)
+    // region Public API
 
     /**
      * Sets the target angle for the intake arm.

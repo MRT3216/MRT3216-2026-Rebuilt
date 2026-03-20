@@ -73,7 +73,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & controller
+    // region Hardware
 
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kMotorId);
@@ -84,7 +84,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Controller & mechanism
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -99,7 +99,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public IntakeRollersSubsystem() {
@@ -140,7 +140,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
@@ -168,20 +168,20 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     }
 
     @Override
-    public void simulationPeriodic() {
-        intakeRollers.simIterate();
-    }
-
-    @Override
     public void periodic() {
         updateInputs();
         Logger.processInputs("Intake/Rollers", intakeRollersInputs);
         intakeRollers.updateTelemetry();
     }
 
+    @Override
+    public void simulationPeriodic() {
+        intakeRollers.simIterate();
+    }
+
     // endregion
 
-    // region Public API (queries & commands)
+    // region Public API
 
     /**
      * Gets the current velocity of the intake rollers.
@@ -251,4 +251,6 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         this)
                 .withName("IntakeRollersStopHold");
     }
+
+    // endregion
 }

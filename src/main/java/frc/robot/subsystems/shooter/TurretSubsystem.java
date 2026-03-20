@@ -83,14 +83,14 @@ public class TurretSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & signals
+    // region Hardware
 
     private final SparkMax pivotMotor =
             new SparkMax(RobotMap.Shooter.Turret.kMotorId, SparkMax.MotorType.kBrushless);
 
     // endregion
 
-    // region Controller configuration / mechanism
+    // region Controller & mechanism
 
     private final SmartMotorControllerConfig motorConfig;
 
@@ -101,18 +101,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
-
-    /**
-     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
-     * to ensure telemetry is time-aligned.
-     */
-    private void updateInputs() {
-        turretInputs.angle = turret.getAngle();
-        turretInputs.volts = smartMotor.getVoltage();
-        turretInputs.current = smartMotor.getStatorCurrent();
-        turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
-    }
+    // region Constructor
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public TurretSubsystem() {
@@ -147,10 +136,19 @@ public class TurretSubsystem extends SubsystemBase {
         turret = new Pivot(turretConfig);
     }
 
-    /** Advance the turret simulation model by one simulation tick. */
-    @Override
-    public void simulationPeriodic() {
-        turret.simIterate();
+    // endregion
+
+    // region Lifecycle
+
+    /**
+     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes signals to
+     * ensure telemetry is time-aligned.
+     */
+    private void updateInputs() {
+        turretInputs.angle = turret.getAngle();
+        turretInputs.volts = smartMotor.getVoltage();
+        turretInputs.current = smartMotor.getStatorCurrent();
+        turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
     }
 
     @Override
@@ -160,7 +158,15 @@ public class TurretSubsystem extends SubsystemBase {
         turret.updateTelemetry();
     }
 
-    // region Public API - queries & commands
+    /** Advance the turret simulation model by one simulation tick. */
+    @Override
+    public void simulationPeriodic() {
+        turret.simIterate();
+    }
+
+    // endregion
+
+    // region Public API
 
     /**
      * Gets the current angle of the turret.
@@ -212,10 +218,6 @@ public class TurretSubsystem extends SubsystemBase {
     public Command setAngle(Angle angle) {
         return turret.setAngle(angle);
     }
-
-    // endregion
-
-    // region Triggers & events
 
     // endregion
 }

@@ -53,6 +53,7 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
+/** Hood subsystem: positional pivot for the shooter hood angle. */
 public class HoodSubsystem extends SubsystemBase {
     // region Inputs & telemetry
 
@@ -68,7 +69,7 @@ public class HoodSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & signals
+    // region Hardware
 
     private final TalonFX motor = new TalonFX(RobotMap.Shooter.Hood.kMotorId);
 
@@ -82,7 +83,7 @@ public class HoodSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Controller configuration / mechanism
+    // region Controller & mechanism
 
     private final SmartMotorControllerConfig motorConfig;
     private final SmartMotorController smartMotor;
@@ -90,6 +91,8 @@ public class HoodSubsystem extends SubsystemBase {
     private final Pivot hood;
 
     // endregion
+
+    // region Constructor
 
     public HoodSubsystem() {
         motorConfig =
@@ -126,7 +129,9 @@ public class HoodSubsystem extends SubsystemBase {
         motor.getVelocity().setUpdateFrequency(0);
     }
 
-    // region Lifecycle / periodic
+    // endregion
+
+    // region Lifecycle
 
     private void updateInputs() {
         // Refresh Phoenix signals so logged telemetry is time-aligned with hardware.
@@ -153,6 +158,15 @@ public class HoodSubsystem extends SubsystemBase {
         hood.updateTelemetry();
     }
 
+    @Override
+    public void simulationPeriodic() {
+        hood.simIterate();
+    }
+
+    // endregion
+
+    // region Public API
+
     /**
      * Gets the current measured hood angle.
      *
@@ -171,15 +185,6 @@ public class HoodSubsystem extends SubsystemBase {
     public Angle getTarget() {
         return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
-
-    @Override
-    public void simulationPeriodic() {
-        hood.simIterate();
-    }
-
-    // endregion
-
-    // region Public API - queries & commands
 
     /**
      * Returns a command that moves the hood to the requested absolute angle and holds that angle

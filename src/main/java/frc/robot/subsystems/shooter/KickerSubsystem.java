@@ -70,10 +70,14 @@ public class KickerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & controller
+    // region Hardware
 
     private final SparkFlex motorController =
             new SparkFlex(RobotMap.Shooter.Kicker.kMotorId, SparkFlex.MotorType.kBrushless);
+
+    // endregion
+
+    // region Controller & mechanism
 
     private final SmartMotorControllerConfig motorConfig;
 
@@ -85,7 +89,7 @@ public class KickerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     /** Construct the KickerSubsystem and configure motor/telemetry settings. */
     public KickerSubsystem() {
@@ -129,7 +133,7 @@ public class KickerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     /** Update the AdvantageKit "inputs" (data coming from the SMC) */
     private void updateInputs() {
@@ -141,14 +145,6 @@ public class KickerSubsystem extends SubsystemBase {
                 "Mechanisms/KickerIsMoving", Math.abs(kickerInputs.velocity.in(RPM)) > 10.0);
     }
 
-    // endregion
-
-    /** Advance the kicker simulation model by one simulation tick. */
-    @Override
-    public void simulationPeriodic() {
-        kicker.simIterate();
-    }
-
     @Override
     public void periodic() {
         // Pull inputs, publish to AdvantageKit, and update mechanism telemetry
@@ -157,7 +153,15 @@ public class KickerSubsystem extends SubsystemBase {
         kicker.updateTelemetry();
     }
 
-    // region Public API (queries & commands)
+    /** Advance the kicker simulation model by one simulation tick. */
+    @Override
+    public void simulationPeriodic() {
+        kicker.simIterate();
+    }
+
+    // endregion
+
+    // region Public API
 
     /**
      * Gets the current velocity of the kicker.
@@ -240,4 +244,6 @@ public class KickerSubsystem extends SubsystemBase {
                         this)
                 .withName("KickerStopHold");
     }
+
+    // endregion
 }

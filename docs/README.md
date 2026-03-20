@@ -2,16 +2,11 @@
 
 This folder contains documentation for the MRT3216 codebase. Files were reorganized into:
 
-- `docs/assistant/` — assistant transcripts and the assistant profile used to rehydrate sessions.
-  - `history.md` — ongoing cleaned transcript summary
-  - `history-YYYY-MM-DD-*.md` — per-session timestamped archives
-  - `profile.md` — assistant profile & conventions
+## Documentation Structure
 
-- `docs/guides/` — human-facing guides and team notes
-  - `controller-cheat-sheet.md` — controller binding & LED pattern quick reference
-  - `SHOOTING_CONTROLS.md` — shooting modes, operator fallbacks, RPM fudge factor (NEW)
-  - `shooter-calibration.md` — step-by-step shooter calibration (two-point model + LUT)
-  - `telemetry.md` — telemetry conventions and examples
-  - `yams.md` — YAMS installation & references
+- `OperatorGuide.md` — All operator controls, shooting modes, LED patterns, fallback logic, and quick reference
+- `TestModeTuning.md` — Test mode usage, shooter calibration workflow, dashboard tunables
+- `TechnicalReference.md` — Telemetry conventions, YAMS usage, subsystem best practices
+- `assistant/` — Assistant transcripts and profile
 
-If you prefer a different structure, say so and I can move files or add symlinks back to the old paths.
+Legacy guides and redundant docs have been merged for clarity. If you prefer a different structure, say so and I can reorganize further or add symlinks.

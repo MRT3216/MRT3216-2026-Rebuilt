@@ -58,10 +58,12 @@ public class LEDSubsystem extends SubsystemBase {
                             .orElse(Color.kTurquoise);
         }
 
-        if (DriverStation.isAutonomous()) {
+        if (DriverStation.isDisabled()) {
+            wave(Color.kBlue, Color.kDarkOrange, waveAllianceCycleLength, waveAllianceDuration);
+        } else if (DriverStation.isAutonomous()) {
             wave(Color.kDarkOrange, Color.kDarkBlue, waveFastCycleLength, waveFastDuration);
         } else {
-            // Enabled
+            // Teleop
             if (climbing) {
                 rainbow();
             } else if (intaking) {
@@ -69,16 +71,10 @@ public class LEDSubsystem extends SubsystemBase {
             } else if (aimLock) {
                 setColor(Color.kGreen);
             } else if (hopperFull) {
-                // strobe(Color.kGreen, strobeSlowDuration);
                 wave(Color.kGreen, Color.kBlack, waveFastCycleLength, waveFastDuration);
             } else {
                 setColor(allianceColor);
             }
-        }
-
-        if (DriverStation.isDisabled()) {
-            // Default pattern
-            wave(Color.kBlue, Color.kDarkOrange, waveAllianceCycleLength, waveAllianceDuration);
         }
 
         // Update LEDs

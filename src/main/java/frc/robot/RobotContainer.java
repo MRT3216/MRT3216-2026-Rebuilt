@@ -334,10 +334,13 @@ public class RobotContainer {
 
         // Warn both controllers with continuous rumble if FMS has not sent game-specific
         // data (hub winner) within 1 second of teleop start and no manual override is set.
+        // Only active when connected to a real FMS — otherwise bench testing would
+        // trigger permanent rumble since the game-specific message is always empty.
         // Mirrors 6328's autoWinnerNotSet alert.
         Timer teleopElapsedTimer = new Timer();
         RobotModeTriggers.teleop().onTrue(Commands.runOnce(teleopElapsedTimer::restart));
         RobotModeTriggers.teleop()
+                .and(DriverStation::isFMSAttached)
                 .and(() -> DriverStation.getGameSpecificMessage().isEmpty())
                 .and(() -> HubShiftUtil.getAllianceWinOverride().isEmpty())
                 .and(() -> teleopElapsedTimer.hasElapsed(1.0))

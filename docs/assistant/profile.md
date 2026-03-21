@@ -715,8 +715,8 @@ Useful local references (already in repo)
  - `docs/OperatorGuide.md` — operator controls, shooting modes, LED patterns.
  - `docs/TestModeTuning.md` — test-mode tuning procedures and SysId workflow.
  - `docs/README.md` — documentation index.
- - `docs/assistant/history.md` — ongoing assistant conversation archive.
- - `docs/assistant/history-2026-03-09-redacted.md` — redacted session archive from 2026-03-09.
+ - `docs/assistant/profile.md` — this file; conventions, starter prompt, and reference material for assistant sessions.
+ - `docs/assistant/history.md` — single ongoing archive of all assistant conversation sessions (chronological).
 
 Competition Status & Pre-Boise Priorities (updated 2026-03-21)
 --------------------------------------------------------------
@@ -794,8 +794,10 @@ Competition Status & Pre-Boise Priorities (updated 2026-03-21)
 
 Backup & transcript policy
 -------------------------
-- Prefer appending user+assistant transcripts to `docs/assistant/history.md` when requested. Avoid committing secrets — redact before committing or instruct the assistant to redact automatically.
-- If you want per-session archives, use timestamped files `docs/assistant/history-YYYY-MM-DD.md` (already used).
+- All session transcripts are appended chronologically to `docs/assistant/history.md` — single file, no per-session archives.
+- `docs/assistant/profile.md` holds conventions, reference material, and the starter prompt — update it when conventions change.
+- Both files are committed to GitHub so any machine can start a session with full context.
+- Avoid committing secrets — redact before committing.
 
 Suggested next improvements (optional)
 - Add small JUnit-style integration tests that validate bump commands are non-requiring and triggers start/stop pipelines correctly.

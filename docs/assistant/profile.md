@@ -95,9 +95,14 @@ Key files & where to look (quick map)
 - Flywheel: `src/main/java/frc/robot/subsystems/shooter/FlywheelSubsystem.java`
 - Kicker/Spindexer: `src/main/java/frc/robot/subsystems/shooter/KickerSubsystem.java` and `SpindexerSubsystem.java`
 - Turret & Hood: `src/main/java/frc/robot/subsystems/shooter/TurretSubsystem.java` and `HoodSubsystem.java`
+- Shooter constants: `src/main/java/frc/robot/subsystems/shooter/ShooterConstants.java` (FlywheelConstants, SpindexerConstants, KickerConstants, HoodConstants, TurretConstants, ShooterModel)
+- Shooter lookup table: `src/main/java/frc/robot/subsystems/shooter/ShooterLookupTables.java`
+- Intake subsystems: `src/main/java/frc/robot/subsystems/intake/IntakeRollersSubsystem.java` and `IntakePivotSubsystem.java`
+- Intake constants: `src/main/java/frc/robot/subsystems/intake/IntakeConstants.java` (Rollers, Pivot)
+- Global constants: `src/main/java/frc/robot/constants/Constants.java` (runtime flags, tuningMode)
+- Field geometry: `src/main/java/frc/robot/constants/FieldConstants.java`
+- Hardware CAN IDs: `src/main/java/frc/robot/constants/RobotMap.java`
 - Controller wiring: `src/main/java/frc/robot/RobotContainer.java`
- - YAMS docs & vendordep: `docs/guides/yams.md` and `vendordeps/yams.json`
- - Telemetry notes: `docs/guides/telemetry.md`
 
 Practical code examples
 -----------------------
@@ -536,7 +541,7 @@ Starter prompt (paste to assistant)
 ----------------------------------
 Copy this exact block into a new assistant session to rehydrate behavior and expectations:
 
-"Project assistant profile: MRT3216 repo. Drive uses AdvantageKit TalonFX swerve template (ModuleIOTalonFX + PhoenixOdometryThread) with Phoenix Pro licensed — CANivore timesync available, TorqueCurrentFOC available. Vision uses AdvantageKit vision template (VisionIOPhotonVision / VisionIOLimelight). Mechanism subsystems (shooter, intake, etc.) use YAMS-first APIs. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. Follow Oblarg command-based best practices: no stored command instances, all motor access through commands, boolean subsystem state exposed as public final Trigger fields, cross-subsystem coordination in ShooterSystem not in individual subsystems. Use AdvantageKit IO layer pattern (io/inputs separation, @AutoLog). For drive, gains are in TunerConstants.java; gear ratio is applied in TalonFX firmware (SensorToMechanismRatio). For vision, use addVisionMeasurement() on Drive with FPGA timestamps (no Utils.fpgaToCurrentTime() conversion needed). For Phoenix 6 configs, apply() and refresh() are blocking — constructor only, never periodic. For autos, use PathPlanner AutoBuilder configured in drive subsystem; load all autos at startup. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
+"Project assistant profile: MRT3216 repo. Drive uses AdvantageKit TalonFX swerve template (ModuleIOTalonFX + PhoenixOdometryThread) with Phoenix Pro licensed — CANivore timesync available, TorqueCurrentFOC available. Vision uses AdvantageKit vision template (VisionIOPhotonVision / VisionIOLimelight). Mechanism subsystems (shooter, intake, etc.) use YAMS-first APIs. Use YAMS-first command-returning APIs. Prefer `setVelocity(...)` returns a Command. Use `stopHold()` for default closed-loop zero and `stopNow()` for one-shot imperative stops used inside sequences. Provide `followTarget(Supplier)` re-applier for live tuning. Name composed commands with `withName(...)`. Bump commands must be one-shot and not require subsystems. Follow Oblarg command-based best practices: no stored command instances, all motor access through commands, boolean subsystem state exposed as public final Trigger fields, cross-subsystem coordination in ShooterSystem not in individual subsystems. Use AdvantageKit IO layer pattern (io/inputs separation, @AutoLog). Subsystem constants live next to their subsystems (e.g., `subsystems/shooter/ShooterConstants.java`, `subsystems/intake/IntakeConstants.java`); global constants (runtime flags, field geometry, CAN IDs) stay in `constants/`. Telemetry keys are inlined as private static final String in each subsystem — no centralized TelemetryKeys class. For drive, gains are in TunerConstants.java; gear ratio is applied in TalonFX firmware (SensorToMechanismRatio). For vision, use addVisionMeasurement() on Drive with FPGA timestamps (no Utils.fpgaToCurrentTime() conversion needed). For Phoenix 6 configs, apply() and refresh() are blocking — constructor only, never periodic. For autos, use PathPlanner AutoBuilder configured in drive subsystem; load all autos at startup. When making edits, validate with `./gradlew.bat build` and run tests if added. If you are unsure about ownership or blocking semantics, ask a clarifying question before changing public APIs."
 
 YAMS Deep Reference — SmartMotorControllerConfig & Tuning (from official YAMS presentation by 9658, 6911, and YASS team)
 --------------------------------------------------------------------------------------------------------------------
@@ -706,11 +711,14 @@ smc.setMechanismPosition(absoluteEncoder.getPosition());
 ---
 
 Useful local references (already in repo)
- - `docs/guides/yams.md` — vendor install, links to YAMS docs, and licensing notes.
- - `docs/guides/telemetry.md` — AdvantageKit and telemetry guidance used by this project.
- - `docs/assistant/history-2026-02-27.md` — conversation backup created on 2026-02-27 (timestamped archive).
+ - `docs/TechnicalReference.md` — consolidated technical reference (YAMS, AdvantageKit, telemetry, vision, drive).
+ - `docs/OperatorGuide.md` — operator controls, shooting modes, LED patterns.
+ - `docs/TestModeTuning.md` — test-mode tuning procedures and SysId workflow.
+ - `docs/README.md` — documentation index.
+ - `docs/assistant/history.md` — ongoing assistant conversation archive.
+ - `docs/assistant/history-2026-03-09-redacted.md` — redacted session archive from 2026-03-09.
 
-Competition Status & Pre-Boise Priorities (updated 2026-03-17)
+Competition Status & Pre-Boise Priorities (updated 2026-03-21)
 --------------------------------------------------------------
 
 ### Post-Flagstaff Summary
@@ -759,7 +767,7 @@ Competition Status & Pre-Boise Priorities (updated 2026-03-17)
 2. **Implement current limiting** on all subsystems (stator + supply)
 3. **Turret tracking code** — nearly complete, needs testing
 4. **Rebuild shooter lookup table** with new AndyMark Stealth Wheels + build tweaks
-5. **Retune PID and FF** for all subsystems (intake pivot especially)
+5. **Retune PID and FF** for all subsystems (intake pivot especially — currently has zero PID/kV, only kG+kS gravity comp; needs full retune Monday)
 6. Reprint camera mounts (stronger, cameras right-side-up), lower PhotonVision resolution for higher FPS
 7. Refine and test autonomous routines (never tested on real robot before Flagstaff — add real-robot validation)
 8. **Create Elastic Dashboard** for in-match feedback
@@ -768,12 +776,21 @@ Competition Status & Pre-Boise Priorities (updated 2026-03-17)
 11. Clean up wiring
 12. Miscellaneous tweaks (agitator timing, etc.)
 
+### Completed This Session (2026-03-21)
+- ✅ **Constants reorganized**: subsystem constants moved from `constants/` to subsystem packages (`subsystems/shooter/ShooterConstants.java`, `subsystems/intake/IntakeConstants.java`). Global constants remain in `constants/` (Constants.java, FieldConstants.java, RobotMap.java).
+- ✅ **TelemetryKeys.java deleted**: telemetry key strings inlined as `private static final String` in each subsystem.
+- ✅ **Dimensions.java deleted** (unused).
+- ✅ **Constants consistency pass**: all velocity and positional subsystem constants now follow a standardized section order (Mechanical → Motor wiring → PID → Feedforward → Sim overrides → FF factories → Limits → Targets/tunables).
+- ✅ **PID/FF audit**: reviewed all gains. Identified intake pivot as having zero closed-loop control (intentional — team used duty-cycle at first comp, retune planned Monday). Kicker runs pure feedforward (kP=0.0), acceptable for its role.
+- ✅ **Documentation consolidated**: legacy `docs/guides/` folder removed, content merged into `docs/TechnicalReference.md`, `docs/OperatorGuide.md`, `docs/TestModeTuning.md`.
+
 ### Key Programming Context for This Week
-- **Lookup table**: `src/main/resources/shooter_lookup.json` — will need to be rebuilt after new shooter wheels are installed and tested. Distance-to-RPM mapping.
-- **Current limiting**: add `withStatorCurrentLimit` and `withSupplyCurrentLimit` to YAMS `SmartMotorControllerConfig` for all TalonFX and SparkMAX/Flex motors. Review AdvantageKit logs first to set appropriate limits.
+- **Lookup table**: `src/main/resources/shooter_lookup.json` — will need to be rebuilt after new shooter wheels are installed and tested. Distance-to-RPM mapping. Lookup table code in `subsystems/shooter/ShooterLookupTables.java`.
+- **Current limiting**: add `withStatorCurrentLimit` and `withSupplyCurrentLimit` to YAMS `SmartMotorControllerConfig` for all TalonFX and SparkMAX/Flex motors. Review AdvantageKit logs first to set appropriate limits. Note: `kStatorCurrentLimit` constants already exist in each subsystem's constants class — wire them into the YAMS configs.
 - **Turret tracking**: code "nearly complete" — likely needs to be wired up to vision pose data and tested on real robot with the new cable chain.
 - **PhotonVision**: lower resolution setting in PhotonVision web UI (not in robot code). Camera mount reprint may shift extrinsics — re-run camera calibration if angles change.
-- **Intake pivot PID**: identified as needing the most retuning. Use YAMS tuning order: kG → kV → kA → kP → kD.
+- **Intake pivot PID**: zero closed-loop gains (kP=0, kV=0). Only gravity comp (kG=0.21, kS=0.11). Retune Monday using YAMS tuning order: kG → kV → kA → kP → kD. All sim overrides also zeroed.
+- **Constants organization**: subsystem constants live next to their subsystems (`subsystems/shooter/ShooterConstants.java`, `subsystems/intake/IntakeConstants.java`). Each inner class follows a canonical section order — new gains from retuning should be placed in the matching section.
 
 Backup & transcript policy
 -------------------------
@@ -791,4 +808,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-03-19 — added Phoenix 6 Pro, TalonFX swerve template, vision template, AK 2026 what's-new sections, YAMS deep reference, and post-Flagstaff competition status + Boise priorities.*
+*Last edited: 2026-03-21 — updated key files map for constants reorganization (subsystem constants moved to subsystem packages, TelemetryKeys inlined, Dimensions deleted), fixed stale docs/guides/ references (now consolidated in docs/), updated starter prompt with constants conventions, added session completion notes, updated intake pivot PID context.*

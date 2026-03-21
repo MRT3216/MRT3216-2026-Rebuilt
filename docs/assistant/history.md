@@ -75,4 +75,71 @@ If you'd like more
 
 ---
 
-End of cleaned transcript.
+End of 2026-02-27 transcript.
+
+---
+
+## Session: 2026-03-21 — Constants Reorganization & Cleanup
+
+Timestamp: 2026-03-21
+Branch: Claude
+
+### Summary
+
+Multi-part session focused on reorganizing constants, cleaning up documentation, and auditing PID/FF gains.
+
+### Conversation
+
+1) User: Asked if `Dimensions.java` was used anywhere. Assistant: Searched imports across codebase, confirmed it was completely unused. User asked to delete it.
+
+2) User: Asked to reorganize the `constants/` folder. Assistant: Proposed plan — move subsystem-specific constants into subsystem packages, keep global constants (Constants.java, FieldConstants.java, RobotMap.java) in `constants/`, create lookup tables subfolder. User asked for the recommended plan.
+
+3) User: Noted `TelemetryKeys.java` seemed excessive (each key only used by one subsystem). Assistant: Analyzed usage, confirmed each key was only referenced by its own subsystem. Recommended inlining keys as `private static final String` in each subsystem file.
+
+4) User: Approved full reorganization plan. Assistant executed:
+   - Inlined telemetry keys into 7 subsystem files (FlywheelSubsystem, KickerSubsystem, SpindexerSubsystem, HoodSubsystem, TurretSubsystem, IntakeRollersSubsystem, IntakePivotSubsystem).
+   - Deleted `TelemetryKeys.java`.
+   - Moved `ShooterConstants.java` from `constants/` to `subsystems/shooter/` (updated package).
+   - Moved `ShooterLookupTables.java` from `constants/` to `subsystems/shooter/`.
+   - Moved `IntakeConstants.java` from `constants/` to `subsystems/intake/`.
+   - Updated all imports across the codebase.
+   - Removed stale "Telemetry keys are centralized" comments.
+   - Build successful.
+
+5) User: Asked to make constants consistently organized across subsystems. Assistant: Analyzed both constants files, identified inconsistencies:
+   - Section headings differed across inner classes.
+   - PID and FF were sometimes combined, sometimes separate.
+   - Simulation overrides had inconsistent ordering (FF-first vs PID-first).
+   - `kMotorInverted` placement varied.
+   - Kicker used bare `0` instead of `0.0`.
+   - FF factories positioned inconsistently relative to limits/tunables.
+
+6) Assistant: Rewrote both files with canonical section ordering:
+   - **Velocity subsystems** (Flywheel, Spindexer, Kicker, Rollers): Mechanical → Motor wiring → PID → Feedforward → Simulation overrides (PID then FF) → FF factories → Soft limits → Targets/tunables.
+   - **Positional subsystems** (Hood, Turret, Pivot): Mechanical → Motor wiring → PID → Feedforward → Motion profile → Simulation overrides (PID then FF) → FF factories → Hard limits → Soft limits → Presets/tunables.
+   - Added section divider comments (`// -----`) for each inner class.
+   - Build successful. Committed.
+
+7) User: Asked for PID/FF audit without making changes. Assistant: Reviewed all 8 subsystem gain sets and flagged:
+   - 🔴 **Intake Pivot**: kP=0.0, kV=0.0, kA=0.0 — no closed-loop control at all, only gravity comp (kG=0.21, kS=0.11). Sim overrides all zeroed.
+   - 🟡 **Kicker**: kP=0.0 — pure feedforward, no proportional correction.
+   - All other gains looked reasonable given their gearing ratios and mechanism types.
+   - Hood kP=300.0 explained by tiny inertia + 30:1 gearing (normal for CTRE position control).
+
+8) User: Confirmed intake pivot gains were intentional — team abandoned PID and used duty-cycle at first comp. Retune planned for Monday.
+
+9) User: Asked to update and clean up the `docs/assistant/` folder. Assistant: Updated `profile.md` (key files map, stale references, starter prompt, competition status, completion notes) and appended session summary to `history.md`.
+
+### Files Modified
+- `docs/assistant/profile.md` — updated key files map, fixed stale `docs/guides/` references, updated starter prompt with constants conventions, added session completion notes, updated competition date.
+- `docs/assistant/history.md` — appended this session summary.
+
+### Key Decisions
+- Constants live next to their subsystems; global constants stay in `constants/`.
+- Telemetry keys are private to each subsystem (no centralized file).
+- All inner constant classes follow a canonical section order for consistency.
+- Intake pivot zero gains are intentional (retune Monday).
+
+---
+
+End of 2026-03-21 session.

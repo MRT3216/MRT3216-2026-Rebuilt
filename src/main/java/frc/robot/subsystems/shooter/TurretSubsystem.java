@@ -26,6 +26,7 @@ import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSta
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kStatorCurrentLimit;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kWrapThresholdDeg;
 
 import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -34,6 +35,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
@@ -54,6 +56,19 @@ import yams.motorcontrollers.local.SparkWrapper;
  * <p>This subsystem manages a single-NEO turret pivot using the YAMS library and RevLib. It
  * utilizes an IO-layer abstraction for full log replay capabilities, ensuring that hardware states
  * (Inputs) are separated from software commands (Outputs).
+ *
+ * <h3>Wrap-around behavior</h3>
+ *
+ * The turret can physically rotate ±190° from its zero-forward position. When a tracking target
+ * would require passing through the mechanical limit (e.g., a target at +195° while currently at
+ * +185°), the turret instead "jumps" to the opposite side of the travel range (e.g., −165°) and
+ * approaches the target from the other direction. This lets the turret continuously track targets
+ * that cross the rear dead-zone without stalling against a hard stop.
+ *
+ * <p><b>Note:</b> YAMS {@code PivotConfig.withWrapping()} cannot be used here because it calls
+ * {@code SmartMotorControllerConfig.withContinuousWrapping()}, which is incompatible with soft
+ * limits. Continuous wrapping is designed for infinite-rotation mechanisms (swerve azimuth), not
+ * limited-travel turrets. The wrap logic is implemented manually in {@link #wrapAngle(double)}.
  */
 public class TurretSubsystem extends SubsystemBase {
     private static final String kTurretMotorTelemetry = "TurretMotor";
@@ -119,8 +134,6 @@ public class TurretSubsystem extends SubsystemBase {
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
                         .withVoltageCompensation(Volts.of(12))
-                        // .withContinuousWrapping(
-                        //         Rotations.of(-0.45833333333333337), Rotations.of(0.5416666666666666))
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
         smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);
@@ -128,7 +141,6 @@ public class TurretSubsystem extends SubsystemBase {
         PivotConfig turretConfig =
                 new PivotConfig(smartMotor)
                         .withStartingPosition(kStartingPosition)
-                        // .withWrapping(kSoftLimitMin, kSoftLimitMax)
                         .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
                         .withMOI(kMOI)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
@@ -167,6 +179,52 @@ public class TurretSubsystem extends SubsystemBase {
 
     // endregion
 
+    // region Wrap-around logic
+
+    /**
+     * Wraps a requested turret angle so it stays within the ±{@value
+     * ShooterConstants.TurretConstants#kWrapThresholdDeg}° soft-limit range.
+     *
+     * <p>If the requested angle is within [-kWrapThreshold, +kWrapThreshold] it passes through
+     * unchanged. If it exceeds either limit (e.g., a vision solver returning +200° for a target
+     * behind the robot), the angle is shifted by ±360° to land on the opposite side of the travel
+     * range.
+     *
+     * <p>After wrapping, if the result still falls outside the soft limits the angle is clamped. The
+     * turret's 380° total travel (±190°) means there is a 20° rear dead-zone (from ±190° to ±180° on
+     * the opposite side) where targets are unreachable — clamping handles that gracefully by driving
+     * as close as possible.
+     *
+     * <p>WPILib convention: <b>CCW-positive</b>. Zero is turret-forward.
+     *
+     * @param requestedDeg the raw target angle in degrees (any range).
+     * @return the wrapped angle in degrees, guaranteed within [-kWrapThreshold, +kWrapThreshold].
+     */
+    public static double wrapAngle(double requestedDeg) {
+        // Normalize into (-360, 360) first to handle multi-revolution inputs
+        double deg = requestedDeg % 360.0;
+
+        // Bring into [-180, 180) — standard principal value
+        if (deg > 180.0) {
+            deg -= 360.0;
+        } else if (deg <= -180.0) {
+            deg += 360.0;
+        }
+
+        // At this point deg is in (-180, 180]. If it exceeds the soft limits,
+        // jump 360° to the opposite side.
+        if (deg > kWrapThresholdDeg) {
+            deg -= 360.0;
+        } else if (deg < -kWrapThresholdDeg) {
+            deg += 360.0;
+        }
+
+        // Final clamp to the soft limit range — handles the rear dead-zone
+        return Math.max(-kWrapThresholdDeg, Math.min(kWrapThresholdDeg, deg));
+    }
+
+    // endregion
+
     // region Public API
 
     /**
@@ -201,23 +259,32 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     /**
-     * Sets the target angle using a dynamic supplier (e.g., from a Vision subsystem).
+     * Sets the target angle using a dynamic supplier (e.g., from a Vision subsystem). The supplied
+     * angle is passed through {@link #wrapAngle(double)} every loop so the turret will automatically
+     * jump to the opposite side of its travel when the target crosses the rear dead-zone.
      *
      * @param angle A supplier providing the target Angle.
-     * @return A command to track the supplier's angle.
+     * @return A command to track the supplier's angle with wrap-around.
      */
     public Command setAngle(Supplier<Angle> angle) {
-        return turret.setAngle(angle);
+        return Commands.run(
+                        () -> {
+                            double wrappedDeg = wrapAngle(angle.get().in(Degrees));
+                            smartMotor.setPosition(Degrees.of(wrappedDeg));
+                        },
+                        this)
+                .withName(getName() + " SetAngle Wrapped Supplier");
     }
 
     /**
-     * Sets the target angle for the turret.
+     * Sets the target angle for the turret. The angle is passed through {@link #wrapAngle(double)} so
+     * out-of-range requests are mapped to the reachable side of the turret's travel.
      *
      * @param angle The target Angle.
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        return turret.setAngle(angle);
+        return turret.setAngle(Degrees.of(wrapAngle(angle.in(Degrees))));
     }
 
     // endregion

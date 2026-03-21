@@ -370,13 +370,18 @@ public final class ShooterConstants {
                                 kTurretOffsetX.in(Meters), kTurretOffsetY.in(Meters), kTurretOffsetZ.in(Meters)),
                         new Rotation3d());
 
-        // Hard limits
-        public static final Angle kHardLimitMax = Degrees.of(200);
-        public static final Angle kHardLimitMin = Degrees.of(-200);
+        // Hard limits (physical stops — sim only)
+        public static final Angle kHardLimitMax = Degrees.of(195);
+        public static final Angle kHardLimitMin = Degrees.of(-195);
 
-        // Soft limits
-        public static final Angle kSoftLimitMax = Degrees.of(195);
-        public static final Angle kSoftLimitMin = Degrees.of(-195);
+        // Soft limits (closed-loop clamp)
+        public static final Angle kSoftLimitMax = Degrees.of(190);
+        public static final Angle kSoftLimitMin = Degrees.of(-190);
+
+        // Wrap-around threshold — how far past ±180° the turret can physically reach.
+        // When a target exceeds the soft limit the turret jumps to the opposite side
+        // of the range (e.g. +190° → −170°) so it can continue tracking.
+        public static final double kWrapThresholdDeg = 190.0;
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);

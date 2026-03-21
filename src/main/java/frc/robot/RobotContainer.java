@@ -246,14 +246,18 @@ public class RobotContainer {
             turretSubsystem.setDefaultCommand(
                     turretSubsystem.setAngle(
                             () -> {
-                                // Map right-stick to turret angle in degrees (-180..180).
-                                // Raw stick: X right = +1, Y up = -1 (standard Xbox convention).
-                                // We negate Y so that stick-forward (−Y) = positive turret angle
-                                // (forward/away from driver). atan2(y, x) gives standard math angle
-                                // (CCW positive, 0° = right). Adjust sign/offset here if turret
-                                // direction doesn't match expectation on hardware.
+                                // Map right-stick angle to turret angle in degrees.
+                                // atan2 gives ±180° which covers the entire reachable range
+                                // (±190°). The extra ±10° past ±180° is handled by the
+                                // wrap-around logic in TurretSubsystem.wrapAngle() when the
+                                // solver requests angles in that zone during normal operation.
+                                //
+                                // Raw stick: X right = +1, Y up = -1 (Xbox convention).
+                                // We negate Y so stick-forward (−Y) = positive turret angle
+                                // (forward/away from driver). atan2(y, x) gives standard math
+                                // angle (CCW positive, 0° = right).
                                 double x = driverController.getRightX();
-                                double y = -driverController.getRightY(); // invert so forward = positive
+                                double y = -driverController.getRightY();
                                 double deadband = 0.1;
                                 if (Math.hypot(x, y) < deadband) {
                                     return turretSubsystem.getTarget();

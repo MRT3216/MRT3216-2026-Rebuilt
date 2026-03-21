@@ -26,7 +26,7 @@ import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSta
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kStatorCurrentLimit;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV_sim;
-import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kWrapThresholdDeg;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kWrapThreshold;
 
 import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -68,7 +68,7 @@ import yams.motorcontrollers.local.SparkWrapper;
  * <p><b>Note:</b> YAMS {@code PivotConfig.withWrapping()} cannot be used here because it calls
  * {@code SmartMotorControllerConfig.withContinuousWrapping()}, which is incompatible with soft
  * limits. Continuous wrapping is designed for infinite-rotation mechanisms (swerve azimuth), not
- * limited-travel turrets. The wrap logic is implemented manually in {@link #wrapAngle(double)}.
+ * limited-travel turrets. The wrap logic is implemented manually in {@link #wrapAngle(Angle)}.
  */
 public class TurretSubsystem extends SubsystemBase {
     private static final String kTurretMotorTelemetry = "TurretMotor";
@@ -197,12 +197,14 @@ public class TurretSubsystem extends SubsystemBase {
      *
      * <p>WPILib convention: <b>CCW-positive</b>. Zero is turret-forward.
      *
-     * @param requestedDeg the raw target angle in degrees (any range).
-     * @return the wrapped angle in degrees, guaranteed within [-kWrapThreshold, +kWrapThreshold].
+     * @param requested the raw target angle (any range).
+     * @return the wrapped Angle, guaranteed within [-kWrapThreshold, +kWrapThreshold].
      */
-    public static double wrapAngle(double requestedDeg) {
+    public static Angle wrapAngle(Angle requested) {
+        double threshDeg = kWrapThreshold.in(Degrees);
+
         // Normalize into (-360, 360) first to handle multi-revolution inputs
-        double deg = requestedDeg % 360.0;
+        double deg = requested.in(Degrees) % 360.0;
 
         // Bring into [-180, 180) — standard principal value
         if (deg > 180.0) {
@@ -213,14 +215,14 @@ public class TurretSubsystem extends SubsystemBase {
 
         // At this point deg is in (-180, 180]. If it exceeds the soft limits,
         // jump 360° to the opposite side.
-        if (deg > kWrapThresholdDeg) {
+        if (deg > threshDeg) {
             deg -= 360.0;
-        } else if (deg < -kWrapThresholdDeg) {
+        } else if (deg < -threshDeg) {
             deg += 360.0;
         }
 
         // Final clamp to the soft limit range — handles the rear dead-zone
-        return Math.max(-kWrapThresholdDeg, Math.min(kWrapThresholdDeg, deg));
+        return Degrees.of(Math.max(-threshDeg, Math.min(threshDeg, deg)));
     }
 
     // endregion
@@ -260,7 +262,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     /**
      * Sets the target angle using a dynamic supplier (e.g., from a Vision subsystem). The supplied
-     * angle is passed through {@link #wrapAngle(double)} every loop so the turret will automatically
+     * angle is passed through {@link #wrapAngle(Angle)} every loop so the turret will automatically
      * jump to the opposite side of its travel when the target crosses the rear dead-zone.
      *
      * @param angle A supplier providing the target Angle.
@@ -269,22 +271,21 @@ public class TurretSubsystem extends SubsystemBase {
     public Command setAngle(Supplier<Angle> angle) {
         return Commands.run(
                         () -> {
-                            double wrappedDeg = wrapAngle(angle.get().in(Degrees));
-                            smartMotor.setPosition(Degrees.of(wrappedDeg));
+                            smartMotor.setPosition(wrapAngle(angle.get()));
                         },
                         this)
                 .withName(getName() + " SetAngle Wrapped Supplier");
     }
 
     /**
-     * Sets the target angle for the turret. The angle is passed through {@link #wrapAngle(double)} so
+     * Sets the target angle for the turret. The angle is passed through {@link #wrapAngle(Angle)} so
      * out-of-range requests are mapped to the reachable side of the turret's travel.
      *
      * @param angle The target Angle.
      * @return A command to set and maintain the requested angle.
      */
     public Command setAngle(Angle angle) {
-        return turret.setAngle(Degrees.of(wrapAngle(angle.in(Degrees))));
+        return turret.setAngle(wrapAngle(angle));
     }
 
     // endregion

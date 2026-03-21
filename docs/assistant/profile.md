@@ -537,6 +537,402 @@ Source: docs.advantagekit.org/whats-new
 
 ---
 
+WPILib PID Tuning Walkthrough — Flywheel (Velocity) vs Turret (Position)
+------------------------------------------------------------------------
+Source: docs.wpilib.org/en/stable/docs/software/advanced-controls/introduction/tuning-flywheel.html
+        docs.wpilib.org/en/stable/docs/software/advanced-controls/introduction/tuning-turret.html
+
+**Flywheel (velocity control):**
+- Pure feedforward works *reasonably well* for velocity — motor steady-state velocity ≈ proportional to voltage. This is why joystick driving "just works."
+- Combined FF+PID is ideal: tune FF first (increase kV until output matches setpoint over time), then layer PID on top.
+- kD is not useful for velocity with a constant setpoint — only needed when setpoint changes.
+- kI is a sub-optimal way to eliminate steady-state error — better to use FF+PID. kI makes control "laggy."
+- Bang-bang works for slow-inertia flywheels but causes mechanical stress and current spikes.
+- Inertia in velocity control is different from position: shaft stops accelerating when voltage drops to zero (friction + back-EMF slow it), so overshoot is rare (usually only from loop delay).
+- kS (static friction) can be important if gearing has high friction. Measure: slowly increase voltage until mechanism moves; kS is the voltage just before motion begins.
+- kA is not needed for constant-velocity setpoints — only for changing velocity setpoints.
+
+**Turret (position control):**
+- Pure feedforward alone *does not work* for position — feedforward relates voltage to velocity/acceleration, not directly to position. Without a motion profile, it produces a single voltage spike and then zero (the "kick" response).
+- Pure PID works *acceptably* for turret position because no control effort is needed to hold position (unlike flywheel). However, it struggles to track a smoothly moving setpoint (no feedforward term to anticipate).
+- Combined FF+PID is best: feedforward provides smooth velocity following, PID provides long-term error correction and convergence.
+- High static friction turrets get "stuck" near the setpoint when PID output falls below kS — add kS to the feedforward.
+- kS direction issue: WPILib SimpleMotorFeedforward uses velocity setpoint for kS sign. Without a motion profile, you must manually add kS based on direction of error.
+- **Tuning order**: always tune feedforward first, then PID on top.
+
+**Applicability to our robot:**
+- Flywheel, Spindexer, Kicker → velocity control (FF+PID or FF-only for kicker)
+- Turret, Hood, Intake Pivot → position control (PID+optional FF)
+- All our velocity subsystems use YAMS `SmartMotorFeedforward` + on-controller PID
+- Positional subsystems use YAMS motion profiled PID (Hood, Turret) or duty-cycle only (intake pivot — needs retune)
+
+WPILib TrapezoidProfile & ProfiledPIDController Reference
+---------------------------------------------------------
+Source: docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/trapezoidal-profiles.html
+        docs.wpilib.org/en/stable/docs/software/advanced-controls/controllers/profiled-pidcontroller.html
+
+**TrapezoidProfile** generates a smooth position/velocity trajectory that respects max velocity and max acceleration constraints. Useful for position mechanisms to avoid "bang" setpoint changes.
+```java
+// Create profile with constraints
+TrapezoidProfile profile = new TrapezoidProfile(
+    new TrapezoidProfile.Constraints(maxVel, maxAccel));
+
+// Each loop iteration: calculate next setpoint from current state toward goal
+TrapezoidProfile.State setpoint = profile.calculate(kDt, currentState, goalState);
+
+// Feed to a controller
+motor.setSetpoint(PIDMode.kPosition, setpoint.position,
+    feedforward.calculate(setpoint.velocity) / 12.0);
+```
+
+**ProfiledPIDController** wraps TrapezoidProfile + PIDController into one class. You set a *goal* (not a setpoint) — the profile generates intermediate setpoints automatically.
+```java
+ProfiledPIDController controller = new ProfiledPIDController(
+    kP, kI, kD,
+    new TrapezoidProfile.Constraints(maxVel, maxAccel));
+
+// In periodic:
+double pidOutput = controller.calculate(encoder.getDistance(), goalPosition);
+motor.setVoltage(pidOutput + feedforward.calculate(controller.getSetpoint().velocity));
+```
+
+**Key points:**
+- Goal ≠ setpoint. The goal is the final desired state; the setpoint is the intermediate profiled state.
+- Use `controller.getSetpoint()` to get current profiled state (for feedforward calculation).
+- Use `controller.atGoal()` to check if the mechanism has reached the final position.
+- WPILib feedforward helpers (`SimpleMotorFeedforward.maxAchievableVelocity()` etc.) can calculate safe constraints.
+- YAMS handles motion profiling internally via `.withClosedLoopController(kP, kI, kD, maxVel, maxAccel)` — this is equivalent to ProfiledPIDController but runs on the motor controller firmware (lower latency).
+
+**YAMS vs WPILib motion profiling:**
+| Feature | YAMS | WPILib |
+|---|---|---|
+| Where it runs | Motor controller firmware (TalonFX: MotionMagic, Spark: MAXMotion) | roboRIO |
+| Latency | ~1ms (firmware loop) | ~20ms (robot loop) |
+| Profile type | Trapezoidal (MotionMagic) or S-curve (MotionMagicExpo) | Trapezoidal only |
+| Integration | Automatic with `withClosedLoopController(kP,kI,kD,maxVel,maxAccel)` | Manual `ProfiledPIDController` + feedforward |
+
+Elastic Dashboard Reference
+----------------------------
+Source: github.com/Gold872/elastic-dashboard, frc-elastic.gitbook.io/docs
+
+**What it is:** Modern FRC dashboard (replacement for Shuffleboard). Written in Dart/Flutter. Runs on Windows, macOS, Linux, Web.
+
+**Key features for our team:**
+- Customizable color scheme with 20+ variants
+- Subscription sharing to reduce NetworkTables bandwidth (important for competition with limited bandwidth)
+- Optimized camera streams — automatically deactivate when not in use (saves bandwidth)
+- Automatic height resizing to match FRC Driver Station window
+
+**Setup:**
+1. Download latest release from GitHub (`v2026.1.2` as of writing)
+2. Connect to robot NetworkTables (same as Shuffleboard — IP `10.32.16.2` or mDNS `roboRIO-3216-FRC.local`)
+3. Drag widgets from NT tree onto dashboard canvas
+4. Use subscription sharing to avoid bandwidth issues at competition
+
+**Java integration (ElasticLib):**
+```java
+// Send notification to dashboard
+Elastic.sendNotification(new Notification(
+    NotificationLevel.INFO, "Flywheel Ready", "At speed for shooting"));
+```
+
+**Competition tips:**
+- Pre-build layouts at home, export/import configs
+- Keep camera streams off by default — only enable when operator needs them
+- Use subscription sharing mode to minimize NT traffic
+- Dashboard auto-recovers after robot code restart
+- Test with actual DS at home to verify FMS-compatible bandwidth limits
+
+CTRE Phoenix 6 — Tuner X & Swerve API Reference
+-------------------------------------------------
+Source: v6.docs.ctr-electronics.com/en/stable/docs/tuner/index.html
+        v6.docs.ctr-electronics.com/en/stable/docs/api-reference/mechanisms/swerve/swerve-overview.html
+
+**Phoenix Tuner X** — companion app for CTRE device management:
+- Available on Windows (Microsoft Store), Android (Play Store), macOS/iOS (App Store)
+- Key features: device list, config editor, self-test snapshot, real-time plotting, multi-device plot & control, swerve project generator, elevator generator
+- **Connecting**: USB to roboRIO or network connection. Device list shows all CAN devices.
+- **Configs page**: edit all device configurations (PID gains, current limits, etc.) live. Useful for quick tuning at competition.
+- **Self-test snapshot**: captures device state at a moment in time — useful for diagnosing issues (shows faults, voltages, currents, temperatures).
+- **Plotting**: real-time signal plotting (velocity, position, current, voltage) for any device signal. Multi-device plot & control allows plotting signals from multiple devices simultaneously.
+- **Swerve project generator**: auto-generates swerve drivetrain code from device configuration. Our project was generated from this.
+
+**Phoenix 6 Swerve API overview:**
+- 5 core classes: `SwerveDrivetrainConstants`, `SwerveModuleConstantsFactory`, `SwerveModuleConstants`, `SwerveDrivetrain`, `SwerveRequest`
+- Hardware requirements: 4 TalonFX/FXS drive + 4 TalonFX/FXS steer + 1 Pigeon 2.0 + 4 CANcoders (or PWM encoders via CANdi/FXS)
+- All drive motors must be same type; all steer motors must be same type (but drive and steer can differ)
+- Built-in `SwerveRequest` types: `FieldCentric`, `RobotCentric`, `FieldCentricFacingAngle`, `SwerveDriveBrake` (X-brake)
+- Odometry runs on a separate high-frequency thread, synchronized with motor controller updates
+- With CANivore + Pro license + timesync: odometry timestamps are hardware-synchronized for best accuracy
+- Simulation: call `updateSimState(dt, supplyVoltage)` in `simulationPeriodic()`
+- **`CommandSwerveDrivetrain`** (from CTRE examples / Tuner X generator) integrates cleanly with WPILib command-based framework — our project uses the AdvantageKit variant
+
+WPILib Triggers Deep Dive
+--------------------------
+Source: docs.wpilib.org/en/stable/docs/software/commandbased/binding-commands-to-triggers.html
+
+**Getting a Trigger:**
+1. **HID factories** (most common): `controller.x()`, `controller.rightTrigger()`, etc.
+2. **JoystickButton**: `new JoystickButton(controller, Button.kY.value)` — constructor-only subclass of Trigger
+3. **Arbitrary**: `new Trigger(limitSwitch::get)` or `new Trigger(() -> someCondition)`
+
+**Binding types:**
+| Binding | Schedules when... | Cancels when... | Re-schedules? |
+|---|---|---|---|
+| `onTrue` | trigger goes false→true | never (runs to completion) | only if trigger cycles false→true again |
+| `whileTrue` | trigger goes false→true | trigger becomes false | no (wrap in RepeatCommand for restart) |
+| `toggleOnTrue` | trigger goes false→true | same condition if running | alternates schedule/cancel |
+| `onFalse`/`whileFalse`/`toggleOnFalse` | same logic but on true→false | — | — |
+
+**Composing triggers:**
+```java
+// AND: both must be true
+controller.x().and(controller.y()).onTrue(new ExampleCommand());
+// OR: either must be true
+controller.a().or(controller.b()).whileTrue(new AnotherCommand());
+// NEGATE: invert
+controller.start().negate().onTrue(new StopCommand());
+```
+
+**Chaining:** binding methods return the trigger, so you can chain:
+```java
+exampleButton
+    .onTrue(new FooCommand())    // schedule on press
+    .onFalse(new BarCommand());  // schedule on release
+```
+
+**Debouncing:** `exampleButton.debounce(0.1).onTrue(...)` — avoids rapid re-triggering (useful for digital inputs, noisy sensors).
+
+**Our conventions:**
+- Expose subsystem states as `public final Trigger` fields (e.g., `atSpeed`, `onTarget`)
+- Use Triggers for cross-subsystem coordination instead of tight command compositions
+- Triggers don't need to be stored if immediately bound — the event loop holds the reference
+- Define triggers in the narrowest scope that has access to the state
+
+PhotonVision — Constrained Pose Estimation & Heading-Assisted Strategies
+------------------------------------------------------------------------
+Source: docs.photonvision.org/en/latest/docs/programming/photonlib/robot-pose-estimator.html
+
+**PhotonPoseEstimator setup:**
+```java
+// Field layout (auto-loads current year's AprilTag layout)
+AprilTagFieldLayout tagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+
+// Camera transform (robot center → camera, meters + radians)
+Transform3d robotToCam = new Transform3d(
+    new Translation3d(0.5, 0.0, 0.5), new Rotation3d(0, 0, 0));
+
+// Create estimator
+PhotonPoseEstimator estimator = new PhotonPoseEstimator(tagLayout, robotToCam);
+```
+
+**Estimation strategies (9 available):**
+
+| Strategy | Method | Best for | Notes |
+|---|---|---|---|
+| Coprocessor MultiTag | `estimateCoprocMultiTagPose()` | **Recommended default** — most accurate | Requires field layout in UI |
+| Lowest Ambiguity | `estimateLowestAmbiguityPose()` | Single-tag fallback | Simple, reasonable accuracy |
+| Closest to Camera Height | `estimateClosestToCameraHeightPose()` | Niche | Height-based selection |
+| Closest to Reference Pose | `estimateClosestToReferencePose()` | When you have a good prior | Pass a reference pose |
+| Average Best Targets | `estimateAverageBestTargetsPose()` | Multi-tag averaging | Less accurate than coprocessor multitag |
+| roboRIO MultiTag | `estimateRioMultiTagPose()` | Legacy — NOT recommended | Slower version of coprocessor multitag |
+| PnP Distance Trig | `estimatePnpDistanceTrigSolvePose()` | Single-tag with heading | Needs `addHeadingData()` every frame |
+| **Constrained SolvePnP** | `estimateConstrainedSolvepnpPose()` | **Best single-tag** — heading-assisted | Needs `addHeadingData()`, runs on RIO, <2ms |
+
+**Recommended pipeline (from PhotonVision docs):**
+```java
+for (var result : camera.getAllUnreadResults()) {
+    visionEst = estimator.estimateCoprocMultiTagPose(result);       // try multi-tag first
+    if (visionEst.isEmpty()) {
+        visionEst = estimator.estimateLowestAmbiguityPose(result);  // fallback to single-tag
+    }
+    updateEstimationStdDevs(visionEst, result.getTargets());
+    visionEst.ifPresent(est ->
+        drivetrain.addVisionMeasurement(
+            est.estimatedPose.toPose2d(), est.timestampSeconds, estStdDevs));
+}
+```
+
+**Constrained SolvePnP (heading-assisted):**
+- Constrains the robot pose to be flat on the floor (eliminates 3 DOF → much more accurate with single tags)
+- Requires calling `addHeadingData()` every robot loop with current gyro heading
+- Runs on RoboRIO, typically <2ms compute
+- Based on FRC Team 6328's reference implementation
+- For best results: feed multi-tag result if available, else feed the single-tag result into `estimateConstrainedSolvepnpPose()`
+
+**Our implementation:** Uses AdvantageKit vision template with `VisionIOPhotonVision`. Processes multiple cameras, adjusts std devs based on tag count and distance, feeds into `SwerveDrivePoseEstimator.addVisionMeasurement()`.
+
+AdvantageScope — Log Analysis Reference
+----------------------------------------
+Source: docs.advantagescope.org (Mechanical Advantage / FRC 6328)
+
+**What it is:** Free, open-source log viewer for FRC. Works with AdvantageKit `.wpilog` files, DataLog files, and live NetworkTables. Cross-platform (Windows, macOS, Linux, web).
+
+**Key views for debugging:**
+| View | Use case |
+|---|---|
+| Line Graph | Time-series data (velocities, currents, voltages, PID error over time) |
+| Table | Raw values at specific timestamps |
+| 2D Field | Robot pose, vision measurements, PathPlanner trajectories |
+| 3D Field | Same but with 3D mechanism visualization |
+| Mechanism | WPILib Mechanism2d visualization |
+| Swerve | Module states, desired vs actual vectors |
+| Joystick | Controller input visualization |
+| Statistics | Min/max/mean/stdev of any signal |
+| Console | Printed messages and exceptions |
+
+**Competition workflow:**
+1. Deploy with AdvantageKit logging enabled (logs to USB stick on roboRIO)
+2. After match: pull USB stick, open `.wpilog` in AdvantageScope
+3. Key signals to check first:
+   - `Drive/Module*/DriveCurrentAmps` — current draw spikes indicate mechanical issues or stalling
+   - `RealOutputs/Robot/BatteryVoltageVolts` — brownout risk if drops below ~7V
+   - `Drive/OdometryPose` vs `Vision/*/Pose` — vision agreement with odometry
+   - Any subsystem's PID error signals — convergence, oscillation, steady-state error
+
+**Live mode:** Connect to `10.32.16.2:5810` (or mDNS) for real-time telemetry during practice/matches.
+
+**Replay (AdvantageKit exclusive):**
+- Load a `.wpilog` from a match, modify robot code (add new logged values, change logic), re-run the log through the modified code
+- The replayed log replays exact same inputs but with new processing — lets you debug without re-running on the robot
+- Critical for diagnosing issues that only appeared during a match
+
+WPILib NetworkTables Best Practices
+------------------------------------
+Source: docs.wpilib.org/en/stable/docs/software/networktables/
+
+**What NetworkTables is:** A publish/subscribe key-value store. roboRIO is the server; dashboards, coprocessors, and tools are clients.
+
+**Performance tips:**
+- Minimize publishing frequency for non-critical data. Default 100ms is fine for most telemetry; use lower rates for high-frequency data.
+- Use `SmartDashboard.putNumber()` / `putBoolean()` for simple dashboard values — wraps NT under the hood.
+- For bulk structured data, prefer AdvantageKit's `@AutoLog` or `Logger.recordOutput()` over many individual NT puts.
+- Avoid publishing large arrays every loop — NT has bandwidth limits (especially on the field at competition: ~4 Mbps shared with camera streams).
+- At competition, disable verbose logging / reduce camera resolution to stay under bandwidth limit.
+
+**Subscription sharing (Elastic Dashboard):** Multiple widgets watching the same NT key share one subscription — reduces bandwidth vs each widget having its own subscription.
+
+**Data types supported:** boolean, int, float, double, string, boolean[], int[], float[], double[], string[], raw byte[], struct (WPILib geometry types like Pose2d).
+
+**Key organization patterns:**
+```
+/SmartDashboard/Subsystem/Key          — simple telemetry
+/AdvantageKit/RealOutputs/Subsystem/... — AdvantageKit structured logging
+/photonvision/CameraName/...           — PhotonVision auto-publishes here
+/PathPlanner/...                       — PathPlanner trajectory data
+```
+
+**Our usage:** AdvantageKit handles most NT publishing automatically. YAMS `.withTelemetry("Name", TelemetryVerbosity.HIGH)` publishes mechanism state. PhotonVision publishes camera data to `/photonvision/`. Elastic Dashboard subscribes to these.
+
+PathPlanner — Path Constraints, Event Markers & Triggers Reference
+------------------------------------------------------------------
+Source: pathplanner.dev/pplib-build-an-auto.html, pplib-named-commands.html, pplib-triggers.html, pplib-follow-a-single-path.html
+
+**AutoBuilder configuration (swerve):**
+```java
+AutoBuilder.configure(
+    this::getPose,
+    this::resetPose,
+    this::getRobotRelativeSpeeds,      // MUST be robot-relative
+    (speeds, feedforwards) -> driveRobotRelative(speeds),
+    new PPHolonomicDriveController(
+        new PIDConstants(5.0, 0.0, 0.0),  // translation PID
+        new PIDConstants(5.0, 0.0, 0.0)   // rotation PID
+    ),
+    robotConfig,                        // RobotConfig.fromGUISettings()
+    () -> DriverStation.getAlliance()
+        .map(a -> a == DriverStation.Alliance.Red).orElse(false),
+    this                                // drive subsystem
+);
+```
+
+**Named Commands** — register BEFORE creating any autos/paths:
+```java
+NamedCommands.registerCommand("autoBalance", swerve.autoBalanceCommand());
+NamedCommands.registerCommand("intake", intake.runIntakeCommand());
+NamedCommands.registerCommand("shoot", shooter.shootCommand());
+```
+
+**Event Triggers** — alternative to named commands, more flexible:
+```java
+new EventTrigger("run intake").whileTrue(intake.runCommand());
+new EventTrigger("shoot note")
+    .and(new Trigger(shooter::atSpeed))
+    .onTrue(shooter.feedCommand());
+```
+
+**Point Towards Zone Triggers:**
+```java
+new PointTowardsZoneTrigger("Speaker").whileTrue(turret.aimAtSpeakerCommand());
+```
+
+**PathPlannerAuto Triggers** — per-auto event binding:
+```java
+PathPlannerAuto auto = new PathPlannerAuto("Example Auto");
+auto.isRunning().onTrue(Commands.print("Auto started"));
+auto.timeElapsed(5).onTrue(Commands.print("5 seconds"));
+auto.event("intake").onTrue(intake.runCommand());
+auto.activePath("Path 1").onTrue(Commands.print("Following Path 1"));
+auto.nearFieldPosition(new Translation2d(2, 2), 0.5)
+    .whileTrue(Commands.print("Near scoring position"));
+```
+
+**Auto chooser:**
+```java
+SendableChooser<Command> autoChooser = AutoBuilder.buildAutoChooser();
+SmartDashboard.putData("Auto Chooser", autoChooser);
+```
+
+**Java warmup** — avoid first-run delay:
+```java
+public void robotInit() {
+    FollowPathCommand.warmupCommand().schedule();  // run in background at startup
+}
+```
+
+**⚠ Warning:** If an EventTrigger-bound command shares requirements with commands in the auto group, the auto will be interrupted. Keep event-triggered commands on separate subsystems or use `withInterruptBehavior()`.
+
+**⚠ Warning:** Load all autos at code startup, not when auto is enabled. Complex autos have significant load times.
+
+FRC Battery Management Best Practices
+--------------------------------------
+Sources: ChiefDelphi community discussions, FRC battery best practices documentation
+
+**Battery testing procedure (our team's protocol):**
+1. BatteryBeak quick check (voltage + internal resistance)
+2. CBA IV discharge at 7.5A to 10.8V — measures capacity
+3. BD250 discharge at 20A to 10.8V × 2 cycles — stress test (simulates match loads)
+4. Gentle drive test in robot down to 11V — final validation
+5. Record all results in team spreadsheet
+
+**Battery health indicators:**
+| Metric | Good | Marginal | Replace |
+|---|---|---|---|
+| BatteryBeak voltage (fully charged) | >12.7V | 12.5-12.7V | <12.5V |
+| Internal resistance | <15mΩ | 15-20mΩ | >20mΩ |
+| CBA capacity at 7.5A to 10.8V | >17Ah | 15-17Ah | <15Ah |
+| Voltage under 20A load (after 1 min) | >12.0V | 11.5-12.0V | <11.5V |
+
+**In-code protections:**
+- **Stator current limiting**: limits torque output, prevents motor overheating. Set per-mechanism in YAMS via `withStatorCurrentLimit(amps)`.
+- **Supply current limiting**: limits current drawn from battery, prevents brownouts. Set via `withSupplyCurrentLimit(amps)`.
+- Typical values: drive 40-60A stator / 40A supply; mechanisms 20-40A stator / 30A supply (tune based on AK match logs).
+- Monitor `RealOutputs/Robot/BatteryVoltageVolts` in AdvantageScope — if drops below 8V regularly, increase current limits or test/replace batteries.
+
+**Competition battery management:**
+- Bring minimum 6 batteries (ideally 8-10 for a 2-day event)
+- Charge immediately after each match — NiMH FRC batteries take ~2 hours for full charge
+- Rotate batteries — don't over-use favorites; track match count per battery
+- Never deep discharge below 10.5V — damages cells permanently
+- Store at room temperature; cold batteries have significantly reduced performance
+- Label all batteries with team number, battery number, and purchase date
+
+**Our specific issues (from Flagstaff):**
+- Significant voltage drops from: battery mistreatment (deep discharged), insufficient load testing, no current limiting in code
+- Fix: automotive load tester + SkyRC BD250 for thorough testing; 14 new Energizer batteries for Idaho; implement current limiting in all subsystems
+
+---
+
 Starter prompt (paste to assistant)
 ----------------------------------
 Copy this exact block into a new assistant session to rehydrate behavior and expectations:
@@ -810,4 +1206,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-03-21 — updated key files map for constants reorganization (subsystem constants moved to subsystem packages, TelemetryKeys inlined, Dimensions deleted), fixed stale docs/guides/ references (now consolidated in docs/), updated starter prompt with constants conventions, added session completion notes, updated intake pivot PID context.*
+*Last edited: 2026-03-21 — expanded knowledge base with 10 new reference sections (WPILib PID tuning walkthrough, TrapezoidProfile & ProfiledPIDController, Elastic Dashboard, CTRE Tuner X & Swerve API, WPILib Triggers deep dive, PhotonVision constrained pose estimation, AdvantageScope log analysis, NetworkTables best practices, PathPlanner triggers/named commands/event markers, FRC battery management).*

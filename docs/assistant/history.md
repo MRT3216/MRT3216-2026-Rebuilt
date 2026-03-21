@@ -150,4 +150,35 @@ Multi-part session focused on reorganizing constants, cleaning up documentation,
 
 ---
 
-End of 2026-03-21 session.
+End of 2026-03-21 session (part 1: constants reorg).
+
+---
+
+## Session: 2026-03-21 (part 2: knowledge base expansion)
+
+**Goal**: Expand `docs/assistant/profile.md` knowledge base with 10 documentation reference sections covering external tools, APIs, and best practices.
+
+### Steps
+1) User: Requested adding 10 documentation reference sections previously suggested by assistant.
+2) Assistant: Fetched external documentation from WPILib (flywheel/turret tuning, TrapezoidProfile, ProfiledPIDController, Triggers), CTRE (Tuner X, swerve API), PhotonVision (pose estimation), PathPlanner (named commands, event triggers, auto builder), Elastic Dashboard (GitHub), and AdvantageScope.
+3) Distilled all fetched + training knowledge into 10 concise reference sections and inserted into `profile.md` before the "Starter prompt" section.
+
+### Sections Added to profile.md
+1. **WPILib PID Tuning Walkthrough** — flywheel velocity vs turret position control strategies, tuning order, applicability to our mechanisms
+2. **WPILib TrapezoidProfile & ProfiledPIDController** — API usage, goal vs setpoint, YAMS comparison table
+3. **Elastic Dashboard Reference** — setup, features, Java ElasticLib integration, competition tips
+4. **CTRE Phoenix 6 Tuner X & Swerve API** — Tuner X features, swerve API 5 core classes, hardware requirements
+5. **WPILib Triggers Deep Dive** — getting triggers, binding types table, composing, chaining, debouncing
+6. **PhotonVision Constrained Pose Estimation** — all 9 strategies with table, recommended pipeline, constrained SolvePnP heading-assisted
+7. **AdvantageScope Log Analysis** — key views table, competition workflow, replay feature
+8. **WPILib NetworkTables Best Practices** — performance tips, data types, key organization patterns
+9. **PathPlanner Triggers & Named Commands** — AutoBuilder config, named commands, EventTrigger, PointTowardsZoneTrigger, PathPlannerAuto triggers, Java warmup
+10. **FRC Battery Management** — testing procedure, health indicators table, current limiting, competition management
+
+### Files Modified
+- `docs/assistant/profile.md` — 10 new sections inserted, last-edited footer updated.
+- `docs/assistant/history.md` — appended this session summary.
+
+---
+
+End of 2026-03-21 session (part 2).

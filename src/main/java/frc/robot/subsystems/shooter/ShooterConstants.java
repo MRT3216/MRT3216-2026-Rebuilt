@@ -118,7 +118,7 @@ public final class ShooterConstants {
         // Targets / tunables
         public static final AngularVelocity kFlywheelDefaultVelocity = RPM.of(3000);
         public static final AngularVelocity kVelocityTolerance = RPM.of(30);
-        public static final double kClearDurationSecs = 0.25;
+        public static final Time kClearDuration = Seconds.of(0.25);
 
         public static final LoggedTunableNumber kTunableFlywheelRPM =
                 new LoggedTunableNumber(

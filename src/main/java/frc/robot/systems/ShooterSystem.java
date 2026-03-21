@@ -4,7 +4,7 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Seconds;
-import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kClearDurationSecs;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kClearDuration;
 import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kFlywheelDefaultVelocity;
 import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
@@ -82,7 +82,7 @@ public class ShooterSystem {
     public Command clearKicker() {
         return kicker
                 .setVelocity(kKickerClearAngularVelocity)
-                .withTimeout(kClearDurationSecs)
+                .withTimeout(kClearDuration)
                 .andThen(kicker.stopNow())
                 .withName("ClearKicker");
     }

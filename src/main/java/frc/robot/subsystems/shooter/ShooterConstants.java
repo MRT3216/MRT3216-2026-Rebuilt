@@ -378,13 +378,7 @@ public final class ShooterConstants {
         public static final Angle kSoftLimitMax = Degrees.of(190);
         public static final Angle kSoftLimitMin = Degrees.of(-190);
 
-        // Wrap-around threshold — how far past ±180° the turret can physically reach.
-        // When a target exceeds the soft limit the turret jumps to the opposite side
-        // of the range (e.g. +190° → −170°) so it can continue tracking.
-        public static final Angle kWrapThreshold = Degrees.of(190);
-
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);
-        public static final Angle kTurretAngleOffset = Degrees.of(0);
     }
 }

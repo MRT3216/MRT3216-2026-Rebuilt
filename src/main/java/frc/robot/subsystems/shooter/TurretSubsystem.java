@@ -26,7 +26,6 @@ import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSta
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kStatorCurrentLimit;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV_sim;
-import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kWrapThreshold;
 
 import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -59,11 +58,15 @@ import yams.motorcontrollers.local.SparkWrapper;
  *
  * <h3>Wrap-around behavior</h3>
  *
- * The turret can physically rotate ±190° from its zero-forward position. When a tracking target
- * would require passing through the mechanical limit (e.g., a target at +195° while currently at
- * +185°), the turret instead "jumps" to the opposite side of the travel range (e.g., −165°) and
- * approaches the target from the other direction. This lets the turret continuously track targets
- * that cross the rear dead-zone without stalling against a hard stop.
+ * The turret's travel range is defined by {@code kSoftLimitMin} / {@code kSoftLimitMax} (currently
+ * ±190°, 380° total). When the shot solver or stick input requests an angle, {@link
+ * #wrapAngle(Angle)} selects the ±360° equivalent <em>closest to the turret's current position</em>
+ * and clamps to the soft limits. This prevents unnecessary full-rotation swings when {@code atan2}
+ * wraps at ±180° — a common pitfall since our travel exceeds 360° coverage by 20°.
+ *
+ * <p>The algorithm naturally handles both symmetric limits (±190°) and asymmetric limits (e.g.,
+ * −60° / +320° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants
+ * need to change.
  *
  * <p><b>Note:</b> YAMS {@code PivotConfig.withWrapping()} cannot be used here because it calls
  * {@code SmartMotorControllerConfig.withContinuousWrapping()}, which is incompatible with soft
@@ -182,47 +185,59 @@ public class TurretSubsystem extends SubsystemBase {
     // region Wrap-around logic
 
     /**
-     * Wraps a requested turret angle so it stays within the ±{@value
-     * ShooterConstants.TurretConstants#kWrapThresholdDeg}° soft-limit range.
+     * Wraps a requested turret angle into the soft-limit range [{@code kSoftLimitMin}, {@code
+     * kSoftLimitMax}], choosing the representation closest to the turret's <em>current</em> encoder
+     * position to avoid unnecessary full-rotation swings.
      *
-     * <p>If the requested angle is within [-kWrapThreshold, +kWrapThreshold] it passes through
-     * unchanged. If it exceeds either limit (e.g., a vision solver returning +200° for a target
-     * behind the robot), the angle is shifted by ±360° to land on the opposite side of the travel
-     * range.
+     * <h4>Why position-aware?</h4>
      *
-     * <p>After wrapping, if the result still falls outside the soft limits the angle is clamped. The
-     * turret's 380° total travel (±190°) means there is a 20° rear dead-zone (from ±190° to ±180° on
-     * the opposite side) where targets are unreachable — clamping handles that gracefully by driving
-     * as close as possible.
+     * The shot solver ({@link frc.robot.util.shooter.HybridTurretUtil}) computes a robot-relative
+     * azimuth via {@code atan2}, which returns values in (−180°, 180°]. Our turret can reach ±190°,
+     * so there is a 10° band on each side (180°–190°) that {@code atan2} maps to the opposite sign.
+     * For example, a target at +181° from robot-forward is reported as −179° by {@code atan2}. If the
+     * turret is currently at +185°, a naïve wrap would command −179° — a 364° swing instead of a 4°
+     * move. By considering the ±360° equivalents and picking the one nearest the current position,
+     * the turret moves the short way and only wraps when it truly needs to cross the dead zone.
      *
-     * <p>WPILib convention: <b>CCW-positive</b>. Zero is turret-forward.
+     * <h4>Algorithm</h4>
      *
-     * @param requested the raw target angle (any range).
-     * @return the wrapped Angle, guaranteed within [-kWrapThreshold, +kWrapThreshold].
+     * <ol>
+     *   <li>Normalize the requested angle into (−360°, 360°) via modulo.
+     *   <li>Generate three candidates: {@code normalized}, {@code normalized + 360°}, {@code
+     *       normalized − 360°}.
+     *   <li>Select the candidate closest to the current turret position.
+     *   <li>Clamp to [{@code kSoftLimitMin}, {@code kSoftLimitMax}].
+     * </ol>
+     *
+     * <p>The final clamp handles the rear dead zone gracefully — if all candidates fall outside the
+     * soft limits, the turret drives as close as it can.
+     *
+     * @param requested the raw target angle (any range, typically from the shot solver or stick
+     *     input).
+     * @return the wrapped Angle, guaranteed within [{@code kSoftLimitMin}, {@code kSoftLimitMax}].
      */
-    public static Angle wrapAngle(Angle requested) {
-        double threshDeg = kWrapThreshold.in(Degrees);
+    public Angle wrapAngle(Angle requested) {
+        double minDeg = kSoftLimitMin.in(Degrees);
+        double maxDeg = kSoftLimitMax.in(Degrees);
+        double currentDeg = getPosition().in(Degrees);
 
-        // Normalize into (-360, 360) first to handle multi-revolution inputs
+        // Normalize into (-360, 360)
         double deg = requested.in(Degrees) % 360.0;
 
-        // Bring into [-180, 180) — standard principal value
-        if (deg > 180.0) {
-            deg -= 360.0;
-        } else if (deg <= -180.0) {
-            deg += 360.0;
+        // Generate three candidates and pick the one nearest the current position
+        double[] candidates = {deg, deg + 360.0, deg - 360.0};
+        double best = candidates[0];
+        double bestDist = Math.abs(candidates[0] - currentDeg);
+        for (int i = 1; i < candidates.length; i++) {
+            double dist = Math.abs(candidates[i] - currentDeg);
+            if (dist < bestDist) {
+                best = candidates[i];
+                bestDist = dist;
+            }
         }
 
-        // At this point deg is in (-180, 180]. If it exceeds the soft limits,
-        // jump 360° to the opposite side.
-        if (deg > threshDeg) {
-            deg -= 360.0;
-        } else if (deg < -threshDeg) {
-            deg += 360.0;
-        }
-
-        // Final clamp to the soft limit range — handles the rear dead-zone
-        return Degrees.of(Math.max(-threshDeg, Math.min(threshDeg, deg)));
+        // Clamp to soft limits
+        return Degrees.of(Math.max(minDeg, Math.min(maxDeg, best)));
     }
 
     // endregion

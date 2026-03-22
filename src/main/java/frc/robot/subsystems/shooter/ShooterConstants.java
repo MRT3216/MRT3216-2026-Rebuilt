@@ -388,15 +388,21 @@ public final class ShooterConstants {
 
         // Encoder gearing: both absolute encoders mesh with the 90T ring gear (= turret).
         // commonRatio = 1.0 because the ring gear IS the turret (1:1).
+        // Encoder 1 = REV Through Bore on SparkMax absolute-encoder port (13T pinion).
+        // Encoder 2 = PWM absolute encoder on RoboRIO DIO (10T pinion).
         public static final double kCRTCommonRatio = 1.0;
         public static final int kCRTDriveGearTeeth = 90;
-        public static final int kCRTEncoder1PinionTeeth = 10; // 90/10 = 9:1 ratio
-        public static final int kCRTEncoder2PinionTeeth = 13; // 90/13 ≈ 6.923:1 ratio
+        public static final int kCRTEncoder1PinionTeeth = 13; // SparkMax abs enc — 90/13 ≈ 6.923:1
+        public static final int kCRTEncoder2PinionTeeth = 10; // RoboRIO PWM enc  — 90/10 = 9:1
 
-        // Mechanism range in rotations (must be centered around 0 and cover full travel).
-        // ±195° hard limits → ±0.5417 rot; we use ±0.6 rot for margin.
-        public static final Angle kCRTMechanismMin = Rotations.of(-0.6);
-        public static final Angle kCRTMechanismMax = Rotations.of(0.6);
+        // Mechanism range — derived from the hard limits with a small margin so the CRT
+        // solver's coverage window always exceeds the physical travel.  Changing the hard
+        // limits automatically updates this; no second constant to keep in sync.
+        private static final double kCRTRangeMarginRot = 0.05; // ≈ 18° extra on each side
+        public static final Angle kCRTMechanismMin =
+                Rotations.of(kHardLimitMin.in(Rotations) - kCRTRangeMarginRot);
+        public static final Angle kCRTMechanismMax =
+                Rotations.of(kHardLimitMax.in(Rotations) + kCRTRangeMarginRot);
 
         // Encoder offsets (rotations, added before wrap).
         // Calibrate: at mechanical zero, log raw encoder readings, then set these

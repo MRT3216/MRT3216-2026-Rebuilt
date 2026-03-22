@@ -40,7 +40,6 @@ import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kUse
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV_sim;
 
-import com.ctre.phoenix6.hardware.CANcoder;
 import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -48,6 +47,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -126,6 +126,10 @@ public class TurretSubsystem extends SubsystemBase {
     private final SparkMax pivotMotor =
             new SparkMax(RobotMap.Shooter.Turret.kMotorId, SparkMax.MotorType.kBrushless);
 
+    /** PWM absolute encoder on the RoboRIO (10T pinion, 90T ring gear). Used for CRT only. */
+    private final DutyCycleEncoder turretPwmEncoder =
+            new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
+
     // endregion
 
     // region Controller & mechanism
@@ -168,8 +172,10 @@ public class TurretSubsystem extends SubsystemBase {
         smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);
 
         // ── EasyCRT absolute-position bootstrapping ──
-        // When enabled, uses two absolute encoders (different gear ratios on the 90T ring gear)
-        // to resolve the turret's true position via the Chinese Remainder Theorem at boot.
+        // When enabled, uses two absolute encoders with different gear ratios on the 90T ring
+        // gear to resolve the turret's true position via the Chinese Remainder Theorem at boot.
+        // Encoder 1: REV Through Bore on SparkMax abs-encoder port (13T pinion).
+        // Encoder 2: PWM absolute encoder on RoboRIO DIO (10T pinion).
         // Falls back to kStartingPosition if CRT is disabled or the solve fails.
         Angle startingPosition = kStartingPosition;
 
@@ -213,22 +219,34 @@ public class TurretSubsystem extends SubsystemBase {
     /**
      * Attempts to resolve the turret's absolute position using EasyCRT.
      *
-     * <p>Creates two CANCoders, configures the CRT solver with the turret's ring-gear / pinion
-     * gearing, and runs a single solve. Stores diagnostic fields ({@link #crtStatus}, {@link
-     * #crtErrorRot}, {@link #crtIterations}) for telemetry regardless of outcome.
+     * <p>Reads two absolute encoders that mesh with the 90T turret ring gear through different pinion
+     * sizes:
+     *
+     * <ul>
+     *   <li><b>Encoder 1 (13T pinion):</b> REV Through Bore plugged into the SparkMax's
+     *       absolute-encoder port. Read via {@code pivotMotor.getAbsoluteEncoder().getPosition()}
+     *       (returns 0–1 rotations).
+     *   <li><b>Encoder 2 (10T pinion):</b> Absolute encoder wired to a RoboRIO DIO channel as a PWM
+     *       duty-cycle signal. Read via {@code turretPwmEncoder.get()} (returns 0–1 rotations).
+     * </ul>
+     *
+     * <p>Configures the CRT solver with the turret's ring-gear / pinion gearing and runs a single
+     * solve. Stores diagnostic fields ({@link #crtStatus}, {@link #crtErrorRot}, {@link
+     * #crtIterations}) for telemetry regardless of outcome.
      *
      * @return the resolved mechanism angle, or empty if the solve fails.
      */
     private Optional<Angle> attemptCRTSolve() {
-        // Hardware: two CANCoders meshing with the 90T turret ring gear
-        CANcoder encoder1 = new CANcoder(RobotMap.Shooter.Turret.kCRTEncoder1Id);
-        CANcoder encoder2 = new CANcoder(RobotMap.Shooter.Turret.kCRTEncoder2Id);
+        // Encoder 1: SparkMax absolute encoder (13T pinion on 90T ring gear)
+        Supplier<Angle> enc1Supplier =
+                () -> Rotations.of(pivotMotor.getAbsoluteEncoder().getPosition());
+
+        // Encoder 2: RoboRIO PWM DutyCycleEncoder (10T pinion on 90T ring gear)
+        Supplier<Angle> enc2Supplier = () -> Rotations.of(turretPwmEncoder.get());
 
         // Build EasyCRT config
         EasyCRTConfig config =
-                new EasyCRTConfig(
-                                () -> Rotations.of(encoder1.getAbsolutePosition().getValueAsDouble()),
-                                () -> Rotations.of(encoder2.getAbsolutePosition().getValueAsDouble()))
+                new EasyCRTConfig(enc1Supplier, enc2Supplier)
                         .withCommonDriveGear(
                                 kCRTCommonRatio,
                                 kCRTDriveGearTeeth,

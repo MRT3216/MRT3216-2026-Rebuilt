@@ -115,12 +115,32 @@ A motion profile ramps the mechanism smoothly to target instead of slamming to f
 
 **Every position-controlled mechanism needs a motion profile.** Velocity mechanisms (flywheels, rollers) don't.
 
+> ⚠️ **YAMS requirement:** For position-controlled mechanisms, `kV` and `kA` feedforward only work when a motion profile is configured. Without one, YAMS has no velocity/acceleration reference to feed forward against — FF terms are silently ignored and only PID does work. **Always set profile limits before tuning FF.**
+
 | Type | How it works | Used by |
 |------|-------------|---------|
 | **Trapezoidal** | Constant accel → cruise → constant decel. Simple. | Turret, Hood |
 | **Exponential** | Accel follows motor voltage-speed curve (smoother). | Drive steer, Intake pivot |
 
-**To tune profile limits** ([detailed guide](https://mantik.netlify.app/frc/trapezoidal-motion-profiling)):
+#### Recommended Starting Values
+
+These are conservative starting points. All values can be tuned live via YAMS NT entries. Start here, then increase toward the theoretical maxes using the tuning procedure below.
+
+| Mechanism | Motor / Gear Ratio | Theoretical Max Speed | **Starting Cruise Velocity** | **Starting Max Acceleration** | Code Location |
+|-----------|-------------------|----------------------|------------------------------|-------------------------------|---------------|
+| **Turret** | NEO 5676 RPM / 27:1 | ~1261°/s | **1000°/s** | **7200°/s²** | `ShooterConstants.TurretConstants` |
+| **Hood** | Kraken X44 / 30:1 | ~600°/s | **270°/s** | **270°/s²** | Hardcoded in `HoodSubsystem` constructor |
+| **Intake Pivot** | 2× Vortex / 30:1 | ~600°/s | **90°/s** | **90°/s²** | `IntakeConstants.Pivot` |
+
+> **Why these values?**
+> - **Turret** is the fastest mechanism — 1000°/s is ~80% of free speed, 7200°/s² is aggressive but the 27:1 gearing provides plenty of torque. If it slams into the hard stop, reduce acceleration first.
+> - **Hood** travels only 0–30° total — 270°/s means the full range in ~0.11s. This is conservative. Increase velocity if shot transitions feel slow.
+> - **Intake Pivot** uses 90°/s because the pivot is heavy (two motors, 30:1 gearing). 90°/s² is very gentle. Once kG is tuned and it holds position reliably, increase both by 2–3×.
+
+#### How to tune profile limits
+
+([Detailed interactive guide](https://mantik.netlify.app/frc/trapezoidal-motion-profiling))
+
 1. Set acceleration high. Increase max velocity until the mechanism can't keep up. Back off 10–20%.
 2. Increase acceleration until overshoot/vibration. Back off 15–25%.
 3. Overshoot at corners → reduce acceleration. Motion feels slow → increase both.
@@ -812,53 +832,89 @@ Each camera adds CPU load — monitor in web interface. Stagger resolutions if n
 
 ## Elastic Dashboard for Matches
 
-[Elastic](https://github.com/Gold872/elastic-dashboard) replaces Shuffleboard — faster and works well with NT. Use for **in-match awareness**, not tuning (use AdvantageScope for that).
+[Elastic](https://github.com/Gold872/elastic-dashboard) replaces Shuffleboard — faster and works well with NT4. Use for **in-match awareness**, not tuning (use AdvantageScope for that).
 
-### Recommended Match Layout
+### How Our NT Keys Work
 
-One uncluttered tab with only what driver/operator need during a match:
+Our code publishes telemetry two ways:
 
-#### Top — Critical Status
-| Widget | NT Key | Notes |
-|--------|--------|-------|
-| Match Timer | `MatchTime` | Most important number |
-| Alliance Color | FMS (auto) | Red/blue for autonomous |
-| Battery Voltage | `Battery/Voltage` | Flash red < 11.5V |
-| Hub Shift Active | `HubShift/ShiftedActive` | Boolean indicator |
-| Shift Timer | `HubShift/ShiftedRemainingTime` | Seconds remaining |
+| Method | NT Prefix | Used By |
+|--------|-----------|---------|
+| `Logger.recordOutput("Key", val)` | `/AdvantageKit/Key` | All AdvantageKit-logged data |
+| `SmartDashboard.putX("Key", val)` | `/SmartDashboard/Key` | Drive field widget |
 
-#### Middle — Subsystem Status
-| Widget | NT Key | Notes |
-|--------|--------|-------|
-| Flywheel Spun Up | `Flywheel/IsSpunUp` | Boolean — green = ready |
-| Flywheel RPM | `Flywheel/FX/VelocityRPM` | Numeric |
-| Turret Angle | YAMS auto-publishes | Tracking confirmation |
-| Hood Angle | `Hood/FX/PositionDegrees` | Shot angle |
-| Shoot Mode | `ShooterTelemetry/shootMode` | FULL / STATIC_DISTANCE |
+In Elastic, when configuring a widget's NT path, use the full prefixed key. For example, `MatchTime` in code → `/AdvantageKit/MatchTime` in Elastic.
 
-#### Bottom — Drive Info
-| Widget | NT Key | Notes |
-|--------|--------|-------|
-| Field View (2D) | `Drive/Pose` | Verify auto worked |
-| Vision Target | `Vision/Summary/HasTarget` | Boolean |
-| Vision Tag Count | `Vision/Summary/TagCount` | Tags seen |
-| Hub Distance | `ShooterTelemetry/hubDistanceMeters` | When aiming |
+### Recommended Match Layout (6328-Style)
+
+6328 (Mechanical Advantage) publishes hub shift data to their dashboard for operator awareness during 2026 Rebuilt's alternating shift windows. Our code does the same via `HubShiftUtil`. Replicate their layout:
+
+#### Row 1 — Match Awareness (biggest widgets, top of screen)
+
+| Widget Type | NT Key | Elastic Widget | Notes |
+|-------------|--------|----------------|-------|
+| Match Timer | `/AdvantageKit/MatchTime` | **Number** (large font) | Countdown from FMS. Most important number. |
+| Shift Timer | `/AdvantageKit/HubShift/ShiftedRemainingTime` | **Number** (large font) | Seconds until current shift ends (TOF-adjusted). |
+| Shift Active | `/AdvantageKit/HubShift/ShiftedActive` | **Boolean Box** | Green = our alliance can score. Red = opponent's turn. |
+| Game State | `/AdvantageKit/HubShift/ShiftedCurrentShift` | **Text Display** | TRANSITION / SHIFT1 / SHIFT2 / SHIFT3 / SHIFT4 / ENDGAME |
+| Active First? | `/AdvantageKit/HubShift/ActiveFirst` | **Boolean Box** | Whether our alliance scores first in SHIFT1. |
+
+#### Row 2 — Shooter Status
+
+| Widget Type | NT Key | Elastic Widget | Notes |
+|-------------|--------|----------------|-------|
+| Flywheel Ready | `/AdvantageKit/Flywheel/IsSpunUp` | **Boolean Box** | Green = RPM on target. |
+| Flywheel RPM | `/AdvantageKit/Flywheel/FX/VelocityRPM` | **Number** | Current flywheel speed. |
+| Hood Angle | `/AdvantageKit/Hood/FX/PositionDegrees` | **Number** | Current hood position in degrees. |
+| Shoot Mode | `/AdvantageKit/ShooterTelemetry/shootMode` | **Text Display** | FULL / STATIC_DISTANCE / etc. |
+| Hub Distance | `/AdvantageKit/ShooterTelemetry/hubDistanceMeters` | **Number** | Distance to hub (meters). |
+
+#### Row 3 — Drive & System Health
+
+| Widget Type | NT Key | Elastic Widget | Notes |
+|-------------|--------|----------------|-------|
+| Battery | `/AdvantageKit/Battery/Voltage` | **Number** | Flash red < 11.5V. |
+| Vision Has Target | `/AdvantageKit/Vision/Summary/HasTarget` | **Boolean Box** | Green = seeing AprilTags. |
+| Vision Tag Count | `/AdvantageKit/Vision/Summary/TagCount` | **Number** | How many tags are visible. |
+| Field View | `/SmartDashboard/Field` | **Field Widget** | 2D robot pose — verify auto worked. |
+
+### Elastic Setup Step-by-Step
+
+1. **Install:** Download from [GitHub releases](https://github.com/Gold872/elastic-dashboard/releases). Run the installer.
+2. **Connect:** Launch Elastic → it auto-discovers the robot via NT4 (same as Shuffleboard). In sim, it connects to `localhost`.
+3. **Create tabs:** Right-click the tab bar → Add Tab. Create at least:
+   - **Teleop** — the match layout above (auto-selected by `Elastic.selectTab("Teleop")` in code)
+   - **Auto** — minimal, just field view + auto selector
+   - **Disabled** — auto selector, battery, vision status
+4. **Add widgets:**
+   - Click **+** or drag from the NT tree on the left.
+   - Right-click a widget → **Properties** → set the NT topic path (e.g., `/AdvantageKit/HubShift/ShiftedActive`).
+   - For Boolean Box: set true-color = green, false-color = red.
+   - For Number widgets: increase font size to **48–72pt** (driver is 10+ feet away).
+5. **Save layout:** File → Save Layout → commit the `.json` file to the repo so the whole team uses the same layout.
+6. **Lock before competition:** Right-click → Lock All Widgets. Prevents accidental drag during matches.
+
+### Auto Tab Switching
+
+Our `Robot.java` already calls `Elastic.selectTab()` on mode transitions:
+
+```
+disabledInit()  → Elastic.selectTab("Disabled")
+autonomousInit() → Elastic.selectTab("Auto")
+teleopInit()    → Elastic.selectTab("Teleop")
+```
+
+Name your Elastic tabs exactly **"Disabled"**, **"Auto"**, and **"Teleop"** (case-sensitive) to match.
 
 ### Design Principles
 
-1. **Less is more.** Only show what the driver will actually look at during a match.
-2. **Use color.** Green = good, Red = bad. Booleans > numbers for at-a-glance.
-3. **Big text.** Driver is 10+ feet away and stressed.
-4. **Test it.** Have the driver stand at normal distance — if they can't read it, fix it.
+1. **Less is more.** Only show what the driver/operator will actually look at mid-match.
+2. **Use color.** Green = good, Red = bad. Booleans > numbers for at-a-glance status.
+3. **Big text.** 48pt minimum for numbers the driver needs. They're 10+ feet away and stressed.
+4. **Test it.** Have the driver stand at normal distance — if they can't read it, make it bigger.
+5. **Separate tuning from matches.** Never clutter the match layout with gains or debug data. Use AdvantageScope for that.
 
-### Setup
-
-1. Download from [GitHub releases](https://github.com/Gold872/elastic-dashboard/releases)
-2. Connect to robot (auto-discovers NT)
-3. Drag widgets, right-click to configure paths
-4. Save layout as `.json`, lock before competition
-
-> 💡 Create two tabs: **Match** (minimal) and **Debug** (detailed — temps, CAN utilization). Only show Match during competition.
+> 💡 **Debug tab:** Optionally add a fourth tab with detailed data (motor temps, CAN utilization, per-module velocities). Hide it during competition.
 
 ---
 

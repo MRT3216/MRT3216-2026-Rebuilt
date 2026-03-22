@@ -894,27 +894,31 @@ If running multiple cameras:
 Build a single, uncluttered tab with only what the driver and operator need to see during a match:
 
 #### Top Row — Critical Status
-| Widget | Source | Why |
-|--------|--------|-----|
-| **Match Timer** | FMS | Countdown — the most important number |
-| **Alliance Color** | FMS | Red/blue indicator so autonomous knows which side |
-| **Robot State** | Robot | Disabled / Auto / Teleop / Test |
-| **Battery Voltage** | `/SmartDashboard/Battery` or PDP | Flash red below 11.5V — brownout is imminent |
+| Widget | NetworkTables Key | Why |
+|--------|-------------------|-----|
+| **Match Timer** | `MatchTime` | Countdown — the most important number |
+| **Alliance Color** | FMS data (auto-detected) | Red/blue indicator so autonomous knows which side |
+| **Robot State** | FMS data (auto-detected) | Disabled / Auto / Teleop / Test |
+| **Battery Voltage** | `Battery/Voltage` | Flash red below 11.5V — brownout is imminent |
+| **Hub Shift Active** | `HubShift/ShiftedActive` | Green when our alliance can score in the hub |
+| **Shift Timer** | `HubShift/ShiftedRemainingTime` | Seconds until shift changes |
 
 #### Middle Row — Subsystem Status
-| Widget | Source | Why |
-|--------|--------|-----|
-| **Has Note** | Beam break / game piece sensor | Operator needs to know when to stop intaking |
-| **Flywheel RPM** | `/Shooter/Flywheel/VelocityRPS` | Operator confirms shooter is spun up before firing |
-| **Turret Angle** | `/Shooter/Turret/Position` | Confirms turret is tracking the target |
-| **Hood Angle** | `/Shooter/Hood/Position` | Confirms correct shot angle |
-| **Intake State** | `/Intake/State` | Shows if intake is deployed, retracted, or jammed |
+| Widget | NetworkTables Key | Why |
+|--------|-------------------|-----|
+| **Flywheel Spun Up** | `Flywheel/IsSpunUp` (boolean) | Green = ready to fire. Wire as boolean indicator. |
+| **Flywheel RPM** | `Flywheel/FX/VelocityRPM` | Numeric readout for the operator |
+| **Turret Angle** | (YAMS auto-publishes) | Confirms turret is tracking the target |
+| **Hood Angle** | `Hood/FX/PositionDegrees` | Confirms correct shot angle |
+| **Shoot Mode** | `ShooterTelemetry/shootMode` | FULL / STATIC_DISTANCE / FULL_STATIC |
 
 #### Bottom Row — Drive Info
-| Widget | Source | Why |
-|--------|--------|-----|
-| **Field View** (2D) | `/Drive/Pose` | Mini field map showing robot position — helps verify auto worked |
-| **Vision Target** | `/Vision/HasTarget` | Green/red indicator for whether cameras see AprilTags |
+| Widget | NetworkTables Key | Why |
+|--------|-------------------|-----|
+| **Field View** (2D) | `Drive/Pose` (logged by AdvantageKit) | Mini field map showing robot position — helps verify auto worked |
+| **Vision Target** | `Vision/Summary/HasTarget` (boolean) | Green/red indicator for whether cameras see AprilTags |
+| **Vision Tag Count** | `Vision/Summary/TagCount` | Number of tags seen this cycle |
+| **Hub Distance** | `ShooterTelemetry/hubDistanceMeters` | Distance to hub — only updates when aiming |
 
 ### Design Principles
 

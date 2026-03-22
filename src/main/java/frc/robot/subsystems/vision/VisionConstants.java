@@ -16,6 +16,17 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 
+/**
+ * Vision pipeline constants for PhotonVision AprilTag pose estimation.
+ *
+ * <p>Camera resolution and exposure settings are configured in the PhotonVision web UI ({@code
+ * http://photonvision.local:5800}), not in code. See {@code docs/TuningGuide.md} § "PhotonVision
+ * Camera Tuning" for resolution/FPS tradeoffs and recommended exposure/gain values.
+ *
+ * <p><b>Reference: 6328 (2026)</b> — color cameras at 1280×960 (exposure=4500µs, gain=5) and mono
+ * cameras at 1800×1200 (exposure=1800µs, gain=15). Higher resolution extends detection range but
+ * reduces frame rate.
+ */
 public final class VisionConstants {
     private VisionConstants() {}
 
@@ -66,6 +77,12 @@ public final class VisionConstants {
 
     // Standard deviation baselines, for 1 meter distance and 1 tag
     // (Adjusted automatically based on distance and # of tags)
+    //
+    // Reference values from top teams (2026 season):
+    //   BroncBotz 3481:  VecBuilder.fill(0.05, 0.05, 0.022)
+    //   6328:            Uses per-camera trust factors, similar scale
+    //
+    // Lower values = trust vision more. Increase if the robot "jumps" on the field view.
     public static final double linearStdDevBaseline = 0.02; // Meters
     public static final double angularStdDevBaseline = 0.06; // Radians
 

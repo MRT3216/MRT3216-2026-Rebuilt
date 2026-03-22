@@ -135,6 +135,15 @@ public class FlywheelSubsystem extends SubsystemBase {
         flywheelInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
         Logger.recordOutput(
                 "Mechanisms/FlywheelIsMoving", Math.abs(flywheelInputs.velocity.in(RPM)) > 10.0);
+
+        // Dashboard-friendly summary: true when the flywheel is spinning and within
+        // kVelocityTolerance of its setpoint. Wire to a boolean indicator in Elastic
+        // so the operator can confirm the shooter is ready before firing.
+        double setpointRPM = flywheelInputs.setpoint.in(RPM);
+        double velocityRPM = flywheelInputs.velocity.in(RPM);
+        boolean isSpunUp =
+                setpointRPM > 10.0 && Math.abs(velocityRPM - setpointRPM) < kVelocityTolerance.in(RPM);
+        Logger.recordOutput("Flywheel/IsSpunUp", isSpunUp);
     }
 
     @Override

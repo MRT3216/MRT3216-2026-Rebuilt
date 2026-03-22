@@ -102,7 +102,25 @@ public final class Constants {
 
         public static final double kRobotMassKg = 63.503; // 140 lbs (with bumpers + battery)
         public static final double kRobotMOI = 6.883;
+
+        /**
+         * Wheel coefficient of friction (µ) used by PathPlanner's traction model for acceleration
+         * limiting. Higher = PathPlanner trusts the robot can accelerate/decelerate harder.
+         *
+         * <p>Top team reference values (2026 season):
+         *
+         * <ul>
+         *   <li>6328 Mechanical Advantage: 1.5
+         *   <li>Hammerheads 5000: 2.255 (aggressive — Colson or high-grip tread)
+         *   <li>Most teams: 1.0–1.5 (conservative default)
+         * </ul>
+         *
+         * <p>TODO: Measure our actual wheel COF using the slip test described in docs/TuningGuide.md
+         * "Step 6: Slip Current Measurement". Update both here and in {@code Drive.java} (WHEEL_COF)
+         * and {@code src/main/deploy/pathplanner/settings.json}.
+         */
         public static final double kWheelCoef = 1.2;
+
         public static final double kOdometryFreqNetworkFD = 250.0;
         public static final double kOdometryFreqCAN = 100.0;
         public static final double kDefaultMotionMagicCruiseVelocity = 100.0;

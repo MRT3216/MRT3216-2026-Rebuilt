@@ -206,6 +206,12 @@ public class Vision extends SubsystemBase {
                 "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
         Logger.recordOutput(
                 "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
+
+        // Dashboard-friendly summary: true when at least one camera accepted a pose
+        // this cycle. Wire to a boolean indicator widget in Elastic for at-a-glance
+        // vision health during matches.
+        Logger.recordOutput("Vision/Summary/HasTarget", !allRobotPosesAccepted.isEmpty());
+        Logger.recordOutput("Vision/Summary/TagCount", allTagPoses.size());
     }
 
     @FunctionalInterface

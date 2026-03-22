@@ -180,6 +180,10 @@ public class Robot extends LoggedRobot {
                         == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue));
         Logger.recordOutput("MatchTime", DriverStation.getMatchTime());
 
+        // Battery voltage — published every loop for Elastic dashboard widgets.
+        // RobotController.getBatteryVoltage() is already cached by the HAL each loop.
+        Logger.recordOutput("Battery/Voltage", RobotController.getBatteryVoltage());
+
         if (RobotController.getBatteryVoltage() > 0.0
                 && RobotController.getBatteryVoltage() <= Constants.RobotSafetyConstants.kLowBatteryVoltage
                 && disabledTimer.hasElapsed(Constants.RobotSafetyConstants.kLowBatteryDisabledSecs)) {

@@ -12,7 +12,7 @@ This document covers four topics programmers need to understand:
 1. **Wrap-around** — how the turret handles angles beyond its physical travel range
 2. **Encoder alignment** — how `kStartingPosition` maps the encoder to the real world
 3. **Aim pipeline** — how the shot solver computes azimuth and how the turret follows it
-4. **EasyCRT** — optional absolute-position bootstrapping using two CANCoders and the Chinese Remainder Theorem
+4. **EasyCRT** — optional absolute-position bootstrapping using two absolute encoders and the Chinese Remainder Theorem
 
 The turret's travel range is **not yet finalized** — build is designing the energy chain (wire carrier) that will determine the maximum rotation. The code is written so that **only constants change** when the range is decided; no logic changes are needed.
 
@@ -231,7 +231,10 @@ The turret uses a relative encoder that reads 0° at power-on. We rely on a huma
 
 ### The Solution: Chinese Remainder Theorem (CRT)
 
-Two small-pinion absolute encoders (CANCoders) mesh with the 90-tooth turret ring gear through different gear ratios. Because the pinion tooth counts are **coprime** (10T and 13T), the pair of fractional-rotation readings from the two encoders uniquely identifies the turret's position across the full travel range.
+Two small-pinion absolute encoders mesh with the 90-tooth turret ring gear through different gear ratios. Because the pinion tooth counts are **coprime** (13T and 10T), the pair of fractional-rotation readings from the two encoders uniquely identifies the turret's position across the full travel range.
+
+- **Encoder 1 (13T pinion):** REV Through Bore plugged into the SparkMax's absolute-encoder port. Read via `pivotMotor.getAbsoluteEncoder().getPosition()` — returns 0–1 rotations.
+- **Encoder 2 (10T pinion):** Absolute encoder wired to RoboRIO DIO channel 0 as a PWM duty-cycle signal. Read via `turretPwmEncoder.get()` — returns 0–1 rotations.
 
 This is implemented using YAMS's `EasyCRT` solver. At boot, it reads both encoders once, solves for the mechanism angle, and seeds the relative encoder — replacing the manual `kStartingPosition` entirely.
 
@@ -240,9 +243,9 @@ This is implemented using YAMS's `EasyCRT` solver. At boot, it reads both encode
 | Parameter | Value |
 |-----------|-------|
 | Ring gear teeth | 90T |
-| Encoder 1 pinion | 10T → 9:1 ratio → wraps every 1/9 rot ≈ 40° |
-| Encoder 2 pinion | 13T → 90/13 ratio → wraps every 13/90 rot ≈ 52° |
-| Coverage | lcm(10, 13) / 90 = 130/90 = **1.444 rotations** = 520° |
+| Encoder 1 pinion (SparkMax) | 13T → 90/13 ≈ 6.923:1 ratio → wraps every 13/90 rot ≈ 52° |
+| Encoder 2 pinion (PWM) | 10T → 9:1 ratio → wraps every 1/9 rot ≈ 40° |
+| Coverage | lcm(13, 10) / 90 = 130/90 = **1.444 rotations** = 520° |
 | Travel needed | ±190° = 380° = **1.056 rotations** |
 | Margin | 520° − 380° = **140° spare** ✓ |
 
@@ -258,7 +261,7 @@ public static final boolean kUseCRT = false;  // ← set true when encoders are 
 ```
 
 When `kUseCRT = true`, the constructor:
-1. Creates two CANCoders using IDs from `RobotMap.Shooter.Turret`
+1. Reads the SparkMax absolute encoder and the RoboRIO PWM encoder
 2. Configures the EasyCRT solver with gear ratios, range, offsets, and inversions
 3. Runs a single solve
 4. If OK → seeds the relative encoder with the resolved angle
@@ -277,12 +280,15 @@ public static final boolean kUseCRT = false;
 // Gear geometry
 public static final double kCRTCommonRatio = 1.0;       // ring gear is the mechanism gear
 public static final int kCRTDriveGearTeeth = 90;         // ring gear
-public static final int kCRTEncoder1PinionTeeth = 10;    // encoder 1 pinion
-public static final int kCRTEncoder2PinionTeeth = 13;    // encoder 2 pinion
+public static final int kCRTEncoder1PinionTeeth = 13;    // SparkMax abs enc (13T pinion)
+public static final int kCRTEncoder2PinionTeeth = 10;    // RoboRIO PWM enc  (10T pinion)
 
-// Mechanism range (must cover full travel)
-public static final Angle kCRTMechanismMin = Rotations.of(-0.6);   // −216°
-public static final Angle kCRTMechanismMax = Rotations.of(0.6);    // +216°
+// Mechanism range — derived from hard limits (changes automatically)
+private static final double kCRTRangeMarginRot = 0.05;   // ≈ 18° extra each side
+public static final Angle kCRTMechanismMin =
+        Rotations.of(kHardLimitMin.in(Rotations) - kCRTRangeMarginRot);
+public static final Angle kCRTMechanismMax =
+        Rotations.of(kHardLimitMax.in(Rotations) + kCRTRangeMarginRot);
 
 // Encoder offsets (calibrated per-robot — see verification section)
 public static final Angle kCRTEncoder1Offset = Rotations.of(0.0);  // TODO: calibrate
@@ -296,11 +302,11 @@ public static final boolean kCRTEncoder1Inverted = false;
 public static final boolean kCRTEncoder2Inverted = false;
 ```
 
-Encoder CAN IDs live in `RobotMap.Shooter.Turret`:
+The PWM encoder DIO channel lives in `RobotMap.Shooter.Turret`:
 
 ```java
-public static final int kCRTEncoder1Id = 57;  // TODO: confirm actual CAN IDs
-public static final int kCRTEncoder2Id = 58;
+public static final int kAbsoluteEncoderPwmChannel = 0;  // RoboRIO DIO channel for 10T encoder
+// The 13T encoder is on the SparkMax absolute-encoder port — no separate ID needed.
 ```
 
 ### Telemetry
@@ -321,18 +327,20 @@ Follow these steps when first installing CRT encoders on a new robot:
 
 #### Step 1: Confirm Encoder Connectivity
 1. Set `kUseCRT = false` (keep it disabled during wiring check)
-2. Open Phoenix Tuner X
-3. Verify both CANCoders appear with the correct IDs (57, 58)
-4. Spin the turret by hand — both encoder readings should change smoothly
+2. For the **SparkMax encoder (13T):** Open REV Hardware Client, select the turret motor (CAN 54), and verify the absolute encoder tab shows a changing position when the turret is spun by hand
+3. For the **PWM encoder (10T):** Open the DriverStation or Shuffleboard and check the DutyCycleEncoder widget on DIO 0 — it should show a changing value (0–1) when the turret rotates
+4. Confirm both readings change **smoothly** (no jumps or dead spots)
 
 #### Step 2: Determine Encoder Inversions
 1. Spin the turret **CCW when viewed from above** (positive direction)
-2. Watch each CANcoder's reported position in Phoenix Tuner
+2. Watch each encoder's reported position
 3. If an encoder's value **decreases** during CCW rotation, set its `kCRTEncoderXInverted = true`
 
 #### Step 3: Calibrate Encoder Offsets
 1. Physically position the turret at the **alignment line** (the known starting position)
-2. Read each CANcoder's **absolute position** value (in rotations) from Phoenix Tuner
+2. Read each encoder's **absolute position** (in rotations):
+   - SparkMax: REV Hardware Client → Absolute Encoder tab
+   - PWM: Shuffleboard DutyCycleEncoder widget or DriverStation
 3. Set `kCRTEncoder1Offset` and `kCRTEncoder2Offset` to **negate** those raw readings:
    - If encoder 1 reads +0.237 rot at the alignment line → `kCRTEncoder1Offset = Rotations.of(-0.237)`
    - If encoder 2 reads −0.412 rot → `kCRTEncoder2Offset = Rotations.of(0.412)`
@@ -372,6 +380,6 @@ Before each match, spot-check the boot log:
 |------|-------------|
 | `src/.../shooter/TurretSubsystem.java` | `wrapAngle()`, `setAngle()`, encoder reading, CRT boot logic |
 | `src/.../shooter/ShooterConstants.java` | All turret constants (limits, offsets, starting position, CRT config) |
-| `src/.../constants/RobotMap.java` | CAN IDs for turret motor and CRT encoders |
+| `src/.../constants/RobotMap.java` | CAN ID for turret motor, DIO channel for PWM CRT encoder |
 | `src/.../util/shooter/HybridTurretUtil.java` | Shot solver — computes robot-relative azimuth via `atan2` |
 | `src/.../systems/ShooterSystem.java` | Orchestrates solver → turret → hood → flywheel |

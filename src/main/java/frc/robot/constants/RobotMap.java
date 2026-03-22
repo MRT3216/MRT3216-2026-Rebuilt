@@ -21,10 +21,10 @@ public final class RobotMap {
 
         public static final class Turret {
             public static final int kMotorId = 54;
-            // CRT absolute encoder CAN IDs (CANCoders or similar).
-            // TODO: Update these to match actual wiring.
-            public static final int kCRTEncoder1Id = 57;
-            public static final int kCRTEncoder2Id = 58;
+            // RoboRIO DIO channel for the PWM absolute encoder (10T pinion on 90T ring gear).
+            // The other CRT encoder is the REV Through Bore plugged into the SparkMax's
+            // absolute-encoder port (13T pinion) — no separate ID needed.
+            public static final int kAbsoluteEncoderPwmChannel = 0;
         }
 
         public static final class Spindexer {

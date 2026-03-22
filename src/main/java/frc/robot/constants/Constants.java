@@ -107,7 +107,7 @@ public final class Constants {
          * Wheel coefficient of friction (µ) used by PathPlanner's traction model for acceleration
          * limiting. Higher = PathPlanner trusts the robot can accelerate/decelerate harder.
          *
-         * <p>Top team reference values (2026 season):
+         * <p>Reference team values (2026 season):
          *
          * <ul>
          *   <li>6328 Mechanical Advantage: 1.5
@@ -160,7 +160,7 @@ public final class Constants {
     /**
      * Path planner tuning gains used by autonomous path-following controllers.
      *
-     * <p>Top team reference values (2026 season):
+     * <p>Reference team values (2026 season):
      *
      * <table>
      *   <tr><th>Team</th><th>Translation P</th><th>Rotation P</th><th>Notes</th></tr>

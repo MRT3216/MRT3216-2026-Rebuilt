@@ -78,7 +78,7 @@ public final class VisionConstants {
     // Standard deviation baselines, for 1 meter distance and 1 tag
     // (Adjusted automatically based on distance and # of tags)
     //
-    // Reference values from top teams (2026 season):
+    // Reference values from other teams (2026 season):
     //   BroncBotz 3481:  VecBuilder.fill(0.05, 0.05, 0.022)
     //   6328:            Uses per-camera trust factors, similar scale
     //

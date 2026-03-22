@@ -22,7 +22,7 @@ Recommended workflow for tuning every controlled mechanism on the robot. Work th
 
 1. [General Principles](#general-principles)
 2. [YAMS Telemetry Verbosity Levels](#yams-telemetry-verbosity-levels)
-3. [Top Team TunerConstants Comparison](#top-team-tunerconstants-comparison)
+3. [Reference Team Swerve Comparison](#reference-team-swerve-comparison)
 4. [TorqueFOC — Available Upgrade Path](#torquefoc--available-upgrade-path)
 5. [YAMS FF + Motion Profile Requirement](#yams-ff--motion-profile-requirement)
 6. [YAMS SysId Helpers](#yams-sysid-helpers)
@@ -265,9 +265,9 @@ YAMS publishes different amounts of data depending on the verbosity level. Highe
 
 ---
 
-## Top Team TunerConstants Comparison
+## Reference Team Swerve Comparison
 
-How our swerve constants compare to top FRC teams in the **2026 season.** All use TalonFX (Kraken) swerve with Phoenix 6 unless noted.
+How our swerve constants compare to other FRC teams in the **2026 season.** All use TalonFX (Kraken) swerve with Phoenix 6 unless noted.
 
 > **Data sources:** Public GitHub repos reviewed June 2025: [6328](https://github.com/Mechanical-Advantage/RobotCode2026Public), [LASA PH2026](https://github.com/lasarobotics/PH2026), [LASA PR2026](https://github.com/lasarobotics/PR2026), [WHS 3467](https://github.com/WHS-FRC-3467/Skip-5.16-Platypus), [Hammerheads 5000](https://github.com/hammerheads5000/2026Rebuilt), [Lynk 9496](https://github.com/LynkRobotics/RobotCode2026Public).
 
@@ -275,7 +275,7 @@ How our swerve constants compare to top FRC teams in the **2026 season.** All us
 
 | Team | Module | Drive Ratio | Steer Ratio | Wheel Radius | Track/Wheelbase |
 |------|--------|:-----------:|:-----------:|:------------:|:---------------:|
-| **3216 (us)** | SDS MK4i | 4.667:1 | 26.09:1 | **1.80"** | — |
+| **3216 (us)** | WCP SwerveX2ST (X2, 18T) | 4.667:1 | 25.9:1 | **1.80"** | 23" sq |
 | 6328 Darwin | SDS MK5i R1 | 7.03:1 | 26.0:1 | 1.996" | — |
 | 6328 Alphabot | SDS MK4i L3 | 6.12:1 | 21.43:1 | 1.880" | — |
 | LASA (PH/PR) | — | 6.03:1 | 26.09:1 | 2.00" | — |
@@ -283,7 +283,7 @@ How our swerve constants compare to top FRC teams in the **2026 season.** All us
 | Hammerheads 5000 | — | 6.03:1 | 26.09:1 | 1.985" | 22.5 × 20.75" |
 | Lynk 9496 | SDS MK5n R2 | ~6.03:1 | 26.09:1 | ~2.0" | 20.75" sq |
 
-**Takeaway:** 6.0–6.12 drive gear ratios are the most common. Our 4.667:1 is significantly faster-geared — this means higher theoretical top speed but less torque per amp. Our 1.80" wheel radius is slightly smaller than most teams; re-verify with the [wheel radius characterization](#step-3-wheel-radius-characterization).
+**Takeaway:** 6.0–6.12 drive gear ratios are the most common. Our 4.667:1 ([WCP X2 ratio with 18T pinion](https://docs.wcproducts.com/welcome/gearboxes/wcp-swerve-x2s)) is significantly faster-geared — this means higher theoretical top speed but less torque per amp. Our 1.80" wheel radius is the nominal 3.5" WCP wheel with tread; re-verify with the [wheel radius characterization](#step-3-wheel-radius-characterization).
 
 ### Current Limits
 
@@ -364,7 +364,7 @@ These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
 
 **Takeaway:** If our Pigeon is mounted in any orientation other than flat + forward-facing, we need to configure `MountPose`. See the new [Pigeon IMU Calibration](#pigeon-imu-calibration) section below.
 
-### Interesting Patterns From Top Teams
+### Interesting Patterns From Reference Teams
 
 | Pattern | Who Uses It | What It Does |
 |---------|-------------|-------------|
@@ -378,7 +378,7 @@ These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
 
 ### Shooter Mechanism Gains (Reference)
 
-Several top teams in 2026 also run flywheel + hood shooters. Use this as a sanity check when tuning our gains.
+Several reference teams in 2026 also run flywheel + hood shooters. Use this as a sanity check when tuning our gains.
 
 | Team | Flywheel kP | Flywheel kS | Flywheel kV | Hood kP | Hood kD | Hood kS |
 |------|:----------:|:----------:|:----------:|:------:|:------:|:------:|
@@ -414,7 +414,7 @@ TorqueFOC (TorqueCurrentFOC) is a Phoenix Pro feature where the motor controller
 
 - Performance stays consistent even as the battery sags from 12V → 11V
 - Better traction control (slip current directly limits torque)
-- 6328 (Mechanical Advantage) uses it; most other top teams use Voltage
+- 6328 (Mechanical Advantage) uses it; most other reference teams use Voltage
 
 ### What changes
 
@@ -557,7 +557,7 @@ The steer motors use MotionMagicExpo (exponential profile) — this runs in firm
 
 1. **kS:** Command a very slow steer rotation. Increase kS from 0 until the module barely starts moving. That voltage is kS. (Currently 0.1)
 2. **kV:** Command a moderate speed. `kV = (voltage - kS) / velocity`. Overlay position vs reference — slopes should match during cruise. (Currently 2.48)
-3. **kP:** Command 0° → 90°. Start at ~50, increase until quick settling with no oscillation. Target: **<50ms**. (Currently 100 — standard across all top teams)
+3. **kP:** Command 0° → 90°. Start at ~50, increase until quick settling with no oscillation. Target: **<50ms**. (Currently 100 — standard across reference teams)
 4. **kD:** If there's overshoot, add kD in small steps (0.1–1.0). (Currently 0.5)
 5. **kI:** Leave at **0**. Steer doesn't need integral.
 
@@ -630,7 +630,7 @@ This value normalizes joystick input. If it's too high, the robot can never reac
 
 ### Step 6: Slip Current Measurement
 
-Current value: `kSlipCurrent = 120A` (most top teams use 80A — needs verification)
+Current value: `kSlipCurrent = 120A` (most reference teams use 80–95A — needs verification)
 
 Slip current is the stator current where the wheels lose traction and start spinning. It's used for traction control.
 
@@ -643,7 +643,7 @@ Slip current is the stator current where the wheels lose traction and start spin
 5. The current at that moment = your slip current
 6. Repeat 2–3 times, average, and update `kSlipCurrent` in `TunerConstants.java`
 
-> **Expected:** 60–100A for Kraken X60 on competition carpet. Most top teams use 80A. Our 120A is likely too high.
+> **Expected:** 60–100A for Kraken X60 on competition carpet. Most reference teams use 80–95A. Our 120A is likely too high.
 
 > **Note:** If `kSlipCurrent` (120A) is above the stator current limit (80A), the traction control never activates because the motor can't reach slip current. After measuring, make sure `kSlipCurrent` reflects the actual slip point.
 
@@ -668,7 +668,7 @@ PathPlanner needs accurate physical parameters. These live in **two places that 
 
 **PathPlanner PID** (`Constants.PathPlannerConstants`): Translation kP=5.0, Rotation kP=5.0
 
-Top team reference: LASA PR (3.0/4.0), Hammerheads (3.0/2.0 with I=0.05), BroncBotz (5.0/5.0), 6328 uses Choreo at 8.0/4.0. Our 5.0/5.0 is on the aggressive end — reduce to 3.0 if paths overshoot.
+Reference team values: LASA PR (3.0/4.0), Hammerheads (3.0/2.0 with I=0.05), BroncBotz (5.0/5.0), 6328 uses Choreo at 8.0/4.0. Our 5.0/5.0 is on the aggressive end — reduce to 3.0 if paths overshoot.
 
 1. **Tune drivetrain first** — PathPlanner PID sits on top of drive gains
 2. **Translation kP:** Run a straight path. If the robot drifts, increase. If it oscillates, decrease.

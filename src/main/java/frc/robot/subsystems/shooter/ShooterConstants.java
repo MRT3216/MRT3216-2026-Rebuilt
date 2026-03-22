@@ -85,7 +85,7 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(80);
 
         // PID — Voltage mode.
-        // Top team reference (TorqueFOC, not directly comparable):
+        // Reference team values (TorqueFOC, not directly comparable):
         //   6328: kP=0.4, Hammerheads: kP=12, WHS 3467: kP=12
         // Our 0.2 is at the low end for Voltage mode. Increase to 0.5-1.0 if
         // the flywheel is slow to recover RPM after a shot.
@@ -282,7 +282,7 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID — Voltage mode (TalonFX Kraken X44, 30:1 gearing).
-        // Top team reference (TorqueFOC, not directly comparable):
+        // Reference team values (TorqueFOC, not directly comparable):
         //   6328: kP=1200/kD=4, Hammerheads: kP=800/kD=5, WHS 3467: kP=3000/kD=160
         // Our 300 is reasonable for Voltage mode. Increase kD if the hood oscillates
         // around setpoint; add kD cautiously since 30:1 gearing amplifies noise.

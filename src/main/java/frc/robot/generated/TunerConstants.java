@@ -70,11 +70,11 @@ public class TunerConstants {
                                     .withStatorCurrentLimit(Amps.of(80))
                                     .withStatorCurrentLimitEnable(true));
     // NOTE: Open-loop voltage ramps can reduce wheel slip on hard acceleration.
-    // Several top teams use them: LASA PR (0.5s), Lynk 9496 (0.25s).
+    // Several reference teams use them: LASA PR (0.5s), Lynk 9496 (0.25s).
     // To enable, add to driveInitialConfigs above:
     //     .withOpenLoopRamps(new OpenLoopRampsConfigs().withVoltageOpenLoopRampPeriod(0.25))
     // Start with 0.25s and reduce if the robot feels sluggish on acceleration.
-    // See docs/TuningGuide.md "Interesting Patterns From Top Teams" for context.
+    // See docs/TuningGuide.md "Interesting Patterns From Reference Teams" for context.
     private static final TalonFXConfiguration steerInitialConfigs =
             new TalonFXConfiguration()
                     .withCurrentLimits(
@@ -97,7 +97,7 @@ public class TunerConstants {
     // If the Pigeon is mounted flat with its arrow pointing toward the front of
     // the robot, leave all three at 0 (the default).
     //
-    // Reference values from top teams (2026 season):
+    // Reference values from other teams (2026 season):
     //   LASA PR2026:    roll=179.96°, pitch=1.14°, yaw=-90.45°
     //   WHS 3467:       roll=180° (upside-down, arrow forward)
     //   Hammerheads 5000: yaw=-90° (flat, arrow pointing left)

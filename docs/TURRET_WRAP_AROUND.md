@@ -1,17 +1,18 @@
 # Turret Aim Pipeline — Programmer Reference
 
-**Branch:** Claude  
+**Branch:** Claude
 **Updated:** 2025-03-21
 
 ---
 
 ## Overview
 
-This document covers three topics programmers need to understand:
+This document covers four topics programmers need to understand:
 
 1. **Wrap-around** — how the turret handles angles beyond its physical travel range
 2. **Encoder alignment** — how `kStartingPosition` maps the encoder to the real world
 3. **Aim pipeline** — how the shot solver computes azimuth and how the turret follows it
+4. **EasyCRT** — optional absolute-position bootstrapping using two CANCoders and the Chinese Remainder Theorem
 
 The turret's travel range is **not yet finalized** — build is designing the energy chain (wire carrier) that will determine the maximum rotation. The code is written so that **only constants change** when the range is decided; no logic changes are needed.
 
@@ -222,11 +223,155 @@ public static final Transform3d kRobotToTurretTransform = ...;    // built from 
 
 ---
 
+## 6. EasyCRT — Absolute Position at Boot
+
+### The Problem
+
+The turret uses a relative encoder that reads 0° at power-on. We rely on a human placing the turret on an alignment line and setting `kStartingPosition`. If someone forgets, or the turret gets bumped, the entire coordinate frame is wrong.
+
+### The Solution: Chinese Remainder Theorem (CRT)
+
+Two small-pinion absolute encoders (CANCoders) mesh with the 90-tooth turret ring gear through different gear ratios. Because the pinion tooth counts are **coprime** (10T and 13T), the pair of fractional-rotation readings from the two encoders uniquely identifies the turret's position across the full travel range.
+
+This is implemented using YAMS's `EasyCRT` solver. At boot, it reads both encoders once, solves for the mechanism angle, and seeds the relative encoder — replacing the manual `kStartingPosition` entirely.
+
+### How It Works (Math)
+
+| Parameter | Value |
+|-----------|-------|
+| Ring gear teeth | 90T |
+| Encoder 1 pinion | 10T → 9:1 ratio → wraps every 1/9 rot ≈ 40° |
+| Encoder 2 pinion | 13T → 90/13 ratio → wraps every 13/90 rot ≈ 52° |
+| Coverage | lcm(10, 13) / 90 = 130/90 = **1.444 rotations** = 520° |
+| Travel needed | ±190° = 380° = **1.056 rotations** |
+| Margin | 520° − 380° = **140° spare** ✓ |
+
+Since the coverage (520°) exceeds the travel range (380°), every position in the range maps to a unique pair of encoder readings. The CRT solver reconstructs the original position from these readings.
+
+### Enabling CRT
+
+CRT is controlled by a single boolean flag:
+
+```java
+// In ShooterConstants.TurretConstants:
+public static final boolean kUseCRT = false;  // ← set true when encoders are installed & calibrated
+```
+
+When `kUseCRT = true`, the constructor:
+1. Creates two CANCoders using IDs from `RobotMap.Shooter.Turret`
+2. Configures the EasyCRT solver with gear ratios, range, offsets, and inversions
+3. Runs a single solve
+4. If OK → seeds the relative encoder with the resolved angle
+5. If FAILED → falls back to `kStartingPosition` and logs a warning
+
+When `kUseCRT = false`, behavior is identical to before — `kStartingPosition` is used directly.
+
+### Constants
+
+All CRT constants live in `ShooterConstants.TurretConstants`:
+
+```java
+// Feature flag
+public static final boolean kUseCRT = false;
+
+// Gear geometry
+public static final double kCRTCommonRatio = 1.0;       // ring gear is the mechanism gear
+public static final int kCRTDriveGearTeeth = 90;         // ring gear
+public static final int kCRTEncoder1PinionTeeth = 10;    // encoder 1 pinion
+public static final int kCRTEncoder2PinionTeeth = 13;    // encoder 2 pinion
+
+// Mechanism range (must cover full travel)
+public static final Angle kCRTMechanismMin = Rotations.of(-0.6);   // −216°
+public static final Angle kCRTMechanismMax = Rotations.of(0.6);    // +216°
+
+// Encoder offsets (calibrated per-robot — see verification section)
+public static final Angle kCRTEncoder1Offset = Rotations.of(0.0);  // TODO: calibrate
+public static final Angle kCRTEncoder2Offset = Rotations.of(0.0);  // TODO: calibrate
+
+// Tolerance for the two encoder solutions to agree
+public static final Angle kCRTMatchTolerance = Rotations.of(0.02); // ~7°
+
+// Encoder sensing direction (set true if encoder reads backwards)
+public static final boolean kCRTEncoder1Inverted = false;
+public static final boolean kCRTEncoder2Inverted = false;
+```
+
+Encoder CAN IDs live in `RobotMap.Shooter.Turret`:
+
+```java
+public static final int kCRTEncoder1Id = 57;  // TODO: confirm actual CAN IDs
+public static final int kCRTEncoder2Id = 58;
+```
+
+### Telemetry
+
+At boot, the constructor logs to AdvantageKit:
+
+| Key | Description |
+|-----|-------------|
+| `Shooter/Turret/CRT/Enabled` | Whether `kUseCRT` is true |
+| `Shooter/Turret/CRT/Status` | `OK`, `NO_SOLUTION`, `AMBIGUOUS`, `INVALID_CONFIG`, or `NOT_ATTEMPTED` |
+| `Shooter/Turret/CRT/ResolvedDeg` | The angle the solver produced (NaN if failed/disabled) |
+| `Shooter/Turret/CRT/ErrorRot` | Internal error metric from the solver (rotations) |
+| `Shooter/Turret/CRT/Iterations` | Number of iterations the solver used |
+
+### Verification Process
+
+Follow these steps when first installing CRT encoders on a new robot:
+
+#### Step 1: Confirm Encoder Connectivity
+1. Set `kUseCRT = false` (keep it disabled during wiring check)
+2. Open Phoenix Tuner X
+3. Verify both CANCoders appear with the correct IDs (57, 58)
+4. Spin the turret by hand — both encoder readings should change smoothly
+
+#### Step 2: Determine Encoder Inversions
+1. Spin the turret **CCW when viewed from above** (positive direction)
+2. Watch each CANcoder's reported position in Phoenix Tuner
+3. If an encoder's value **decreases** during CCW rotation, set its `kCRTEncoderXInverted = true`
+
+#### Step 3: Calibrate Encoder Offsets
+1. Physically position the turret at the **alignment line** (the known starting position)
+2. Read each CANcoder's **absolute position** value (in rotations) from Phoenix Tuner
+3. Set `kCRTEncoder1Offset` and `kCRTEncoder2Offset` to **negate** those raw readings:
+   - If encoder 1 reads +0.237 rot at the alignment line → `kCRTEncoder1Offset = Rotations.of(-0.237)`
+   - If encoder 2 reads −0.412 rot → `kCRTEncoder2Offset = Rotations.of(0.412)`
+4. This makes both encoders read 0 at the alignment line
+
+#### Step 4: Enable and Test
+1. Set `kUseCRT = true`
+2. Position the turret at the alignment line, power on
+3. Check AdvantageKit logs:
+   - `CRT/Status` should be `OK`
+   - `CRT/ResolvedDeg` should be close to `kStartingPosition` (within a few degrees)
+   - `CRT/ErrorRot` should be very small (< 0.01)
+
+#### Step 5: Full-Travel Validation
+1. Power off, move the turret to ~5 different positions across the full range (e.g. −180°, −90°, 0°, +90°, +180°)
+2. At each position:
+   a. Power on the robot
+   b. Record `CRT/ResolvedDeg` from the logs
+   c. Independently verify the turret's angle with a protractor or known reference
+   d. Confirm the values agree within ±5°
+3. If any position gives `NO_SOLUTION` or `AMBIGUOUS`, check:
+   - Encoder offsets (step 3)
+   - Encoder inversions (step 2)
+   - Mechanical mesh (are the pinions properly engaged with the ring gear?)
+
+#### Step 6: Match-Day Confidence Check
+Before each match, spot-check the boot log:
+- `CRT/Status = OK`
+- `CRT/ResolvedDeg` is reasonable for where the turret is visually pointing
+- If status is not OK, the code automatically falls back to `kStartingPosition`
+
+---
+
 ## Files
 
 | File | What It Does |
 |------|-------------|
-| `src/.../shooter/TurretSubsystem.java` | `wrapAngle()`, `setAngle()`, encoder reading |
-| `src/.../shooter/ShooterConstants.java` | All turret constants (limits, offsets, starting position) |
+| `src/.../shooter/TurretSubsystem.java` | `wrapAngle()`, `setAngle()`, encoder reading, CRT boot logic |
+| `src/.../shooter/ShooterConstants.java` | All turret constants (limits, offsets, starting position, CRT config) |
+| `src/.../constants/RobotMap.java` | CAN IDs for turret motor and CRT encoders |
 | `src/.../util/shooter/HybridTurretUtil.java` | Shot solver — computes robot-relative azimuth via `atan2` |
 | `src/.../systems/ShooterSystem.java` | Orchestrates solver → turret → hood → flywheel |

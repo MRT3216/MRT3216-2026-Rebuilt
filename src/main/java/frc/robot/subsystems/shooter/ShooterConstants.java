@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
@@ -380,5 +381,36 @@ public final class ShooterConstants {
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);
+
+        // ── EasyCRT absolute-position bootstrapping ──
+        // Set to true to attempt CRT solve at boot; false falls back to kStartingPosition.
+        public static final boolean kUseCRT = false;
+
+        // Encoder gearing: both absolute encoders mesh with the 90T ring gear (= turret).
+        // commonRatio = 1.0 because the ring gear IS the turret (1:1).
+        public static final double kCRTCommonRatio = 1.0;
+        public static final int kCRTDriveGearTeeth = 90;
+        public static final int kCRTEncoder1PinionTeeth = 10; // 90/10 = 9:1 ratio
+        public static final int kCRTEncoder2PinionTeeth = 13; // 90/13 ≈ 6.923:1 ratio
+
+        // Mechanism range in rotations (must be centered around 0 and cover full travel).
+        // ±195° hard limits → ±0.5417 rot; we use ±0.6 rot for margin.
+        public static final Angle kCRTMechanismMin = Rotations.of(-0.6);
+        public static final Angle kCRTMechanismMax = Rotations.of(0.6);
+
+        // Encoder offsets (rotations, added before wrap).
+        // Calibrate: at mechanical zero, log raw encoder readings, then set these
+        // so both read ≈ 0.0 at the zero pose.
+        public static final Angle kCRTEncoder1Offset = Rotations.of(0.0);
+        public static final Angle kCRTEncoder2Offset = Rotations.of(0.0);
+
+        // Match tolerance: allowable modular error between predicted and measured encoder 2.
+        // 0.02 rot ≈ 7.2° at the mechanism for our gearing — generous for initial bring-up.
+        // Tighten after verifying backlash/noise characteristics.
+        public static final Angle kCRTMatchTolerance = Rotations.of(0.02);
+
+        // Encoder inversions (set true if an encoder reads backwards w.r.t. mechanism positive).
+        public static final boolean kCRTEncoder1Inverted = false;
+        public static final boolean kCRTEncoder2Inverted = false;
     }
 }

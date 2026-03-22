@@ -2,9 +2,21 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kA;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kA_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTCommonRatio;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTDriveGearTeeth;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTEncoder1Inverted;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTEncoder1Offset;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTEncoder1PinionTeeth;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTEncoder2Inverted;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTEncoder2Offset;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTEncoder2PinionTeeth;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTMatchTolerance;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTMechanismMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kCRTMechanismMin;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kD;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kD_sim;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kGearing;
@@ -24,20 +36,24 @@ import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSof
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMin;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kStartingPosition;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kUseCRT;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kV_sim;
 
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.revrobotics.spark.SparkMax;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
@@ -48,6 +64,9 @@ import yams.motorcontrollers.SmartMotorControllerConfig;
 import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.local.SparkWrapper;
+import yams.units.EasyCRT;
+import yams.units.EasyCRT.CRTStatus;
+import yams.units.EasyCRTConfig;
 
 /**
  * AdvantageKit-ready Turret Subsystem for MRT 3216.
@@ -122,6 +141,13 @@ public class TurretSubsystem extends SubsystemBase {
 
     // region Constructor
 
+    /** CRT status string logged once at boot, then every loop in telemetry. */
+    private CRTStatus crtStatus = CRTStatus.NOT_ATTEMPTED;
+
+    private double crtResolvedDeg = Double.NaN;
+    private double crtErrorRot = Double.NaN;
+    private int crtIterations = 0;
+
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public TurretSubsystem() {
         // Initialize motor controller config in constructor to avoid object-escape
@@ -141,15 +167,89 @@ public class TurretSubsystem extends SubsystemBase {
 
         smartMotor = new SparkWrapper(pivotMotor, DCMotor.getNEO(1), motorConfig);
 
+        // ── EasyCRT absolute-position bootstrapping ──
+        // When enabled, uses two absolute encoders (different gear ratios on the 90T ring gear)
+        // to resolve the turret's true position via the Chinese Remainder Theorem at boot.
+        // Falls back to kStartingPosition if CRT is disabled or the solve fails.
+        Angle startingPosition = kStartingPosition;
+
+        if (kUseCRT) {
+            Optional<Angle> crtResult = attemptCRTSolve();
+            if (crtResult.isPresent()) {
+                startingPosition = crtResult.get();
+            } else {
+                DriverStation.reportWarning(
+                        "[Turret CRT] Solve failed (status="
+                                + crtStatus
+                                + "). Falling back to kStartingPosition="
+                                + kStartingPosition,
+                        false);
+            }
+        } else {
+            crtStatus = CRTStatus.NOT_ATTEMPTED;
+            crtResolvedDeg = Double.NaN;
+            crtErrorRot = Double.NaN;
+            crtIterations = 0;
+        }
+
         PivotConfig turretConfig =
                 new PivotConfig(smartMotor)
-                        .withStartingPosition(kStartingPosition)
+                        .withStartingPosition(startingPosition)
                         .withTelemetry(kTurretMechTelemetry, Constants.telemetryVerbosity())
                         .withMOI(kMOI)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
                         .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         turret = new Pivot(turretConfig);
+
+        // Log CRT results at boot for easy inspection.
+        Logger.recordOutput("Shooter/Turret/CRT/Status", crtStatus.name());
+        Logger.recordOutput("Shooter/Turret/CRT/ResolvedDeg", crtResolvedDeg);
+        Logger.recordOutput("Shooter/Turret/CRT/ErrorRot", crtErrorRot);
+        Logger.recordOutput("Shooter/Turret/CRT/Iterations", crtIterations);
+        Logger.recordOutput("Shooter/Turret/CRT/Enabled", kUseCRT);
+    }
+
+    /**
+     * Attempts to resolve the turret's absolute position using EasyCRT.
+     *
+     * <p>Creates two CANCoders, configures the CRT solver with the turret's ring-gear / pinion
+     * gearing, and runs a single solve. Stores diagnostic fields ({@link #crtStatus}, {@link
+     * #crtErrorRot}, {@link #crtIterations}) for telemetry regardless of outcome.
+     *
+     * @return the resolved mechanism angle, or empty if the solve fails.
+     */
+    private Optional<Angle> attemptCRTSolve() {
+        // Hardware: two CANCoders meshing with the 90T turret ring gear
+        CANcoder encoder1 = new CANcoder(RobotMap.Shooter.Turret.kCRTEncoder1Id);
+        CANcoder encoder2 = new CANcoder(RobotMap.Shooter.Turret.kCRTEncoder2Id);
+
+        // Build EasyCRT config
+        EasyCRTConfig config =
+                new EasyCRTConfig(
+                                () -> Rotations.of(encoder1.getAbsolutePosition().getValueAsDouble()),
+                                () -> Rotations.of(encoder2.getAbsolutePosition().getValueAsDouble()))
+                        .withCommonDriveGear(
+                                kCRTCommonRatio,
+                                kCRTDriveGearTeeth,
+                                kCRTEncoder1PinionTeeth,
+                                kCRTEncoder2PinionTeeth)
+                        .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
+                        .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
+                        .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
+                        .withMatchTolerance(kCRTMatchTolerance);
+
+        // Solve once
+        EasyCRT solver = new EasyCRT(config);
+        Optional<Angle> result = solver.getAngleOptional();
+
+        // Capture diagnostics
+        crtStatus = solver.getLastStatus();
+        crtErrorRot = solver.getLastErrorRotations();
+        crtIterations = solver.getLastIterations();
+        crtResolvedDeg = result.map(a -> a.in(Degrees)).orElse(Double.NaN);
+
+        return result;
     }
 
     // endregion

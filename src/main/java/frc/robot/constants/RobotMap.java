@@ -21,6 +21,10 @@ public final class RobotMap {
 
         public static final class Turret {
             public static final int kMotorId = 54;
+            // CRT absolute encoder CAN IDs (CANCoders or similar).
+            // TODO: Update these to match actual wiring.
+            public static final int kCRTEncoder1Id = 57;
+            public static final int kCRTEncoder2Id = 58;
         }
 
         public static final class Spindexer {

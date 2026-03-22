@@ -217,7 +217,8 @@ public final class ShooterConstants {
         // Motor wiring
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
-        // PID
+        // PID — intentionally zero: kicker runs feedforward-only on the real robot.
+        // TODO: Re-tune PID for all mechanisms during Monday bring-up.
         public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;

@@ -2,8 +2,6 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
@@ -16,6 +14,8 @@ import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kI;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kI_sim;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kLength;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMass;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMaxAccel;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMaxVelocity;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMotorInverted;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kP;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kP_sim;
@@ -34,6 +34,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
@@ -95,8 +96,7 @@ public class HoodSubsystem extends SubsystemBase {
                 new SmartMotorControllerConfig(this)
                         .withMechanismCircumference(Inches.of(1.26875 * Math.PI))
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(
-                                kP, kI, kD, DegreesPerSecond.of(270), DegreesPerSecondPerSecond.of(270))
+                        .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         .withFeedforward(pivotFeedforward())
                         .withSimFeedforward(pivotFeedforwardSim())
@@ -135,6 +135,7 @@ public class HoodSubsystem extends SubsystemBase {
 
         // Record raw Phoenix signals.
         Logger.recordOutput("Hood/FX/PositionDegrees", positionSignal.getValue().in(Degrees));
+        SmartDashboard.putNumber("Hood/FX/PositionDegrees", positionSignal.getValue().in(Degrees));
         Logger.recordOutput(
                 "Hood/FX/ReferenceDegrees", Degrees.convertFrom(referenceSignal.getValue(), Rotations));
 
@@ -142,7 +143,7 @@ public class HoodSubsystem extends SubsystemBase {
         inputs.volts = smartMotor.getVoltage();
         inputs.current = smartMotor.getStatorCurrent();
         inputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
-        Logger.recordOutput(
+        SmartDashboard.putBoolean(
                 "Mechanisms/HoodIsMoving",
                 Math.abs(inputs.setpoint.in(Degrees) - inputs.angle.in(Degrees)) > 1.0);
     }

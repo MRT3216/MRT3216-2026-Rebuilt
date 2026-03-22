@@ -840,58 +840,58 @@ Our code publishes telemetry two ways:
 
 | Method | NT Prefix | Used By |
 |--------|-----------|---------|
-| `Logger.recordOutput("Key", val)` | `/AdvantageKit/Key` | All AdvantageKit-logged data |
-| `SmartDashboard.putX("Key", val)` | `/SmartDashboard/Key` | Drive field widget |
+| `Logger.recordOutput("Key", val)` | `/AdvantageKit/Key` | AdvantageScope replay & logging |
+| `SmartDashboard.putX("Key", val)` | `/SmartDashboard/Key` | Elastic dashboard widgets |
 
-In Elastic, when configuring a widget's NT path, use the full prefixed key. For example, `MatchTime` in code → `/AdvantageKit/MatchTime` in Elastic.
+**Important:** `Logger.recordOutput` publishes under `/AdvantageKit/` which AdvantageScope reads perfectly, but Elastic widgets subscribe to `/SmartDashboard/` topics. Our code mirrors the most important values to SmartDashboard so both tools work simultaneously. All hub shift, match time, mechanism status, and shooter sensor data are mirrored.
+
+In Elastic, when configuring a widget's NT path, always use `/SmartDashboard/Key`. In AdvantageScope, use `/AdvantageKit/Key`.
 
 ### Recommended Match Layout (6328-Style)
 
-6328 (Mechanical Advantage) publishes hub shift data to their dashboard for operator awareness during 2026 Rebuilt's alternating shift windows. Our code does the same via `HubShiftUtil`. Replicate their layout:
+6328 (Mechanical Advantage) publishes hub shift data to their dashboard for operator awareness during 2026 Rebuilt's alternating shift windows. Our code does the same via `HubShiftUtil`. We ship a ready-to-use layout in `src/main/deploy/elastic-layout.json`.
 
 #### Row 1 — Match Awareness (biggest widgets, top of screen)
 
-| Widget Type | NT Key | Elastic Widget | Notes |
-|-------------|--------|----------------|-------|
-| Match Timer | `/AdvantageKit/MatchTime` | **Number** (large font) | Countdown from FMS. Most important number. |
-| Shift Timer | `/AdvantageKit/HubShift/ShiftedRemainingTime` | **Number** (large font) | Seconds until current shift ends (TOF-adjusted). |
-| Shift Active | `/AdvantageKit/HubShift/ShiftedActive` | **Boolean Box** | Green = our alliance can score. Red = opponent's turn. |
-| Game State | `/AdvantageKit/HubShift/ShiftedCurrentShift` | **Text Display** | TRANSITION / SHIFT1 / SHIFT2 / SHIFT3 / SHIFT4 / ENDGAME |
-| Active First? | `/AdvantageKit/HubShift/ActiveFirst` | **Boolean Box** | Whether our alliance scores first in SHIFT1. |
+| Widget Type | NT Key (Elastic) | Elastic Widget | Notes |
+|-------------|------------------|----------------|-------|
+| Match Timer | `/SmartDashboard/MatchTime` | **Number** (large font) | Countdown from FMS. Most important number. |
+| Shift Timer | `/SmartDashboard/HubShift/ShiftedRemainingTime` | **Number** (large font) | Seconds until current shift ends (TOF-adjusted). |
+| Shift Active | `/SmartDashboard/HubShift/ShiftedActive` | **Boolean Box** | Green = our alliance can score. Red = opponent's turn. |
+| Game State | `/SmartDashboard/HubShift/CurrentShift` | **Text Display** | TRANSITION / SHIFT1 / SHIFT2 / SHIFT3 / SHIFT4 / ENDGAME |
+| Hub Active | `/SmartDashboard/HubShift/Active` | **Boolean Box** | Green when official shift is active. |
 
 #### Row 2 — Shooter Status
 
-| Widget Type | NT Key | Elastic Widget | Notes |
-|-------------|--------|----------------|-------|
-| Flywheel Ready | `/AdvantageKit/Flywheel/IsSpunUp` | **Boolean Box** | Green = RPM on target. |
-| Flywheel RPM | `/AdvantageKit/Flywheel/FX/VelocityRPM` | **Number** | Current flywheel speed. |
-| Hood Angle | `/AdvantageKit/Hood/FX/PositionDegrees` | **Number** | Current hood position in degrees. |
-| Shoot Mode | `/AdvantageKit/ShooterTelemetry/shootMode` | **Text Display** | FULL / STATIC_DISTANCE / etc. |
-| Hub Distance | `/AdvantageKit/ShooterTelemetry/hubDistanceMeters` | **Number** | Distance to hub (meters). |
+| Widget Type | NT Key (Elastic) | Elastic Widget | Notes |
+|-------------|------------------|----------------|-------|
+| Flywheel Ready | `/SmartDashboard/Shooter/FlywheelAtSpeed` | **Boolean Box** | Green = RPM on target. |
+| Flywheel RPM | `/SmartDashboard/Flywheel/FX/VelocityRPM` | **Number** | Current flywheel speed. |
+| Hood Angle | `/SmartDashboard/Hood/FX/PositionDegrees` | **Number** | Current hood position in degrees. |
+| Turret Angle | `/SmartDashboard/Shooter/Turret/PositionDegrees` | **Number** | Current turret position in degrees. |
 
-#### Row 3 — Drive & System Health
+#### Row 3 — Mechanisms & System Health
 
-| Widget Type | NT Key | Elastic Widget | Notes |
-|-------------|--------|----------------|-------|
+| Widget Type | NT Key (Elastic) | Elastic Widget | Notes |
+|-------------|------------------|----------------|-------|
 | Battery | `/AdvantageKit/Battery/Voltage` | **Number** | Flash red < 11.5V. |
-| Vision Has Target | `/AdvantageKit/Vision/Summary/HasTarget` | **Boolean Box** | Green = seeing AprilTags. |
-| Vision Tag Count | `/AdvantageKit/Vision/Summary/TagCount` | **Number** | How many tags are visible. |
+| Drive Moving | `/SmartDashboard/Mechanisms/DriveIsMoving` | **Boolean Box** | Green = actively driving. |
+| All Mechanisms | `/SmartDashboard/Mechanisms/*IsMoving` | **Boolean Box** (each) | Quick at-a-glance mechanism health. |
 | Field View | `/SmartDashboard/Field` | **Field Widget** | 2D robot pose — verify auto worked. |
 
 ### Elastic Setup Step-by-Step
 
-1. **Install:** Download from [GitHub releases](https://github.com/Gold872/elastic-dashboard/releases). Run the installer.
+1. **Install:** Elastic is included with the FRC Game Tools installer — no separate download needed. If you need the latest version, grab it from [GitHub releases](https://github.com/Gold872/elastic-dashboard/releases).
 2. **Connect:** Launch Elastic → it auto-discovers the robot via NT4 (same as Shuffleboard). In sim, it connects to `localhost`.
-3. **Create tabs:** Right-click the tab bar → Add Tab. Create at least:
-   - **Teleop** — the match layout above (auto-selected by `Elastic.selectTab("Teleop")` in code)
-   - **Auto** — minimal, just field view + auto selector
-   - **Disabled** — auto selector, battery, vision status
-4. **Add widgets:**
-   - Click **+** or drag from the NT tree on the left.
-   - Right-click a widget → **Properties** → set the NT topic path (e.g., `/AdvantageKit/HubShift/ShiftedActive`).
+3. **Load our layout:** File → Open Layout → select `src/main/deploy/elastic-layout.json` from the repo. This ships with three pre-built tabs:
+   - **Teleop** — hub shift timers, shooter status, mechanism health, field view
+   - **Auto** — auto chooser, match time, field view with trajectory
+   - **Disabled** — auto chooser, field view
+4. **Customise widgets:**
+   - Right-click a widget → **Properties** → change colors or font sizes.
    - For Boolean Box: set true-color = green, false-color = red.
    - For Number widgets: increase font size to **48–72pt** (driver is 10+ feet away).
-5. **Save layout:** File → Save Layout → commit the `.json` file to the repo so the whole team uses the same layout.
+5. **Save layout:** File → Save Layout → commit changes to the `.json` file so the whole team uses the same layout.
 6. **Lock before competition:** Right-click → Lock All Widgets. Prevents accidental drag during matches.
 
 ### Auto Tab Switching

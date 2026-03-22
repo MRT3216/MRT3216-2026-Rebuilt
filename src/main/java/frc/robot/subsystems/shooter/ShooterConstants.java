@@ -313,6 +313,10 @@ public final class ShooterConstants {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
 
+        // Motion-profile limits (used by the closed-loop controller)
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(270.0);
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(270.0);
+
         // Hard limits
         public static final Angle kHardLimitMax = Degrees.of(30);
         public static final Angle kHardLimitMin = Degrees.of(0);

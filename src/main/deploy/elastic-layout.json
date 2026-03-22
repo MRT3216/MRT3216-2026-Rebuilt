@@ -134,7 +134,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Flywheel/FX/VelocityRPM",
+                  "topic": "/SmartDashboard/Flywheel/FX/VelocityRPM",
                   "period": 0.1,
                   "decimal_places": 0,
                   "show_type": false
@@ -148,7 +148,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Hood/FX/PositionDegrees",
+                  "topic": "/SmartDashboard/Hood/FX/PositionDegrees",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false
@@ -162,7 +162,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Shooter/Turret/PositionDegrees",
+                  "topic": "/SmartDashboard/Shooter/Turret/PositionDegrees",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false

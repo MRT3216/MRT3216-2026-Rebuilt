@@ -70,16 +70,24 @@ public final class Constants {
 
     /**
      * Returns the YAMS telemetry verbosity to use for mechanisms. Centralized so it is easy to change
-     * behavior for REAL vs TUNING/SIM in one place.
+     * behavior for tuning vs competition in one place.
+     *
+     * <ul>
+     *   <li><b>HIGH</b> — All fields: tunable gains (kP/kI/kD/kS/kV/kA/kG), tunable setpoints, motor
+     *       temp, limits, ramp rates, motion-profile params, boolean flags. Best for tuning.
+     *   <li><b>MID</b> — Adds output voltage, stator/supply current, rotor position/velocity to LOW.
+     *       Good balance for competition debugging.
+     *   <li><b>LOW</b> — Setpoint position/velocity, measurement position/velocity, mechanism
+     *       position/velocity. Minimal overhead for match play.
+     * </ul>
      */
     public static TelemetryVerbosity telemetryVerbosity() {
-        switch (getMode()) {
-            case REAL:
-            case SIM:
-            case REPLAY:
-            default:
-                return TelemetryVerbosity.HIGH;
+        if (tuningMode) {
+            return TelemetryVerbosity.HIGH;
         }
+        // Competition: MID gives voltage + current data for post-match analysis
+        // without the overhead of publishing every tunable gain each cycle.
+        return TelemetryVerbosity.MID;
     }
 
     // ---------------------------------------------------------------------

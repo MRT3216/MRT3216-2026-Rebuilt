@@ -7,17 +7,21 @@ Recommended workflow for tuning every controlled mechanism on the robot. Work th
 ## Table of Contents
 
 1. [General Principles](#general-principles)
-2. [YAMS FF + Motion Profile Requirement](#yams-ff--motion-profile-requirement)
-3. [Drivetrain (CTRE Swerve)](#1-drivetrain-ctre-swerve)
-4. [Turret](#2-turret)
-5. [Hood](#3-hood)
-6. [Flywheel](#4-flywheel)
-7. [Kicker](#5-kicker)
-8. [Spindexer](#6-spindexer)
-9. [Intake Rollers](#7-intake-rollers)
-10. [Intake Pivot](#8-intake-pivot)
-11. [PathPlanner](#9-pathplanner)
-12. [Quick Reference Table](#quick-reference-table)
+2. [YAMS Telemetry Verbosity Levels](#yams-telemetry-verbosity-levels)
+3. [Top Team TunerConstants Comparison](#top-team-tunerconstants-comparison)
+4. [TorqueFOC — Available Upgrade Path](#torquefoc--available-upgrade-path)
+5. [YAMS FF + Motion Profile Requirement](#yams-ff--motion-profile-requirement)
+6. [YAMS SysId Helpers](#yams-sysid-helpers)
+7. [Drivetrain (CTRE Swerve)](#1-drivetrain-ctre-swerve) — _Steps 0-8: Pre-flight, Steer PID, Drive FF, Wheel Radius, Drive PID, Max Speed, Slip Current, Odometry, PathPlanner_
+8. [Turret](#2-turret)
+9. [Hood](#3-hood)
+10. [Flywheel](#4-flywheel)
+11. [Kicker](#5-kicker)
+12. [Spindexer](#6-spindexer)
+13. [Intake Rollers](#7-intake-rollers)
+14. [Intake Pivot](#8-intake-pivot)
+15. [PathPlanner](#9-pathplanner) _(redirects to Drivetrain Step 8)_
+16. [Quick Reference Table](#quick-reference-table)
 
 ---
 
@@ -122,6 +126,194 @@ All YAMS mechanisms are configured with `TelemetryVerbosity.HIGH`. This publishe
 - [ ] Someone ready on the E-stop
 - [ ] `tuningMode = true` in `Constants.java` (currently `true`)
 
+> **Telemetry verbosity is tied to `tuningMode`:** When `tuningMode = true`, all YAMS mechanisms publish `TelemetryVerbosity.HIGH` (all tunable gains, setpoints, limits, temps, motion-profile params). When `tuningMode = false` (competition), verbosity drops to `MID` (voltage, current, rotor data — good for post-match analysis without the overhead of publishing every tunable gain each cycle). See [YAMS Telemetry Verbosity Levels](#yams-telemetry-verbosity-levels) for details.
+
+---
+
+## YAMS Telemetry Verbosity Levels
+
+Controlled by `Constants.telemetryVerbosity()`, which returns `HIGH` when `tuningMode = true` and `MID` when `tuningMode = false`. The levels cascade — each higher level includes everything from the level below.
+
+### LOW (minimal — match play)
+
+Published fields per motor:
+- **SetpointPosition** / **SetpointVelocity** — what the controller is targeting
+- **MeasurementPosition** / **MeasurementVelocity** — raw sensor readings
+- **MechanismPosition** / **MechanismVelocity** — after gear ratio conversion
+
+This is enough to confirm mechanisms are reaching their setpoints. YAMS publishes setpoint position at this level, equivalent to CTRE's `getClosedLoopReference()` — **no additional reference logging code is needed.**
+
+### MID (competition debugging)
+
+Adds to LOW:
+- **OutputVoltage** — voltage being applied to the motor
+- **StatorCurrent** / **SupplyCurrent** — current draw (useful for post-match brownout analysis)
+- **RotorPosition** / **RotorVelocity** — raw rotor data before gear ratio
+
+This is the recommended level for competition. You get enough data to diagnose issues post-match (brownouts, stalls, mechanism failures) without the overhead of publishing every tunable gain.
+
+### HIGH (tuning — full visibility)
+
+Adds to MID:
+- **All tunable gains:** kP, kI, kD, kS, kV, kG, kA (editable via NetworkTables)
+- **All tunable setpoints:** TunableSetpointPosition, TunableSetpointVelocity
+- **Motor temperature**
+- **All config limits:** MechanismLowerLimit, MechanismUpperLimit, StatorCurrentLimit, SupplyCurrentLimit, MeasurementLowerLimit, MeasurementUpperLimit
+- **Ramp rates:** OpenloopRampRate, ClosedloopRampRate
+- **Motion profile params:** Published via tunable number entries
+- **Boolean flags:** MechanismLowerLimit, MechanismUpperLimit, TemperatureLimit, VelocityControl, ElevatorFeedForward, ArmFeedForward, SimpleMotorFeedForward, MotionProfile, MotorInversion, EncoderInversion
+
+> **Impact:** Each motor at HIGH publishes ~30+ NetworkTables entries per cycle. With 10+ motors, that's 300+ entries. At competition, switching to MID cuts this to ~10 entries per motor — a meaningful reduction in loop time and NT traffic.
+
+### When to switch
+
+| Situation | Verbosity | `tuningMode` |
+|-----------|-----------|-------------|
+| Shop tuning / practice | HIGH | `true` |
+| Practice match (want full data) | HIGH | `true` |
+| Qualification matches | MID | `false` |
+| Elimination matches | MID | `false` |
+| Post-match debugging (replay) | N/A — replay uses whatever was logged | — |
+
+---
+
+## Top Team TunerConstants Comparison
+
+Cross-reference of our swerve constants against top FRC teams' public code. All teams below use TalonFX (Kraken) swerve with Phoenix 6.
+
+### Drive Current Limits
+
+| Team | Drive Stator | Drive Supply | Steer Stator | Slip Current | Notes |
+|------|-------------|-------------|-------------|-------------|-------|
+| **3216 (us)** | **80A** | — | **60A** | **120A** | Stator limit in `driveInitialConfigs` |
+| 6328 (Mechanical Advantage) | — | — | 40A | 80A | Uses TorqueCurrentFOC (stator limit = slip current) |
+| 254 (Cheesy Poofs) | — | 80A supply | 50A (disabled) | 80A | Supply limit (not stator); ramp periods 0.01s |
+| 1678 (Citrus Circuits) | — | — | 60A | 80A | Default `driveInitialConfigs`; Tuner X generated |
+| 2910 (Jack in the Bot) | — | — | 60A | 80A | (Standard CTRE template) |
+| WaltonRobotics | — | — | 60A | 120A | Higher slip current |
+
+**Key takeaways:**
+- **80A drive stator/slip current is the standard.** 6328, 254, and 1678 all converge on 80A for drive traction limiting. Our 80A stator limit matches.
+- **60A steer stator is standard** for Voltage mode. 6328 uses 40A because they use TorqueCurrentFOC where current is the control variable. Our 60A matches 1678 and WaltonRobotics.
+- **254 uses supply current limiting** (80A supply) instead of stator. This is a different philosophy — supply limits protect the battery/PDP, while stator limits protect the motor and limit traction. Both approaches work.
+- **Our 120A kSlipCurrent** needs verification. Most teams use 80A. Only WaltonRobotics matches our 120A. Run the slip current characterization test (Step 6 in [Drivetrain](#1-drivetrain-ctre-swerve)) to confirm the correct value for our robot's weight and tire compound.
+
+### Drive/Steer Gains (Voltage Mode)
+
+| Team | Steer kP | Steer kD | Steer kS | Steer kV | Drive kP | Drive kV |
+|------|---------|---------|---------|---------|---------|---------|
+| **3216 (us)** | **100** | **0.5** | **0.1** | **2.48** | **0.1** | **0.585** |
+| 254 | 100 | 0.2 | 0 | 1.5 | 0.35 | 0.136 |
+| 1678 | 100 | 0.5 | 0.1 | 1.16 | 0.1 | 0.124 |
+| WaltonRobotics | 100 | 0.5 | 0.1 | 2.66 | 0.35 | 0.123 |
+
+**Key takeaways:**
+- **Steer kP=100 is universal.** Every team uses 100 for steer proportional gain in Voltage mode.
+- **Steer kD ranges 0.2–0.5.** Our 0.5 matches 1678 and WaltonRobotics.
+- **Steer kV varies significantly** (1.16–2.66) depending on gear ratio, motor characterization, and firmware version. Our 2.48 is on the higher end — may need re-characterization.
+- **Drive kP is low** across the board (0.1–0.35). Our 0.1 matches 1678.
+- **Drive kV varies** with gear ratio. Our 0.585 is higher than others — this is expected because AdvantageKit applies gear ratio differently (in firmware vs on RIO). Don't directly compare without accounting for this.
+
+### Closed-Loop Output Type
+
+| Team | Drive Output | Steer Output | Pro Licensed? |
+|------|-------------|-------------|--------------|
+| **3216 (us)** | **Voltage** | **Voltage** | **Yes** |
+| 6328 | TorqueCurrentFOC | TorqueCurrentFOC | Yes |
+| 254 | Voltage | Voltage | — |
+| 1678 | Voltage | Voltage | — |
+| WaltonRobotics | Voltage | Voltage | — |
+
+**Voltage mode is the standard.** Only 6328 uses TorqueCurrentFOC. We have Phoenix Pro (confirmed by `FusedCANcoder` steer feedback) and the code is fully wired — switching is a one-line config change + full retune. See [TorqueFOC — Available Upgrade Path](#torquefoc--available-upgrade-path).
+
+### Max Speed
+
+| Team | kSpeedAt12Volts | Gear Ratio | Module |
+|------|----------------|-----------|--------|
+| **3216 (us)** | **6.02 m/s** (theoretical) | 4.667:1 | L2+ |
+| 6328 | 4.69 m/s (measured) | — | — |
+| 1678 | 5.91 m/s | 6.48:1 | — |
+| WaltonRobotics | 4.64 m/s | 6.75:1 | — |
+
+> **Action item:** Our 6.02 m/s is theoretical. Run the max speed measurement test (Step 5 in [Drivetrain](#1-drivetrain-ctre-swerve)) and update to the measured value.
+
+---
+
+## TorqueFOC — Available Upgrade Path
+
+TorqueCurrentFOC (Torque Current Field-Oriented Control) is a Phoenix Pro feature where the motor controller's control variable is **stator current** (amps) rather than voltage. This provides more linear and predictable torque output, better traction control, and improved battery voltage independence.
+
+> **We have Phoenix Pro.** `TunerConstants.java` already uses `SteerFeedbackType.FusedCANcoder` (line 57), which requires Phoenix Pro. TorqueFOC is available to us right now.
+
+### Benefits of TorqueFOC
+
+- **Battery-voltage independence:** Voltage mode output changes as battery sags (12V → 11V = 8% less torque). TorqueFOC commands current directly, so performance is consistent regardless of battery state.
+- **More linear torque response:** Current is directly proportional to torque (torque = kT × current). Voltage has a nonlinear relationship with torque due to back-EMF.
+- **Better traction control:** `kSlipCurrent` directly limits the torque applied to wheels, making slip behavior more predictable.
+- **Simpler FF model:** With torque control, kS/kV/kA represent friction/back-EMF/inertia in current units, which map more directly to physics.
+
+### What changes with TorqueFOC
+
+- **Gain scales are completely different.** 6328's Voltage gains (steer kP=100) vs their TorqueFOC gains (steer kP=4000, turn kD=50) illustrate this — you **cannot** reuse Voltage gains.
+- **kSlipCurrent becomes the peak current limit** for drive motors (since current is the control variable). The stator current limit in `driveInitialConfigs` still applies as a thermal backstop.
+- **Full retune of every drive gain** is required — FF characterization, drive PID, steer PID, slip current, max speed. There's no shortcut.
+
+### 6328's TorqueFOC Gains (reference)
+
+| Parameter | 6328 TorqueFOC | Our Voltage | Notes |
+|-----------|---------------|-------------|-------|
+| Steer kP | **4000** | 100 | 40× larger — current units |
+| Steer kD | **50** | 0.5 | 100× larger |
+| Steer kS | **16** | 0.1 | Amps, not volts |
+| Steer kV | **0** | 2.48 | Not needed — torque control handles back-EMF |
+| Drive kP | **35** | 0.1 | 350× larger |
+| Drive kS | **5** | 0.26 | Amps |
+| Drive kV | **0** | 0.585 | Same reasoning |
+| Slip current | **80A** | 120A | Peak torque = slip limit |
+| TorqueClosedLoopRampPeriod | **0.02s** | — | Limits current slew rate |
+
+### Our TorqueFOC readiness
+
+The code is **fully wired** for TorqueFOC in `ModuleIOTalonFX.java`:
+- `TorqueCurrentFOC` and `PositionTorqueCurrentFOC` requests are imported and instantiated (lines 16-19, 62-66)
+- Peak torque current is configured from `kSlipCurrent` (lines 107-108)
+- Switch statements select the request type based on `TunerConstants` output type (lines 230-265)
+
+### How to enable TorqueFOC (step-by-step)
+
+1. **Change output type** in `TunerConstants.java` (lines 41, 44):
+   ```java
+   private static final ClosedLoopOutputType kSteerClosedLoopOutput = ClosedLoopOutputType.TorqueCurrentFOC;
+   private static final ClosedLoopOutputType kDriveClosedLoopOutput = ClosedLoopOutputType.TorqueCurrentFOC;
+   ```
+2. **Zero out all gains** in `steerGains` and `driveGains` — start from scratch.
+3. **Re-run the entire drivetrain calibration** (Steps 1-7 in [Drivetrain](#1-drivetrain-ctre-swerve)). The AK characterization routines work with any output type — they will produce correct FF values for TorqueFOC.
+4. **Consider adding `TorqueClosedLoopRampPeriod`** (0.02s) to `driveInitialConfigs` to prevent current spikes:
+   ```java
+   .withClosedLoopRamps(new ClosedLoopRampsConfigs().withTorqueClosedLoopRampPeriod(0.02))
+   ```
+5. **Re-measure slip current** (Step 6) — the value will differ because current is now the control variable.
+
+### Recommendation
+
+**Start on Voltage mode, consider TorqueFOC after initial tuning is complete.** Voltage mode is proven by 254, 1678, and the majority of top teams. Once the robot is driving well on Voltage, switching to TorqueFOC is a single-constant change + full retune. The benefits are most noticeable during:
+- Late-match play when battery voltage sags
+- Autonomous routines that require consistent acceleration
+- Defense situations with high-current pushing
+
+### Motion Profile Types by Mechanism
+
+Each mechanism's motion profile was chosen for its specific use case:
+
+| Mechanism | Profile Type | Where it runs | Why this profile |
+|-----------|-------------|--------------|-----------------|
+| Drive (steer) | **MotionMagicExpo** | TalonFX firmware | Exponential profile: smooth, continuous jerk. Ideal for azimuth that must track smoothly during driving. Uses `kV` and `kA` expo parameters, not trapezoidal cruise/accel. |
+| Turret | **MAXMotion (trapezoidal)** | SparkMax firmware | Trap profile is appropriate for a turret that moves to discrete angles. The 1000°/s cruise / 7200°/s² accel gives fast, predictable moves. |
+| Hood | **MotionMagic (trapezoidal)** | TalonFX firmware | Small mechanism, short moves. Trapezoidal is simple and works well. 270°/s cruise is conservative — can increase after tuning. |
+| Intake Pivot | **ExponentialProfile** | RIO (WPILib) | Runs on the RIO because SparkFlex doesn't support exponential profiles natively. `ExponentialProfile` models motor voltage constraints more accurately than trapezoidal for arms with gravity — it accounts for the fact that a motor can accelerate faster going down than up. |
+
+> **Trapezoidal vs Exponential:** Trapezoidal profiles assume constant max acceleration. Exponential profiles model the motor's voltage-speed curve, so acceleration naturally decreases as speed increases (more realistic). For swerve azimuth (MotionMagicExpo) and gravity-loaded arms (ExponentialProfile), exponential is preferred. For mechanisms with simple point-to-point moves (turret, hood), trapezoidal is fine.
+
 ---
 
 ## YAMS FF + Motion Profile Requirement
@@ -199,92 +391,271 @@ Extract `.hoot` logs from the RoboRIO via Phoenix Tuner X → Tools → Extracti
 
 **File:** `TunerConstants.java` (**generated by Phoenix Tuner X — do not hand-edit gains here; use Tuner X to regenerate**)
 **Motors:** 8× TalonFX (4 drive + 4 steer)
-**Control:** Phoenix 6 Slot0 gains, Voltage output mode
+**Control:** Phoenix 6 Slot0 gains, Voltage output mode (TorqueFOC available — see [TorqueFOC section](#torquefoc--available-upgrade-path))
 **Swerve template:** [AdvantageKit TalonFX Swerve Template](https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template/)
+**CAN bus:** CAN FD (`"CANFD"`) — odometry runs at **250 Hz** (see [Odometry Frequency](#odometry-frequency))
 
 > **AdvantageScope layout:** Import `AdvantageScope Swerve Calibration.json` from the swerve project folder (`File > Import Layout...`). It has predefined tabs for each tuning step below.
 
 > ⚠️ **Note on `TunerConstants.java`:** This file is generated by Phoenix Tuner X. Motor gains (`steerGains`, `driveGains`), gear ratios, encoder offsets, and CAN IDs should only be changed by re-running the Tuner X generator. The `driveInitialConfigs` and `steerInitialConfigs` fields are the **user-customizable extension points** for things like current limits — those are safe to edit.
 
-### Tuning Order (from AdvantageKit swerve template docs)
+> ⚠️ **AdvantageKit uses different gain scales than CTRE's default swerve code.** AK configures the TalonFX to apply the swerve gear ratio in firmware (via `Slot0.kV` in rotor-space). This means FF and PID gains from CTRE's example code or Phoenix Tuner X presets will **not** work directly — they must be re-characterized using the AK routines described below.
 
-Follow this order — each step depends on the previous one:
+### Enabling Characterization Routines
 
-1. **Steer PID** — modules must point accurately before drive characterization works
-2. **Drive Feedforward (kS, kV)** — characterize with the "Drive Simple FF Characterization" auto
-3. **Wheel Radius** — characterize with "Drive Wheel Radius Characterization" auto
-4. **Drive PID (kP)** — tune after FF is set
-5. **Max Speed Measurement** — measure actual top speed and update `kSpeedAt12Volts`
-6. **Slip Current Measurement** — measure `kSlipCurrent` at which wheels break traction
-7. **PathPlanner PID** — tune translation/rotation PID last, after drive is solid
+All characterization autos are registered in `RobotContainer.setupSysid()` (line 550). To enable:
 
-### Step 1: Steer Motors (position control)
+1. **Uncomment** `setupSysid();` in the `RobotContainer` constructor (line 224).
+2. Deploy and reboot.
+3. The dashboard auto chooser will now show characterization options alongside normal autos.
+4. **Remember to re-comment** `setupSysid()` before competition — you don't want characterization routines in your auto chooser during matches.
+
+Available routines:
+- **"Drive Simple FF Characterization"** — quasistatic ramp, outputs kS and kV
+- **"Drive Wheel Radius Characterization"** — rotates in place, outputs wheel radius
+- **"Drive SysId (Quasistatic Forward/Reverse)"** — full SysId quasistatic tests
+- **"Drive SysId (Dynamic Forward/Reverse)"** — full SysId dynamic tests
+
+### Complete Calibration Order
+
+Follow this order exactly — each step depends on the previous one:
+
+| Step | What | Auto Routine? | Updates |
+|------|------|:---:|---------|
+| 0 | [Pre-flight checks](#step-0-pre-flight-checks) | — | Verify Tuner X, module offsets, CAN |
+| 1 | [Steer PID](#step-1-steer-pid) | — | `steerGains` kS, kV, kP, kD |
+| 2 | [Drive FF characterization](#step-2-drive-feedforward-characterization-ks-kv) | ✅ | `driveGains` kS, kV |
+| 3 | [Wheel radius](#step-3-wheel-radius-characterization) | ✅ | `kWheelRadius` |
+| 4 | [Drive PID](#step-4-drive-pid-tuning-kp) | — | `driveGains` kP |
+| 5 | [Max speed measurement](#step-5-max-speed-measurement) | — | `kSpeedAt12Volts` |
+| 6 | [Slip current measurement](#step-6-slip-current-measurement) | — | `kSlipCurrent` |
+| 7 | [Odometry frequency](#step-7-odometry-frequency) | — | Verify `Drive.ODOMETRY_FREQUENCY` |
+| 8 | [PathPlanner configuration](#step-8-pathplanner-configuration) | — | Mass, MOI, wheel COF, PID |
+
+### Step 0: Pre-flight Checks
+
+Before any tuning, verify the following:
+
+- [ ] **Phoenix Tuner X connected.** Connect to the RoboRIO (USB or network). Verify all 8 TalonFX motors and 4 CANcoders show green in the device list.
+- [ ] **Module offsets correct.** In Tuner X, select each CANcoder → Configs → Magnet Offset. With all wheels pointed straight forward, the offset should read ~0°. If any module is off by 90°/180°, the offset is wrong — re-run the Tuner X swerve generator.
+- [ ] **Motor inversions correct.** Manually spin each wheel forward — the drive motor should report positive velocity. Manually rotate each azimuth CCW (top view) — the steer motor should report positive position. If not, fix inversions in Tuner X.
+- [ ] **CAN bus healthy.** In Tuner X → CAN Diagnostics, verify 0% bus utilization error rate. All devices should be on the `CANFD` bus (CAN FD).
+- [ ] **Firmware updated.** All TalonFX and CANcoder firmware should be the latest compatible with Phoenix 6 v26.
+- [ ] **Robot on blocks** (wheels off the ground) for steer and initial drive tuning. Only remove blocks for Steps 3 (wheel radius), 5 (max speed), and 6 (slip current).
+
+### Step 1: Steer PID
 
 Current gains: `kP=100, kI=0, kD=0.5, kS=0.1, kV=2.48, kA=0`
 
-**Workflow:**
-1. Open Tuner X → select any steer motor → Configs → Slot 0.
-2. **kS (static friction):** Command a very slow constant-velocity steer rotation. Increase kS from 0 until the module just barely starts moving. That voltage is kS.
-3. **kV (velocity):** Command a moderate velocity and measure steady-state voltage. `kV = (voltage - kS) / velocity_rps`.
-4. **kP:** Set a positional setpoint (e.g. 90°). Start kP at ~50, increase until the module reaches the target quickly without oscillation. You want <50ms settling.
-5. **kD:** If there's overshoot, add kD in small increments (0.1–1.0). Current 0.5 is typical.
-6. **kI:** Should remain 0 for steer. Steer doesn't need integral — the module homes every cycle.
+The steer motors use **MotionMagicExpo** (exponential profile) in firmware. The gains work with this profile automatically.
 
-> **AdvantageScope:** Plot `/RealOutputs/SwerveStates/Measured` vs `/RealOutputs/SwerveStates/SetpointsOptimized` to compare actual vs commanded module states.
+**Workflow:**
+1. Robot on blocks, deploy code.
+2. **kS (static friction):** Command a very slow constant-velocity steer rotation. Increase kS from 0 until the module just barely starts moving. That voltage is kS. Current value: 0.1.
+3. **kV (velocity feedforward):** Command a moderate angular velocity and measure steady-state voltage. `kV = (voltage - kS) / velocity_rps`. Current value: 2.48. Verify by overlaying position and reference — the slopes should match during the cruise phase.
+4. **kP (proportional):** Set a positional setpoint (e.g. 0° → 90°). Start kP at ~50, increase until the module reaches the target quickly without oscillation. Target settling time: **<50ms**. Current value: 100 (standard across all top teams).
+5. **kD (derivative):** If there's overshoot, add kD in small increments (0.1–1.0). Current 0.5 is typical (matches 1678, WaltonRobotics).
+6. **kI:** Should remain **0** for steer. Steer doesn't need integral — the module homes every cycle.
+
+**AdvantageScope verification:**
+- Plot `/RealOutputs/SwerveStates/Measured` and `/RealOutputs/SwerveStates/SetpointsOptimized` on the same line graph.
+- The measured angles should track the setpoints with minimal lag and no oscillation.
+- Right-click the axis → Edit → multiplier of 360 converts rotations to degrees for easier reading.
 
 ### Step 2: Drive Feedforward Characterization (kS, kV)
 
-Current gains: `kP=0.1, kI=0, kD=0, kS=0.26, kV=0.585`
+Current gains: `kP=0.1, kI=0, kD=0, kS=0.25955, kV=0.58499`
 
-> **Important:** AdvantageKit's template applies the swerve gear ratio using TalonFX firmware, not on the RIO. This means AdvantageKit FF gains are different from CTRE's default swerve code values.
+> **Important: AdvantageKit gain scale.** AK's template configures the TalonFX to apply the swerve gear ratio in firmware, not on the RIO. This means AK's FF gains (`kS`, `kV`) are in rotor-space and will be numerically different from CTRE's default swerve template values. **Use the AK characterization routine — do not copy FF values from non-AK projects.**
 
-**Preferred: "Drive Simple FF Characterization" auto** (quick, no SysId needed):
-1. Uncomment `setupSysid()` in `RobotContainer.java` (line 224).
-2. Place the robot in an open space.
-3. Select the **"Drive Simple FF Characterization"** auto routine from the chooser.
-4. Enable autonomous. The robot will slowly accelerate forward (quasistatic ramp).
-5. Disable after ~5-10 seconds.
-6. Check the **console output** for measured `kS` and `kV`. Copy them to `driveGains` in `TunerConstants.java` (via Tuner X regeneration or the driveGains config).
+**Preferred method: "Drive Simple FF Characterization" auto routine** (quick, no SysId tool needed):
 
-**Alternative: Full SysId** (also gets kA):
-- The `setupSysid()` method also registers "Drive SysId (Quasistatic Forward/Reverse)" and "Drive SysId (Dynamic Forward/Reverse)" auto routines.
-- Run all four, then analyze logs in the SysId tool. Export `.hoot` logs via Phoenix Tuner X → Tools → Extract Signal Logs → export as WPILOG, or use AdvantageKit logs directly (note: AK logs use radians, Phoenix uses rotations — convert appropriately).
+1. Place the robot in an **open space** (it will drive forward in a straight line). Wheels on the ground.
+2. Select **"Drive Simple FF Characterization"** from the dashboard auto chooser.
+3. Enable autonomous mode. The robot will slowly ramp up speed (quasistatic acceleration forward).
+4. Let it run for **5–10 seconds**, then disable.
+5. Check the **Driver Station console output** — it will print the measured `kS` and `kV` values.
+6. Copy these values to `driveGains` in `TunerConstants.java`:
+   ```java
+   private static final Slot0Configs driveGains =
+           new Slot0Configs().withKP(0.1).withKI(0).withKD(0).withKS(/* measured */).withKV(/* measured */);
+   ```
+7. **Repeat 2–3 times** and average the results for better accuracy.
+
+> **Sanity check:** For Kraken X60 with 4.667:1 gearing and AK firmware-applied ratio, expect kV in the range of 0.4–0.7 and kS in the range of 0.1–0.4. Values far outside this range indicate a problem (wrong gear ratio, worn wheels, incorrect unit conversion).
+
+**Alternative method: Full SysId** (also gets kA for acceleration feedforward):
+
+The `setupSysid()` method registers four additional routines:
+- "Drive SysId (Quasistatic Forward)" — slow ramp, forward
+- "Drive SysId (Quasistatic Reverse)" — slow ramp, reverse
+- "Drive SysId (Dynamic Forward)" — step voltage, forward
+- "Drive SysId (Dynamic Reverse)" — step voltage, reverse
+
+Run all four, then analyze using the WPILib SysId tool. To extract logs:
+- **AdvantageKit logs:** Already in WPILOG format in the `logs/` directory. **Note:** AK logs positions in radians, not rotations — account for this when loading into SysId.
+- **Phoenix Signal Logs:** Extract `.hoot` files via Phoenix Tuner X → Tools → Extract Signal Logs → Export as WPILOG for SysId analysis.
 
 ### Step 3: Wheel Radius Characterization
 
+Current value: `kWheelRadius = Inches.of(1.8)` (1.8 inches = 0.04572 m)
+
 Already wired as `DriveCommands.wheelRadiusCharacterization(drive)` in `setupSysid()`.
 
-1. Place the robot **on carpet** (hard floor gives inaccurate results due to compression differences).
-2. Select the **"Drive Wheel Radius Characterization"** auto routine.
-3. Enable autonomous. The robot will slowly rotate in place.
-4. Disable after at least **one full rotation**.
-5. Check the console output for the measured wheel radius. Update `kWheelRadius` in `TunerConstants.java`.
+**Procedure:**
 
-> **Why this matters:** Effective wheel radius changes as wheels wear down, get swapped, or compress into carpet. Even small errors compound in odometry. Re-characterize regularly.
+1. Place the robot **on carpet** — not on hard floor. Wheel compression into carpet changes the effective radius, and you want to characterize the radius as it will be during matches.
+2. Select **"Drive Wheel Radius Characterization"** from the dashboard auto chooser.
+3. Enable autonomous. The robot will slowly **rotate in place** (all modules point tangentially).
+4. Let it run for **at least one full rotation** (preferably 2–3 rotations for better accuracy). The slower and more rotations, the more accurate.
+5. Disable.
+6. Check the **Driver Station console output** for the measured wheel radius.
+7. Update `kWheelRadius` in `TunerConstants.java`:
+   ```java
+   public static final Distance kWheelRadius = Inches.of(/* measured value */);
+   ```
+
+> **How it works:** The routine uses the gyro's measured rotation and the drive encoders' measured distance to compute `radius = distance_driven / (θ_gyro × gear_ratio)`. The gyro provides an absolute ground-truth rotation angle.
+
+> **When to re-characterize:** Re-run this whenever you:
+> - Swap wheels (new tread compound or worn treads)
+> - Move to a different carpet surface (practice vs competition)
+> - See odometry drift in PathPlanner autos (wheels report different distance than actual)
+
+> **Expected range:** For our 3.6" diameter wheels, expect a value of ~1.70–1.85 inches depending on compression. The theoretical 1.8" is a starting point.
 
 ### Step 4: Drive PID Tuning (kP)
 
-1. After FF is set, command a step velocity (e.g. 0 → 2 m/s).
-2. In AdvantageScope, plot `/RealOutputs/SwerveStates/Measured` vs `/RealOutputs/SwerveStates/SetpointsOptimized`.
-3. Increase kP until the rise time is <100ms without oscillation. 0.1 is a good starting point.
-4. **kD:** Usually 0 for velocity loops — only add if you see ringing.
+After FF is set and wheel radius is accurate:
+
+1. Deploy code with the new FF values.
+2. In teleop, command a velocity step — release the joystick, then push forward abruptly (0 → ~2 m/s).
+3. In AdvantageScope, plot `/RealOutputs/SwerveStates/Measured` vs `/RealOutputs/SwerveStates/SetpointsOptimized`.
+4. **Look at the velocity traces.** With only FF (kP=0), the measured velocity should roughly follow the setpoint but may lag or undershoot slightly.
+5. Increase kP until the **rise time** is <100ms and there is no steady-state error. Start at 0.05, increase to 0.1, 0.2, etc.
+6. **kD:** Usually **0** for velocity loops — only add if you see ringing/oscillation. kD amplifies encoder noise, which is bad for velocity control.
+7. Current kP=0.1 is a reasonable starting point (matches 1678).
+
+> **If oscillating:** Reduce kP. If there's steady-state velocity error even with kP, it's an FF problem (kV too low or too high), not a PID problem.
 
 ### Step 5: Max Speed Measurement
 
-1. Set `kSpeedAt12Volts` in `TunerConstants.java` to the theoretical max speed (currently 6.02 m/s based on Kraken X60 free speed and 4.667:1 gearing).
-2. Place the robot in an open space.
-3. Plot `/RealOutputs/SwerveChassisSpeeds/Measured` in AdvantageScope.
-4. In teleop, drive forward at full speed until velocity stops increasing.
-5. Record the maximum velocity achieved and **update `kSpeedAt12Volts`** to this value. The effective max is typically slightly less than theoretical.
+Current value: `kSpeedAt12Volts = MetersPerSecond.of(6.022849)` (theoretical)
+
+**Why this matters:** `kSpeedAt12Volts` is used to normalize joystick inputs — a value of 1.0 on the joystick commands `kSpeedAt12Volts` m/s. If this value is higher than the actual max speed, the robot can never reach full speed and the FF will be slightly off. If it's lower, the joystick saturates before full deflection.
+
+**Procedure:**
+
+1. Place the robot in an **open space** (at least 30 feet of straight driving room). Fully charged battery.
+2. Set `kSpeedAt12Volts` to the **theoretical** value (currently 6.022849 m/s) if not already.
+3. Deploy code.
+4. In AdvantageScope, plot **`/RealOutputs/SwerveChassisSpeeds/Measured`** (look at the `vx` component — forward velocity).
+5. In teleop, drive **full speed forward** on a straight line. Hold full joystick deflection for at least 3 seconds until velocity stabilizes.
+6. Record the **peak sustained velocity** (not the momentary spike, the stable plateau).
+7. Update `kSpeedAt12Volts` to this measured value:
+   ```java
+   public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(/* measured peak velocity */);
+   ```
+
+> **Expected:** For our Kraken X60 with 4.667:1 gearing, expect ~5.5–5.9 m/s measured (vs 6.02 m/s theoretical). The gap is due to friction, motor efficiency at load, and battery voltage sag.
+
+> **Also update PathPlanner settings.json:** `"maxDriveSpeed"` should match your measured max speed. Currently set to 8.0 m/s, which is unrealistically high.
 
 ### Step 6: Slip Current Measurement
 
-1. Place the robot against a **solid wall**.
-2. In AdvantageScope, plot drive motor current (`/Drive/Module.../DriveCurrentAmps`) and drive velocity (`/Drive/Module.../DriveVelocityRadPerSec`).
-3. Accelerate forward until the drive velocity suddenly increases (wheel slips). Note the current at that moment.
-4. Update `kSlipCurrent` in `TunerConstants.java` to this value (currently 120A).
+Current value: `kSlipCurrent = Amps.of(120)`
 
-> **Drive stator current limit:** The drive motors currently have an 80A stator current limit in `driveInitialConfigs` for thermal protection. `kSlipCurrent` (120A) is a separate traction-detection mechanism. If you see brownouts during hard acceleration, lower the stator limit. If the robot feels sluggish, you can raise it (but not above `kSlipCurrent`).
+`kSlipCurrent` defines the stator current at which the drive wheels lose traction and start slipping. This value is used for traction control — the robot limits acceleration to keep current below this threshold.
+
+**Procedure:**
+
+1. Place the robot against a **solid, immovable wall** (e.g., a concrete wall or heavy workbench). All four wheels on carpet.
+2. In AdvantageScope, plot two signals on the same graph (use two Y-axes):
+   - **Drive current:** `/Drive/Module0/DriveCurrentAmps` (or any module index)
+   - **Drive velocity:** `/Drive/Module0/DriveVelocityRadPerSec`
+3. In teleop, **slowly** accelerate forward into the wall (gradually push the joystick from 0% → 100%).
+4. Watch the velocity signal. Initially velocity will be ~0 (wheels grip, robot is against wall). At some current level, velocity will **suddenly jump up** — that's the wheel slipping.
+5. Note the **current at the moment velocity jumps**. That's your slip current.
+6. Update `kSlipCurrent` in `TunerConstants.java`:
+   ```java
+   private static final Current kSlipCurrent = Amps.of(/* measured value */);
+   ```
+7. **Repeat 2–3 times** with different modules and average.
+
+> **Expected range:** For Kraken X60 on competition carpet with standard tread, most teams see 60–100A. 6328, 254, and 1678 all use 80A. Our current 120A may be higher than actual — verify with this test.
+
+> **Relationship to stator current limit:** The drive motors have an 80A stator current limit in `driveInitialConfigs` for thermal protection. `kSlipCurrent` is used by the swerve kinematics for traction allocation. If `kSlipCurrent` < stator current limit, the stator limit is never the binding constraint (good). If `kSlipCurrent` > stator limit (like our current 120A > 80A), the stator limit prevents the robot from ever reaching slip — which means traction control isn't doing anything useful. **After measuring, ensure `kSlipCurrent` is set to the actual slip point.**
+
+### Step 7: Odometry Frequency
+
+Configured automatically in `Drive.java` (line 55):
+```java
+static final double ODOMETRY_FREQUENCY = TunerConstants.kCANBus.isNetworkFD() ? 250.0 : 100.0;
+```
+
+Since our CAN bus is **CAN FD** (`"CANFD"` in `TunerConstants.java`), odometry runs at **250 Hz** (4ms period). This is the AdvantageKit recommendation for CAN FD buses.
+
+**What this controls:**
+- The `PhoenixOdometryThread` samples drive/steer positions and the Pigeon 2 yaw at 250 Hz.
+- These high-frequency samples are batched and processed in the main 50 Hz control loop.
+- Higher frequency = better odometry accuracy during fast maneuvers.
+
+**When to change:**
+- **Standard CAN (not FD):** Automatically drops to 100 Hz. No action needed.
+- **CPU overload:** If loop overruns are frequent, you can reduce to 200 Hz, but this is rarely necessary.
+- **Multiple high-frequency buses:** If you have other high-frequency CAN traffic, reducing odometry frequency can help.
+
+> **No action needed for our setup.** CAN FD at 250 Hz is correct and optimal.
+
+### Step 8: PathPlanner Configuration
+
+PathPlanner requires accurate robot physical parameters for path following. These are configured in two places:
+
+**1. Code constants** (`Drive.java` lines 66-80):
+```
+ROBOT_MASS_KG = 74.088  (163.4 lbs — weigh the robot with bumpers & battery)
+ROBOT_MOI = 6.883       (kg⋅m² — see below for how to estimate)
+WHEEL_COF = 1.2          (wheel coefficient of friction on carpet)
+```
+
+**2. PathPlanner GUI settings** (`src/main/deploy/pathplanner/settings.json`):
+- `"robotMass": 51.2559` ← ⚠️ This doesn't match `Drive.java` (74.088 kg). **Fix this.**
+- `"robotMOI": 6.883` ← Matches.
+- `"wheelCOF": 2.255` ← ⚠️ This doesn't match `Drive.java` (1.2). **Fix this.** A COF >2 is unrealistic.
+- `"driveWheelRadius": 0.042926` ← Should match `kWheelRadius` after characterization.
+- `"driveGearing": 4.66666667` ← Matches.
+- `"driveCurrentLimit": 60.0` ← Should match `driveInitialConfigs` stator limit (80A). **Fix this.**
+
+> ⚠️ **Action: Sync PathPlanner settings with code.** The `settings.json` values for mass, COF, and current limit don't match the code. Open PathPlanner GUI → Settings and update them, or edit the JSON directly. Mismatched values mean PathPlanner generates paths the robot can't actually follow.
+
+**PathPlanner PID tuning** (`Constants.PathPlannerConstants`):
+
+Current gains: `Translation: kP=5.0, kI=0, kD=0` | `Rotation: kP=5.0, kI=0, kD=0`
+
+1. **Tune drivetrain first.** PathPlanner PID sits on top of the drive closed-loop — if drive gains are wrong, PP gains can't compensate.
+2. **Translation kP:** Run a simple straight-line path. Watch the robot's actual path vs planned path in AdvantageScope. If the robot undershoots turns or drifts, increase kP. If it oscillates side-to-side, decrease.
+3. **Rotation kP:** Run a path with heading changes. If the robot is slow to rotate to the target heading, increase. If it oscillates around the heading, decrease.
+4. **kD:** Add if there's heading overshoot at the end of paths. Start at 0.1.
+5. **kI:** Almost never needed. Only add if there's persistent steady-state heading error (suggests a gyro offset problem, not a gain problem).
+
+**Estimating MOI:**
+- The simplest method: use PathPlanner's built-in MOI estimator in the GUI.
+- Alternatively: `MOI ≈ (1/12) × mass × (length² + width²)` for a uniform rectangular robot.
+- For our robot: `(1/12) × 74.088 × (0.876² + 0.883²) ≈ 9.6 kg⋅m²`. Our current 6.883 is lower, suggesting the mass is concentrated closer to the center (which is typical with a heavy center turret). **Verify by running auto paths** — if the robot overshoots rotations, MOI is too low; if it's sluggish to rotate, MOI is too high.
+
+### Advanced: Profiled Turning PID (MotionMagicExpo)
+
+Our steer motors already use MotionMagicExpo (exponential profile) in firmware. This is configured in the AK swerve template's `ModuleIOTalonFX` constructor where it sets up MotionMagic expo parameters.
+
+MotionMagicExpo uses `kV` and `kA` from the MotionMagic config (not the same as Slot0 `kV`/`kA`) to generate smooth exponential motion profiles. The profile naturally accounts for the motor's voltage-speed curve, producing smoother azimuth transitions than trapezoidal profiles.
+
+**If considering TorqueFOC for steer:** Replace the `MotionMagicVoltage` request with `MotionMagicTorqueCurrentFOC`. The MotionMagic parameters stay in the same config — only the control request type and Slot0 gains change.
+
+### Advanced: Swerve Setpoint Generator (254's Algorithm)
+
+PathPlanner includes an implementation of 254's swerve setpoint generator algorithm. This optimizes module states to respect kinematic constraints (max module speed, max module acceleration) while minimizing scrub.
+
+**Status:** Not currently enabled in our code. This is an advanced optimization — only consider after all basic calibration is complete and PathPlanner paths are tracking well.
 
 ---
 
@@ -431,17 +802,7 @@ Motion profile: `90 °/s max velocity, 90 °/s² max accel`
 
 ## 9. PathPlanner
 
-**File:** `Constants.PathPlannerConstants`
-**Control:** WPILib PIDController (translation + rotation)
-
-Current gains: `Translation: kP=5.0, kI=0, kD=0` | `Rotation: kP=5.0, kI=0, kD=0`
-
-**Workflow:**
-1. **Tune drivetrain first.** PathPlanner PID sits on top of the drive closed-loop — if drive gains are wrong, PP gains can't compensate.
-2. **Translation kP:** Run a simple straight-line path. Watch the robot's actual path vs planned path in AdvantageScope. If the robot undershoots turns or drifts, increase kP. If it oscillates side-to-side, decrease.
-3. **Rotation kP:** Run a path with heading changes. If the robot is slow to rotate to the target heading, increase. If it oscillates, decrease.
-4. **kD:** Add if there's heading overshoot at the end of paths. Start at 0.1.
-5. **kI:** Almost never needed. Only add if there's persistent steady-state heading error (suggests a gyro offset problem, not a gain problem).
+See [Step 8: PathPlanner Configuration](#step-8-pathplanner-configuration) in the Drivetrain section above. PathPlanner tuning depends entirely on having accurate drivetrain gains first.
 
 ---
 
@@ -449,7 +810,7 @@ Current gains: `Translation: kP=5.0, kI=0, kD=0` | `Rotation: kP=5.0, kI=0, kD=0
 
 | Mechanism | Motor(s) | Control | FF Terms | PID | Motion Profile | Constants File |
 |-----------|----------|---------|----------|-----|---------------|----------------|
-| Drive (steer) | TalonFX | Position | kS, kV | kP, kD | MotionMagic | `TunerConstants` |
+| Drive (steer) | TalonFX | Position | kS, kV | kP, kD | MotionMagicExpo | `TunerConstants` |
 | Drive (drive) | TalonFX | Velocity | kS, kV | kP | — | `TunerConstants` |
 | Turret | NEO | Position+MP | kS, kV, kA | kP | 1000°/s, 7200°/s² | `ShooterConstants.TurretConstants` |
 | Hood | TalonFX | Position+MP | kS, kV | kP | 270°/s, 270°/s² | `ShooterConstants.HoodConstants` |
@@ -458,16 +819,24 @@ Current gains: `Translation: kP=5.0, kI=0, kD=0` | `Rotation: kP=5.0, kI=0, kD=0
 | Spindexer | NEO | Velocity | kS, kV | kP | — | `ShooterConstants.SpindexerConstants` |
 | Intake Rollers | Kraken X60 | Velocity | kS, kV | kP | — | `IntakeConstants.Rollers` |
 | Intake Pivot | 2× Vortex | Position+MP | kG, kS, kV | ⚠️ kP=0 | 90°/s, 90°/s² | `IntakeConstants.Pivot` |
-| PathPlanner | — | Translation+Rot | — | kP | — | `Constants.PathPlannerConstants` |
+| PathPlanner | — | Translation+Rot | — | kP | — | `Constants.PathPlannerConstants` + `Drive.java` |
 
 ### Priority Order for Monday
 
 > **All FF, PID, and motion profile gains were set with limited testing time. Plan to re-tune everything Monday.**
 
-1. **Drivetrain** — everything else depends on accurate drive/odometry
-2. **Turret** — needs to track accurately for shooting
-3. **Flywheel** — RPM accuracy directly affects shot consistency
-4. **Hood** — verify existing gains hold with the new LUT distances
-5. **Intake Pivot** — uncomment FF, tune kG, then add PID
-6. **Spindexer / Kicker / Rollers** — verify, adjust if feeding is inconsistent
-7. **PathPlanner** — last, after drive is solid
+1. **Drivetrain Steps 0-6** — everything else depends on accurate drive/odometry
+   - Pre-flight checks (Step 0)
+   - Steer PID verification (Step 1)
+   - Drive FF characterization — run the "Simple FF" auto (Step 2)
+   - Wheel radius characterization — run on carpet (Step 3)
+   - Drive PID tuning (Step 4)
+   - Max speed measurement (Step 5)
+   - Slip current measurement (Step 6)
+2. **Sync PathPlanner settings** (Step 8) — fix mass/COF/current mismatch
+3. **Turret** — needs to track accurately for shooting
+4. **Flywheel** — RPM accuracy directly affects shot consistency
+5. **Hood** — verify existing gains hold with the new LUT distances
+6. **Intake Pivot** — uncomment FF, tune kG, then add PID
+7. **Spindexer / Kicker / Rollers** — verify, adjust if feeding is inconsistent
+8. **PathPlanner PID** — last, after drive is solid

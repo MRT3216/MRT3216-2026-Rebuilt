@@ -159,6 +159,59 @@ All YAMS mechanisms are configured with `TelemetryVerbosity.HIGH`. This publishe
 - **Sim connection:** Connect Phoenix Tuner X to `localhost` when running sim to get the same signal plotting on simulated motors.
 - **kV slope matching:** With only kV active (kP=0), overlay Position and Reference. If the Position line's slope during the cruise phase is shallower than Reference, increase kV. Match the slopes.
 
+### Position vs Reference: How to Get the Graph for kV/kA Tuning
+
+The kV and kA tuning steps above require overlaying the mechanism's **actual position** against the motion profile's **instantaneous reference** (the point the profile says the mechanism *should* be at right now). This is different from the final setpoint — it's the intermediate trajectory point that changes every cycle as the profile ramps up, cruises, and ramps down.
+
+**For kV:** The position and reference lines should have **matching slopes** during the cruise (constant-velocity) phase. If position's slope is shallower than reference, kV is too low.
+
+**For kA:** The position and reference lines should **overlap during the acceleration phase** (the curved portions at the start/end of moves). If position lags behind reference during acceleration, kA is too low.
+
+#### CTRE mechanisms (Hood, Flywheel, Intake Rollers) — ✅ Already wired
+
+CTRE's TalonFX exposes `getClosedLoopReference()` — this is the motion profile's cycle-by-cycle reference point. **We already log this for all CTRE mechanisms:**
+
+| Mechanism | Position Key (AdvantageScope) | Reference Key (AdvantageScope) | Units |
+|---|---|---|---|
+| **Hood** | `Hood/FX/PositionDegrees` | `Hood/FX/ReferenceDegrees` | Degrees |
+| **Flywheel** | `Flywheel/FX/VelocityRPM` | `Flywheel/FX/ReferenceRPM` | RPM |
+
+These are logged in each subsystem's `updateInputs()` method using `PhoenixUtil.refresh()` + `Logger.recordOutput()`. **No additional code needed** — just open AdvantageScope, drag both keys onto the same line graph, and you have the exact overlay shown in the YAMS tuning slides.
+
+> **If you add more CTRE mechanisms in the future**, follow the same pattern:
+> ```java
+> // In the subsystem class (field declarations):
+> private final StatusSignal<Angle> positionSignal = motor.getPosition();
+> private final StatusSignal<Double> referenceSignal = motor.getClosedLoopReference();
+>
+> // In the constructor:
+> BaseStatusSignal.setUpdateFrequencyForAll(50, positionSignal, referenceSignal);
+>
+> // In updateInputs() / periodic():
+> PhoenixUtil.refresh(positionSignal, referenceSignal);  // or BaseStatusSignal.refreshAll(...)
+> Logger.recordOutput("MechName/FX/PositionDeg", positionSignal.getValue().in(Degrees));
+> Logger.recordOutput("MechName/FX/ReferenceDeg", Degrees.convertFrom(referenceSignal.getValue(), Rotations));
+> ```
+
+#### REV mechanisms (Turret, Spindexer, Kicker) — ⚠️ No firmware-level reference available
+
+REV's SparkMax/SparkFlex **does not expose** a `getClosedLoopReference()` equivalent. When MAXMotion runs a trapezoidal profile, the intermediate trajectory points are computed and consumed entirely inside the motor controller firmware — the RIO never sees them.
+
+**What we DO have for REV mechanisms:**
+- `Shooter/Turret/angle` — actual position (from YAMS `getAngle()`)
+- `Shooter/Turret/setpoint` — the *final target* position (from YAMS `getMechanismPositionSetpoint()`)
+- YAMS `SetpointPosition` / `SetpointVelocity` at all verbosity levels — but these are the **commanded setpoint**, not the intermediate profile reference
+
+**Workaround for kV/kA tuning on REV:**
+
+1. **kV (slope matching):** Even without the intermediate reference, you can tune kV by observing the **cruise phase** of the actual position graph. During the constant-velocity portion of a MAXMotion move, the mechanism should move at the profile's max velocity. If it moves slower, increase kV. Compare the actual position's slope against the expected slope: `expected_slope = maxVelocity_deg_per_sec`. You won't get the nice overlapping-line visualization, but the slope comparison still works.
+
+2. **kA (acceleration matching):** Look at the **shape of the acceleration phase** in the actual position graph. With kA=0, the mechanism will lag during acceleration and overshoot during deceleration (the position curve will be "softer" than the profile). Increase kA until the position graph has crisp transitions — sharp acceleration start, clean cruise phase, sharp deceleration.
+
+3. **Alternative: Run closed-loop from the RIO** instead of MAXMotion. YAMS can run the PID loop on the RIO using `withClosedLoopController(kP, kI, kD, maxVelocity, maxAcceleration)` with WPILib's `TrapezoidProfile`. In this mode, the profile reference *is* computed on the RIO and YAMS publishes it as `SetpointPosition` — giving you the same overlay capability as CTRE. The tradeoff is ~2ms additional latency vs running on the motor controller.
+
+> **Bottom line:** For our turret, the REV limitation is manageable — the turret is a simple horizontal mechanism where kV and kA can be dialed in by observing the position graph shape. For more demanding mechanisms (fast arms, elevators), consider running the profile on the RIO to get full reference visibility.
+
 ### Safety Checklist (before every tuning session)
 
 - [ ] Robot on blocks (wheels off ground) for drivetrain tuning

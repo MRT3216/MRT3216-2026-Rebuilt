@@ -479,7 +479,7 @@ Before any software calibration, take these physical measurements. Several calib
 
 | Measurement | How | Where to Update | Current Value | Status |
 |---|---|---|---|---|
-| **Robot mass (with bumpers + battery)** | Bathroom scale or pit scale. Weigh complete competition-ready robot. | `Drive.java` → `ROBOT_MASS_KG`, `settings.json` → `"robotMass"`, `Constants.DriveConstants.kRobotMassKg` | **~63 kg (estimated)**. Bare robot = 114 lbs / 51.7 kg. Estimated +13 lbs battery +12 lbs bumpers = ~139 lbs / 63 kg. | ⚠️ **Needs scale measurement** |
+| **Robot mass (with bumpers + battery)** | Bathroom scale or pit scale. Weigh complete competition-ready robot. | `Drive.java` → `ROBOT_MASS_KG`, `settings.json` → `"robotMass"`, `Constants.DriveConstants.kRobotMassKg` | **63.5 kg (140 lbs)** — build lead estimate, with bumpers + battery. | ✅ **Updated** (verify on scale) |
 | **Bumper weight** | Weigh one bumper set on a scale | Used for mass total above | ~12 lbs (estimated) | ⚠️ **Needs measurement** |
 | **Wheel radius (effective)** | Software characterization — see [Step 3](#step-3-wheel-radius-characterization) | `TunerConstants.java` → `kWheelRadius`, `settings.json` → `"driveWheelRadius"` | 1.8" / 0.04572 m (nominal) | ⚠️ **Needs characterization on carpet** |
 | **Max speed** | Software measurement — see [Step 5](#step-5-max-speed-measurement) | `TunerConstants.java` → `kSpeedAt12Volts`, `settings.json` → `"maxDriveSpeed"` | 6.02 m/s (theoretical) | ⚠️ **Needs on-robot measurement** |
@@ -671,14 +671,14 @@ PathPlanner requires accurate robot physical parameters for path following. Thes
 
 **1. Runtime config** (`Drive.java` lines 66-80) — used by the robot at runtime:
 ```
-ROBOT_MASS_KG = 74.088  ← ⚠️ Too high. Bare robot is 114 lbs / 51.7 kg. Estimated with bumpers + battery: ~63 kg. Needs scale measurement.
+ROBOT_MASS_KG = 63.503  ← ✅ Updated (140 lbs / 63.5 kg — build lead estimate with bumpers + battery)
 ROBOT_MOI = 6.883       (kg⋅m² — verify empirically with auto paths)
 WHEEL_COF = 1.2          (rubber on carpet — reasonable)
 ```
 
 **2. PathPlanner GUI settings** (`src/main/deploy/pathplanner/settings.json`) — used by PathPlanner desktop app for path generation:
 ```
-"robotMass": 63.0        ← ✅ Updated (estimated with bumpers + battery)
+"robotMass": 63.503      ← ✅ Updated (140 lbs with bumpers + battery)
 "robotMOI": 6.883        ← ✅ Matches Drive.java
 "wheelCOF": 1.2          ← ✅ Updated (was 2.255 — unrealistic)
 "driveWheelRadius": 0.04572  ← ✅ Updated (matches kWheelRadius, re-characterize in Step 3)
@@ -687,7 +687,7 @@ WHEEL_COF = 1.2          (rubber on carpet — reasonable)
 "driveCurrentLimit": 80.0    ← ✅ Updated (was 60A — matches driveInitialConfigs stator limit)
 ```
 
-> ⚠️ **Remaining action:** Weigh the robot with bumpers + battery (see [Pre-Tuning Physical Measurements](#pre-tuning-physical-measurements)). Update `Drive.java` `ROBOT_MASS_KG` and `settings.json` `"robotMass"` to the measured value. The current 74.088 kg in `Drive.java` is ~25 lbs too heavy — this makes PathPlanner generate overly conservative acceleration profiles at runtime.
+> ⚠️ **Remaining action:** Verify robot mass on a scale when possible. Current value (63.5 kg / 140 lbs) is a build lead estimate — confirm with a pit scale at the next event. Update `Drive.java` `ROBOT_MASS_KG`, `settings.json` `"robotMass"`, and `Constants.DriveConstants.kRobotMassKg` if the measured value differs.
 
 **PathPlanner PID tuning** (`Constants.PathPlannerConstants`):
 
@@ -702,7 +702,7 @@ Current gains: `Translation: kP=5.0, kI=0, kD=0` | `Rotation: kP=5.0, kI=0, kD=0
 **Estimating MOI:**
 - The simplest method: use PathPlanner's built-in MOI estimator in the GUI.
 - Alternatively: `MOI ≈ (1/12) × mass × (length² + width²)` for a uniform rectangular robot.
-- For our robot: `(1/12) × 63.0 × (0.876² + 0.883²) ≈ 8.1 kg⋅m²`. Our current 6.883 is lower, suggesting the mass is concentrated closer to the center (which is typical with a heavy center turret). **Verify by running auto paths** — if the robot overshoots rotations, MOI is too low; if it's sluggish to rotate, MOI is too high.
+- For our robot: `(1/12) × 63.5 × (0.876² + 0.883²) ≈ 8.2 kg⋅m²`. Our current 6.883 is lower, suggesting the mass is concentrated closer to the center (which is typical with a heavy center turret). **Verify by running auto paths** — if the robot overshoots rotations, MOI is too low; if it's sluggish to rotate, MOI is too high.
 
 ### Advanced: Profiled Turning PID (MotionMagicExpo)
 

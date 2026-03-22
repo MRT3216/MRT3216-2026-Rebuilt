@@ -100,7 +100,7 @@ public final class Constants {
     public static final class DriveConstants {
         private DriveConstants() {}
 
-        public static final double kRobotMassKg = 74.088;
+        public static final double kRobotMassKg = 63.503; // 140 lbs (with bumpers + battery)
         public static final double kRobotMOI = 6.883;
         public static final double kWheelCoef = 1.2;
         public static final double kOdometryFreqNetworkFD = 250.0;

@@ -668,6 +668,8 @@ PathPlanner needs accurate physical parameters. These live in **two places that 
 
 **PathPlanner PID** (`Constants.PathPlannerConstants`): Translation kP=5.0, Rotation kP=5.0
 
+Top team reference: LASA PR (3.0/4.0), Hammerheads (3.0/2.0 with I=0.05), BroncBotz (5.0/5.0), 6328 uses Choreo at 8.0/4.0. Our 5.0/5.0 is on the aggressive end — reduce to 3.0 if paths overshoot.
+
 1. **Tune drivetrain first** — PathPlanner PID sits on top of drive gains
 2. **Translation kP:** Run a straight path. If the robot drifts, increase. If it oscillates, decrease.
 3. **Rotation kP:** Run a path with heading changes. Slow to rotate = increase. Oscillates = decrease.

@@ -12,7 +12,7 @@ Recommended workflow for tuning every controlled mechanism on the robot. Work th
 4. [TorqueFOC — Available Upgrade Path](#torquefoc--available-upgrade-path)
 5. [YAMS FF + Motion Profile Requirement](#yams-ff--motion-profile-requirement)
 6. [YAMS SysId Helpers](#yams-sysid-helpers)
-7. [Drivetrain (CTRE Swerve)](#1-drivetrain-ctre-swerve) — _Steps 0-8: Pre-flight, Steer PID, Drive FF, Wheel Radius, Drive PID, Max Speed, Slip Current, Odometry, PathPlanner_
+7. [Drivetrain (CTRE Swerve)](#1-drivetrain-ctre-swerve) — _Physical Measurements, Steps 0-8: Pre-flight, Steer PID, Drive FF, Wheel Radius, Drive PID, Max Speed, Slip Current, Odometry, PathPlanner_
 8. [Turret](#2-turret)
 9. [Hood](#3-hood)
 10. [Flywheel](#4-flywheel)
@@ -432,6 +432,23 @@ Follow this order exactly — each step depends on the previous one:
 | 7 | [Odometry frequency](#step-7-odometry-frequency) | — | Verify `Drive.ODOMETRY_FREQUENCY` |
 | 8 | [PathPlanner configuration](#step-8-pathplanner-configuration) | — | Mass, MOI, wheel COF, PID |
 
+### Pre-Tuning Physical Measurements
+
+Before any software calibration, take these physical measurements. Several calibration steps and PathPlanner depend on accurate values.
+
+| Measurement | How | Where to Update | Current Value | Status |
+|---|---|---|---|---|
+| **Robot mass (with bumpers + battery)** | Bathroom scale or pit scale. Weigh complete competition-ready robot. | `Drive.java` → `ROBOT_MASS_KG`, `settings.json` → `"robotMass"`, `Constants.DriveConstants.kRobotMassKg` | **~63 kg (estimated)**. Bare robot = 114 lbs / 51.7 kg. Estimated +13 lbs battery +12 lbs bumpers = ~139 lbs / 63 kg. | ⚠️ **Needs scale measurement** |
+| **Bumper weight** | Weigh one bumper set on a scale | Used for mass total above | ~12 lbs (estimated) | ⚠️ **Needs measurement** |
+| **Wheel radius (effective)** | Software characterization — see [Step 3](#step-3-wheel-radius-characterization) | `TunerConstants.java` → `kWheelRadius`, `settings.json` → `"driveWheelRadius"` | 1.8" / 0.04572 m (nominal) | ⚠️ **Needs characterization on carpet** |
+| **Max speed** | Software measurement — see [Step 5](#step-5-max-speed-measurement) | `TunerConstants.java` → `kSpeedAt12Volts`, `settings.json` → `"maxDriveSpeed"` | 6.02 m/s (theoretical) | ⚠️ **Needs on-robot measurement** |
+| **Slip current** | Software measurement — see [Step 6](#step-6-slip-current-measurement) | `TunerConstants.java` → `kSlipCurrent` | 120A (default) | ⚠️ **Needs wall test** |
+| **Robot MOI** | PathPlanner GUI estimator, or empirical (run autos, adjust if rotation overshoots/undershoots) | `Drive.java` → `ROBOT_MOI`, `settings.json` → `"robotMOI"` | 6.883 kg⋅m² | ⚠️ **Verify empirically** |
+
+> **When to take these:** Weigh the robot and bumpers at the first opportunity (pit scale at competition, or a bathroom scale at the shop). Everything else is done via software calibration routines.
+
+> **Keep all three locations in sync.** After every measurement, update `Drive.java` (runtime), `settings.json` (PathPlanner GUI), and `Constants.DriveConstants` (documentation). Mismatched values mean PathPlanner generates paths the robot can't follow.
+
 ### Step 0: Pre-flight Checks
 
 Before any tuning, verify the following:
@@ -609,24 +626,27 @@ Since our CAN bus is **CAN FD** (`"CANFD"` in `TunerConstants.java`), odometry r
 
 ### Step 8: PathPlanner Configuration
 
-PathPlanner requires accurate robot physical parameters for path following. These are configured in two places:
+PathPlanner requires accurate robot physical parameters for path following. These are configured in two places that **must stay in sync**:
 
-**1. Code constants** (`Drive.java` lines 66-80):
+**1. Runtime config** (`Drive.java` lines 66-80) — used by the robot at runtime:
 ```
-ROBOT_MASS_KG = 74.088  (163.4 lbs — weigh the robot with bumpers & battery)
-ROBOT_MOI = 6.883       (kg⋅m² — see below for how to estimate)
-WHEEL_COF = 1.2          (wheel coefficient of friction on carpet)
+ROBOT_MASS_KG = 74.088  ← ⚠️ Too high. Bare robot is 114 lbs / 51.7 kg. Estimated with bumpers + battery: ~63 kg. Needs scale measurement.
+ROBOT_MOI = 6.883       (kg⋅m² — verify empirically with auto paths)
+WHEEL_COF = 1.2          (rubber on carpet — reasonable)
 ```
 
-**2. PathPlanner GUI settings** (`src/main/deploy/pathplanner/settings.json`):
-- `"robotMass": 51.2559` ← ⚠️ This doesn't match `Drive.java` (74.088 kg). **Fix this.**
-- `"robotMOI": 6.883` ← Matches.
-- `"wheelCOF": 2.255` ← ⚠️ This doesn't match `Drive.java` (1.2). **Fix this.** A COF >2 is unrealistic.
-- `"driveWheelRadius": 0.042926` ← Should match `kWheelRadius` after characterization.
-- `"driveGearing": 4.66666667` ← Matches.
-- `"driveCurrentLimit": 60.0` ← Should match `driveInitialConfigs` stator limit (80A). **Fix this.**
+**2. PathPlanner GUI settings** (`src/main/deploy/pathplanner/settings.json`) — used by PathPlanner desktop app for path generation:
+```
+"robotMass": 63.0        ← ✅ Updated (estimated with bumpers + battery)
+"robotMOI": 6.883        ← ✅ Matches Drive.java
+"wheelCOF": 1.2          ← ✅ Updated (was 2.255 — unrealistic)
+"driveWheelRadius": 0.04572  ← ✅ Updated (matches kWheelRadius, re-characterize in Step 3)
+"driveGearing": 4.66666667   ← ✅ Matches
+"maxDriveSpeed": 6.022849    ← ✅ Updated (was 8.0 — unreachable. Re-measure in Step 5)
+"driveCurrentLimit": 80.0    ← ✅ Updated (was 60A — matches driveInitialConfigs stator limit)
+```
 
-> ⚠️ **Action: Sync PathPlanner settings with code.** The `settings.json` values for mass, COF, and current limit don't match the code. Open PathPlanner GUI → Settings and update them, or edit the JSON directly. Mismatched values mean PathPlanner generates paths the robot can't actually follow.
+> ⚠️ **Remaining action:** Weigh the robot with bumpers + battery (see [Pre-Tuning Physical Measurements](#pre-tuning-physical-measurements)). Update `Drive.java` `ROBOT_MASS_KG` and `settings.json` `"robotMass"` to the measured value. The current 74.088 kg in `Drive.java` is ~25 lbs too heavy — this makes PathPlanner generate overly conservative acceleration profiles at runtime.
 
 **PathPlanner PID tuning** (`Constants.PathPlannerConstants`):
 
@@ -641,7 +661,7 @@ Current gains: `Translation: kP=5.0, kI=0, kD=0` | `Rotation: kP=5.0, kI=0, kD=0
 **Estimating MOI:**
 - The simplest method: use PathPlanner's built-in MOI estimator in the GUI.
 - Alternatively: `MOI ≈ (1/12) × mass × (length² + width²)` for a uniform rectangular robot.
-- For our robot: `(1/12) × 74.088 × (0.876² + 0.883²) ≈ 9.6 kg⋅m²`. Our current 6.883 is lower, suggesting the mass is concentrated closer to the center (which is typical with a heavy center turret). **Verify by running auto paths** — if the robot overshoots rotations, MOI is too low; if it's sluggish to rotate, MOI is too high.
+- For our robot: `(1/12) × 63.0 × (0.876² + 0.883²) ≈ 8.1 kg⋅m²`. Our current 6.883 is lower, suggesting the mass is concentrated closer to the center (which is typical with a heavy center turret). **Verify by running auto paths** — if the robot overshoots rotations, MOI is too low; if it's sluggish to rotate, MOI is too high.
 
 ### Advanced: Profiled Turning PID (MotionMagicExpo)
 
@@ -825,6 +845,7 @@ See [Step 8: PathPlanner Configuration](#step-8-pathplanner-configuration) in th
 
 > **All FF, PID, and motion profile gains were set with limited testing time. Plan to re-tune everything Monday.**
 
+0. **Physical measurements** — weigh robot with bumpers + battery, update mass in `Drive.java`, `settings.json`, and `Constants.DriveConstants`
 1. **Drivetrain Steps 0-6** — everything else depends on accurate drive/odometry
    - Pre-flight checks (Step 0)
    - Steer PID verification (Step 1)
@@ -833,7 +854,7 @@ See [Step 8: PathPlanner Configuration](#step-8-pathplanner-configuration) in th
    - Drive PID tuning (Step 4)
    - Max speed measurement (Step 5)
    - Slip current measurement (Step 6)
-2. **Sync PathPlanner settings** (Step 8) — fix mass/COF/current mismatch
+2. **Update PathPlanner values** (Step 8) — update mass in `Drive.java` to measured value, verify `settings.json` matches
 3. **Turret** — needs to track accurately for shooting
 4. **Flywheel** — RPM accuracy directly affects shot consistency
 5. **Hood** — verify existing gains hold with the new LUT distances

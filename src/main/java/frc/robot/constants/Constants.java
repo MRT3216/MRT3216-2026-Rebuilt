@@ -131,7 +131,13 @@ public final class Constants {
 
     // region DriveControl
 
-    /** Tunable control gains and limits used by drive controllers (angle/velocity controllers). */
+    /**
+     * Tunable control gains and limits used by drive controllers (angle/velocity controllers).
+     *
+     * <p>The FF characterization parameters ({@code kFFStartDelay}, {@code kFFRampRate}) match
+     * AdvantageKit's template defaults. Hammerheads 5000 uses similar values (delay=2.0s,
+     * ramp=0.1V/s). These are safe defaults for the drive feedforward characterization routine.
+     */
     public static final class DriveControlConstants {
         private DriveControlConstants() {}
 
@@ -151,7 +157,22 @@ public final class Constants {
 
     // region PathPlanner
 
-    /** Path planner tuning gains used by autonomous path-following controllers. */
+    /**
+     * Path planner tuning gains used by autonomous path-following controllers.
+     *
+     * <p>Top team reference values (2026 season):
+     *
+     * <table>
+     *   <tr><th>Team</th><th>Translation P</th><th>Rotation P</th><th>Notes</th></tr>
+     *   <tr><td>LASA PR</td><td>3.0</td><td>4.0</td><td>No I or D terms</td></tr>
+     *   <tr><td>Hammerheads 5000</td><td>3.0</td><td>2.0</td><td>I=0.05 on both</td></tr>
+     *   <tr><td>BroncBotz 3481</td><td>5.0</td><td>5.0</td><td>Same as us</td></tr>
+     *   <tr><td>6328</td><td>8.0 (linear)</td><td>4.0 (theta)</td><td>Uses Choreo, not PP</td></tr>
+     * </table>
+     *
+     * <p>Our values (5.0/5.0) are on the aggressive end. If autonomous paths overshoot or oscillate,
+     * try reducing to 3.0. See docs/TuningGuide.md "Step 8: PathPlanner Configuration".
+     */
     public static final class PathPlannerConstants {
         private PathPlannerConstants() {}
 

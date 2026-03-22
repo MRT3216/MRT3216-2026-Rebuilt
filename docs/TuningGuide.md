@@ -376,6 +376,28 @@ These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
 | **Open loop ramps** | LASA PR (0.5s), Lynk (0.25s) | Voltage ramp rates to reduce wheel slip on acceleration. We don't use ramps currently. |
 | **driveWithSetpointGenerator** | BroncBotz 3481 | 254's setpoint generator integrated with PathPlanner for smoother autonomous driving. |
 
+### Shooter Mechanism Gains (Reference)
+
+Several top teams in 2026 also run flywheel + hood shooters. Use this as a sanity check when tuning our gains.
+
+| Team | Flywheel kP | Flywheel kS | Flywheel kV | Hood kP | Hood kD | Hood kS |
+|------|:----------:|:----------:|:----------:|:------:|:------:|:------:|
+| **3216 (us)** | **0.2** | **0.35** | **0.12** | **300** | **0** | **0.45** |
+| 6328 | 0.4 | 0.22 | 0.019 | 1200 | 4 | — |
+| WHS 3467 | 12.0 | 4.0 | — | 3000 | 160 | 8.0 |
+| Hammerheads 5000 | 12.0 | 6.0 | 0.04 | 800 | 5 | 0.28 |
+
+> **⚠️ Control mode matters!** WHS 3467 and Hammerheads use **TorqueCurrentFOC** (gains in amps), while 6328 uses TorqueFOC too. Our gains are in **Voltage** mode — do not directly copy their numbers. The relative ratios (kP vs kS) are more instructive than the absolute values.
+
+| Team | Kicker kP | Kicker kS | Kicker kV | Turret kP | Notes |
+|------|:--------:|:--------:|:--------:|:--------:|-------|
+| **3216 (us)** | **0** | **0.25** | **0.12** | **3.0** | FF-only kicker (SparkFlex) |
+| 6328 | 3.0 | 0.5 | 0.09 | — | Kicker PID + FF |
+| BroncBotz 3481 | — | 0.18 | 0.62 | — | FF-only kicker |
+| Hammerheads 5000 | — | — | — | 200 | TorqueFOC turret |
+
+**Takeaway:** Our flywheel kP (0.2) is at the low end. If the flywheel is slow to recover after a shot, try increasing to 0.5-1.0. Our hood kP (300) is reasonable for Voltage mode; 6328's 1200 uses TorqueFOC. Kicker FF-only (kP=0) is common — only add PID if the kicker stalls on ball contact.
+
 > **Action items from research:** (1) Measure slip current, (2) Configure Pigeon MountPose if needed, (3) Consider adding open loop ramps (0.25s) for smoother acceleration, (4) Measure wheel COF for PathPlanner.
 
 ---

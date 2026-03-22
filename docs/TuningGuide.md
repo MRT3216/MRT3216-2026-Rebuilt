@@ -35,7 +35,10 @@ Recommended workflow for tuning every controlled mechanism on the robot. Work th
 13. [Intake Rollers](#7-intake-rollers)
 14. [Intake Pivot](#8-intake-pivot)
 15. [PathPlanner](#9-pathplanner) _(redirects to Drivetrain Step 8)_
-16. [Quick Reference Table](#quick-reference-table)
+16. [Pigeon IMU Calibration](#pigeon-imu-calibration)
+17. [PhotonVision Camera Tuning](#photonvision-camera-tuning)
+18. [Elastic Dashboard for Matches](#elastic-dashboard-for-matches)
+19. [Quick Reference Table](#quick-reference-table)
 
 ---
 
@@ -264,51 +267,116 @@ YAMS publishes different amounts of data depending on the verbosity level. Highe
 
 ## Top Team TunerConstants Comparison
 
-How our swerve constants compare to top FRC teams. All use TalonFX (Kraken) swerve with Phoenix 6.
+How our swerve constants compare to top FRC teams in the **2026 season.** All use TalonFX (Kraken) swerve with Phoenix 6 unless noted.
+
+> **Data sources:** Public GitHub repos reviewed June 2025: [6328](https://github.com/Mechanical-Advantage/RobotCode2026Public), [LASA PH2026](https://github.com/lasarobotics/PH2026), [LASA PR2026](https://github.com/lasarobotics/PR2026), [WHS 3467](https://github.com/WHS-FRC-3467/Skip-5.16-Platypus), [Hammerheads 5000](https://github.com/hammerheads5000/2026Rebuilt), [Lynk 9496](https://github.com/LynkRobotics/RobotCode2026Public).
+
+### Hardware Summary
+
+| Team | Module | Drive Ratio | Steer Ratio | Wheel Radius | Track/Wheelbase |
+|------|--------|:-----------:|:-----------:|:------------:|:---------------:|
+| **3216 (us)** | SDS MK4i | 4.667:1 | 26.09:1 | **1.80"** | — |
+| 6328 Darwin | SDS MK5i R1 | 7.03:1 | 26.0:1 | 1.996" | — |
+| 6328 Alphabot | SDS MK4i L3 | 6.12:1 | 21.43:1 | 1.880" | — |
+| LASA (PH/PR) | — | 6.03:1 | 26.09:1 | 2.00" | — |
+| WHS 3467 | — | 6.0:1 | 24.0:1 | 1.97" | 22" sq |
+| Hammerheads 5000 | — | 6.03:1 | 26.09:1 | 1.985" | 22.5 × 20.75" |
+| Lynk 9496 | SDS MK5n R2 | ~6.03:1 | 26.09:1 | ~2.0" | 20.75" sq |
+
+**Takeaway:** 6.0–6.12 drive gear ratios are the most common. Our 4.667:1 is significantly faster-geared — this means higher theoretical top speed but less torque per amp. Our 1.80" wheel radius is slightly smaller than most teams; re-verify with the [wheel radius characterization](#step-3-wheel-radius-characterization).
 
 ### Current Limits
 
 | Team | Drive Stator | Steer Stator | Slip Current |
 |------|:-----------:|:-----------:|:------------:|
 | **3216 (us)** | **80A** | **60A** | **120A** |
-| 6328 (Mechanical Advantage) | — | 40A | 80A |
-| 254 (Cheesy Poofs) | 80A supply | 50A | 80A |
-| 1678 (Citrus Circuits) | — | 60A | 80A |
-| WaltonRobotics | — | 60A | 120A |
+| 6328 | 80A | 40A | — (uses TorqueFOC) |
+| LASA (PH/PR) | — | 60A | 120A |
+| WHS 3467 | — | 60A | 94A |
+| Hammerheads 5000 | 80A | 60A | 95A |
+| Lynk 9496 | — | — | — |
 
-**Takeaway:** 80A drive / 60A steer is standard. Our **120A slip current needs verification** — most teams use 80A. Run the slip test ([Step 6](#step-6-slip-current-measurement)).
+**Takeaway:** 80A drive / 60A steer is the consensus. Our **120A slip current matches LASA but is higher than most.** WHS and Hammerheads both measured ~95A. Run the slip test ([Step 6](#step-6-slip-current-measurement)) to find our actual value.
 
-### Drive/Steer Gains (Voltage Mode)
+### Drive/Steer Gains — Voltage Mode
 
-| Team | Steer kP | Steer kD | Steer kV | Drive kP | Drive kV |
-|------|:-------:|:-------:|:-------:|:-------:|:-------:|
-| **3216 (us)** | **100** | **0.5** | **2.48** | **0.1** | **0.585** |
-| 254 | 100 | 0.2 | 1.5 | 0.35 | 0.136 |
-| 1678 | 100 | 0.5 | 1.16 | 0.1 | 0.124 |
-| WaltonRobotics | 100 | 0.5 | 2.66 | 0.35 | 0.123 |
+Only comparing teams using Voltage mode (apples-to-apples). Teams using TorqueCurrentFOC have wildly different gain scales — see separate table below.
 
-**Takeaway:** Steer kP=100 is universal. Our gains are in the right ballpark. Drive kV varies by gear ratio — don't directly compare without accounting for AdvantageKit's firmware-applied ratio.
+| Team | Steer kP | Steer kD | Steer kS | Steer kV | Drive kP | Drive kS | Drive kV |
+|------|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
+| **3216 (us)** | **100** | **0.5** | **0.1** | **2.48** | **0.1** | **0.26** | **0.585** |
+| LASA (PH/PR) | 100 | 0.5 | 0.1 | 2.49 | 0.1 | 0 | 0.124 |
+| Hammerheads (generated) | 100 | 0.5 | 0.1 | 2.49 | 0.1 | 0 | 0.124 |
+| Hammerheads (tuned) | 1000 | 8 | 6 | 0 | 2 | 0.237 | 0.733 |
+
+> **Note:** Hammerheads has both a generated `TunerConstants.java` (matching LASA exactly — likely default Tuner X output) and hand-tuned `SwerveConstants` in their `Constants.java` with much higher steer gains. Their tuned steer uses TorqueCurrentFOC while drive stays Voltage.
+
+**Takeaway:** Steer kP=100 / kD=0.5 / kS=0.1 / kV≈2.49 in Voltage mode is the standard starting point across multiple teams. Our steer gains match the consensus. Our drive kV (0.585) is higher than LASA (0.124) — this is expected because of our much lower gear ratio (4.667 vs 6.03); kV scales inversely with gear ratio. **After wheel radius characterization, re-run drive FF characterization to verify.**
+
+### Drive/Steer Gains — TorqueCurrentFOC Mode
+
+These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
+
+| Team | Steer kP | Steer kD | Drive kP | Drive kS |
+|------|:-------:|:-------:|:-------:|:-------:|
+| 6328 Darwin | 4000 | 50 | 35 | 5.0 |
+| WHS 3467 | 2000 | 20 | 60 | 7.26 |
+| Hammerheads (steer only) | 1000 | 8 | — | — |
+
+**Takeaway:** TorqueFOC gains are 10–40× larger than Voltage gains. If we ever switch to TorqueFOC, 6328 and WHS 3467 provide good reference starting points. See [TorqueFOC section](#torquefoc--available-upgrade-path).
 
 ### Control Mode
 
-| Team | Drive/Steer Output | Phoenix Pro? |
-|------|:------------------:|:---:|
-| **3216 (us)** | **Voltage** | **Yes** |
-| 6328 | TorqueCurrentFOC | Yes |
-| 254, 1678, Walton | Voltage | — |
+| Team | Steer Output | Drive Output | Phoenix Pro? |
+|------|:-----------:|:-----------:|:---:|
+| **3216 (us)** | **Voltage** | **Voltage** | **Yes** |
+| 6328 | TorqueCurrentFOC | TorqueCurrentFOC | Yes |
+| LASA (PH/PR) | Voltage | Voltage | — |
+| WHS 3467 | TorqueCurrentFOC | TorqueCurrentFOC | Yes |
+| Hammerheads | TorqueCurrentFOC | Voltage | Yes |
+| Lynk 9496 | (custom) | (custom) | — |
 
-**Voltage mode is standard.** Only 6328 uses TorqueFOC. We can switch later — see [TorqueFOC section](#torquefoc--available-upgrade-path).
+**Voltage mode is still the most common approach.** 6328 and WHS 3467 fully committed to TorqueFOC. Hammerheads uses a split approach (TorqueFOC steer + Voltage drive). We can switch later — see [TorqueFOC section](#torquefoc--available-upgrade-path).
 
 ### Max Speed
 
-| Team | kSpeedAt12Volts | Notes |
-|------|:--------------:|-------|
-| **3216 (us)** | **6.02 m/s** | Theoretical — needs measurement |
-| 6328 | 4.69 m/s | Measured |
-| 1678 | 5.91 m/s | |
-| WaltonRobotics | 4.64 m/s | |
+| Team | kSpeedAt12Volts | Drive Ratio | Notes |
+|------|:--------------:|:-----------:|-------|
+| **3216 (us)** | **6.02 m/s** | 4.667:1 | Theoretical — needs measurement |
+| 6328 Darwin | 4.20 m/s | 7.03:1 | Measured |
+| 6328 Alphabot | 4.69 m/s | 6.12:1 | Measured |
+| LASA (PH/PR) | 5.12 m/s | 6.03:1 | |
+| WHS 3467 | 4.37 m/s | 6.0:1 | |
+| Hammerheads | 5.85 m/s | 6.03:1 | |
+| Lynk 9496 | 5.12 m/s | ~6.03:1 | |
 
-> **Action:** Run the max speed test ([Step 5](#step-5-max-speed-measurement)) and update to the measured value.
+**Takeaway:** Measured speeds are typically 10-30% below theoretical. Our 6.02 m/s theoretical will likely measure around 5.0-5.5 m/s. Run the [max speed test](#step-5-max-speed-measurement) and update.
+
+### Pigeon 2 Configuration
+
+| Team | MountPose Configured? | Roll | Pitch | Yaw |
+|------|:--------------------:|:----:|:-----:|:---:|
+| **3216 (us)** | **No** | — | — | — |
+| LASA PR2026 | ✅ | 179.96° | 1.14° | -90.45° |
+| WHS 3467 | Partial | 180° | — | — |
+| Hammerheads | ✅ | — | — | -90° |
+| Others | `null` (skipped) | — | — | — |
+
+**Takeaway:** If our Pigeon is mounted in any orientation other than flat + forward-facing, we need to configure `MountPose`. See the new [Pigeon IMU Calibration](#pigeon-imu-calibration) section below.
+
+### Interesting Patterns From Top Teams
+
+| Pattern | Who Uses It | What It Does |
+|---------|-------------|-------------|
+| **LoggedTunableNumber** | 6328, WHS 3467, Hammerheads | Runtime-tunable gains with `ifChanged()` callback — only applies to motors when the value actually changes. More efficient than YAMS live tuning but requires more boilerplate. |
+| **WheelSlipAuto** | WHS 3467 | Dedicated auto routine that ramps motor voltage until target velocity is reached, logging current vs velocity for slip characterization. More automated than our wall test. |
+| **Separate sim constants** | WHS 3467, Hammerheads | Different kP/kV values for sim vs real modules. Our sim uses CTRE's built-in sim, but adding sim-specific PID could improve simulation accuracy. |
+| **SwerveSetpointGenerator** | BroncBotz 3481 | PathPlanner's port of 254's setpoint generator — limits acceleration per-module for smoother motion. We mention this in our guide but haven't enabled it. |
+| **Wheel COF parameter** | 6328 (1.5), Hammerheads (2.255) | Coefficient of friction used for PathPlanner's traction model. Our 1.2 is conservative — consider measuring. |
+| **Open loop ramps** | LASA PR (0.5s), Lynk (0.25s) | Voltage ramp rates to reduce wheel slip on acceleration. We don't use ramps currently. |
+| **driveWithSetpointGenerator** | BroncBotz 3481 | 254's setpoint generator integrated with PathPlanner for smoother autonomous driving. |
+
+> **Action items from research:** (1) Measure slip current, (2) Configure Pigeon MountPose if needed, (3) Consider adding open loop ramps (0.25s) for smoother acceleration, (4) Measure wheel COF for PathPlanner.
 
 ---
 
@@ -708,6 +776,162 @@ Motion profile: `90 °/s, 90 °/s²`
 ## 9. PathPlanner
 
 See [Step 8: PathPlanner Configuration](#step-8-pathplanner-configuration) in the Drivetrain section above. PathPlanner tuning depends entirely on having accurate drivetrain gains first.
+
+---
+
+## Pigeon IMU Calibration
+
+The Pigeon 2 IMU is the robot's gyroscope — it tells the code which direction the robot is facing. If it's not calibrated correctly, **everything that depends on field-relative driving, autonomous paths, and vision pose estimation will be wrong.**
+
+### Why MountPose Matters
+
+The Pigeon 2 has a default orientation: it expects to be mounted flat on the robot with its arrow pointing toward the front. If it's mounted in any other orientation (rotated, upside-down, sideways), you need to tell it how it's mounted using `MountPose`.
+
+From the 2026 research:
+- **LASA PR2026:** `MountPose(roll=179.96°, pitch=1.14°, yaw=-90.45°)` — nearly upside-down, rotated 90°
+- **WHS 3467:** `MountPose(roll=180°)` — upside-down, arrow forward
+- **Hammerheads 5000:** `MountPose(yaw=-90°)` — flat, arrow pointing left
+
+### How to Configure MountPose
+
+1. **Physically inspect the Pigeon 2** on the robot:
+   - Which way does the arrow point? (Front = 0° yaw, Left = -90° yaw, etc.)
+   - Is it mounted flat? (Flat = 0° roll/pitch; upside-down = 180° roll)
+2. **Open Phoenix Tuner X** → Select the Pigeon 2 device
+3. **Go to the "Configs" tab** → Under `MountPose`, enter:
+   - **MountPoseYaw:** Degrees from forward. Arrow pointing left = -90°. Arrow pointing right = 90°.
+   - **MountPoseRoll:** 0° if flat/right-side-up. 180° if upside-down.
+   - **MountPosePitch:** Usually 0° unless the Pigeon is tilted forward/back.
+4. **Apply and save to device**
+
+These values are also configurable in code via `Pigeon2Configuration`:
+```java
+var pigeonConfig = new Pigeon2Configuration();
+pigeonConfig.MountPose.MountPoseYaw = -90;  // arrow points left
+pigeonConfig.MountPose.MountPoseRoll = 180; // upside-down
+pigeonConfig.MountPose.MountPosePitch = 0;
+```
+
+### Temperature Calibration
+
+The Pigeon 2 drifts slightly as temperature changes. It has an automatic temperature compensation feature, but it works best when:
+
+1. **Power on the robot and let it sit for 2-3 minutes** before driving — the Pigeon auto-calibrates on startup.
+2. **Avoid bumping or moving the robot during startup** — the gyro calibrates during the first few seconds.
+3. **Zero the yaw** before the match starts. AdvantageKit's swerve template calls `pigeon.setYaw(0)` during gyro reset — this happens when the driver presses the reset button.
+
+### Verification
+
+After configuring MountPose:
+1. Place the robot facing a known direction (e.g., away from your alliance wall)
+2. Open AdvantageScope → look at the `/Drive/Gyro/YawPosition` value
+3. Turn the robot 90° left — it should read approximately +90°
+4. Turn it 90° right from starting position — it should read approximately -90°
+5. If the signs are flipped or the values are wrong, your MountPose is incorrect
+
+> **⚠️ If the Pigeon is mounted flat with the arrow pointing forward, you don't need to set MountPose.** Check your physical mounting before adding configuration.
+
+---
+
+## PhotonVision Camera Tuning
+
+PhotonVision provides pose estimation using AprilTags. Camera settings affect how well it detects tags, especially under varying lighting (bright arena vs. dark practice space).
+
+### Resolution vs. FPS Tradeoff
+
+Higher resolution detects tags at longer range but processes fewer frames per second:
+
+| Resolution | Detection Range | Typical FPS | Best For |
+|:----------:|:--------------:|:-----------:|----------|
+| 640×480 | Short (~3m) | 60+ fps | Fast tracking, close range |
+| 1280×960 | Medium (~5m) | 20-30 fps | Good balance (recommended) |
+| 1600×1200 | Long (~7m) | 10-15 fps | Maximum range but slow |
+| 1800×1200 | Long (~7m+) | 8-12 fps | 6328 uses this for mono cameras |
+
+**Recommendation:** Start with **1280×960** for a good balance. Only increase if you need longer detection range and can tolerate slower updates.
+
+### 6328's Camera Configuration (Reference)
+
+From their 2026 code:
+- **Color cameras:** 1280×960, 90° FOV, exposure=4500µs, gain=5 → fast detection, good color
+- **Mono cameras:** 1800×1200, 75° FOV, exposure=1800µs, gain=15 → max range, high gain to compensate for monochrome
+
+### Key Settings (PhotonVision Web Interface)
+
+Access at `http://photonvision.local:5800` when connected to the robot:
+
+1. **Exposure:** Lower = sharper images (less motion blur), but darker. Start around **3000-5000µs** for arena lighting. Reduce if tags are blurry during fast movement.
+2. **Gain:** Amplifies the sensor signal. Higher gain = brighter image but more noise. Start at **5** for color cameras, **10-15** for monochrome.
+3. **Brightness/Contrast:** Leave at defaults unless the arena is unusually bright or dark.
+4. **LED Mode:** Keep LEDs **OFF** for AprilTag detection — they can cause glare and wash out the tags.
+5. **Target model:** Make sure it's set to **AprilTag 36h11** (the FRC standard).
+
+### Multi-Camera Considerations
+
+If running multiple cameras:
+- Each camera adds CPU load to the coprocessor. Monitor CPU usage in the PhotonVision web interface.
+- Stagger camera resolutions if needed — use high-res for the camera facing the most tags, lower-res for others.
+- Our code already handles multi-camera fusion in the vision subsystem.
+
+### Verification
+
+1. Place an AprilTag at a known distance (e.g., 3 meters)
+2. Open PhotonVision's web interface → verify the tag is detected
+3. Check the estimated pose in AdvantageScope — it should match the known position within ~5cm at 3m
+4. Walk the robot further away — note the distance where detection drops off
+5. Try rapid rotation — if tags blur out, reduce exposure
+
+> **📋 Arena lighting varies wildly.** Bring a laptop to your competition venue and be prepared to adjust exposure/gain during practice matches.
+
+---
+
+## Elastic Dashboard for Matches
+
+[Elastic](https://github.com/Gold872/elastic-dashboard) is a modern FRC dashboard that replaces Shuffleboard. It's faster, prettier, and works well with NetworkTables. Use it for **in-match driver awareness** — not for tuning (use AdvantageScope for that).
+
+### Recommended Match Layout
+
+Build a single, uncluttered tab with only what the driver and operator need to see during a match:
+
+#### Top Row — Critical Status
+| Widget | Source | Why |
+|--------|--------|-----|
+| **Match Timer** | FMS | Countdown — the most important number |
+| **Alliance Color** | FMS | Red/blue indicator so autonomous knows which side |
+| **Robot State** | Robot | Disabled / Auto / Teleop / Test |
+| **Battery Voltage** | `/SmartDashboard/Battery` or PDP | Flash red below 11.5V — brownout is imminent |
+
+#### Middle Row — Subsystem Status
+| Widget | Source | Why |
+|--------|--------|-----|
+| **Has Note** | Beam break / game piece sensor | Operator needs to know when to stop intaking |
+| **Flywheel RPM** | `/Shooter/Flywheel/VelocityRPS` | Operator confirms shooter is spun up before firing |
+| **Turret Angle** | `/Shooter/Turret/Position` | Confirms turret is tracking the target |
+| **Hood Angle** | `/Shooter/Hood/Position` | Confirms correct shot angle |
+| **Intake State** | `/Intake/State` | Shows if intake is deployed, retracted, or jammed |
+
+#### Bottom Row — Drive Info
+| Widget | Source | Why |
+|--------|--------|-----|
+| **Field View** (2D) | `/Drive/Pose` | Mini field map showing robot position — helps verify auto worked |
+| **Vision Target** | `/Vision/HasTarget` | Green/red indicator for whether cameras see AprilTags |
+
+### Design Principles
+
+1. **Less is more.** Don't put anything on the dashboard that the driver won't look at during a match. If they need to look at the robot to know something, don't duplicate it on screen.
+2. **Use color.** Green = good, Red = bad, Yellow = warning. Boolean indicators are better than numbers for at-a-glance status.
+3. **Big text.** The driver is 10+ feet away and stressed. Tiny numbers are useless.
+4. **Test it.** Set up the dashboard and have the driver stand at their normal distance. If they can't read it, make it bigger or remove it.
+
+### Setup
+
+1. **Download Elastic** from the [GitHub releases page](https://github.com/Gold872/elastic-dashboard/releases)
+2. **Connect** to the robot (it auto-discovers NetworkTables)
+3. **Drag widgets** from the sidebar onto the canvas — right-click to configure source paths
+4. **Save the layout** as a `.json` file so it persists between sessions
+5. **Lock the layout** before competition so no one accidentally moves widgets
+
+> **💡 Pro tip:** Create two tabs: (1) **Match** — the minimal layout above, and (2) **Debug** — a more detailed view with raw mechanism states, motor temperatures, and CAN bus utilization. Only show the Match tab during competition.
 
 ---
 

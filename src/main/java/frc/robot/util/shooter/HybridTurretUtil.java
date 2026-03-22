@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kRobotToTurretTransform;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Angle;
@@ -50,13 +51,9 @@ public final class HybridTurretUtil {
             ShootingLookupTable table) {
 
         // --- Turret world-space origin ------------------------------------------
-        // The configured transform is a pure translation, so we rotate the offset
-        // into field coordinates with simple trig (avoids Pose3d allocations).
-        double theta = robotPose.getRotation().getRadians();
-        double ox = kRobotToTurretTransform.getTranslation().getX();
-        double oy = kRobotToTurretTransform.getTranslation().getY();
-        double turretX = robotPose.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
-        double turretY = robotPose.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
+        var turretXY = turretOrigin(robotPose);
+        double turretX = turretXY.getX();
+        double turretY = turretXY.getY();
 
         double targetX = target.getX();
         double targetY = target.getY();
@@ -95,6 +92,7 @@ public final class HybridTurretUtil {
         }
 
         // --- Turret azimuth (robot-relative) ------------------------------------
+        double theta = robotPose.getRotation().getRadians();
         Angle azimuth = Radians.of(Math.atan2(predictedY - turretY, predictedX - turretX) - theta);
 
         // --- LUT lookup with clamping -------------------------------------------
@@ -127,16 +125,13 @@ public final class HybridTurretUtil {
     public static ShotSolution computeStaticShot(
             Pose2d robotPose, Translation3d target, ShootingLookupTable table) {
 
-        double theta = robotPose.getRotation().getRadians();
-        double ox = kRobotToTurretTransform.getTranslation().getX();
-        double oy = kRobotToTurretTransform.getTranslation().getY();
-        double turretX = robotPose.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
-        double turretY = robotPose.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
+        var turretXY = turretOrigin(robotPose);
 
-        double dx = target.getX() - turretX;
-        double dy = target.getY() - turretY;
+        double dx = target.getX() - turretXY.getX();
+        double dy = target.getY() - turretXY.getY();
         double distM = Math.hypot(dx, dy);
 
+        double theta = robotPose.getRotation().getRadians();
         Angle azimuth = Radians.of(Math.atan2(dy, dx) - theta);
 
         // Clamp to LUT bounds
@@ -152,6 +147,25 @@ public final class HybridTurretUtil {
 
         return new ShotSolution(
                 clampedDist, azimuth, params.trajectoryAngle(), params.timeOfFlight(), isValid);
+    }
+
+    /**
+     * Compute the turret's field-space origin (XY) from a robot pose.
+     *
+     * <p>Rotates the configured {@code kRobotToTurretTransform} translation into field coordinates
+     * using simple trig (avoids Pose3d allocations). This is the single source of truth for "where is
+     * the turret on the field?" used by both solver methods and telemetry.
+     *
+     * @param robotPose current field-relative robot pose
+     * @return the turret's field-space XY position
+     */
+    public static Translation2d turretOrigin(Pose2d robotPose) {
+        double theta = robotPose.getRotation().getRadians();
+        double ox = kRobotToTurretTransform.getTranslation().getX();
+        double oy = kRobotToTurretTransform.getTranslation().getY();
+        double turretX = robotPose.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
+        double turretY = robotPose.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
+        return new Translation2d(turretX, turretY);
     }
 
     /**

@@ -9,7 +9,6 @@ import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kF
 import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
 import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
-import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kRobotToTurretTransform;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgePercent;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 
@@ -47,11 +46,11 @@ import org.littletonrobotics.junction.Logger;
 public class ShooterSystem {
     // region Subsystems
 
-    public final FlywheelSubsystem flywheel;
-    public final KickerSubsystem kicker;
-    public final SpindexerSubsystem spindexer;
-    public final TurretSubsystem turret;
-    public final HoodSubsystem hood;
+    private final FlywheelSubsystem flywheel;
+    private final KickerSubsystem kicker;
+    private final SpindexerSubsystem spindexer;
+    private final TurretSubsystem turret;
+    private final HoodSubsystem hood;
 
     // endregion
 
@@ -216,19 +215,6 @@ public class ShooterSystem {
                             }
                             return solution.get().turretAzimuth();
                         });
-
-        // NOTE: turret tracking is currently held at 0° for all modes in
-        // aimAndShoot until full azimuth control is validated on hardware. The
-        // commented line below enables azimuth tracking for FULL / STATIC_DISTANCE.
-        // Uncomment it and remove the turretCmd above when ready.
-        // var turretCmd =
-        //         turret.setAngle(
-        //                 () -> {
-        //                     if (shootMode.get() == ShootMode.FULL_STATIC) {
-        //                         return Degrees.of(0);
-        //                     }
-        //                     return solution.get().turretAzimuth();
-        //                 });
 
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
         var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
@@ -420,16 +406,11 @@ public class ShooterSystem {
     }
 
     /**
-     * Compute the turret origin (world XY) from the robot pose using the configured robot->turret
-     * transform. This avoids allocations and keeps the telemetry math tidy.
+     * Compute the turret origin (world XY) from the robot pose. Delegates to the shared
+     * implementation in {@link HybridTurretUtil#turretOrigin(Pose2d)}.
      */
     private static Translation2d turretOrigin(Pose2d rp) {
-        double theta = rp.getRotation().getRadians();
-        double ox = kRobotToTurretTransform.getTranslation().getX();
-        double oy = kRobotToTurretTransform.getTranslation().getY();
-        double turretX = rp.getX() + ox * Math.cos(theta) - oy * Math.sin(theta);
-        double turretY = rp.getY() + ox * Math.sin(theta) + oy * Math.cos(theta);
-        return new Translation2d(turretX, turretY);
+        return HybridTurretUtil.turretOrigin(rp);
     }
 
     /**

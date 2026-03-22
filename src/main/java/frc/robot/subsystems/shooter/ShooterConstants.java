@@ -351,8 +351,10 @@ public final class ShooterConstants {
         public static final double kA = 0.05;
 
         // Motion profile
-        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(1440.0);
-        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(14400.0);
+        // NEO free speed = 5676 RPM through 27:1 = ~1261°/s max mechanism speed.
+        // Set cruise velocity to ~80% of theoretical max for headroom.
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(1000.0);
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(7200.0);
 
         // Simulation overrides
         public static final double kP_sim = 3.5;

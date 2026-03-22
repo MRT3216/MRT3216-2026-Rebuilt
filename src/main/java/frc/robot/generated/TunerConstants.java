@@ -60,7 +60,15 @@ public class TunerConstants {
 
     // Initial configs for the drive and steer motors and the azimuth encoder; these cannot be null.
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
-    private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration();
+    private static final TalonFXConfiguration driveInitialConfigs =
+            new TalonFXConfiguration()
+                    .withCurrentLimits(
+                            new CurrentLimitsConfigs()
+                                    // Stator current limit for thermal protection. kSlipCurrent (120A) handles
+                                    // traction detection, but without a stator limit the motors can sustain high
+                                    // current draws that risk brownouts and overheating.
+                                    .withStatorCurrentLimit(Amps.of(80))
+                                    .withStatorCurrentLimitEnable(true));
     private static final TalonFXConfiguration steerInitialConfigs =
             new TalonFXConfiguration()
                     .withCurrentLimits(

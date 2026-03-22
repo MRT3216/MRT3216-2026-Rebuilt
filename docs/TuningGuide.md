@@ -27,9 +27,28 @@ Recommended workflow for tuning every controlled mechanism on the robot. Work th
 
 ## General Principles
 
+### Learning Resources
+
+If you're new to PID tuning or want a refresher, work through these in order:
+
+| Resource | What it Covers | Link |
+|----------|---------------|------|
+| **Mantik: PID Control** | PID theory (P/I/D terms), on-RIO vs on-controller, feedforward tuning process | [mantik.netlify.app/frc/frc-pid-control](https://mantik.netlify.app/frc/frc-pid-control) |
+| **Mantik: PID Practice — Setup** | Setting up YAMS simulation, Elastic, and AdvantageScope for live tuning practice | [mantik.netlify.app/frc/pid-tuning-practice-setup](https://mantik.netlify.app/frc/pid-tuning-practice-setup) |
+| **Mantik: PID Practice — Elevator** | Hands-on: binary-search kG, double-kP method, "rectangular position graph" goal | [mantik.netlify.app/frc/pid-tuning-practice-elevator](https://mantik.netlify.app/frc/pid-tuning-practice-elevator) |
+| **Mantik: PID Practice — Arm** | Hands-on: precise kG (2-3 decimal places), kP tuning with overshoot, adding motion profiling | [mantik.netlify.app/frc/pid-tuning-practice-arm](https://mantik.netlify.app/frc/pid-tuning-practice-arm) |
+| **Mantik: Trapezoidal Motion Profiling** | What trapezoidal profiles are, how to configure on REV/CTRE, tuning max velocity + acceleration | [mantik.netlify.app/frc/trapezoidal-motion-profiling](https://mantik.netlify.app/frc/trapezoidal-motion-profiling) |
+| **Mantik: Exponential Motion Profiling** | Why exponential > trapezoidal for arms, kV/kA profile params, CTRE MotionMagicExpo + WPILib ExponentialProfile | [mantik.netlify.app/frc/exponential-motion-profiling](https://mantik.netlify.app/frc/exponential-motion-profiling) |
+| **Mantik: AdvantageScope** | Data logging, 3D field visualization, swerve views, video sync, analysis workflow | [mantik.netlify.app/frc/advantagescope](https://mantik.netlify.app/frc/advantagescope) |
+| **Mantik: Elastic Dashboard** | Real-time widgets, live tuning setup, field visualization, camera streams | [mantik.netlify.app/frc/elastic-basics](https://mantik.netlify.app/frc/elastic-basics) |
+| **YAMS Tuning Presentation** | YAMS-specific tuning methodology, FF+MP requirement, telemetry verbosity | [yagsl.gitbook.io/yams](https://yagsl.gitbook.io/yams/) |
+| **AK Swerve Template Docs** | Complete swerve calibration (FF, wheel radius, slip current, max speed, PathPlanner) | [docs.advantagekit.org/.../talonfx-swerve-template](https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template/) |
+
+> **Recommended path for someone who hasn't tuned before:** Read the PID Control page → do the Elevator practice in sim → do the Arm practice in sim → then come back to this guide and tune the real robot. The sim practice builds intuition for what "good" vs "bad" tuning looks like.
+
 ### Tuning Order (within any mechanism)
 
-> *Based on [YAMS tuning presentation](https://yagsl.gitbook.io/yams/) methodology.*
+> *Based on [YAMS tuning presentation](https://yagsl.gitbook.io/yams/) and [Mantik PID tuning methodology](https://mantik.netlify.app/frc/frc-pid-control) (adapted from SuperNURDS FRC 3255).*
 
 **Step 0: Preparation**
 - **Zero ALL gains** (kP, kI, kD, kS, kV, kA, kG = 0).
@@ -38,11 +57,11 @@ Recommended workflow for tuning every controlled mechanism on the robot. Work th
 
 **For positional mechanisms with gravity (arms, pivots — turret, hood, intake pivot):**
 
-1. **kG (gravity compensation):** Increase kG until the mechanism holds its position against gravity without drifting. YAMS applies `kG × cos(angle)` for arms — full compensation at horizontal, zero at vertical.
+1. **kG (gravity compensation):** Use the **binary search method** — start with a low value, double until the mechanism moves upward, then binary search between the last good value and the first bad value. Continue to **2-3 decimal places** for arms/pivots (they're finicky). The position line should be completely flat. *(YAMS applies `kG × cos(angle)` for arms — full compensation at horizontal, zero at vertical.)*
 2. **kV (velocity FF):** Set a position setpoint and watch the Position vs Reference graph. **Match the slopes** of the position and reference lines during the constant-velocity portion of the motion profile. Start at 0.1, increase in large steps. When the slopes match, the mechanism cruises at the right speed.
 3. **kA (acceleration FF):** Match the **acceleration portions** of the position vs reference graph (the curved parts at the start/end of moves). Start at 0.001, increase carefully. This shapes how quickly the mechanism ramps up/down.
-4. **kP (proportional):** Increase kP until you see **slight overshoot**, then back off ~10-20%. kP handles the residual error that FF can't.
-5. **kD (derivative):** Add only for high-speed or high-inertia mechanisms to dampen overshoot. "kD becomes your friend as speed and inertia increase."
+4. **kP (proportional):** Use the **doubling method** — start at 0.1, double (0.2, 0.4, 0.8, 1.6...) until you see **slight overshoot**, then back off ~10-20%. The position graph should approach a **rectangular shape** — sharp rise, flat hold, sharp fall. If it looks like a slow curve, kP is too low. If it oscillates or overshoots, kP is too high.
+5. **kD (derivative):** Add only for high-speed or high-inertia mechanisms to dampen overshoot. Start tiny (0.005-0.05). Too high = high-frequency jitter/noise causing motor heating. "kD becomes your friend as speed and inertia increase."
 6. **kI (integral):** Almost never needed. If you must use it, **clear the integral accumulator before setting kI to a nonzero value** — otherwise the accumulated error from before kI was active will cause a huge spike.
 
 **For velocity mechanisms (flywheel, rollers, spindexer, kicker):**
@@ -53,7 +72,29 @@ Recommended workflow for tuning every controlled mechanism on the robot. Work th
 4. **kD:** Only if there's oscillation. Usually 0 for velocity loops.
 5. **kA (optional):** Only needed for faster spin-up/spin-down response.
 
+**What "well-tuned" looks like in the position graph:**
+- ✅ **Rectangular/boxy** — sharp rise, flat top, sharp fall (like a square wave)
+- ❌ **Slow curve** — kP too low, or FF not carrying its weight
+- ❌ **Overshoot + oscillation** — kP too high, or motion profile constraints too loose
+- ❌ **Creep/drift** — kG wrong (for gravity mechanisms) or kS wrong (for horizontal)
+
 > **Tip (from YAMS presentation):** When tuning gains other than kG, set the starting position/velocity, let the mechanism get close using existing gains, then temporarily set kP high to push it the rest of the way to setpoint. Then set kP back to 0 before continuing to tune the next FF gain. This lets you characterize FF at the correct operating point.
+
+### Motion Profiling: When and Which Type
+
+Motion profiling is **required** for any positional mechanism to prevent overshoot and protect hardware. Without it, the mechanism jumps instantly to max output, causing jerky motion that can break chains, strip gears, or ram into hard stops.
+
+| Profile Type | Where it runs | Best for | Our mechanisms |
+|---|---|---|---|
+| **Trapezoidal** (constant accel) | Motor controller firmware | Simple point-to-point moves, mechanisms without gravity | Turret (MAXMotion), Hood (MotionMagic) |
+| **Exponential** (smooth accel curve) | Motor controller firmware (MotionMagicExpo) or RIO (WPILib ExponentialProfile) | Swerve azimuth, gravity-loaded arms where motor voltage-speed curve matters | Drive steer (MotionMagicExpo), Intake pivot (WPILib ExponentialProfile) |
+
+**Tuning motion profile constraints** ([detailed guide](https://mantik.netlify.app/frc/trapezoidal-motion-profiling)):
+1. **Max velocity first:** Set acceleration very high, increase velocity until the mechanism struggles. Back off 10-20%.
+2. **Max acceleration second:** Keep velocity at max, increase acceleration until you see overshoot or vibration. Reduce by 15-25%.
+3. **Balance:** If the position graph has overshoot at corners, reduce acceleration. If motion is sluggish, increase both proportionally.
+
+> **Trapezoidal vs Exponential:** Trapezoidal profiles assume the motor can instantly reach any acceleration — which isn't true. Exponential profiles model the motor's voltage-speed curve, so acceleration naturally decreases as speed increases (more physically realistic). For swerve azimuth and gravity-loaded arms, exponential is preferred. For simple point-to-point moves (turret, hood), trapezoidal is fine. See [Mantik: Exponential Motion Profiling](https://mantik.netlify.app/frc/exponential-motion-profiling) for details.
 
 ### Tools
 

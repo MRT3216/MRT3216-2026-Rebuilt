@@ -2,19 +2,17 @@
 
 ## Why Tuning Matters (read this first!)
 
-**For mentors and build students who don't write code:** Tuning is the process of teaching the robot's software how your *specific* robot moves. Think of it like adjusting the brakes and steering on a car after you build it — the parts are all there, but they need to be calibrated to work together smoothly.
+**For mentors and build students who don't write code:** Tuning is calibrating the robot's software to your *specific* hardware. Every motor has "gains" — numbers that control how aggressively the software reaches a target. Too low → sluggish. Too high → overshoots and oscillates. **The right gains make mechanisms snap to target, hold steady, and not shake.**
 
-Every motor on the robot has "gains" — numbers that control how aggressively the software tries to reach a target (a position, a speed, etc.). If the gains are too low, the mechanism is sluggish and never quite gets where it needs to go. If they're too high, the mechanism overshoots, oscillates, or vibrates violently. **The right gains make the mechanism snap to its target quickly, hold steady, and not shake.**
+**Why can't we just calculate the numbers?** Every robot is different — friction, weight, belt tension, carpet texture all matter. Two identical BOMs need different gains. You have to put the robot on the ground and tune it.
 
-**Why can't we just calculate the right numbers?** Because every robot is different. Friction in gearboxes, weight distribution, belt tension, wheel wear, carpet texture — all of these affect how the robot actually moves. Two identical robots built from the same BOM will need different gains. The only way to get it right is to put the robot on the ground and tune it.
+**What does it look like?** Someone at a laptop with AdvantageScope while someone watches the robot. Change a number, run the mechanism, check the graph, repeat. A well-tuned mechanism draws a clean square wave. A bad one draws wobbly curves. It's visual and intuitive once you see it.
 
-**What does tuning look like?** Someone sits at a laptop with graphing software (AdvantageScope) while someone else watches the robot. You change a number, run the mechanism, look at the graph, and repeat. A well-tuned mechanism draws a clean, boxy shape on the graph — like a square wave. A poorly-tuned one draws wobbly curves or oscillates back and forth. It's surprisingly visual and intuitive once you see it.
-
-**How long does it take?** Budget 2-4 hours for the drivetrain (Steps 0-6 below) and 30-60 minutes per additional mechanism. It goes faster with practice. This guide walks through everything step by step.
+**Time budget:** 2–4 hours for drivetrain (Steps 0–6), 30–60 minutes per additional mechanism.
 
 ---
 
-Recommended workflow for tuning every controlled mechanism on the robot. Work through each subsystem in the order listed — later subsystems depend on earlier ones being stable.
+Tune each subsystem in order — later ones depend on earlier ones being stable.
 
 ---
 
@@ -46,33 +44,33 @@ Recommended workflow for tuning every controlled mechanism on the robot. Work th
 
 ### Learning Resources
 
-**If you're new to PID tuning,** work through these tutorials in order before touching the real robot. The sim practice is free and builds intuition fast.
+**New to PID?** Work through these in order before touching the real robot:
 
 | # | Resource | What You'll Learn | Link |
 |---|----------|-------------------|------|
-| 1 | **Mantik: PID Control** | What PID and feedforward are, in plain English | [mantik.netlify.app/frc/frc-pid-control](https://mantik.netlify.app/frc/frc-pid-control) |
-| 2 | **Mantik: PID Practice — Setup** | How to set up YAMS sim + AdvantageScope for practice | [mantik.netlify.app/frc/pid-tuning-practice-setup](https://mantik.netlify.app/frc/pid-tuning-practice-setup) |
-| 3 | **Mantik: PID Practice — Elevator** | Hands-on sim practice: find kG, then kP (doubling method) | [mantik.netlify.app/frc/pid-tuning-practice-elevator](https://mantik.netlify.app/frc/pid-tuning-practice-elevator) |
-| 4 | **Mantik: PID Practice — Arm** | Hands-on sim practice: precise kG for arms, adding motion profiles | [mantik.netlify.app/frc/pid-tuning-practice-arm](https://mantik.netlify.app/frc/pid-tuning-practice-arm) |
-| 5 | **Mantik: Trapezoidal Motion Profiling** | What motion profiles are and how to tune max velocity/acceleration | [mantik.netlify.app/frc/trapezoidal-motion-profiling](https://mantik.netlify.app/frc/trapezoidal-motion-profiling) |
-| 6 | **Mantik: Exponential Motion Profiling** | Advanced profiles for arms (used by our intake pivot and steer motors) | [mantik.netlify.app/frc/exponential-motion-profiling](https://mantik.netlify.app/frc/exponential-motion-profiling) |
-| — | **Mantik: AdvantageScope** | How to use our graphing/logging tool | [mantik.netlify.app/frc/advantagescope](https://mantik.netlify.app/frc/advantagescope) |
-| — | **Mantik: Elastic Dashboard** | How to use our real-time dashboard | [mantik.netlify.app/frc/elastic-basics](https://mantik.netlify.app/frc/elastic-basics) |
-| — | **YAMS Tuning Docs** | YAMS-specific tuning methodology | [yagsl.gitbook.io/yams](https://yagsl.gitbook.io/yams/) |
-| — | **AK Swerve Template Docs** | Drivetrain-specific calibration steps | [docs.advantagekit.org](https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template/) |
+| 1 | **Mantik: PID Control** | PID and feedforward in plain English | [mantik.netlify.app/…/frc-pid-control](https://mantik.netlify.app/frc/frc-pid-control) |
+| 2 | **Mantik: PID Practice — Setup** | YAMS sim + AdvantageScope setup | [mantik.netlify.app/…/pid-tuning-practice-setup](https://mantik.netlify.app/frc/pid-tuning-practice-setup) |
+| 3 | **Mantik: PID Practice — Elevator** | Sim practice: find kG, then kP (doubling method) | [mantik.netlify.app/…/pid-tuning-practice-elevator](https://mantik.netlify.app/frc/pid-tuning-practice-elevator) |
+| 4 | **Mantik: PID Practice — Arm** | Sim practice: precise kG for arms, motion profiles | [mantik.netlify.app/…/pid-tuning-practice-arm](https://mantik.netlify.app/frc/pid-tuning-practice-arm) |
+| 5 | **Mantik: Trapezoidal Profiling** | Motion profiles: max velocity/acceleration | [mantik.netlify.app/…/trapezoidal-motion-profiling](https://mantik.netlify.app/frc/trapezoidal-motion-profiling) |
+| 6 | **Mantik: Exponential Profiling** | Advanced profiles for arms (intake pivot, steer) | [mantik.netlify.app/…/exponential-motion-profiling](https://mantik.netlify.app/frc/exponential-motion-profiling) |
+| — | **Mantik: AdvantageScope** | Graphing/logging tool | [mantik.netlify.app/…/advantagescope](https://mantik.netlify.app/frc/advantagescope) |
+| — | **Mantik: Elastic Dashboard** | Real-time dashboard | [mantik.netlify.app/…/elastic-basics](https://mantik.netlify.app/frc/elastic-basics) |
+| — | **YAMS Tuning Docs** | YAMS-specific methodology | [yagsl.gitbook.io/yams](https://yagsl.gitbook.io/yams/) |
+| — | **AK Swerve Template Docs** | Drivetrain calibration steps | [docs.advantagekit.org](https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template/) |
 
-> **Recommended path:** Read PID Control (#1) → do Elevator practice in sim (#3) → do Arm practice in sim (#4) → come back here and tune the real robot. Budget ~1 hour for the sim practice. It's worth it.
+> **Recommended path:** PID Control (#1) → Elevator sim (#3) → Arm sim (#4) → come back here. Budget ~1 hour for sim practice.
 
 ### Tuning Order (within any mechanism)
 
-Every mechanism follows the same general pattern: **feedforward first, then PID.** Feedforward does the heavy lifting (80-90% of the work), and PID cleans up the remaining error.
+Every mechanism follows the same pattern: **feedforward first, then PID.** FF does the heavy lifting (~80–90%), PID cleans up the rest.
 
-> *Think of it like throwing a ball at a target. Feedforward is your aim — it gets the ball most of the way there. PID is the fine adjustment that nudges it the last few inches. If your aim (FF) is terrible, no amount of nudging (PID) will help.*
+> *Feedforward is your aim — it gets the ball most of the way to the target. PID nudges it the last few inches. If your aim (FF) is bad, no amount of nudging (PID) will help.*
 
-**Before you start — zero everything:**
-- Set ALL gains to 0 (kP, kI, kD, kS, kV, kA, kG = 0).
-- Set motion profile velocity and acceleration to **safe, low values**. You can increase later.
-- Open AdvantageScope with a **Position vs Setpoint** graph (both lines on the same plot — this is your primary visual tool).
+**Before you start:**
+- Set ALL gains to 0 (kP, kI, kD, kS, kV, kA, kG).
+- Set motion profile limits to **safe, low values**.
+- Open AdvantageScope with **Position vs Setpoint** on the same plot.
 
 ---
 
@@ -80,12 +78,12 @@ Every mechanism follows the same general pattern: **feedforward first, then PID.
 
 | Step | Gain | What to do | What to look for |
 |------|------|------------|-----------------|
-| 1 | **kG** | Compensates for gravity so the mechanism holds still. **Binary search:** start low, double until it drifts up, then search between the last two values. For arms, get to **2-3 decimal places** (they're finicky). | The position line on the graph should be **perfectly flat** — not drifting up or down. |
-| 2 | **kV** | Tells the motor how much voltage to apply per unit of speed. Start at 0.1 and increase in big jumps. | The **slope** (steepness) of the position line should **match the slope** of the reference line during the constant-speed part of the move. |
-| 3 | **kA** | Handles acceleration (the curved start/end of moves). Start at 0.001, increase carefully. | The position line should **overlap the reference line** during the acceleration and deceleration phases. |
-| 4 | **kP** | Corrects any remaining error. **Double from 0.1** (0.2, 0.4, 0.8, 1.6...) until you see slight overshoot, then back off 10-20%. | The graph should look like a **rectangle** — sharp rise, flat top, sharp fall. |
-| 5 | **kD** | Dampens overshoot. Start tiny (0.005-0.05). Only needed for heavy or fast mechanisms. | Overshoot goes away. If you see jitter or hear buzzing, kD is too high — **back off**. |
-| 6 | **kI** | **Almost never needed.** Corrects persistent small errors. Only add as a last resort. | Steady-state error disappears. ⚠️ Clear the integral accumulator before enabling kI. |
+| 1 | **kG** | Compensates gravity. Binary search: start low, double until it drifts up, then narrow. For arms, get to **2–3 decimal places.** | Position line is **flat** — not drifting. |
+| 2 | **kV** | Voltage per unit speed. Start at 0.1, increase in big jumps. | Position **slope matches** reference during cruise. |
+| 3 | **kA** | Handles acceleration. Start at 0.001, increase carefully. | Position **overlaps** reference during accel/decel. |
+| 4 | **kP** | Corrects remaining error. **Double from 0.1** until slight overshoot, then back off 10–20%. | Graph looks like a **rectangle** — sharp edges, flat top. |
+| 5 | **kD** | Dampens overshoot. Start tiny (0.005–0.05). | Overshoot gone. Jitter/buzzing = too high. |
+| 6 | **kI** | **Almost never needed.** Last resort for persistent steady-state error. | Error disappears. ⚠️ Clear integral accumulator first. |
 
 ---
 
@@ -93,183 +91,159 @@ Every mechanism follows the same general pattern: **feedforward first, then PID.
 
 | Step | Gain | What to do | What to look for |
 |------|------|------------|-----------------|
-| 1 | **kS** | Slowly increase voltage from 0 until the mechanism *barely* starts moving. That voltage is kS. | The mechanism just starts to move. *(Skip in simulation — sim motors have no friction.)* |
-| 2 | **kV** | Set a target speed, adjust kV until actual speed matches. Test at several speeds. | The velocity line sits right on top of the setpoint line at steady state. |
-| 3 | **kP** | Increase until the mechanism reaches setpoint within ~0.5 seconds without oscillation. | Fast spin-up, no wobble at steady state. |
-| 4 | **kD** | Only if there's oscillation. Usually leave at 0 for velocity loops. | Oscillation stops. |
+| 1 | **kS** | Slowly increase voltage from 0 until the mechanism *barely* moves. That voltage is kS. | Mechanism just starts to move. *(Skip in sim.)* |
+| 2 | **kV** | Set a target speed, adjust kV until actual matches. Test at several speeds. | Velocity line sits on the setpoint line at steady state. |
+| 3 | **kP** | Increase until setpoint reached in ~0.5s without oscillation. | Fast spin-up, no wobble. |
+| 4 | **kD** | Only if oscillating. Usually leave at 0 for velocity loops. | Oscillation stops. |
 
 ---
 
-**How to tell if it's well-tuned (look at the position graph):**
+**How to read the position graph:**
 
 | Graph Shape | Meaning |
 |-------------|---------|
-| ✅ **Rectangular/boxy** — sharp rise, flat top, sharp fall | Well-tuned! |
-| ❌ **Slow, rounded curve** | kP too low, or feedforward isn't doing enough |
-| ❌ **Overshoots then oscillates** | kP too high, or motion profile limits are too aggressive |
-| ❌ **Slowly drifts up or down** | kG is wrong (gravity mechanisms) or kS is wrong (horizontal ones) |
+| ✅ Rectangular — sharp rise, flat top, sharp fall | Well-tuned |
+| ❌ Slow, rounded curve | kP too low or FF insufficient |
+| ❌ Overshoots then oscillates | kP too high or profile limits too aggressive |
+| ❌ Slowly drifts | kG wrong (gravity) or kS wrong (horizontal) |
 
-> **Pro tip:** When tuning kV or kA, temporarily set kP to a high value to push the mechanism to the correct operating point, then set kP back to 0 before adjusting the FF gain. This ensures you're characterizing FF at the right position/speed.
+> **Pro tip:** When tuning kV/kA, temporarily set kP high to push the mechanism to the right operating point, then zero kP before adjusting FF.
 
 ### Motion Profiling: When and Which Type
 
-A motion profile tells the motor controller "don't jump straight to the target — ramp up smoothly, cruise, then ramp down." Without it, the mechanism slams to full power instantly, which can break gears, skip belts, or ram into hard stops.
+A motion profile ramps the mechanism smoothly to target instead of slamming to full power, preventing broken gears, skipped belts, and hard-stop impacts.
 
-**Every mechanism that holds a position needs a motion profile.** Velocity mechanisms (flywheels, rollers) don't need one.
-
-**We use two types:**
+**Every position-controlled mechanism needs a motion profile.** Velocity mechanisms (flywheels, rollers) don't.
 
 | Type | How it works | Used by |
 |------|-------------|---------|
-| **Trapezoidal** | Accelerates at a constant rate, cruises at max speed, decelerates at a constant rate. Simple and effective. | Turret, Hood |
-| **Exponential** | Accelerates based on the motor's real voltage-speed curve (smoother, more realistic). Better for arms and precision mechanisms. | Drive steer, Intake pivot |
+| **Trapezoidal** | Constant accel → cruise → constant decel. Simple. | Turret, Hood |
+| **Exponential** | Accel follows motor voltage-speed curve (smoother). | Drive steer, Intake pivot |
 
-**To tune motion profile speed/acceleration** ([detailed guide](https://mantik.netlify.app/frc/trapezoidal-motion-profiling)):
-1. Set acceleration very high. Increase max velocity until the mechanism struggles to keep up. Back off 10-20%.
-2. Now increase acceleration until you see overshoot or vibration. Back off 15-25%.
-3. If the graph shows overshoot at the corners, reduce acceleration. If motion feels slow, increase both.
+**To tune profile limits** ([detailed guide](https://mantik.netlify.app/frc/trapezoidal-motion-profiling)):
+1. Set acceleration high. Increase max velocity until the mechanism can't keep up. Back off 10–20%.
+2. Increase acceleration until overshoot/vibration. Back off 15–25%.
+3. Overshoot at corners → reduce acceleration. Motion feels slow → increase both.
 
 ### Tools
 
-| Tool | When to Use |
-|------|-------------|
-| **YAMS Live Tuning** | **Primary tuning tool for all YAMS mechanisms.** With `TelemetryVerbosity.HIGH`, every mechanism publishes editable NT entries for kP/kI/kD/kS/kV/kA/kG, setpoint (degrees or RPM), and motion profile limits (RPM, RPM/s). Change gains live without redeploying. |
-| **AdvantageScope** | Log replay, overlaying setpoint vs measured. Use the [predefined swerve calibration layout](https://docs.advantagekit.org/getting-started/template-projects/talonfx-swerve-template/) for drive tuning. Import `AdvantageScope Swerve Calibration.json` from the swerve project folder. |
-| **CTRE Tuner X** | Drive/steer gains, MotionMagic config, real-time signal plotting. |
-| **REV Hardware Client** | SparkMax/Flex encoder verification, absolute encoder offset reads, firmware updates. |
-| **WPILib SysId** | Automated FF characterization (quasistatic + dynamic). Already wired for drivetrain in `setupSysid()`. |
-| **Elastic Dashboard** | Real-time telemetry graphs, boolean indicators ("at setpoint"), and YAMS tuning widgets side-by-side. |
+| Tool | Purpose |
+|------|---------|
+| **YAMS Live Tuning** | Primary tool. With `TelemetryVerbosity.HIGH`, publishes editable NT entries for all gains, setpoints, and profile limits. Change gains live without redeploying. |
+| **AdvantageScope** | Log replay, setpoint vs measured overlays. Import `AdvantageScope Swerve Calibration.json` for drive tuning. |
+| **CTRE Tuner X** | Drive/steer gains, MotionMagic config, real-time plots. Works in sim (`localhost`). |
+| **REV Hardware Client** | Encoder verification, absolute encoder offsets, firmware updates. |
+| **WPILib SysId** | Automated FF characterization (quasistatic + dynamic). Wired for drivetrain in `setupSysid()`. |
+| **Elastic Dashboard** | Real-time telemetry graphs, boolean indicators, YAMS tuning widgets. |
 
 ### YAMS Live Tuning (how it works)
 
-YAMS lets you **change gains on the fly without redeploying code.** This is the fastest way to tune. Here's how:
+Change gains on the fly without redeploying — the fastest way to tune.
 
-1. **Switch Driver Station to "Test" mode** (not teleop or auto).
-2. **Enable the robot.**
-3. **Open Elastic Dashboard.** Find the Live Tuning button under `SmartDashboard > MECHANISM_NAME > Commands > Live Tuning`. Drag it onto your dashboard and click it.
-4. **Edit gains** in the NetworkTables entries that appear — they take effect immediately.
-5. **Watch the graph** in AdvantageScope to see the result.
+1. Switch Driver Station to **Test** mode, enable the robot.
+2. In Elastic, find `SmartDashboard > MECHANISM_NAME > Commands > Live Tuning`. Drag to dashboard and click.
+3. Edit gains in the NT entries — they take effect immediately.
+4. Watch AdvantageScope to see the result.
 
-**Available tuning entries** (published for every YAMS mechanism when `tuningMode = true`):
+**Editable entries** (all YAMS mechanisms when `tuningMode = true`):
 
-| What you can edit | Units | What it does |
-|-------------------|-------|-------------|
-| kP, kI, kD | — | PID gains (change takes effect instantly) |
-| kS | volts | Static friction compensation |
-| kV | volts per (unit/s) | Velocity feedforward |
-| kA | volts per (unit/s²) | Acceleration feedforward |
-| kG | volts | Gravity compensation (arms only) |
-| Setpoint position | degrees | Where you want the mechanism to go |
-| Setpoint velocity | RPM | How fast you want it to spin |
-| Max velocity | RPM | Motion profile cruise speed |
-| Max acceleration | RPM/s | Motion profile acceleration limit |
+| Entry | Units | Notes |
+|-------|-------|-------|
+| kP, kI, kD | — | PID gains |
+| kS, kV, kA, kG | volts / volts per (unit/s) | Feedforward terms |
+| Setpoint position | degrees | Target position |
+| Setpoint velocity | RPM | Target speed |
+| Max velocity / acceleration | RPM, RPM/s | Motion profile limits |
 
-> ⚠️ **Safety first:** Always test in sim before the real robot. Accidentally typing kP = 300 when you meant 3.0 can cause violent oscillation.
+> ⚠️ Always test in sim first. Typing kP=300 when you meant 3.0 causes violent oscillation.
 
-> **Where to find the data:** Mechanism telemetry is under `NT:/Mechanisms`. Live Tuning commands are under `NT:/SmartDashboard`.
-
-> **Units note:** YAMS works internally in rotations and rotations/sec, but the Live Tuning setpoint fields use **degrees** and **RPM** for convenience.
+> **Where:** Telemetry under `NT:/Mechanisms`. Live Tuning commands under `NT:/SmartDashboard`.
 
 ### AdvantageScope Tips
 
-AdvantageScope is our graphing and log-replay tool. You'll use it constantly during tuning.
-
-- **The key graph:** Drag both the `angle` (or `velocity`) and `setpoint` fields onto the same line graph. **The gap between the two lines tells you everything** — how fast the mechanism responds, whether it overshoots, and whether it holds steady.
-- **Convert units:** Right-click an axis → "Edit Axis" → set multiplier to 360 (rotations → degrees) or 60 (RPS → RPM).
-- **Mark your trials:** Press `N` to add a timestamp note like "kP=3.0" or "kP=5.0" so you can compare runs later.
-- **Check for voltage saturation:** Plot voltage on a second Y-axis. If it's pegged at ±12V, the motor is maxed out and can't give more.
-- **Export data:** Select a time range → right-click → Export to CSV. Useful for spreadsheet analysis.
+- **Key graph:** Drag both `angle` (or `velocity`) and `setpoint` onto the same line graph. The gap tells you everything.
+- **Convert units:** Right-click axis → "Edit Axis" → multiplier 360 (rot → deg) or 60 (RPS → RPM).
+- **Mark trials:** Press `N` to note "kP=3.0" so you can compare runs later.
+- **Check saturation:** Plot voltage on a second Y-axis. If pegged at ±12V, the motor is maxed out.
+- **Export:** Select time range → right-click → Export to CSV.
 
 ### Elastic Dashboard Tips
 
-Elastic is our real-time dashboard that shows live data from the robot.
+- **"At setpoint" indicator:** Add a boolean widget for `Mechanisms/HoodIsMoving` etc. — turns green when on target.
+- **Group widgets:** Create a "Tuning" tab — gains left, graph right, current draw below.
+- **Quick setpoints:** Use tunable number widgets to jump between test positions without code changes.
 
-- **"At setpoint" indicator:** We log `Mechanisms/HoodIsMoving`, etc. Add a boolean widget that turns green when the mechanism is at its target.
-- **Group your tuning widgets:** Create a "Tuning" tab with gains on the left, a graph on the right, and current draw below.
-- **Quick setpoint buttons:** Use tunable number widgets to jump between test positions (e.g. "0°", "15°", "30°" for the hood) without touching code.
+### Phoenix Tuner X Tips (CTRE motors)
 
-### Phoenix Tuner X Tips (CTRE motors: drivetrain, hood, flywheel, intake rollers)
-
-Phoenix Tuner X is CTRE's configuration and graphing tool. It connects directly to the motor controllers.
-
-- **Position vs Reference overlay:** Plot `Position` and `ClosedLoopReference` on the same graph. The reference is where the motion profile thinks the mechanism should be *right now*. The gap tells you how well your gains are tracking.
-- **Useful signal group:** Check `Position`, `ClosedLoopReference`, `ClosedLoopOutput`, and `StatorCurrent` → plot together for a complete picture.
-- **Works in sim:** Connect to `localhost` when running sim to get the same plots on simulated motors.
+- **Position vs Reference overlay:** Plot `Position` and `ClosedLoopReference` together. The gap shows tracking quality.
+- **Useful signals:** `Position`, `ClosedLoopReference`, `ClosedLoopOutput`, `StatorCurrent` — all on one graph.
+- **Sim:** Connect to `localhost` for the same plots on simulated motors.
 
 ### Position vs Reference: The Key Graph for kV/kA Tuning
 
-When tuning kV and kA, you need to see two lines on the same graph:
+When tuning kV and kA, you need two lines on the same graph:
 - **Position** (or velocity) — where the mechanism *actually* is
 - **Reference** — where the motion profile says it *should* be right now
 
-This is NOT the final setpoint. The reference changes every cycle as the profile ramps up, cruises, and ramps down. Matching these two lines is how you tune kV and kA.
+This is NOT the final setpoint — the reference changes every cycle as the profile ramps up, cruises, and ramps down.
 
-**For kV:** During the cruise phase (the straight part of the move), the two lines should have **the same slope**. If the position line is less steep, kV is too low.
+**kV:** During cruise (straight part), the two lines should have the **same slope**. Position less steep → kV too low.
 
-**For kA:** During the acceleration/deceleration phases (the curved parts), the two lines should **overlap**. If the position lags behind during acceleration, kA is too low.
+**kA:** During accel/decel (curved parts), the two lines should **overlap**. Position lags during accel → kA too low.
 
-#### CTRE mechanisms (Hood, Flywheel) — ✅ Already set up
+#### CTRE mechanisms (Hood, Flywheel) — ✅ Set up
 
-CTRE motors give us the reference signal for free via `getClosedLoopReference()`. **We already log this:**
+CTRE motors provide the reference signal via `getClosedLoopReference()`. We already log it:
 
-| Mechanism | Position (AdvantageScope) | Reference (AdvantageScope) |
+| Mechanism | Position | Reference |
 |---|---|---|
 | **Hood** | `Hood/FX/PositionDegrees` | `Hood/FX/ReferenceDegrees` |
 | **Flywheel** | `Flywheel/FX/VelocityRPM` | `Flywheel/FX/ReferenceRPM` |
 
-Just open AdvantageScope, drag both onto the same graph, and you're ready to tune.
+> For future CTRE mechanisms, follow the pattern in `HoodSubsystem.java` / `FlywheelSubsystem.java`.
 
-> **For future CTRE mechanisms**, follow the same pattern used in `HoodSubsystem.java` and `FlywheelSubsystem.java`: get the `positionSignal` and `referenceSignal` from the motor, refresh them together, and log both with `Logger.recordOutput()`.
+#### REV mechanisms (Turret, Spindexer, Kicker) — ⚠️ No reference signal
 
-#### REV mechanisms (Turret, Spindexer, Kicker) — ⚠️ No reference signal available
+REV SparkMax/SparkFlex doesn't expose the MAXMotion reference trajectory.
 
-REV's SparkMax/SparkFlex **does not give us the reference signal.** When MAXMotion runs, the intermediate trajectory is computed inside the motor controller and never sent back to the RIO.
+**Workaround:**
+1. **kV:** Watch position during cruise — should move at the profile's max velocity. Slower → increase kV.
+2. **kA:** Watch acceleration shape. With kA=0, transitions are soft. Increase kA until they're crisp.
 
-**Workaround — it's less precise but it works:**
+### Safety Checklist (before every session)
 
-1. **For kV:** Watch the actual position graph during the cruise phase. The mechanism should move at the motion profile's max velocity. If it moves slower, increase kV. Compare the slope of the position line against the expected speed: `expected_slope = max_velocity_degrees_per_second`.
+- [ ] Robot on blocks (wheels off ground) for drive tuning
+- [ ] Current limits set (already done for all subsystems)
+- [ ] Soft limits enabled in YAMS configs
+- [ ] Someone on the E-stop
+- [ ] `tuningMode = true` in `Constants.java`
 
-2. **For kA:** Watch the shape of the acceleration phase. With kA=0, the curve will be "soft" (slow to accelerate, slow to decelerate). Increase kA until the transitions are crisp — sharp start, clean cruise, sharp stop.
-
-> **Bottom line:** For our turret, this is fine — it's a simple horizontal mechanism where kV and kA can be dialed in by watching the position graph shape.
-
-### Safety Checklist (before every tuning session)
-
-- [ ] Robot on blocks (wheels off ground) for drivetrain tuning
-- [ ] Current limits set in constants (already done for all subsystems)
-- [ ] Soft limits enabled in YAMS configs (prevents over-travel on pivots)
-- [ ] Someone ready on the E-stop
-- [ ] `tuningMode = true` in `Constants.java` (currently `true`)
-
-> **Telemetry note:** `tuningMode = true` automatically sets telemetry to HIGH (publishes all gains, setpoints, limits, temps). At competition, set `tuningMode = false` to switch to MID (less data, faster loop). See [YAMS Telemetry Verbosity Levels](#yams-telemetry-verbosity-levels).
+> `tuningMode = true` sets telemetry to HIGH. At competition, set `false` for MID. See [YAMS Telemetry Verbosity Levels](#yams-telemetry-verbosity-levels).
 
 ---
 
 ## YAMS Telemetry Verbosity Levels
 
-YAMS publishes different amounts of data depending on the verbosity level. Higher levels include everything from lower levels.
+| Level | Publishes | When to use |
+|-------|-----------|-------------|
+| **LOW** | Setpoints, sensor readings, position/velocity | Match play (minimal overhead) |
+| **MID** | + Voltage, current, raw rotor data | Competition (debug brownouts post-match) |
+| **HIGH** | + All tunable gains, limits, temps, profile params — all editable live | Shop tuning and practice |
 
-| Level | What it publishes | When to use |
-|-------|------------------|-------------|
-| **LOW** | Setpoints, sensor readings, mechanism position/velocity | Match play (minimal overhead) |
-| **MID** | + Voltage, current draw, raw rotor data | Competition (enough to debug brownouts post-match) |
-| **HIGH** | + All tunable gains (kP, kD, kV, etc.), limits, temps, motion profile params — all editable live | Shop tuning and practice |
-
-**How it's configured:** `Constants.telemetryVerbosity()` returns `HIGH` when `tuningMode = true` and `MID` when `false`. Each motor at HIGH publishes ~30+ NetworkTables entries per cycle. With 10+ motors that's 300+ entries, so switching to MID at competition meaningfully reduces loop time.
+`Constants.telemetryVerbosity()` returns HIGH when `tuningMode = true`, MID when `false`. At HIGH, each motor publishes ~30+ NT entries/cycle. With 10+ motors that's 300+ entries — switch to MID at competition to reduce loop time.
 
 | Situation | Level | `tuningMode` |
 |-----------|-------|:---:|
-| Shop tuning / practice | HIGH | `true` |
-| Qualification/elimination matches | MID | `false` |
-| Post-match replay | Whatever was logged | — |
+| Shop / practice | HIGH | `true` |
+| Competition matches | MID | `false` |
 
 ---
 
 ## Reference Team Swerve Comparison
 
-How our swerve constants compare to other FRC teams in the **2026 season.** All use TalonFX (Kraken) swerve with Phoenix 6 unless noted.
+How our swerve constants compare to other FRC teams (**2026 season**). All use TalonFX (Kraken) swerve with Phoenix 6 unless noted.
 
-> **Data sources:** Public GitHub repos reviewed June 2025: [6328](https://github.com/Mechanical-Advantage/RobotCode2026Public), [LASA PH2026](https://github.com/lasarobotics/PH2026), [LASA PR2026](https://github.com/lasarobotics/PR2026), [WHS 3467](https://github.com/WHS-FRC-3467/Skip-5.16-Platypus), [Hammerheads 5000](https://github.com/hammerheads5000/2026Rebuilt), [Lynk 9496](https://github.com/LynkRobotics/RobotCode2026Public).
+> **Sources:** Public GitHub repos: [6328](https://github.com/Mechanical-Advantage/RobotCode2026Public), [LASA PH](https://github.com/lasarobotics/PH2026), [LASA PR](https://github.com/lasarobotics/PR2026), [WHS 3467](https://github.com/WHS-FRC-3467/Skip-5.16-Platypus), [Hammerheads 5000](https://github.com/hammerheads5000/2026Rebuilt), [Lynk 9496](https://github.com/LynkRobotics/RobotCode2026Public).
 
 ### Hardware Summary
 
@@ -283,7 +257,7 @@ How our swerve constants compare to other FRC teams in the **2026 season.** All 
 | Hammerheads 5000 | — | 6.03:1 | 26.09:1 | 1.985" | 22.5 × 20.75" |
 | Lynk 9496 | SDS MK5n R2 | ~6.03:1 | 26.09:1 | ~2.0" | 20.75" sq |
 
-**Takeaway:** 6.0–6.12 drive gear ratios are the most common. Our 4.667:1 ([WCP X2 ratio with 18T pinion](https://docs.wcproducts.com/welcome/gearboxes/wcp-swerve-x2s)) is significantly faster-geared — this means higher theoretical top speed but less torque per amp. Our 1.80" wheel radius is the nominal 3.5" WCP wheel with tread; re-verify with the [wheel radius characterization](#step-3-wheel-radius-characterization).
+**Takeaway:** Most teams use 6.0–6.12 drive ratios. Our 4.667:1 ([WCP X2 + 18T](https://docs.wcproducts.com/welcome/gearboxes/wcp-swerve-x2s)) is significantly faster-geared — higher top speed, less torque per amp. Re-verify wheel radius with [Step 3](#step-3-wheel-radius-characterization).
 
 ### Current Limits
 
@@ -296,11 +270,11 @@ How our swerve constants compare to other FRC teams in the **2026 season.** All 
 | Hammerheads 5000 | 80A | 60A | 95A |
 | Lynk 9496 | — | — | — |
 
-**Takeaway:** 80A drive / 60A steer is the consensus. Our **120A slip current matches LASA but is higher than most.** WHS and Hammerheads both measured ~95A. Run the slip test ([Step 6](#step-6-slip-current-measurement)) to find our actual value.
+**Takeaway:** 80A drive / 60A steer is the consensus. Our 120A slip current matches LASA but is higher than most (~95A). Run the [slip test](#step-6-slip-current-measurement) to find our actual value.
 
 ### Drive/Steer Gains — Voltage Mode
 
-Only comparing teams using Voltage mode (apples-to-apples). Teams using TorqueCurrentFOC have wildly different gain scales — see separate table below.
+Apples-to-apples comparison of teams using Voltage mode. TorqueCurrentFOC teams have different gain scales — see next table.
 
 | Team | Steer kP | Steer kD | Steer kS | Steer kV | Drive kP | Drive kS | Drive kV |
 |------|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
@@ -309,13 +283,13 @@ Only comparing teams using Voltage mode (apples-to-apples). Teams using TorqueCu
 | Hammerheads (generated) | 100 | 0.5 | 0.1 | 2.49 | 0.1 | 0 | 0.124 |
 | Hammerheads (tuned) | 1000 | 8 | 6 | 0 | 2 | 0.237 | 0.733 |
 
-> **Note:** Hammerheads has both a generated `TunerConstants.java` (matching LASA exactly — likely default Tuner X output) and hand-tuned `SwerveConstants` in their `Constants.java` with much higher steer gains. Their tuned steer uses TorqueCurrentFOC while drive stays Voltage.
+> **Note:** Hammerheads has both generated `TunerConstants` (matching LASA — likely Tuner X defaults) and hand-tuned `SwerveConstants` with higher steer gains (TorqueCurrentFOC steer, Voltage drive).
 
-**Takeaway:** Steer kP=100 / kD=0.5 / kS=0.1 / kV≈2.49 in Voltage mode is the standard starting point across multiple teams. Our steer gains match the consensus. Our drive kV (0.585) is higher than LASA (0.124) — this is expected because of our much lower gear ratio (4.667 vs 6.03); kV scales inversely with gear ratio. **After wheel radius characterization, re-run drive FF characterization to verify.**
+**Takeaway:** Steer kP=100 / kD=0.5 / kS=0.1 / kV≈2.49 is the Voltage-mode consensus. Our steer matches. Our drive kV (0.585) is higher than LASA (0.124) — expected with our lower gear ratio (4.667 vs 6.03); kV scales inversely with ratio. **Re-run drive FF after wheel radius characterization.**
 
 ### Drive/Steer Gains — TorqueCurrentFOC Mode
 
-These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
+Gains in **amps**, not volts. Do not mix with Voltage mode gains.
 
 | Team | Steer kP | Steer kD | Drive kP | Drive kS |
 |------|:-------:|:-------:|:-------:|:-------:|
@@ -323,7 +297,7 @@ These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
 | WHS 3467 | 2000 | 20 | 60 | 7.26 |
 | Hammerheads (steer only) | 1000 | 8 | — | — |
 
-**Takeaway:** TorqueFOC gains are 10–40× larger than Voltage gains. If we ever switch to TorqueFOC, 6328 and WHS 3467 provide good reference starting points. See [TorqueFOC section](#torquefoc--available-upgrade-path).
+**Takeaway:** TorqueFOC gains are 10–40× larger. If we switch, 6328 and WHS 3467 are good starting points. See [TorqueFOC section](#torquefoc--available-upgrade-path).
 
 ### Control Mode
 
@@ -336,7 +310,7 @@ These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
 | Hammerheads | TorqueCurrentFOC | Voltage | Yes |
 | Lynk 9496 | (custom) | (custom) | — |
 
-**Voltage mode is still the most common approach.** 6328 and WHS 3467 fully committed to TorqueFOC. Hammerheads uses a split approach (TorqueFOC steer + Voltage drive). We can switch later — see [TorqueFOC section](#torquefoc--available-upgrade-path).
+**Voltage mode is the most common.** 6328 and WHS 3467 use full TorqueFOC. Hammerheads splits (TorqueFOC steer + Voltage drive). We can switch later — see [TorqueFOC section](#torquefoc--available-upgrade-path).
 
 ### Max Speed
 
@@ -350,7 +324,7 @@ These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
 | Hammerheads | 5.85 m/s | 6.03:1 | |
 | Lynk 9496 | 5.12 m/s | ~6.03:1 | |
 
-**Takeaway:** Measured speeds are typically 10-30% below theoretical. Our 6.02 m/s theoretical will likely measure around 5.0-5.5 m/s. Run the [max speed test](#step-5-max-speed-measurement) and update.
+**Takeaway:** Measured speeds are typically 10–30% below theoretical. Our 6.02 m/s will likely measure ~5.0–5.5 m/s. Run the [max speed test](#step-5-max-speed-measurement).
 
 ### Pigeon 2 Configuration
 
@@ -362,19 +336,18 @@ These gains are in **amps**, not volts. Do not mix with Voltage mode gains.
 | Hammerheads | ✅ | — | — | -90° |
 | Others | `null` (skipped) | — | — | — |
 
-**Takeaway:** If our Pigeon is mounted in any orientation other than flat + forward-facing, we need to configure `MountPose`. See the new [Pigeon IMU Calibration](#pigeon-imu-calibration) section below.
+**Takeaway:** If our Pigeon isn't flat + forward-facing, configure `MountPose`. See [Pigeon IMU Calibration](#pigeon-imu-calibration).
 
 ### Interesting Patterns From Reference Teams
 
-| Pattern | Who Uses It | What It Does |
-|---------|-------------|-------------|
-| **LoggedTunableNumber** | 6328, WHS 3467, Hammerheads | Runtime-tunable gains with `ifChanged()` callback — only applies to motors when the value actually changes. More efficient than YAMS live tuning but requires more boilerplate. |
-| **WheelSlipAuto** | WHS 3467 | Dedicated auto routine that ramps motor voltage until target velocity is reached, logging current vs velocity for slip characterization. More automated than our wall test. |
-| **Separate sim constants** | WHS 3467, Hammerheads | Different kP/kV values for sim vs real modules. Our sim uses CTRE's built-in sim, but adding sim-specific PID could improve simulation accuracy. |
-| **SwerveSetpointGenerator** | BroncBotz 3481 | PathPlanner's port of 254's setpoint generator — limits acceleration per-module for smoother motion. We mention this in our guide but haven't enabled it. |
-| **Wheel COF parameter** | 6328 (1.5), Hammerheads (2.255) | Coefficient of friction used for PathPlanner's traction model. Our 1.2 is conservative — consider measuring. |
-| **Open loop ramps** | LASA PR (0.5s), Lynk (0.25s) | Voltage ramp rates to reduce wheel slip on acceleration. We don't use ramps currently. |
-| **driveWithSetpointGenerator** | BroncBotz 3481 | 254's setpoint generator integrated with PathPlanner for smoother autonomous driving. |
+| Pattern | Who | What It Does |
+|---------|-----|-------------|
+| **LoggedTunableNumber** | 6328, WHS, Hammerheads | Runtime-tunable gains with `ifChanged()` — only applies when values change. More boilerplate than YAMS. |
+| **WheelSlipAuto** | WHS 3467 | Auto routine that ramps voltage logging current vs velocity for slip characterization. |
+| **Separate sim constants** | WHS, Hammerheads | Different kP/kV for sim vs real. Could improve our sim accuracy. |
+| **SwerveSetpointGenerator** | BroncBotz 3481 | 254's port — limits per-module acceleration for smoother motion. |
+| **Wheel COF** | 6328 (1.5), Hammerheads (2.255) | PathPlanner traction model. Our 1.2 is conservative. |
+| **Open loop ramps** | LASA (0.5s), Lynk (0.25s) | Voltage ramp to reduce wheel slip on acceleration. |
 
 ### Shooter Mechanism Gains (Reference)
 
@@ -396,115 +369,105 @@ Several reference teams in 2026 also run flywheel + hood shooters. Use this as a
 | BroncBotz 3481 | — | 0.18 | 0.62 | — | FF-only kicker |
 | Hammerheads 5000 | — | — | — | 200 | TorqueFOC turret |
 
-**Takeaway:** Our flywheel kP (0.2) is at the low end. If the flywheel is slow to recover after a shot, try increasing to 0.5-1.0. Our hood kP (300) is reasonable for Voltage mode; 6328's 1200 uses TorqueFOC. Kicker FF-only (kP=0) is common — only add PID if the kicker stalls on ball contact.
+**Takeaway:** Our flywheel kP (0.2) is low — try 0.5–1.0 if recovery is slow after a shot. Hood kP (300) is reasonable for Voltage mode. Kicker FF-only (kP=0) is common — only add PID if it stalls on ball contact.
 
-> **Action items from research:** (1) Measure slip current, (2) Configure Pigeon MountPose if needed, (3) Consider adding open loop ramps (0.25s) for smoother acceleration, (4) Measure wheel COF for PathPlanner.
+> **Action items:** (1) Measure slip current, (2) Configure Pigeon MountPose if needed, (3) Consider open loop ramps (0.25s), (4) Measure wheel COF.
 
 ---
 
 ## TorqueFOC — Available Upgrade Path
 
-> **You don't need this right now.** Start with Voltage mode (what we're using), get the robot driving well, then consider TorqueFOC as a future upgrade.
+> **Not needed now.** Get Voltage mode working first. TorqueFOC is a future upgrade.
 
-TorqueFOC (TorqueCurrentFOC) is a Phoenix Pro feature where the motor controller commands **current** (amps) instead of voltage. This gives more consistent performance as the battery drains, and more predictable traction control.
+TorqueFOC (TorqueCurrentFOC) commands **current** (amps) instead of voltage, giving consistent performance as the battery drains and more predictable traction control. **We have Phoenix Pro and the code is wired for it** — switching is a one-line change, but requires a complete retune.
 
-**We have Phoenix Pro and the code is already wired for it.** Switching is a one-line config change, but it requires a **complete retune** of every drive gain.
+### Why (later)
 
-### Why consider it (later)
-
-- Performance stays consistent even as the battery sags from 12V → 11V
-- Better traction control (slip current directly limits torque)
-- 6328 (Mechanical Advantage) uses it; most other reference teams use Voltage
+- Consistent performance as battery sags (12V → 11V)
+- Better traction control (torque directly limited)
+- Used by 6328; most others use Voltage
 
 ### What changes
 
-| | Voltage Mode (current) | TorqueFOC |
+| | Voltage (current) | TorqueFOC |
 |---|---|---|
 | Steer kP | 100 | ~4000 |
 | Steer kD | 0.5 | ~50 |
 | Drive kP | 0.1 | ~35 |
 | kS/kV units | Volts | Amps |
 
-**All gains change dramatically.** You cannot reuse Voltage-mode gains.
+All gains change dramatically — you cannot reuse Voltage-mode gains.
 
-### How to switch (when ready)
+### How to switch
 
 1. In `TunerConstants.java`, change both output types to `ClosedLoopOutputType.TorqueCurrentFOC`
-2. Zero out all gains and start fresh
-3. Re-run the entire drivetrain calibration (Steps 1–7)
-4. Optionally add a torque ramp (0.02s) to prevent current spikes
+2. Zero all gains and start fresh
+3. Re-run entire drivetrain calibration (Steps 1–7)
+4. Optionally add torque ramp (0.02s) to prevent current spikes
 
 ### Motion Profile Types by Mechanism
 
-Each mechanism uses a different profile type. Here's what they are and why:
-
 | Mechanism | Profile Type | Why |
 |-----------|-------------|-----|
-| Drive (steer) | **MotionMagicExpo** (firmware) | Smooth, continuous motion — good for steering |
-| Turret | **MAXMotion trapezoidal** (firmware) | Simple point-to-point moves |
+| Drive (steer) | **MotionMagicExpo** (firmware) | Smooth continuous steering |
+| Turret | **MAXMotion trapezoidal** (firmware) | Simple point-to-point |
 | Hood | **MotionMagic trapezoidal** (firmware) | Small mechanism, short moves |
-| Intake Pivot | **ExponentialProfile** (RIO) | Accounts for gravity — arm accelerates faster going down than up |
+| Intake Pivot | **ExponentialProfile** (RIO) | Gravity-aware — accelerates faster going down |
 
-> **Simple rule:** Trapezoidal = constant acceleration. Exponential = acceleration changes with speed (more realistic). Use exponential for steering and gravity-loaded arms, trapezoidal for everything else.
+> **Rule of thumb:** Trapezoidal = constant acceleration. Exponential = acceleration varies with speed. Use exponential for steering and gravity-loaded arms.
 
 ---
 
 ## YAMS FF + Motion Profile Requirement
 
-> **Key rule:** For position-controlled mechanisms (turret, hood, intake pivot), **kV and kA only work if a motion profile is configured.**
+> **Key rule:** For position-controlled mechanisms, **kV and kA only work if a motion profile is configured.**
 
-### Why
+kV multiplies the *velocity the profile says the mechanism should be moving right now*. No profile → no planned velocity → kV × 0 = 0.
 
-kV multiplies the *velocity the profile says the mechanism should be moving at right now*. Without a profile, there's no planned velocity — so kV × 0 = 0. The feedforward does nothing.
+**All our positional mechanisms already have profiles:**
 
-**All our positional mechanisms already have profiles, so this is already correct:**
-
-| Mechanism | Has FF? | Has Motion Profile? | ✅ |
-|-----------|:-------:|:-------------------:|:--:|
+| Mechanism | FF | Motion Profile | ✅ |
+|-----------|:--:|:--------------:|:--:|
 | Turret | kS=0, kV=1.0, kA=0.05 | 1000°/s, 7200°/s² | ✅ |
 | Hood | kS=0.45, kV=3.0 | 270°/s, 270°/s² | ✅ |
 | Intake Pivot | kG=0.21, kS=0.11 | 90°/s, 90°/s² | ✅ |
 
-**If you add FF to a new positional mechanism in the future, always pair it with a motion profile.**
+**If you add FF to a new positional mechanism, always pair it with a motion profile.**
 
-### Velocity mechanisms are unaffected
-
-Flywheel, kicker, spindexer, and intake rollers use velocity control — the setpoint itself is a velocity. kV multiplies the velocity setpoint directly, no profile needed.
+Velocity mechanisms (flywheel, kicker, spindexer, rollers) are unaffected — kV multiplies the velocity setpoint directly.
 
 ---
 
 ## YAMS SysId Helpers
 
-YAMS mechanisms have a built-in `sysId()` method that creates a complete characterization routine with one call. This gives you starting values for kS, kV, kA, and kG.
+YAMS mechanisms have a built-in `sysId()` method that creates a complete characterization routine. Gives starting values for kS, kV, kA, kG.
 
 | Approach | Best for | Use on |
 |----------|----------|--------|
-| **SysId** | Getting kS, kV, kA, kG to within ~5% | Intake pivot (kG), flywheel (kV), turret (kV) |
-| **Manual** | Quick iteration when you have a ballpark | Hood, kicker, spindexer |
-| **YAMS Live Tuning** | Fine-tuning after SysId gives starting values | All mechanisms |
+| **SysId** | Getting FF gains within ~5% | Intake pivot (kG), flywheel (kV), turret (kV) |
+| **Manual** | Quick iteration with a ballpark | Hood, kicker, spindexer |
+| **YAMS Live Tuning** | Fine-tuning after SysId | All mechanisms |
 
-**REV note:** YAMS uses duty cycle internally for cleaner SysId data. REVLib 2026+ auto-writes `.revlog` files you can open in AdvantageScope.
-
-**CTRE note:** YAMS uses `VoltageOut` for SysId. You need to start/stop Signal Logger manually (bind to controller buttons). Extract `.hoot` logs via Phoenix Tuner X → Tools → Extract Signal Logs.
+- **REV:** YAMS uses duty cycle for cleaner data. REVLib 2026+ auto-writes `.revlog` files for AdvantageScope.
+- **CTRE:** YAMS uses `VoltageOut`. Start/stop Signal Logger manually (bind to buttons). Extract `.hoot` logs via Tuner X.
 
 ---
 
 ## 1. Drivetrain (CTRE Swerve)
 
-**File:** `TunerConstants.java` (generated by Phoenix Tuner X — use Tuner X to regenerate, don't hand-edit gains)
-**Motors:** 8× TalonFX (4 drive + 4 steer), **CAN FD bus** at 250 Hz odometry
-**Control:** Phoenix 6 Voltage mode (TorqueFOC available later — see [TorqueFOC section](#torquefoc--available-upgrade-path))
+**File:** `TunerConstants.java` (generated by Tuner X — don't hand-edit gains)
+**Motors:** 8× TalonFX (4 drive + 4 steer), CAN FD at 250 Hz odometry
+**Control:** Phoenix 6 Voltage mode (TorqueFOC available — see [upgrade path](#torquefoc--available-upgrade-path))
 
-> ⚠️ **AdvantageKit uses different gain scales than CTRE's default swerve code.** AK applies the gear ratio in firmware, so FF and PID gains from other projects won't work directly. Use the AK characterization routines below.
+> ⚠️ **AK uses different gain scales than CTRE's default swerve code.** AK applies gear ratio in firmware, so FF/PID from other projects won't work directly. Use the AK characterization routines.
 
-> **AdvantageScope layout:** Import `AdvantageScope Swerve Calibration.json` from the swerve project folder for predefined tuning tabs.
+> Import `AdvantageScope Swerve Calibration.json` for predefined tuning tabs.
 
 ### Enabling Characterization Routines
 
-1. Uncomment `setupSysid();` in the `RobotContainer` constructor (line 224)
-2. Deploy and reboot
-3. The dashboard auto chooser will show characterization options
-4. **Re-comment `setupSysid()` before competition**
+1. Uncomment `setupSysid();` in `RobotContainer` constructor (line 224)
+2. Deploy and reboot — auto chooser shows characterization options
+3. **Re-comment before competition**
 
 ### Complete Calibration Order
 
@@ -524,276 +487,241 @@ Follow this order — each step depends on the previous one:
 
 ### Pre-Tuning Physical Measurements
 
-Take these measurements before any software calibration:
-
-| Measurement | How | Current Value | Status |
+| Measurement | How | Value | Status |
 |---|---|---|---|
-| **Robot mass** (with bumpers + battery) | Scale | **63.5 kg (140 lbs)** | ✅ Updated (verify on scale) |
-| **Wheel radius** (effective) | Software — [Step 3](#step-3-wheel-radius-characterization) | 1.8" (nominal) | ⚠️ Needs characterization on carpet |
-| **Max speed** | Software — [Step 5](#step-5-max-speed-measurement) | 6.02 m/s (theoretical) | ⚠️ Needs measurement |
-| **Slip current** | Software — [Step 6](#step-6-slip-current-measurement) | 120A (default) | ⚠️ Needs wall test |
-| **Robot MOI** | PathPlanner GUI estimator | 6.883 kg⋅m² | ⚠️ Verify with auto paths |
+| **Robot mass** (bumpers + battery) | Scale | 63.5 kg (140 lbs) | ✅ Verify on scale |
+| **Wheel radius** (effective) | [Step 3](#step-3-wheel-radius-characterization) | 1.8" (nominal) | ⚠️ Characterize on carpet |
+| **Max speed** | [Step 5](#step-5-max-speed-measurement) | 6.02 m/s (theoretical) | ⚠️ Measure |
+| **Slip current** | [Step 6](#step-6-slip-current-measurement) | 120A (default) | ⚠️ Wall test |
+| **Robot MOI** | PathPlanner GUI | 6.883 kg⋅m² | ⚠️ Verify with auto paths |
 
-> **Keep three locations in sync** after every measurement: `Drive.java`, `settings.json` (PathPlanner), and `Constants.DriveConstants`.
+> **Keep in sync:** `Drive.java`, `settings.json` (PathPlanner), and `Constants.DriveConstants`.
 
 ### Step 0: Pre-flight Checks
 
-Before any tuning:
-
-- [ ] **Phoenix Tuner X connected** — all 8 TalonFX + 4 CANcoders show green
-- [ ] **Module offsets correct** — all wheels point straight forward with offset ≈ 0°
-- [ ] **Motor inversions correct** — forward spin = positive velocity, CCW steer = positive position
-- [ ] **CAN bus healthy** — 0% error rate, all on `CANFD` bus
-- [ ] **Firmware updated** — latest compatible with Phoenix 6 v26
-- [ ] **Robot on blocks** for Steps 0–2 and 4. Wheels on ground for Steps 3, 5, 6.
+- [ ] Phoenix Tuner X connected — all 8 TalonFX + 4 CANcoders green
+- [ ] Module offsets correct — wheels point straight forward
+- [ ] Motor inversions correct — forward = positive velocity, CCW steer = positive position
+- [ ] CAN bus healthy — 0% error rate, CANFD bus
+- [ ] Firmware updated (Phoenix 6 v26)
+- [ ] Robot on blocks for Steps 0–2, 4. Ground for Steps 3, 5, 6.
 
 ### Step 1: Steer PID
 
-Current gains: `kP=100, kI=0, kD=0.5, kS=0.1, kV=2.48, kA=0`
+Gains: `kP=100, kI=0, kD=0.5, kS=0.1, kV=2.48, kA=0` · MotionMagicExpo (runs in firmware)
 
-The steer motors use MotionMagicExpo (exponential profile) — this runs in firmware automatically.
+**Tune on blocks:**
 
-**How to tune (robot on blocks):**
+1. **kS:** Command slow steer rotation. Increase until module barely moves. (0.1)
+2. **kV:** Command moderate speed. `kV = (voltage - kS) / velocity`. Match slopes during cruise. (2.48)
+3. **kP:** Command 0°→90°. Start ~50, increase until settling <50ms. (100 — consensus across reference teams)
+4. **kD:** If overshoot, add 0.1–1.0. (0.5)
+5. **kI:** Leave at 0.
 
-1. **kS:** Command a very slow steer rotation. Increase kS from 0 until the module barely starts moving. That voltage is kS. (Currently 0.1)
-2. **kV:** Command a moderate speed. `kV = (voltage - kS) / velocity`. Overlay position vs reference — slopes should match during cruise. (Currently 2.48)
-3. **kP:** Command 0° → 90°. Start at ~50, increase until quick settling with no oscillation. Target: **<50ms**. (Currently 100 — standard across reference teams)
-4. **kD:** If there's overshoot, add kD in small steps (0.1–1.0). (Currently 0.5)
-5. **kI:** Leave at **0**. Steer doesn't need integral.
+**Verify:** Plot `SwerveStates/Measured` vs `SwerveStates/SetpointsOptimized` — angles should track with no oscillation.
 
-**Verify in AdvantageScope:** Plot `/RealOutputs/SwerveStates/Measured` and `/RealOutputs/SwerveStates/SetpointsOptimized` — measured angles should track setpoints with no oscillation.
+### Step 2: Drive Feedforward (kS, kV)
 
-### Step 2: Drive Feedforward Characterization (kS, kV)
+Gains: `kP=0.1, kI=0, kD=0, kS=0.26, kV=0.585`
 
-Current gains: `kP=0.1, kI=0, kD=0, kS=0.25955, kV=0.58499`
+> Use the AK characterization routine — don't copy FF from non-AK projects.
 
-> **Use the AK characterization routine** — don't copy FF values from non-AK projects (different gain scales).
-
-**Quick method — "Drive Simple FF Characterization" auto (recommended):**
+**Quick method — "Drive Simple FF Characterization" auto:**
 
 1. Open space, wheels on ground, fully charged battery
-2. Select **"Drive Simple FF Characterization"** from the auto chooser
-3. Enable auto — robot drives forward with a slow ramp
-4. Let it run 5–10 seconds, then disable
-5. Check the Driver Station console for the measured kS and kV
+2. Select "Drive Simple FF Characterization" from auto chooser
+3. Enable — robot drives forward with slow ramp
+4. Run 5–10 seconds, disable
+5. Read kS and kV from Driver Station console
 6. Update `driveGains` in `TunerConstants.java`
-7. Repeat 2–3 times and average for accuracy
+7. Repeat 2–3 times and average
 
-> **Expected range:** kV ≈ 0.4–0.7, kS ≈ 0.1–0.4 for Kraken X60 with 4.667:1 and AK firmware-applied ratio.
+> **Expected:** kV ≈ 0.4–0.7, kS ≈ 0.1–0.4 for Kraken X60 with 4.667:1 ratio.
 
-**Alternative — Full SysId** (also gets kA):
-
-Run the four SysId routines (quasistatic/dynamic, forward/reverse), then analyze with the WPILib SysId tool. AK logs are in WPILOG format in the `logs/` directory (positions in radians, not rotations).
+**Full SysId** (also gets kA): Run four routines (quasistatic/dynamic, forward/reverse), analyze with WPILib SysId tool. AK logs positions in radians.
 
 ### Step 3: Wheel Radius Characterization
 
-Current value: `kWheelRadius = Inches.of(1.8)` (nominal — needs characterization)
+Value: `kWheelRadius = 1.8"` (nominal — needs characterization)
 
-**Procedure:**
-
-1. Place the robot **on carpet** (not hard floor — carpet compresses the wheel differently)
-2. Select **"Drive Wheel Radius Characterization"** from the auto chooser
-3. Enable auto — robot slowly rotates in place
-4. Let it run 2–3 full rotations, then disable
-5. Check the Driver Station console for the measured wheel radius
+1. Place robot **on carpet** (not hard floor)
+2. Select "Drive Wheel Radius Characterization" from auto chooser
+3. Enable — robot slowly rotates in place
+4. Run 2–3 full rotations, disable
+5. Read measured radius from DS console
 6. Update `kWheelRadius` in `TunerConstants.java`
 
-> **Expected:** ~1.70–1.85" for our 3.6" diameter wheels. Re-run when you swap wheels or move to different carpet.
+> **Expected:** ~1.70–1.85". Re-run when swapping wheels or changing carpet.
 
-### Step 4: Drive PID Tuning (kP)
+### Step 4: Drive PID (kP)
 
-After FF is set and wheel radius is accurate:
+After FF and wheel radius are set:
 
-1. Deploy with new FF values
-2. In teleop, do a sudden joystick push (0 → ~2 m/s)
-3. In AdvantageScope, plot measured vs setpoint velocities
-4. Increase kP until rise time is <100ms with no oscillation. Start at 0.05, try 0.1, 0.2, etc.
-5. **kD: Usually 0** for velocity loops — only add if you see ringing
-6. Current kP=0.1 is a good starting point
+1. In teleop, do a sudden joystick push (0 → ~2 m/s)
+2. Plot measured vs setpoint velocities in AdvantageScope
+3. Increase kP until rise time <100ms with no oscillation (try 0.05, 0.1, 0.2…)
+4. kD: usually 0 for velocity loops
+5. Current kP=0.1 is a good starting point
 
-> **If oscillating:** Reduce kP. Steady-state velocity error = FF problem (kV wrong), not PID.
+> Oscillating → reduce kP. Steady-state error → FF problem (kV), not PID.
 
 ### Step 5: Max Speed Measurement
 
-Current value: `kSpeedAt12Volts = 6.02 m/s` (theoretical — needs real measurement)
+Value: `kSpeedAt12Volts = 6.02 m/s` (theoretical — measure it)
 
-This value normalizes joystick input. If it's too high, the robot can never reach full speed. If too low, the joystick saturates early.
+This normalizes joystick input. Too high → robot never reaches full speed. Too low → joystick saturates early.
 
-**Procedure:**
+1. Open space (30+ ft), fully charged battery
+2. Drive full speed forward, hold 3+ seconds until velocity stabilizes
+3. Read peak sustained velocity in AdvantageScope (plateau, not spike)
+4. Update `kSpeedAt12Volts` in `TunerConstants.java` and `maxDriveSpeed` in `settings.json`
 
-1. Open space (30+ feet), fully charged battery
-2. Drive **full speed forward**, hold for 3+ seconds until velocity stabilizes
-3. In AdvantageScope, read the peak sustained velocity (not the spike, the plateau)
-4. Update `kSpeedAt12Volts` in `TunerConstants.java` and `"maxDriveSpeed"` in `settings.json`
-
-> **Expected:** ~5.5–5.9 m/s (vs 6.02 theoretical). The gap is friction, motor efficiency, and battery sag.
+> **Expected:** ~5.5–5.9 m/s (friction, motor efficiency, and battery sag reduce from theoretical).
 
 ### Step 6: Slip Current Measurement
 
-Current value: `kSlipCurrent = 120A` (most reference teams use 80–95A — needs verification)
+Value: `kSlipCurrent = 120A` (reference teams use 80–95A — verify)
 
-Slip current is the stator current where the wheels lose traction and start spinning. It's used for traction control.
+Slip current = stator current where wheels lose traction. Used for traction control.
 
-**Procedure:**
+1. Push robot against a **solid wall**, all wheels on carpet
+2. Plot drive current and velocity for one module in AdvantageScope
+3. Slowly push joystick 0% → 100% (into wall)
+4. Watch velocity: ~0 (gripping) → **sudden jump** (slipping)
+5. Current at that moment = slip current
+6. Repeat 2–3 times, average, update `kSlipCurrent`
 
-1. Push the robot against a **solid, immovable wall**, all wheels on carpet
-2. In AdvantageScope, plot drive current and drive velocity for one module
-3. **Slowly** push the joystick from 0% → 100% forward (into the wall)
-4. Watch velocity — it'll be ~0 (gripping), then **suddenly jump** (slipping)
-5. The current at that moment = your slip current
-6. Repeat 2–3 times, average, and update `kSlipCurrent` in `TunerConstants.java`
+> **Expected:** 60–100A for Kraken X60 on carpet. Most reference teams use 80–95A.
 
-> **Expected:** 60–100A for Kraken X60 on competition carpet. Most reference teams use 80–95A. Our 120A is likely too high.
-
-> **Note:** If `kSlipCurrent` (120A) is above the stator current limit (80A), the traction control never activates because the motor can't reach slip current. After measuring, make sure `kSlipCurrent` reflects the actual slip point.
+> **Note:** If `kSlipCurrent` (120A) exceeds the stator limit (80A), traction control never activates. Ensure the measured value makes sense relative to your current limit.
 
 ### Step 7: Odometry Frequency
 
-**No action needed.** Our CAN FD bus automatically runs odometry at 250 Hz (set in `Drive.java`). This is the AdvantageKit recommendation.
-
-Only change this if you see loop overruns (reduce to 200 Hz), but that's rare.
+**No action needed.** CAN FD runs odometry at 250 Hz (set in `Drive.java`). Only reduce to 200 Hz if you see loop overruns.
 
 ### Step 8: PathPlanner Configuration
 
-PathPlanner needs accurate physical parameters. These live in **two places that must match:**
+PathPlanner needs accurate physical parameters in **two places that must match:**
 
-| Parameter | `Drive.java` (runtime) | `settings.json` (PathPlanner GUI) | Status |
+| Parameter | `Drive.java` | `settings.json` | Status |
 |---|---|---|---|
 | Robot mass | 63.503 kg | 63.503 | ✅ |
-| Robot MOI | 6.883 kg⋅m² | 6.883 | ⚠️ Verify with auto paths |
+| Robot MOI | 6.883 kg⋅m² | 6.883 | ⚠️ Verify with autos |
 | Wheel COF | 1.2 | 1.2 | ✅ |
-| Wheel radius | 0.04572 m | 0.04572 | ⚠️ Re-characterize (Step 3) |
-| Max speed | 6.02 m/s | 6.02 | ⚠️ Re-measure (Step 5) |
+| Wheel radius | 0.04572 m | 0.04572 | ⚠️ Step 3 |
+| Max speed | 6.02 m/s | 6.02 | ⚠️ Step 5 |
 | Drive current limit | 80A | 80A | ✅ |
 
-**PathPlanner PID** (`Constants.PathPlannerConstants`): Translation kP=5.0, Rotation kP=5.0
+**PID** (`Constants.PathPlannerConstants`): Translation kP=5.0, Rotation kP=5.0. Reference: LASA (3.0/4.0), Hammerheads (3.0/2.0), BroncBotz (5.0/5.0), 6328 Choreo (8.0/4.0). Our 5.0/5.0 is aggressive — reduce to 3.0 if paths overshoot.
 
-Reference team values: LASA PR (3.0/4.0), Hammerheads (3.0/2.0 with I=0.05), BroncBotz (5.0/5.0), 6328 uses Choreo at 8.0/4.0. Our 5.0/5.0 is on the aggressive end — reduce to 3.0 if paths overshoot.
+1. **Tune drivetrain first** — PP PID sits on top of drive gains
+2. **Translation kP:** Straight path. Drifts → increase. Oscillates → decrease.
+3. **Rotation kP:** Path with heading changes. Sluggish → increase. Oscillates → decrease.
 
-1. **Tune drivetrain first** — PathPlanner PID sits on top of drive gains
-2. **Translation kP:** Run a straight path. If the robot drifts, increase. If it oscillates, decrease.
-3. **Rotation kP:** Run a path with heading changes. Slow to rotate = increase. Oscillates = decrease.
+**MOI:** Auto paths overshoot rotations → MOI too low. Sluggish → too high.
 
-**MOI estimation:** If auto paths overshoot rotations → MOI too low. Sluggish to rotate → MOI too high. Current 6.883 is reasonable for a robot with a heavy center turret.
+### Advanced: Swerve Setpoint Generator
 
-### Advanced: Profiled Turning & Swerve Setpoint Generator
-
-> **You don't need these right now.** The steer motors already use MotionMagicExpo for smooth azimuth transitions. PathPlanner also has 254's swerve setpoint generator algorithm available, but it's not enabled — consider it only after all basic calibration is complete.
+> Not needed now. Steer already uses MotionMagicExpo. 254's setpoint generator is available in PathPlanner but not enabled — consider after basic calibration.
 
 ---
 
 ## 2. Turret
 
-**Motor:** SparkMax + NEO (27:1) · **Control:** YAMS Pivot (position + MAXMotion) · **FF:** SimpleMotorFeedforward(kS, kV, kA)
+**Motor:** SparkMax + NEO (27:1) · **Control:** YAMS Pivot + MAXMotion · **FF:** kS, kV, kA
 
-Current gains: `kP=3.0, kD=0, kS=0, kV=1.0, kA=0.05`
-Motion profile: `1000 °/s, 7200 °/s²`
+Gains: `kP=3.0, kD=0, kS=0, kV=1.0, kA=0.05` · Profile: `1000°/s, 7200°/s²`
 
-> ⚠️ Motion profile was reduced from 1440°/s — NEO through 27:1 maxes out at ~1261°/s.
+> ⚠️ Profile reduced from 1440°/s — NEO through 27:1 maxes out at ~1261°/s.
 
-**How to tune** (follows the [standard tuning order](#tuning-order-within-any-mechanism)):
+1. **kS:** Horizontal — no gravity. Find minimum voltage to start moving. (0)
+2. **kV:** Match Position vs Reference slopes during cruise. (1.0)
+3. **kA:** Match curved accel portions. Start 0.001. (0.05)
+4. **kP:** Command 0°→90°, settle <200ms. (3.0)
+5. **kD:** Add if overshoot. Start 0.05.
+6. **Profile:** 1000°/s ≈ 0.36s for 360°. Can increase to ~1200°/s.
 
-1. **kS:** Horizontal turret, so no gravity term needed. Find the minimum voltage to start the turret moving. Currently 0.
-2. **kV:** Command a move, watch Position vs Reference in AdvantageScope. Match the slopes during cruise. Currently 1.0.
-3. **kA:** Match the curved acceleration portions. Start at 0.001. Currently 0.05.
-4. **kP:** Command 0° → 90°, increase until settling < 200ms. Currently 3.0.
-5. **kD:** Add if overshoot. Start at 0.05.
-6. **Motion profile:** 1000°/s = ~0.36s for a full 360°. Increase toward 1200°/s if too slow (stay under 1261°/s).
-
-**AdvantageScope keys:** `Shooter/Turret/angle`, `Shooter/Turret/setpoint`
+**AdvantageScope:** `Shooter/Turret/angle`, `Shooter/Turret/setpoint`
 
 ---
 
 ## 3. Hood
 
-**Motor:** TalonFX (Kraken X44, 30:1) · **Control:** YAMS Pivot (position + MotionMagic) · **FF:** SimpleMotorFeedforward(kS, kV, kA)
+**Motor:** TalonFX Kraken X44 (30:1) · **Control:** YAMS Pivot + MotionMagic · **FF:** kS, kV, kA
 
-Current gains: `kP=300, kD=0, kS=0.45, kV=3.0, kA=0`
-Motion profile: `270 °/s, 270 °/s²`
+Gains: `kP=300, kD=0, kS=0.45, kV=3.0, kA=0` · Profile: `270°/s, 270°/s²`
 
-**How to tune:**
+1. **kS:** Already 0.45. Verify with slow sweep — smooth from standstill.
+2. **kV:** Match Position vs Reference in Tuner X. kV is actively used by MotionMagic. (3.0)
+3. **kP:** High (300) for precise LUT angles. Command 0°→15°→0°, settle <100ms.
+4. **kD:** Only if audible chatter. Conservative — low inertia amplifies noise.
+5. **Profile:** 270°/s is moderate. Increase if sluggish during rapid LUT changes.
 
-1. **kS:** Already 0.45. Verify with a slow sweep — should move smoothly from standstill.
-2. **kV:** Overlay Position vs Reference in Phoenix Tuner X. Match slopes during cruise. kV is actively used by MotionMagic.
-3. **kP:** High kP (300) because it's small and needs precise LUT angles. Command 0° → 15° → 0°, target settling < 100ms. Increase until slight overshoot, then back off.
-4. **kD:** Only add if you hear audible oscillation/chatter. Be conservative — low-inertia mechanisms amplify noise.
-5. **Motion profile:** 270°/s is moderate. Increase if sluggish during rapid LUT changes, decrease if overshooting.
-
-**AdvantageScope keys:** `Hood/angle`, `Hood/setpoint`
+**AdvantageScope:** `Hood/angle`, `Hood/setpoint`
 
 ---
 
 ## 4. Flywheel
 
-**Motors:** 2× TalonFX (leader + inverted follower) · **Control:** YAMS FlyWheel (velocity) · **FF:** SimpleMotorFeedforward(kS, kV, kA)
+**Motors:** 2× TalonFX (leader + inverted follower) · **Control:** YAMS FlyWheel (velocity) · **FF:** kS, kV, kA
 
-Current gains: `kP=0.2, kD=0, kS=0.35, kV=0.12, kA=0`
+Gains: `kP=0.2, kD=0, kS=0.35, kV=0.12, kA=0`
 
-**How to tune:**
+1. **kS:** Ramp voltage until flywheel barely spins. Record it. *(Skip in sim.)*
+2. **kV:** Set target velocity (kP=0), adjust until steady-state matches. Test at 1000, 2000, 3000, 4000 RPM.
+3. **kP:** Step velocity command, increase until setpoint reached in ~0.5s. (0.2)
+4. **kA:** Only for faster spin-up.
+5. **Tolerance:** 30 RPM. Tighten if shots inconsistent (costs spin-up time).
 
-1. **kS:** Slowly ramp voltage until the flywheel barely starts spinning. Record that voltage. *(Skip in sim — sim has no static friction.)*
-2. **kV:** Set a target velocity (kP=0), adjust kV until steady-state velocity matches. Test at several speeds (1000, 2000, 3000, 4000 RPM).
-3. **kP:** Command a step velocity, increase until the flywheel reaches setpoint within ~0.5s without oscillation. Currently 0.2.
-4. **kA (optional):** Only needed if you want faster spin-up.
-5. **Tolerance:** `kVelocityTolerance = 30 RPM`. Tighten if shots are inconsistent (costs spin-up time).
-
-**AdvantageScope keys:** `Flywheel/velocity`, `Flywheel/setpoint`
-**Dashboard tunable:** `Shooter/FlywheelRPM`
+**AdvantageScope:** `Flywheel/velocity`, `Flywheel/setpoint` · **Tunable:** `Shooter/FlywheelRPM`
 
 ---
 
 ## 5. Kicker
 
-**Motor:** SparkFlex + NEO Vortex · **Control:** YAMS FlyWheel (FF-only, PID = 0) · **FF:** SimpleMotorFeedforward(kS, kV, kA)
+**Motor:** SparkFlex + NEO Vortex · **Control:** YAMS FlyWheel (FF-only, PID=0) · **FF:** kS, kV
 
-Current gains: `kP=0.0, kS=0.25, kV=0.12`
+Gains: `kP=0, kS=0.25, kV=0.12`
 
-The kicker just needs to spin at a consistent speed to feed balls — it doesn't need tight tracking. Tune kS/kV like the flywheel. Only add kP if the kicker slows noticeably when a ball enters.
-
-**Dashboard tunable:** `Kicker/KickerRPM`
+Just needs consistent speed to feed balls. Tune kS/kV like flywheel. Only add kP if kicker slows on ball contact. **Tunable:** `Kicker/KickerRPM`
 
 ---
 
 ## 6. Spindexer
 
-**Motor:** SparkMax + NEO (5:1) · **Control:** YAMS FlyWheel (velocity) · **FF:** SimpleMotorFeedforward(kS, kV, kA)
+**Motor:** SparkMax + NEO (5:1) · **Control:** YAMS FlyWheel (velocity) · **FF:** kS, kV
 
-Current gains: `kP=0.02, kS=0.25, kV=0.6`
+Gains: `kP=0.02, kS=0.25, kV=0.6`
 
-Tune kS/kV like flywheel/kicker. kP=0.02 is very low — increase if balls feed inconsistently (spindexer slows too much under load). Uses COAST idle mode (freewheels when not commanded — intentional).
-
-**Dashboard tunable:** `Spindexer/IndexerRPM`
+Tune kS/kV like flywheel. kP=0.02 is very low — increase if balls feed inconsistently. COAST idle mode (freewheels when not commanded — intentional). **Tunable:** `Spindexer/IndexerRPM`
 
 ---
 
 ## 7. Intake Rollers
 
-**Motor:** TalonFX (Kraken X60, 2:1) · **Control:** YAMS FlyWheel (velocity) · **FF:** SimpleMotorFeedforward(kS, kV, kA)
+**Motor:** TalonFX Kraken X60 (2:1) · **Control:** YAMS FlyWheel (velocity) · **FF:** kS, kV
 
-Current gains: `kP=0.5, kS=0.39, kV=0.24`
+Gains: `kP=0.5, kS=0.39, kV=0.24`
 
-Tune kS/kV like other velocity mechanisms. kP=0.5 is relatively aggressive — verify by running the intake and feeding balls. If rollers slow down significantly on ball contact, increase kP. If they buzz/oscillate, decrease.
+Tune kS/kV like other velocity mechanisms. kP=0.5 is aggressive — verify by feeding balls. Slows too much on contact → increase kP. Buzzes/oscillates → decrease.
 
 ---
 
 ## 8. Intake Pivot
 
-**Motors:** 2× SparkFlex + NEO Vortex (30:1) · **Control:** YAMS Arm (position + ExponentialProfile) · **FF:** ArmFeedforward(kS, kG, kV) — gravity-compensated
+**Motors:** 2× SparkFlex + NEO Vortex (30:1) · **Control:** YAMS Arm + ExponentialProfile · **FF:** ArmFeedforward(kS, kG, kV) — gravity-compensated
 
-Current gains: `kP=0.0, kG=0.21, kS=0.11, kV=0, kA=0`
-Motion profile: `90 °/s, 90 °/s²`
+Gains: `kP=0, kG=0.21, kS=0.11, kV=0, kA=0` · Profile: `90°/s, 90°/s²`
 
-> ⚠️ **PID is all zeros and feedforward is commented out.** First priority on Monday: uncomment `.withFeedforward(armFeedforward())`, tune kG, then add PID.
+> ⚠️ **PID is all zeros and FF is commented out.** Priority: uncomment `.withFeedforward(armFeedforward())`, tune kG, then add PID.
 
-**How to tune:**
+1. **kG (first!):** Hold arm horizontal. Increase until it holds. YAMS applies `kG × cos(angle)` automatically. (0.21)
+2. **kS/kV:** Slow constant-velocity sweep. `kV = (voltage - kG×cos(θ) - kS) / velocity`. Currently kV=0.
+3. **kP:** Command stow → deploy. Settle <0.3s. Start at 1.0.
+4. **kD:** Significant inertia — expect to need some. Start 0.05.
+5. **Profile:** 90°/s is conservative. Increase after PID is stable.
 
-1. **kG (gravity compensation — do this first!):** Hold the arm horizontal (0° from horizontal). Increase kG until it holds position. YAMS applies `kG × cos(angle)` automatically. Currently 0.21.
-2. **kS/kV:** Run a slow constant-velocity sweep. `kV = (voltage - kG×cos(θ) - kS) / velocity`. Currently kV=0 — should be nonzero after tuning.
-3. **kP:** Command stow → deploy. Increase until settling < 0.3s. Start at 1.0.
-4. **kD:** The arm has significant inertia — expect to need some kD (start at 0.05).
-5. **Motion profile:** 90°/s is conservative. Increase after PID is stable for faster deploy/stow.
-
-**AdvantageScope keys:** `IntakePivot/angle`, `IntakePivot/setpoint`
+**AdvantageScope:** `IntakePivot/angle`, `IntakePivot/setpoint`
 
 ---
 
@@ -805,30 +733,27 @@ See [Step 8: PathPlanner Configuration](#step-8-pathplanner-configuration) in th
 
 ## Pigeon IMU Calibration
 
-The Pigeon 2 IMU is the robot's gyroscope — it tells the code which direction the robot is facing. If it's not calibrated correctly, **everything that depends on field-relative driving, autonomous paths, and vision pose estimation will be wrong.**
+The Pigeon 2 IMU tells the code which direction the robot is facing. If misconfigured, **field-relative driving, autonomous, and vision pose estimation will all be wrong.**
 
-### Why MountPose Matters
+### MountPose
 
-The Pigeon 2 has a default orientation: it expects to be mounted flat on the robot with its arrow pointing toward the front. If it's mounted in any other orientation (rotated, upside-down, sideways), you need to tell it how it's mounted using `MountPose`.
+The Pigeon expects flat mounting with its arrow forward. If mounted differently, configure `MountPose`:
 
-From the 2026 research:
-- **LASA PR2026:** `MountPose(roll=179.96°, pitch=1.14°, yaw=-90.45°)` — nearly upside-down, rotated 90°
-- **WHS 3467:** `MountPose(roll=180°)` — upside-down, arrow forward
-- **Hammerheads 5000:** `MountPose(yaw=-90°)` — flat, arrow pointing left
+Reference:
+- **LASA PR:** roll=179.96°, pitch=1.14°, yaw=-90.45° (upside-down, rotated 90°)
+- **WHS 3467:** roll=180° (upside-down, arrow forward)
+- **Hammerheads:** yaw=-90° (flat, arrow pointing left)
 
-### How to Configure MountPose
+**To configure:**
 
-1. **Physically inspect the Pigeon 2** on the robot:
-   - Which way does the arrow point? (Front = 0° yaw, Left = -90° yaw, etc.)
-   - Is it mounted flat? (Flat = 0° roll/pitch; upside-down = 180° roll)
-2. **Open Phoenix Tuner X** → Select the Pigeon 2 device
-3. **Go to the "Configs" tab** → Under `MountPose`, enter:
-   - **MountPoseYaw:** Degrees from forward. Arrow pointing left = -90°. Arrow pointing right = 90°.
-   - **MountPoseRoll:** 0° if flat/right-side-up. 180° if upside-down.
-   - **MountPosePitch:** Usually 0° unless the Pigeon is tilted forward/back.
-4. **Apply and save to device**
+1. Inspect the Pigeon: which way does the arrow point? Is it flat or flipped?
+2. In Phoenix Tuner X → Pigeon 2 → Configs → MountPose:
+   - **Yaw:** 0° = arrow forward, -90° = arrow left, 90° = arrow right
+   - **Roll:** 0° = right-side-up, 180° = upside-down
+   - **Pitch:** Usually 0°
+3. Apply and save
 
-These values are also configurable in code via `Pigeon2Configuration`:
+Or configure in code:
 ```java
 var pigeonConfig = new Pigeon2Configuration();
 pigeonConfig.MountPose.MountPoseYaw = -90;  // arrow points left
@@ -836,130 +761,104 @@ pigeonConfig.MountPose.MountPoseRoll = 180; // upside-down
 pigeonConfig.MountPose.MountPosePitch = 0;
 ```
 
-### Temperature Calibration
+### Startup & Verification
 
-The Pigeon 2 drifts slightly as temperature changes. It has an automatic temperature compensation feature, but it works best when:
+- Let the robot sit 2–3 minutes after power-on (auto-calibrates on startup)
+- Don't bump/move during first few seconds
+- Zero yaw before match (driver reset button calls `pigeon.setYaw(0)`)
+- **Verify:** Face a known direction, rotate 90° left → should read +90°, rotate right → -90°
 
-1. **Power on the robot and let it sit for 2-3 minutes** before driving — the Pigeon auto-calibrates on startup.
-2. **Avoid bumping or moving the robot during startup** — the gyro calibrates during the first few seconds.
-3. **Zero the yaw** before the match starts. AdvantageKit's swerve template calls `pigeon.setYaw(0)` during gyro reset — this happens when the driver presses the reset button.
-
-### Verification
-
-After configuring MountPose:
-1. Place the robot facing a known direction (e.g., away from your alliance wall)
-2. Open AdvantageScope → look at the `/Drive/Gyro/YawPosition` value
-3. Turn the robot 90° left — it should read approximately +90°
-4. Turn it 90° right from starting position — it should read approximately -90°
-5. If the signs are flipped or the values are wrong, your MountPose is incorrect
-
-> **⚠️ If the Pigeon is mounted flat with the arrow pointing forward, you don't need to set MountPose.** Check your physical mounting before adding configuration.
+> ⚠️ If mounted flat with arrow forward, MountPose is not needed.
 
 ---
 
 ## PhotonVision Camera Tuning
 
-PhotonVision provides pose estimation using AprilTags. Camera settings affect how well it detects tags, especially under varying lighting (bright arena vs. dark practice space).
+Camera settings affect AprilTag detection range and reliability under varying lighting.
 
-### Resolution vs. FPS Tradeoff
+### Resolution vs. FPS
 
-Higher resolution detects tags at longer range but processes fewer frames per second:
+| Resolution | Range | FPS | Use |
+|:----------:|:-----:|:---:|-----|
+| 640×480 | ~3m | 60+ | Close range |
+| **1280×960** | **~5m** | **20–30** | **Recommended** |
+| 1600×1200 | ~7m | 10–15 | Max range |
+| 1800×1200 | ~7m+ | 8–12 | 6328 mono cameras |
 
-| Resolution | Detection Range | Typical FPS | Best For |
-|:----------:|:--------------:|:-----------:|----------|
-| 640×480 | Short (~3m) | 60+ fps | Fast tracking, close range |
-| 1280×960 | Medium (~5m) | 20-30 fps | Good balance (recommended) |
-| 1600×1200 | Long (~7m) | 10-15 fps | Maximum range but slow |
-| 1800×1200 | Long (~7m+) | 8-12 fps | 6328 uses this for mono cameras |
+### Key Settings (`http://photonvision.local:5800`)
 
-**Recommendation:** Start with **1280×960** for a good balance. Only increase if you need longer detection range and can tolerate slower updates.
+| Setting | Recommendation | Notes |
+|---------|---------------|-------|
+| **Exposure** | 3000–5000µs | Lower = sharper but darker. Reduce if tags blur at speed. |
+| **Gain** | 5 (color), 10–15 (mono) | Higher = brighter but noisier |
+| **LEDs** | OFF | Glare washes out tags |
+| **Target model** | AprilTag 36h11 | FRC standard |
 
-### 6328's Camera Configuration (Reference)
+**6328 reference:** Color 1280×960 / exposure=4500µs / gain=5. Mono 1800×1200 / exposure=1800µs / gain=15.
 
-From their 2026 code:
-- **Color cameras:** 1280×960, 90° FOV, exposure=4500µs, gain=5 → fast detection, good color
-- **Mono cameras:** 1800×1200, 75° FOV, exposure=1800µs, gain=15 → max range, high gain to compensate for monochrome
+### Multi-Camera
 
-### Key Settings (PhotonVision Web Interface)
-
-Access at `http://photonvision.local:5800` when connected to the robot:
-
-1. **Exposure:** Lower = sharper images (less motion blur), but darker. Start around **3000-5000µs** for arena lighting. Reduce if tags are blurry during fast movement.
-2. **Gain:** Amplifies the sensor signal. Higher gain = brighter image but more noise. Start at **5** for color cameras, **10-15** for monochrome.
-3. **Brightness/Contrast:** Leave at defaults unless the arena is unusually bright or dark.
-4. **LED Mode:** Keep LEDs **OFF** for AprilTag detection — they can cause glare and wash out the tags.
-5. **Target model:** Make sure it's set to **AprilTag 36h11** (the FRC standard).
-
-### Multi-Camera Considerations
-
-If running multiple cameras:
-- Each camera adds CPU load to the coprocessor. Monitor CPU usage in the PhotonVision web interface.
-- Stagger camera resolutions if needed — use high-res for the camera facing the most tags, lower-res for others.
-- Our code already handles multi-camera fusion in the vision subsystem.
+Each camera adds CPU load — monitor in web interface. Stagger resolutions if needed. Our code already handles multi-camera fusion.
 
 ### Verification
 
-1. Place an AprilTag at a known distance (e.g., 3 meters)
-2. Open PhotonVision's web interface → verify the tag is detected
-3. Check the estimated pose in AdvantageScope — it should match the known position within ~5cm at 3m
-4. Walk the robot further away — note the distance where detection drops off
-5. Try rapid rotation — if tags blur out, reduce exposure
+1. Place AprilTag at known distance (3m) → verify detection in web interface
+2. Check estimated pose in AdvantageScope (should be within ~5cm at 3m)
+3. Test rapid rotation — if tags blur, reduce exposure
 
-> **📋 Arena lighting varies wildly.** Bring a laptop to your competition venue and be prepared to adjust exposure/gain during practice matches.
+> **📋 Arena lighting varies wildly.** Bring a laptop and adjust exposure/gain during practice matches.
 
 ---
 
 ## Elastic Dashboard for Matches
 
-[Elastic](https://github.com/Gold872/elastic-dashboard) is a modern FRC dashboard that replaces Shuffleboard. It's faster, prettier, and works well with NetworkTables. Use it for **in-match driver awareness** — not for tuning (use AdvantageScope for that).
+[Elastic](https://github.com/Gold872/elastic-dashboard) replaces Shuffleboard — faster and works well with NT. Use for **in-match awareness**, not tuning (use AdvantageScope for that).
 
 ### Recommended Match Layout
 
-Build a single, uncluttered tab with only what the driver and operator need to see during a match:
+One uncluttered tab with only what driver/operator need during a match:
 
-#### Top Row — Critical Status
-| Widget | NetworkTables Key | Why |
-|--------|-------------------|-----|
-| **Match Timer** | `MatchTime` | Countdown — the most important number |
-| **Alliance Color** | FMS data (auto-detected) | Red/blue indicator so autonomous knows which side |
-| **Robot State** | FMS data (auto-detected) | Disabled / Auto / Teleop / Test |
-| **Battery Voltage** | `Battery/Voltage` | Flash red below 11.5V — brownout is imminent |
-| **Hub Shift Active** | `HubShift/ShiftedActive` | Green when our alliance can score in the hub |
-| **Shift Timer** | `HubShift/ShiftedRemainingTime` | Seconds until shift changes |
+#### Top — Critical Status
+| Widget | NT Key | Notes |
+|--------|--------|-------|
+| Match Timer | `MatchTime` | Most important number |
+| Alliance Color | FMS (auto) | Red/blue for autonomous |
+| Battery Voltage | `Battery/Voltage` | Flash red < 11.5V |
+| Hub Shift Active | `HubShift/ShiftedActive` | Boolean indicator |
+| Shift Timer | `HubShift/ShiftedRemainingTime` | Seconds remaining |
 
-#### Middle Row — Subsystem Status
-| Widget | NetworkTables Key | Why |
-|--------|-------------------|-----|
-| **Flywheel Spun Up** | `Flywheel/IsSpunUp` (boolean) | Green = ready to fire. Wire as boolean indicator. |
-| **Flywheel RPM** | `Flywheel/FX/VelocityRPM` | Numeric readout for the operator |
-| **Turret Angle** | (YAMS auto-publishes) | Confirms turret is tracking the target |
-| **Hood Angle** | `Hood/FX/PositionDegrees` | Confirms correct shot angle |
-| **Shoot Mode** | `ShooterTelemetry/shootMode` | FULL / STATIC_DISTANCE / FULL_STATIC |
+#### Middle — Subsystem Status
+| Widget | NT Key | Notes |
+|--------|--------|-------|
+| Flywheel Spun Up | `Flywheel/IsSpunUp` | Boolean — green = ready |
+| Flywheel RPM | `Flywheel/FX/VelocityRPM` | Numeric |
+| Turret Angle | YAMS auto-publishes | Tracking confirmation |
+| Hood Angle | `Hood/FX/PositionDegrees` | Shot angle |
+| Shoot Mode | `ShooterTelemetry/shootMode` | FULL / STATIC_DISTANCE |
 
-#### Bottom Row — Drive Info
-| Widget | NetworkTables Key | Why |
-|--------|-------------------|-----|
-| **Field View** (2D) | `Drive/Pose` (logged by AdvantageKit) | Mini field map showing robot position — helps verify auto worked |
-| **Vision Target** | `Vision/Summary/HasTarget` (boolean) | Green/red indicator for whether cameras see AprilTags |
-| **Vision Tag Count** | `Vision/Summary/TagCount` | Number of tags seen this cycle |
-| **Hub Distance** | `ShooterTelemetry/hubDistanceMeters` | Distance to hub — only updates when aiming |
+#### Bottom — Drive Info
+| Widget | NT Key | Notes |
+|--------|--------|-------|
+| Field View (2D) | `Drive/Pose` | Verify auto worked |
+| Vision Target | `Vision/Summary/HasTarget` | Boolean |
+| Vision Tag Count | `Vision/Summary/TagCount` | Tags seen |
+| Hub Distance | `ShooterTelemetry/hubDistanceMeters` | When aiming |
 
 ### Design Principles
 
-1. **Less is more.** Don't put anything on the dashboard that the driver won't look at during a match. If they need to look at the robot to know something, don't duplicate it on screen.
-2. **Use color.** Green = good, Red = bad, Yellow = warning. Boolean indicators are better than numbers for at-a-glance status.
-3. **Big text.** The driver is 10+ feet away and stressed. Tiny numbers are useless.
-4. **Test it.** Set up the dashboard and have the driver stand at their normal distance. If they can't read it, make it bigger or remove it.
+1. **Less is more.** Only show what the driver will actually look at during a match.
+2. **Use color.** Green = good, Red = bad. Booleans > numbers for at-a-glance.
+3. **Big text.** Driver is 10+ feet away and stressed.
+4. **Test it.** Have the driver stand at normal distance — if they can't read it, fix it.
 
 ### Setup
 
-1. **Download Elastic** from the [GitHub releases page](https://github.com/Gold872/elastic-dashboard/releases)
-2. **Connect** to the robot (it auto-discovers NetworkTables)
-3. **Drag widgets** from the sidebar onto the canvas — right-click to configure source paths
-4. **Save the layout** as a `.json` file so it persists between sessions
-5. **Lock the layout** before competition so no one accidentally moves widgets
+1. Download from [GitHub releases](https://github.com/Gold872/elastic-dashboard/releases)
+2. Connect to robot (auto-discovers NT)
+3. Drag widgets, right-click to configure paths
+4. Save layout as `.json`, lock before competition
 
-> **💡 Pro tip:** Create two tabs: (1) **Match** — the minimal layout above, and (2) **Debug** — a more detailed view with raw mechanism states, motor temperatures, and CAN bus utilization. Only show the Match tab during competition.
+> 💡 Create two tabs: **Match** (minimal) and **Debug** (detailed — temps, CAN utilization). Only show Match during competition.
 
 ---
 

@@ -122,6 +122,68 @@ A motion profile ramps the mechanism smoothly to target instead of slamming to f
 | **Trapezoidal** | Constant accel → cruise → constant decel. Simple. | Turret, Hood |
 | **Exponential** | Accel follows motor voltage-speed curve (smoother). | Drive steer, Intake pivot |
 
+#### Understanding Exponential Profile Gains
+
+Exponential profiles model how a **real DC motor** accelerates — fast at low speed, then tapering off as back-EMF builds. This produces smoother, faster moves than trapezoidal profiles, especially for gravity-loaded mechanisms (arms, pivots) and continuous-rotation mechanisms (swerve steer).
+
+**Trapezoidal vs Exponential — what's different:**
+
+| | Trapezoidal | Exponential |
+|---|---|---|
+| **Parameters** | `maxVelocity`, `maxAcceleration` | `maxVoltage`, motor model constants `A` and `B` |
+| **Acceleration shape** | Constant (flat line) | Varies with speed (exponential curve) |
+| **Result** | Trapezoid-shaped velocity | S-curve-shaped velocity |
+| **Best for** | Simple point-to-point moves | Arms, pivots, steering — anything where motor physics matter |
+
+**The A and B constants** come from the DC motor state-space model: $\dot{v} = Av + Bu$, where $v$ is velocity and $u$ is voltage. WPILib's `DCMotor` class provides these based on motor specs and gearing. You don't need to calculate them manually — YAMS has helper methods.
+
+**Three ways to configure exponential profiles in YAMS:**
+
+| Method | What you provide | When to use |
+|--------|-----------------|-------------|
+| `withExponentialProfile(maxVoltage, DCMotor, momentOfInertia)` | Motor type + MOI | **Rotational** mechanisms (arms, pivots). Most common. |
+| `withExponentialProfile(maxVoltage, DCMotor, mass, radius)` | Motor type + mass + pulley radius | **Linear** mechanisms (elevators). |
+| `withExponentialProfile(maxVoltage, maxVelocity, maxAccelAtStall)` | State-space constraints directly | When you've already measured or calculated A & B. |
+
+**Example (intake pivot):**
+```java
+// From motor physics — YAMS derives A and B automatically
+.withExponentialProfile(Volts.of(12), DCMotor.getNeoVortex(2), kMomentOfInertia)
+
+// Or from measured/calculated state-space values
+.withExponentialProfile(Volts.of(12), kMaxAngularVelocity, kMaxAccelAtStall)
+```
+
+You can also use an explicit `ExponentialProfilePIDController` for full control:
+```java
+.withClosedLoopController(new ExponentialProfilePIDController(kP, kI, kD,
+    new ExponentialProfile.Constraints(maxVoltage, maxVelocity, maxAccelAtStall)))
+```
+
+**How YAMS runs exponential profiles on different motor controllers:**
+
+| Motor Controller | Where profile runs | How it works |
+|-----------------|-------------------|-------------|
+| **TalonFX** (Kraken, Falcon) | **Hardware** (firmware) | YAMS converts A/B → `MotionMagicExpo_kV` and `MotionMagicExpo_kA` and sends a `MotionMagicExpoVoltage` request. All computation runs on the motor controller at ~1 kHz. |
+| **SparkMax / SparkFlex** | **RIO** (software) | YAMS runs the `ExponentialProfile` in a dedicated `Notifier` thread on the roboRIO. Each tick it calculates the next profile state, runs PID + FF, and sends a voltage command. Prints `"====== Spark(X) Using RIO Closed Loop Controller ======"` at startup. |
+
+> **Key insight:** YAMS supports exponential profiles regardless of motor controller. TalonFX gets hardware acceleration; Spark gets software-equivalent behavior. The API is identical — only the underlying execution differs.
+
+**TalonFX hardware conversion formulas:**
+- `MotionMagicExpo_kV = -A / B` (converts state-space constants to CTRE's velocity feedforward)
+- `MotionMagicExpo_kA = 1.0 / B` (converts to CTRE's acceleration feedforward)
+
+> These are set automatically by YAMS — you don't need to compute them. They're documented here so you understand what's happening in Phoenix Tuner X if you inspect the config.
+
+**When to use exponential vs trapezoidal:**
+
+| Use exponential when… | Use trapezoidal when… |
+|----------------------|----------------------|
+| Mechanism fights gravity (arms, pivots) | Simple horizontal moves (turret) |
+| You want the smoothest possible motion | Mechanism is well-damped and simple |
+| Motor is near its performance limits | You want the simplest tuning |
+| Mechanism has high inertia | Short travel range (hood: 0–30°) |
+
 #### Recommended Starting Values
 
 These are conservative starting points. All values can be tuned live via YAMS NT entries. Start here, then increase toward the theoretical maxes using the tuning procedure below.
@@ -649,17 +711,116 @@ PathPlanner needs accurate physical parameters in **two places that must match:*
 ## 2. Turret
 
 **Motor:** SparkMax + NEO (27:1) · **Control:** YAMS Pivot + MAXMotion · **FF:** kS, kV, kA
+**File:** `ShooterConstants.TurretConstants` (gains), `TurretSubsystem.java` (YAMS config)
 
 Gains: `kP=3.0, kD=0, kS=0, kV=1.0, kA=0.05` · Profile: `1000°/s, 7200°/s²`
 
 > ⚠️ Profile reduced from 1440°/s — NEO through 27:1 maxes out at ~1261°/s.
 
-1. **kS:** Horizontal — no gravity. Find minimum voltage to start moving. (0)
-2. **kV:** Match Position vs Reference slopes during cruise. (1.0)
-3. **kA:** Match curved accel portions. Start 0.001. (0.05)
-4. **kP:** Command 0°→90°, settle <200ms. (3.0)
-5. **kD:** Add if overshoot. Start 0.05.
-6. **Profile:** 1000°/s ≈ 0.36s for 360°. Can increase to ~1200°/s.
+The turret is a **horizontal** position-controlled mechanism — no gravity compensation needed (`kG=0`). It uses MAXMotion trapezoidal profiling on the SparkMax. The turret tracks a target angle from the look-up table (LUT) and vision, so it needs to be fast and precise.
+
+### Pre-flight
+
+- [ ] Turret moves freely by hand with power off (no binding, smooth rotation)
+- [ ] Absolute encoder reads 0° when turret faces forward (verify in REV Hardware Client)
+- [ ] Soft limits set in YAMS config (prevent cable wrap or hard-stop damage)
+- [ ] `tuningMode = true` in `Constants.java`
+- [ ] Open AdvantageScope with `Shooter/Turret/angle` and `Shooter/Turret/setpoint` on the same line graph
+
+### Step 1: kS — Static Friction
+
+The turret is horizontal, so there's no gravity component. kS compensates for friction in the gearing.
+
+1. Set all gains to 0 (kP, kD, kS, kV, kA)
+2. In Test mode with YAMS Live Tuning, slowly increase voltage from 0
+3. Record the voltage where the turret **just barely** starts to move
+4. That voltage is kS
+5. Verify: turret should start moving smoothly from any position, in both directions
+
+> **Expected:** kS ≈ 0–0.3V for NEO through 27:1. Our current kS=0 suggests friction is minimal. If the turret hesitates at move start, increase kS.
+
+### Step 2: kV — Velocity Feedforward
+
+kV converts the profile's planned velocity into the voltage needed to sustain that speed.
+
+1. Set kP=0, kS to the value from Step 1, kV=0.5 (starting guess)
+2. Command a large move (e.g., 0°→180°)
+3. In AdvantageScope, overlay `angle` and `setpoint` — zoom into the **cruise** (straight) portion
+4. If actual velocity during cruise is **lower** than the profile velocity → increase kV
+5. If actual velocity during cruise is **higher** → decrease kV
+6. Iterate until the slopes match during cruise
+
+> **Verification:** During the cruise segment, the position line should be parallel to (and ideally overlap) the reference line. A consistent gap means kV is close but kS may be off.
+
+> **REV note:** SparkMax doesn't expose the MAXMotion reference trajectory. Compare the actual velocity (derivative of position) against the profile's configured max velocity instead.
+
+### Step 3: kA — Acceleration Feedforward
+
+kA converts the profile's planned acceleration into voltage.
+
+1. Keep kS and kV from above, set kA=0.001
+2. Command a large move and zoom into the **curved** acceleration/deceleration portions
+3. If position **lags** the reference during acceleration → increase kA
+4. If position **leads** the reference during acceleration → decrease kA
+5. Typical range: 0.01–0.1
+
+> **Expected:** kA=0.05 is a reasonable starting point. The 27:1 gearing provides significant torque so the acceleration error without kA may be small.
+
+### Step 4: kP — Proportional Gain
+
+1. Set kP=0.5 (start low)
+2. Command 0°→90° and watch the settle time
+3. Double kP until settle time <200ms: 0.5 → 1.0 → 2.0 → 4.0
+4. If it overshoots, back off 10–20%
+5. Target: **crisp rectangular** position graph (sharp rise, flat top, sharp fall)
+
+> **Expected:** kP=3.0 should give fast settling. If the turret oscillates at 3.0, check that kV is correct first — bad FF makes PID compensate too hard.
+
+### Step 5: kD — Derivative Gain
+
+1. Only add kD if Step 4 produces overshoot that can't be resolved by reducing kP
+2. Start at kD=0.05
+3. Increase until overshoot is eliminated
+4. If the mechanism buzzes or vibrates → kD is too high, reduce it
+
+> For most horizontal turrets, kD=0 works fine.
+
+### Step 6: Motion Profile Limits
+
+1. Start with the current values: 1000°/s, 7200°/s²
+2. After FF and PID are tuned, gradually increase max velocity toward ~1200°/s
+3. Watch for the mechanism falling behind the profile (position lags reference)
+4. If it lags → your kV or motor voltage is limiting; back off velocity
+5. Increase acceleration until you hear slamming or see overshoot at the endpoints, then back off 15–25%
+
+> **Hard limit:** NEO at 5676 RPM through 27:1 = ~1261°/s theoretical max. Stay at 80–90% (1000–1130°/s) for margin.
+
+### Verification Checklist
+
+- [ ] Command 0°→180°→0° — position tracks setpoint with <2° error during cruise
+- [ ] Command rapid 30° steps — settles within 200ms with no overshoot >5°
+- [ ] Command the turret to track a slowly moving target (simulate vision input) — smooth following, no jitter
+- [ ] Verify soft limits prevent rotation past safe range
+- [ ] Check stator current stays within limits during aggressive moves (plot `Shooter/Turret/current`)
+
+**AdvantageScope signals:**
+
+| Signal | What to look for |
+|--------|-----------------|
+| `Shooter/Turret/angle` | Actual turret position |
+| `Shooter/Turret/setpoint` | Where the turret should be |
+| `Shooter/Turret/velocity` | Actual velocity — should match profile max during cruise |
+| `Shooter/Turret/voltage` | Should not peg at ±12V (saturated = motor maxed out) |
+
+**Common issues:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Turret oscillates around setpoint | kP too high, or kD needed | Reduce kP, add small kD |
+| Slow to reach target | kV too low or profile too conservative | Increase kV, then increase profile velocity |
+| Overshoots then settles | Profile acceleration too high or kD=0 | Reduce max acceleration, add kD |
+| Doesn't move at all | Gains zeroed or soft limit blocking | Check gains, verify setpoint is within soft limits |
+| Slams into hard stop | Soft limits misconfigured or profile too aggressive | Verify soft limit config in YAMS, reduce profile |
 
 **AdvantageScope:** `Shooter/Turret/angle`, `Shooter/Turret/setpoint`
 
@@ -668,80 +829,574 @@ Gains: `kP=3.0, kD=0, kS=0, kV=1.0, kA=0.05` · Profile: `1000°/s, 7200°/s²`
 ## 3. Hood
 
 **Motor:** TalonFX Kraken X44 (30:1) · **Control:** YAMS Pivot + MotionMagic · **FF:** kS, kV, kA
+**File:** `ShooterConstants.HoodConstants` (gains), `HoodSubsystem.java` (YAMS config)
 
 Gains: `kP=300, kD=0, kS=0.45, kV=3.0, kA=0` · Profile: `270°/s, 270°/s²`
 
-1. **kS:** Already 0.45. Verify with slow sweep — smooth from standstill.
-2. **kV:** Match Position vs Reference in Tuner X. kV is actively used by MotionMagic. (3.0)
-3. **kP:** High (300) for precise LUT angles. Command 0°→15°→0°, settle <100ms.
-4. **kD:** Only if audible chatter. Conservative — low inertia amplifies noise.
-5. **Profile:** 270°/s is moderate. Increase if sluggish during rapid LUT changes.
+The hood is a **small-range position mechanism** (0–30° total travel) that sets the launch angle for shots. It uses MotionMagic trapezoidal profiling on the TalonFX. Precision is critical — a 1° error at the hood translates to a significant miss at distance. The hood angles come from the distance look-up table (LUT), so it needs to hit exact positions quickly and consistently.
 
-**AdvantageScope:** `Hood/angle`, `Hood/setpoint`
+### Pre-flight
+
+- [ ] Hood moves smoothly by hand with power off (no binding)
+- [ ] Position reads 0° at the physical zero (verify in Phoenix Tuner X)
+- [ ] Soft limits configured (prevent over-travel)
+- [ ] Open AdvantageScope with `Hood/angle` and `Hood/setpoint` on same graph
+- [ ] Open Phoenix Tuner X → Hood motor → Plot tab (for Position vs ClosedLoopReference overlay)
+
+### Step 1: kS — Static Friction
+
+1. Set all gains to 0
+2. In Phoenix Tuner X, use the Control tab to slowly ramp duty cycle from 0
+3. Record the voltage where the hood **just barely** moves
+4. Test in both directions — kS should be similar
+5. Update kS (currently 0.45)
+
+> **Expected:** kS ≈ 0.3–0.6V. The hood has tight gearing (30:1), so friction is moderate. If the hood "sticks" at certain positions, the mechanism may have a binding spot — fix mechanically.
+
+### Step 2: kV — Velocity Feedforward
+
+Since this is a CTRE motor, you get the **ClosedLoopReference** signal — the actual motion profile reference trajectory. This makes kV tuning much easier than REV motors.
+
+1. Set kP=0, kS from Step 1, kV=1.0 (starting guess)
+2. Command a full-range move (0°→30°)
+3. In Phoenix Tuner X or AdvantageScope, plot **Position** and **ClosedLoopReference** together
+4. Zoom into the cruise (straight) segment
+5. If position slope < reference slope → increase kV
+6. If position slope > reference slope → decrease kV
+7. Test at multiple positions in the range (0→15, 15→30, 30→0)
+
+> **Verification:** `Hood/FX/PositionDegrees` and `Hood/FX/ReferenceDegrees` should overlap during cruise. A consistent offset means kS is slightly off.
+
+### Step 3: kP — Proportional Gain
+
+The hood needs high kP because:
+- Short travel range (30°) means small errors matter more
+- LUT angles must be hit precisely for consistent shots
+- TalonFX firmware runs the PID at ~1 kHz, so high gains are stable
+
+1. Start at kP=50
+2. Command 0°→15°→0° repeatedly
+3. Double kP: 50 → 100 → 200 → 400
+4. Target: settle to within ±0.5° in <100ms
+5. If it chatters or buzzes at the setpoint → too high, back off
+
+> **Expected:** kP=300 is appropriate for this mechanism. CTRE Voltage mode with 30:1 gearing is very stiff. If switching to TorqueFOC, gains will be completely different.
+
+### Step 4: kD — Derivative Gain
+
+1. Only add kD if Step 3 produces overshoot
+2. Start at kD=0.1
+3. Be conservative — the hood has low inertia, so kD amplifies sensor noise easily
+4. If you hear audible chatter or high-frequency vibration → kD is too high
+
+> **Expected:** kD=0 works for most hoods. The short travel and high gearing naturally dampen oscillation.
+
+### Step 5: kA — Acceleration Feedforward (optional)
+
+1. If the position lags the reference during the acceleration/deceleration curves, add kA
+2. Start at kA=0.01
+3. The hood's short travel means there's very little time in acceleration — benefit is small
+4. Only worth tuning if you're pushing the profile limits higher
+
+> **Expected:** kA=0 is fine for most setups. The 30° range means the hood spends most of its move in acceleration/deceleration with minimal cruise.
+
+### Step 6: Motion Profile Limits
+
+1. Start with 270°/s, 270°/s² (current values)
+2. After tuning, increase velocity if shot transitions feel slow (e.g., changing distance during tracking)
+3. The hood covers 0–30°, so at 270°/s the full range takes ~0.11s — already fast
+4. Increase acceleration for crisper starts/stops
+5. Watch for position overshooting the setpoint → acceleration too high
+
+> **Theoretical max:** Kraken X44 at 6000 RPM / 30:1 ≈ 1200°/s, but the hood doesn't need anywhere near that.
+
+### Verification Checklist
+
+- [ ] Command each LUT distance angle — hood hits within ±0.5° every time
+- [ ] Rapid angle changes (simulating distance changes during tracking) — settles in <100ms
+- [ ] No audible chatter or vibration at any setpoint
+- [ ] Stator current stays within limits (plot in AdvantageScope)
+- [ ] Position graph shows clean rectangular shape for step commands
+
+**AdvantageScope signals:**
+
+| Signal | What to look for |
+|--------|-----------------|
+| `Hood/angle` | Actual hood position |
+| `Hood/setpoint` | Target position from LUT |
+| `Hood/FX/PositionDegrees` | Raw TalonFX position (matches `angle`) |
+| `Hood/FX/ReferenceDegrees` | MotionMagic reference — the kV/kA tuning line |
+| `Hood/FX/StatorCurrent` | Should not saturate during normal moves |
+| `Hood/FX/Voltage` | Should not peg at ±12V |
+
+**Common issues:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Hood chatters at setpoint | kP too high or kD amplifying noise | Reduce kP, remove kD |
+| Slow to reach angle | kV too low or profile too slow | Increase kV, increase profile limits |
+| Shots miss at specific distances | Hood not reaching exact LUT angle | Tighten tolerance, check encoder calibration |
+| Hood drifts after reaching setpoint | Mechanical backlash or FF imbalance | Add small kI (last resort), check mechanism |
 
 ---
 
 ## 4. Flywheel
 
 **Motors:** 2× TalonFX (leader + inverted follower) · **Control:** YAMS FlyWheel (velocity) · **FF:** kS, kV, kA
+**File:** `ShooterConstants.FlywheelConstants` (gains), `FlywheelSubsystem.java` (YAMS config)
 
 Gains: `kP=0.2, kD=0, kS=0.35, kV=0.12, kA=0`
 
-1. **kS:** Ramp voltage until flywheel barely spins. Record it. *(Skip in sim.)*
-2. **kV:** Set target velocity (kP=0), adjust until steady-state matches. Test at 1000, 2000, 3000, 4000 RPM.
-3. **kP:** Step velocity command, increase until setpoint reached in ~0.5s. (0.2)
-4. **kA:** Only for faster spin-up.
-5. **Tolerance:** 30 RPM. Tighten if shots inconsistent (costs spin-up time).
+The flywheel is a **velocity-controlled** mechanism — no motion profile, no position target. FF terms multiply the velocity setpoint directly (unlike position mechanisms where they multiply the profile's planned velocity). Shot consistency depends on the flywheel being at the exact RPM when the ball is released.
 
-**AdvantageScope:** `Flywheel/velocity`, `Flywheel/setpoint` · **Tunable:** `Shooter/FlywheelRPM`
+### Pre-flight
+
+- [ ] Flywheel spins freely by hand (no rubbing, bearings smooth)
+- [ ] Follower motor is inverted correctly (both spin the same direction)
+- [ ] Current limits set (prevent brownouts — flywheel draws the most current on the robot)
+- [ ] Open AdvantageScope with `Flywheel/velocity` and `Flywheel/setpoint` on same graph
+
+### Step 1: kS — Static Friction
+
+1. Set all gains to 0
+2. **On the real robot** (kS can't be found in sim — there's no friction):
+   - In Phoenix Tuner X, slowly ramp duty cycle from 0
+   - Record the voltage where the flywheel **just barely** starts spinning
+3. Test from a dead stop multiple times and average
+4. Update kS
+
+> **Expected:** kS ≈ 0.2–0.5V for dual Kraken X60.
+
+### Step 2: kV — Velocity Feedforward
+
+This is the most important gain for velocity mechanisms. kV converts RPM → voltage.
+
+1. Set kP=0, kS from Step 1, kV=0.05 (starting guess)
+2. Command a moderate RPM (e.g., 2000 RPM) via the tunable `Shooter/FlywheelRPM`
+3. Wait for steady state (5+ seconds) — measure actual RPM
+4. **Formula:** `kV = (voltage_applied - kS) / actual_RPM_in_native_units`
+5. Verify at **multiple speeds** — kV should work across the range:
+
+| Test RPM | Expected behavior |
+|----------|------------------|
+| 1000 | Steady at ±30 RPM |
+| 2000 | Steady at ±30 RPM |
+| 3000 | Steady at ±30 RPM |
+| 4000 | Steady at ±30 RPM (if battery is fresh) |
+
+6. If steady-state error is consistent across all speeds → kV is off
+7. If error is only at low speeds → kS is off
+8. If error grows at high speeds → motor saturation, reduce max RPM target
+
+> **Verification:** Plot `Flywheel/FX/VelocityRPM` vs `Flywheel/FX/ReferenceRPM` in AdvantageScope. With kP=0, the gap is purely kV/kS error.
+
+### Step 3: kP — Proportional Gain
+
+kP handles transient errors: spin-up time and recovery after a ball passes through.
+
+1. Set kP=0.05
+2. Command 0→3000 RPM (cold start spin-up)
+3. Measure time to reach setpoint (within tolerance)
+4. Double kP: 0.05 → 0.1 → 0.2 → 0.4
+5. Target: reach setpoint in **<0.5s** with no velocity oscillation
+6. Test **recovery**: while spinning at 3000 RPM, fire a ball — RPM should dip and recover in <0.3s
+
+> **Expected:** kP=0.2 is conservative. Reference teams use 0.5–1.0. Try increasing to 0.5 if spin-up is slow.
+
+> **Oscillation check:** If velocity graph wobbles around the setpoint (±50 RPM saw-tooth), kP is too high. Flywheels have high inertia — they don't stop oscillating easily once they start.
+
+### Step 4: kA — Acceleration Feedforward (optional)
+
+kA helps with spin-up by providing extra voltage proportional to the desired acceleration.
+
+1. Only needed if spin-up time is critical and kP alone isn't fast enough
+2. Start at kA=0.001
+3. Increase until spin-up time improves without overshoot
+4. kA fights kP at steady state — too much kA causes RPM to overshoot then settle
+
+> **Expected:** kA=0 is fine for most setups. The flywheel's high inertia smooths everything.
+
+### Step 5: Tolerance Tuning
+
+The flywheel "ready" signal (`Flywheel/IsSpunUp`) gates when the robot can shoot. Too tight → takes too long to report ready. Too loose → shots are inconsistent.
+
+1. Current tolerance: 30 RPM
+2. Fire multiple shots at the same distance with 30 RPM tolerance
+3. If shots are inconsistent → tighten to 20 RPM or 15 RPM
+4. If the robot hesitates before shooting (waiting for flywheel) → loosen to 40–50 RPM
+5. Balance: tightest tolerance that doesn't slow down shot cadence
+
+### Verification Checklist
+
+- [ ] kV verified at 4 different RPMs (1000, 2000, 3000, 4000)
+- [ ] Spin-up 0→3000 RPM in <0.5s
+- [ ] Recovery after shot: dip <200 RPM, recover in <0.3s
+- [ ] No velocity oscillation at steady state
+- [ ] `IsSpunUp` goes true reliably before each shot
+- [ ] Battery at 12V vs 11.5V doesn't change steady-state accuracy (FF should compensate)
+
+**AdvantageScope signals:**
+
+| Signal | What to look for |
+|--------|-----------------|
+| `Flywheel/velocity` | Actual flywheel speed |
+| `Flywheel/setpoint` | Commanded speed |
+| `Flywheel/FX/VelocityRPM` | Raw TalonFX velocity |
+| `Flywheel/FX/ReferenceRPM` | CTRE reference — gap from actual = FF error |
+| `Flywheel/FX/StatorCurrent` | Current draw — watch for brownout risk |
+| `Flywheel/IsSpunUp` | Boolean — should be true before each shot |
+
+**Common issues:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Slow spin-up | kP too low | Increase kP to 0.5+ |
+| RPM oscillates at steady state | kP too high | Reduce kP, verify kV is accurate |
+| Steady-state error at all speeds | kV wrong | Recharacterize at multiple RPMs |
+| Error only at low RPM | kS wrong | Recharacterize kS from dead stop |
+| RPM drops too much on shot | kP too low or kA=0 | Increase kP, consider adding kA |
+| Shots inconsistent | Tolerance too loose or kV inaccurate | Tighten tolerance, verify kV |
+
+**Tunable:** `Shooter/FlywheelRPM`
 
 ---
 
 ## 5. Kicker
 
 **Motor:** SparkFlex + NEO Vortex · **Control:** YAMS FlyWheel (FF-only, PID=0) · **FF:** kS, kV
+**File:** `ShooterConstants.KickerConstants` (gains), `KickerSubsystem.java` (YAMS config)
 
 Gains: `kP=0, kS=0.25, kV=0.12`
 
-Just needs consistent speed to feed balls. Tune kS/kV like flywheel. Only add kP if kicker slows on ball contact. **Tunable:** `Kicker/KickerRPM`
+The kicker feeds balls from the spindexer into the flywheel. It's an **FF-only velocity mechanism** — kP=0 means the kicker runs open-loop with just feedforward. This is intentional: the kicker only needs consistent speed, not precise velocity tracking.
+
+### Why FF-only?
+
+The kicker's job is simple: spin at a constant speed to push the ball into the flywheel. Small velocity variations don't affect shot quality — the flywheel dominates. Adding PID adds complexity and potential oscillation for no benefit.
+
+### Tuning kS and kV
+
+1. Set kS=0, kV=0
+2. Use YAMS Live Tuning to slowly increase voltage until the kicker **just starts spinning**
+3. That voltage is kS (~0.25V)
+4. Set a target RPM via `Kicker/KickerRPM` tunable
+5. With only kS and kV active (kP=0), adjust kV until actual RPM is within ~50 RPM of target at steady state
+6. Verify at 2-3 different RPM targets
+
+> **Expected:** kS ≈ 0.2–0.4V, kV ≈ 0.10–0.15 for NEO Vortex.
+
+### When to add kP
+
+Add kP only if you observe:
+- Kicker **stalls or slows significantly** when a ball contacts it (ball loading causes a torque spike)
+- Feeding becomes inconsistent — some balls enter the flywheel too slowly
+
+If needed:
+1. Start kP=0.01
+2. Run the kicker and feed balls repeatedly
+3. Increase until RPM dip on ball contact is <10% of setpoint
+4. Don't go higher than needed — the kicker doesn't need to be precise
+
+### Verification
+
+- [ ] Kicker runs at consistent speed (±50 RPM at steady state with FF-only)
+- [ ] Ball feeds cleanly into flywheel without hesitation
+- [ ] No stall or significant slowdown on ball contact
+- [ ] RPM is sufficient to push the ball through (increase target if balls jam)
+
+**AdvantageScope:** `Kicker/velocity`, `Kicker/setpoint` · **Tunable:** `Kicker/KickerRPM`
+
+**Common issues:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Ball doesn't enter flywheel | Kicker RPM too low | Increase target RPM |
+| Kicker stalls on ball contact | Insufficient torque — need kP | Add kP=0.01, increase if needed |
+| Kicker oscillates | kP too high (shouldn't happen with kP=0) | Remove kP, verify FF only |
 
 ---
 
 ## 6. Spindexer
 
 **Motor:** SparkMax + NEO (5:1) · **Control:** YAMS FlyWheel (velocity) · **FF:** kS, kV
+**File:** `ShooterConstants.SpindexerConstants` (gains), `SpindexerSubsystem.java` (YAMS config)
 
 Gains: `kP=0.02, kS=0.25, kV=0.6`
 
-Tune kS/kV like flywheel. kP=0.02 is very low — increase if balls feed inconsistently. COAST idle mode (freewheels when not commanded — intentional). **Tunable:** `Spindexer/IndexerRPM`
+The spindexer rotates balls inside the magazine to feed them to the kicker. It's a low-speed velocity mechanism with **COAST idle mode** — when not commanded, the spindexer freewheels. This is intentional: it prevents balls from being held under compression.
+
+### Why COAST mode?
+
+BRAKE mode would hold the spindexer in place when idle, compressing balls between the spindexer walls. This can:
+- Deform soft game pieces over time
+- Cause jams when restarting
+- Increase motor current for no benefit
+
+COAST lets the spindexer spin freely, keeping balls loose and ready to feed.
+
+### Tuning kS and kV
+
+Follow the same process as other velocity mechanisms:
+
+1. Set kS=0, kV=0, kP=0
+2. Slowly increase voltage until the spindexer **just starts moving** → that's kS (~0.25V)
+3. Set a target RPM via `Spindexer/IndexerRPM` tunable
+4. Adjust kV until actual RPM matches at steady state (~0.6)
+5. Verify at 2–3 RPM targets to confirm kV is linear
+
+> **Expected:** kV ≈ 0.4–0.8 for NEO through 5:1. The low gear ratio means relatively high kV.
+
+### Tuning kP
+
+The current kP=0.02 is very low — nearly FF-only. This is fine if feeding is consistent, but increase if:
+- Balls feed at inconsistent rates (some fast, some slow)
+- The spindexer stalls when multiple balls load simultaneously
+- RPM drops >20% when a ball engages the kicker
+
+**To increase:**
+1. Start at kP=0.05
+2. Feed balls and watch RPM in AdvantageScope
+3. Increase until RPM dip on ball contact is <10%
+4. Don't go too high — the spindexer doesn't need tight velocity tracking
+
+### Verification
+
+- [ ] Spindexer runs at consistent RPM (±30 RPM at steady state)
+- [ ] Balls feed smoothly to the kicker — no jams or hesitation
+- [ ] COAST mode works — spindexer freewheels when not commanded
+- [ ] No stall when multiple balls load simultaneously
+- [ ] Feeding rate is consistent (balls arrive at kicker at regular intervals)
+
+**AdvantageScope:** `Spindexer/velocity`, `Spindexer/setpoint` · **Tunable:** `Spindexer/IndexerRPM`
+
+**Common issues:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Balls jam in magazine | Spindexer RPM too low or mechanical interference | Increase target RPM, check for physical obstructions |
+| Inconsistent feed rate | kP too low — RPM varies with load | Increase kP to 0.05–0.1 |
+| Spindexer doesn't start | kS too low | Increase kS, check wiring |
+| Balls deform over time | BRAKE mode accidentally set | Verify COAST idle mode in YAMS config |
 
 ---
 
 ## 7. Intake Rollers
 
 **Motor:** TalonFX Kraken X60 (2:1) · **Control:** YAMS FlyWheel (velocity) · **FF:** kS, kV
+**File:** `IntakeConstants.Rollers` (gains), `IntakeRollerSubsystem.java` (YAMS config)
 
 Gains: `kP=0.5, kS=0.39, kV=0.24`
 
-Tune kS/kV like other velocity mechanisms. kP=0.5 is aggressive — verify by feeding balls. Slows too much on contact → increase kP. Buzzes/oscillates → decrease.
+The intake rollers pull balls from the ground into the robot. They're a velocity mechanism with relatively aggressive kP (0.5) because the rollers experience large, sudden load changes when a ball contacts them. The 2:1 gear ratio provides high speed with moderate torque.
+
+### Tuning kS and kV
+
+1. Set kS=0, kV=0, kP=0
+2. In Phoenix Tuner X, ramp duty cycle until rollers barely spin → kS (~0.39V)
+3. Set a target RPM and adjust kV until steady-state matches (~0.24)
+4. Verify at 2–3 RPM targets
+
+> **Expected:** kS ≈ 0.3–0.5V, kV ≈ 0.2–0.3 for Kraken X60 with 2:1 ratio.
+
+### Tuning kP
+
+The rollers need higher kP than other velocity mechanisms because:
+- Ball contact causes sudden, large torque spikes
+- If the rollers slow too much, the ball doesn't enter reliably
+- The 2:1 ratio provides less mechanical advantage — the motor feels the load more directly
+
+1. Start at kP=0.1
+2. Run rollers at target RPM and repeatedly feed balls
+3. Watch RPM dip in AdvantageScope when each ball contacts
+4. Increase kP until dip is <15%: 0.1 → 0.2 → 0.5 → 1.0
+5. If rollers buzz or oscillate at steady state → kP too high
+
+> **Expected:** kP=0.5 is a good starting point. Reduce only if you observe oscillation.
+
+### Verification
+
+- [ ] Rollers spin at target RPM (±30 RPM at steady state)
+- [ ] Ball pickup is reliable — balls enter consistently from the ground
+- [ ] RPM dip on ball contact is <15% and recovers in <0.2s
+- [ ] No oscillation at steady state
+- [ ] Stator current stays within limits during ball contact (plot `IntakeRollers/current`)
+
+**AdvantageScope signals:**
+
+| Signal | What to look for |
+|--------|-----------------|
+| `IntakeRollers/velocity` | Actual roller speed |
+| `IntakeRollers/setpoint` | Commanded speed |
+| `IntakeRollers/FX/StatorCurrent` | Current spikes on ball contact — should not trip limits |
+
+**Common issues:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Ball doesn't enter robot | RPM too low or rollers stall on contact | Increase target RPM, increase kP |
+| Rollers oscillate | kP too high | Reduce kP to 0.3 |
+| Ball enters but jams further in | Spindexer not running or too slow | Check spindexer, not a roller issue |
+| High current draw at idle | Mechanical binding or debris | Inspect rollers physically |
 
 ---
 
 ## 8. Intake Pivot
 
 **Motors:** 2× SparkFlex + NEO Vortex (30:1) · **Control:** YAMS Arm + ExponentialProfile · **FF:** ArmFeedforward(kS, kG, kV) — gravity-compensated
+**File:** `IntakeConstants.Pivot` (gains), `IntakePivotSubsystem.java` (YAMS config)
 
 Gains: `kP=0, kG=0.21, kS=0.11, kV=0, kA=0` · Profile: `90°/s, 90°/s²`
 
-> ⚠️ **PID is all zeros and FF is commented out.** Priority: uncomment `.withFeedforward(armFeedforward())`, tune kG, then add PID.
+> ⚠️ **PID is all zeros and FF is commented out.** Priority: uncomment `.withFeedforward(armFeedforward())` and `.withSimFeedforward(armFeedforward())` in `IntakePivotSubsystem.java` (~line 123–124), tune kG, then add PID.
 
-1. **kG (first!):** Hold arm horizontal. Increase until it holds. YAMS applies `kG × cos(angle)` automatically. (0.21)
-2. **kS/kV:** Slow constant-velocity sweep. `kV = (voltage - kG×cos(θ) - kS) / velocity`. Currently kV=0.
-3. **kP:** Command stow → deploy. Settle <0.3s. Start at 1.0.
-4. **kD:** Significant inertia — expect to need some. Start 0.05.
-5. **Profile:** 90°/s is conservative. Increase after PID is stable.
+The intake pivot is the most complex mechanism to tune because it combines **gravity compensation** (kG), an **exponential motion profile**, and **high inertia** (two motors, 30:1 gearing, a heavy arm). It's configured as a YAMS `Arm` type, which means YAMS automatically applies `kG × cos(angle)` — gravity compensation that varies with position.
 
-**AdvantageScope:** `IntakePivot/angle`, `IntakePivot/setpoint`
+### Understanding the Exponential Profile on Spark
+
+The intake pivot uses an **exponential profile** running on the roboRIO (not in the Spark firmware). YAMS runs this in a dedicated `Notifier` thread — each tick it:
+1. Calculates the next `ExponentialProfile` state (position + velocity)
+2. Runs PID on the position error
+3. Adds feedforward (kG×cos(angle) + kS×sign(velocity) + kV×velocity)
+4. Sends the total as a voltage command to the SparkFlex
+
+You'll see `"====== Spark(X) Using RIO Closed Loop Controller ======"` in the console at startup. This is normal — it means the exponential profile is active and the Spark's onboard PID is bypassed.
+
+The profile parameters (90°/s, 90°/s²) are **starting points**. Unlike trapezoidal profiles where you set max velocity and max acceleration directly, exponential profiles derive their shape from motor physics. The 90°/s and 90°/s² values are used with `withExponentialProfile(maxVoltage, maxVelocity, maxAccelAtStall)`.
+
+### Pre-flight
+
+- [ ] Pivot moves freely by hand with power off (no binding at any angle)
+- [ ] Absolute encoder reads the correct angle at stow position
+- [ ] Soft limits set (prevent pivot from going past stow or past full deploy)
+- [ ] **Feedforward is uncommented** in `IntakePivotSubsystem.java`:
+  ```java
+  .withFeedforward(armFeedforward())
+  .withSimFeedforward(armFeedforward())
+  ```
+- [ ] `tuningMode = true` in `Constants.java`
+- [ ] Open AdvantageScope with `IntakePivot/angle` and `IntakePivot/setpoint` on the same graph
+- [ ] Have someone ready on the E-stop — a heavy arm with bad gains can be dangerous
+
+### Step 1: kG — Gravity Compensation (MOST IMPORTANT)
+
+kG must be tuned **first and precisely**. For arms, YAMS applies `kG × cos(angle)`, which varies the gravity compensation based on the arm's angle. At horizontal (0°), you need full compensation. At vertical (90°), you need none.
+
+1. Set ALL gains to 0 (kP, kD, kS, kV, kA, kG)
+2. **Manually hold the arm horizontal** (or at a known angle)
+3. Set kG=0.05 via YAMS Live Tuning
+4. Slowly release the arm — does it drop, hold, or rise?
+   - **Drops:** kG too low → increase
+   - **Rises:** kG too high → decrease
+   - **Holds:** kG is close
+5. Binary search: double if too low, halve if too high
+6. Narrow to **2–3 decimal places** (e.g., 0.21)
+7. Test at **multiple angles** — YAMS applies cos(angle) automatically, so if kG is correct at horizontal, it should be correct everywhere
+
+> **Expected:** kG ≈ 0.15–0.30V for two NEO Vortex through 30:1. Our value of 0.21 is plausible but should be verified on the real robot.
+
+> **⚠️ Precision matters.** A 10% error in kG means the arm constantly drifts, and PID has to fight gravity instead of just correcting position error. Spend extra time here.
+
+### Step 2: kS — Static Friction
+
+1. With kG set, the arm should hold position at any angle
+2. Slowly increase voltage (via YAMS Live Tuning) from kG until the arm **just barely** starts moving
+3. `kS = that voltage - kG × cos(current_angle)`
+4. Test in both directions (up and down) and average
+5. Currently kS=0.11 — verify
+
+> **Expected:** kS ≈ 0.05–0.20V. The 30:1 gearing adds significant friction.
+
+### Step 3: kV — Velocity Feedforward
+
+1. Set kP=0 (FF-only)
+2. Command a slow, constant-velocity move (deploy → stow)
+3. `kV = (voltage - kG×cos(θ) - kS) / velocity`
+4. Currently kV=0 — this means the profile has no velocity feedforward
+5. Start at kV=0.5, command deploy → stow, and check if the arm moves at the profile's planned velocity
+6. Increase until the arm's velocity during the cruise phase matches the profile
+
+> **Currently kV=0** — the arm relies entirely on kP to track the profile. Adding kV will significantly improve tracking and allow lower kP.
+
+### Step 4: kP — Proportional Gain
+
+1. Set kP=0.5 (start low — this is a heavy arm)
+2. Command stow → deploy (full range of motion)
+3. Watch the position graph — should follow the setpoint profile
+4. Double kP: 0.5 → 1.0 → 2.0 → 4.0
+5. Target: settle time <0.3s with no overshoot
+6. The exponential profile smooths the trajectory, so kP shouldn't need to be very high
+
+> **Expected:** kP ≈ 1.0–5.0. Currently kP=0, which means the arm has **no position correction at all** — only FF. This must be fixed.
+
+### Step 5: kD — Derivative Gain
+
+The intake pivot has **significant inertia** — expect to need kD.
+
+1. If Step 4 produces overshoot, add kD
+2. Start at kD=0.05
+3. Increase until overshoot is eliminated: 0.05 → 0.1 → 0.2
+4. Heavy arms benefit from kD more than light mechanisms
+5. If the arm vibrates or buzzes → kD too high
+
+> **Expected:** kD ≈ 0.05–0.2. Unlike the turret or hood, this mechanism has enough inertia to need active damping.
+
+### Step 6: Motion Profile Limits
+
+1. Current values: 90°/s, 90°/s² — very conservative
+2. After kG, kV, kP, and kD are tuned and the arm holds reliably:
+3. Increase max velocity: 90 → 150 → 200°/s
+4. Increase max acceleration: 90 → 150 → 200°/s²
+5. Watch for the arm falling behind the profile or overshooting endpoints
+6. The exponential profile naturally limits acceleration based on motor physics, so you can be more aggressive than with trapezoidal
+
+> **Theoretical max:** 2× Vortex at 6784 RPM / 30:1 ≈ 1358°/s output. Practical limit depends on arm weight and desired smoothness. 200–300°/s is a reasonable target for a heavy arm.
+
+### Switching to Motor-Physics Exponential Profile (future)
+
+The current configuration uses `withExponentialProfile(maxVoltage, maxVelocity, maxAccelAtStall)` with manually specified constraints. For a more physics-accurate profile, switch to:
+
+```java
+.withExponentialProfile(Volts.of(12), DCMotor.getNeoVortex(2), kMomentOfInertia)
+```
+
+This derives the constraints from the motor's actual torque-speed curve and the mechanism's moment of inertia. Benefits:
+- Profile automatically adjusts for motor saturation
+- More accurate at high speeds
+- Better gravity-aware behavior (accelerates faster going down)
+
+To use this, you need to measure or calculate the arm's moment of inertia (use CAD or swing test).
+
+### Verification Checklist
+
+- [ ] Arm holds position at any angle with kG only (kP=0) — no drifting
+- [ ] kG correct at horizontal AND at 45° (cos scaling works)
+- [ ] Deploy → stow in <0.5s with no overshoot
+- [ ] Stow → deploy in <0.5s with no slam at the end
+- [ ] Arm doesn't drift when idle (kG compensating gravity)
+- [ ] Profile tracking is smooth — no jerkiness during the move
+- [ ] Stator current stays within limits (plot in AdvantageScope)
+- [ ] Test with a ball in the intake — added weight shouldn't change behavior significantly
+
+**AdvantageScope signals:**
+
+| Signal | What to look for |
+|--------|-----------------|
+| `IntakePivot/angle` | Actual pivot position |
+| `IntakePivot/setpoint` | Target position |
+| `IntakePivot/velocity` | Actual velocity — compare to profile max during cruise |
+| `IntakePivot/voltage` | Total voltage output — verify not saturating at ±12V |
+
+**Common issues:**
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Arm falls when released | kG too low or FF commented out | Increase kG, verify `.withFeedforward()` is uncommented |
+| Arm drifts up slowly | kG too high | Decrease kG |
+| Arm oscillates at setpoint | kP too high, kD too low | Reduce kP, add kD |
+| Arm slams at end of travel | Profile limits too aggressive or kD=0 | Reduce acceleration, add kD, check soft limits |
+| Arm moves but doesn't track profile | kV=0 (current state!) | Add kV — arm relies only on kP without it |
+| Arm holds but won't move | kP=0 (current state!) | Add kP — FF alone can't correct position errors |
+| "Using RIO Closed Loop Controller" message | Normal — exponential profile running on RIO | Not a problem — expected behavior |
 
 ---
 
@@ -920,17 +1575,17 @@ Name your Elastic tabs exactly **"Disabled"**, **"Auto"**, and **"Teleop"** (cas
 
 ## Quick Reference Table
 
-| Mechanism | Motor(s) | Control | FF Terms | PID | Motion Profile |
-|-----------|----------|---------|----------|-----|---------------|
-| Drive (steer) | TalonFX | Position | kS, kV | kP, kD | MotionMagicExpo |
-| Drive (drive) | TalonFX | Velocity | kS, kV | kP | — |
-| Turret | NEO (27:1) | Position+MP | kS, kV, kA | kP | 1000°/s, 7200°/s² |
-| Hood | TalonFX (30:1) | Position+MP | kS, kV | kP | 270°/s, 270°/s² |
-| Flywheel | 2× TalonFX | Velocity | kS, kV | kP | — |
-| Kicker | Vortex | Velocity (FF-only) | kS, kV | — | — |
-| Spindexer | NEO (5:1) | Velocity | kS, kV | kP | — |
-| Intake Rollers | Kraken X60 (2:1) | Velocity | kS, kV | kP | — |
-| Intake Pivot | 2× Vortex (30:1) | Position+MP | kG, kS | ⚠️ kP=0 | 90°/s, 90°/s² |
+| Mechanism | Motor(s) | Control | FF Terms | PID | Motion Profile | Profile Type |
+|-----------|----------|---------|----------|-----|---------------|-------------|
+| Drive (steer) | TalonFX | Position | kS, kV | kP, kD | MotionMagicExpo | Exponential (firmware) |
+| Drive (drive) | TalonFX | Velocity | kS, kV | kP | — | — |
+| Turret | NEO (27:1) | Position+MP | kS, kV, kA | kP | 1000°/s, 7200°/s² | Trapezoidal (firmware) |
+| Hood | TalonFX (30:1) | Position+MP | kS, kV | kP | 270°/s, 270°/s² | Trapezoidal (firmware) |
+| Flywheel | 2× TalonFX | Velocity | kS, kV | kP | — | — |
+| Kicker | Vortex | Velocity (FF-only) | kS, kV | — | — | — |
+| Spindexer | NEO (5:1) | Velocity | kS, kV | kP | — | — |
+| Intake Rollers | Kraken X60 (2:1) | Velocity | kS, kV | kP | — | — |
+| Intake Pivot | 2× Vortex (30:1) | Position+MP | kG, kS, kV | ⚠️ kP=0 | 90°/s, 90°/s² | Exponential (RIO) |
 
 ### Priority Order for Monday
 

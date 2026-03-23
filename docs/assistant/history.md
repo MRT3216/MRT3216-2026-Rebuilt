@@ -226,6 +226,40 @@ End of 2026-03-21 session (part 2).
 - `docs/assistant/profile.md` — updated last-edited date
 - `docs/assistant/history.md` — appended this session summary
 
+### Part 3: Driver / Operator Control Swap (commit fc1635a)
+
+**Context**: User asked to check which controller owned which subsystem. Found that the driver had shooting and the operator had intake — user confirmed this was backwards.
+
+#### Changes
+- **Driver (Xbox controller 0)**: Now owns **intake** — RT toggles intake, LT stops rollers, RB agitate, LB eject.
+- **Operator (Xbox controller 1)**: Now owns **shooting** — RT hub shot, LT pass shot, RB manual intake inward, LB clear/unjam.
+- **Shift-end rumble**: Now pulses **both** controllers (was only operator).
+- Renamed `docs/OperatorGuide.md` → `docs/ControllerGuide.md` and rewrote to document both controllers.
+- Updated `docs/README.md` to reference `ControllerGuide.md`.
+- Updated `docs/assistant/profile.md` local references.
+- Commit fc1635a pushed.
+
+### Part 4: Flywheel Pre-spin Fix (commit 4399411)
+
+**Context**: User ran sim and noticed "the flywheel is just randomly spinning at certain times." Diagnosed as `HubShiftUtil.getShiftedShiftInfo()` returning unpredictable state in sim/tuning mode because there's no FMS game-specific data. The flywheel default command unconditionally used HubShiftUtil to determine pre-spin velocity.
+
+#### Root Cause
+`configureDefaultCommands()` had the flywheel pre-spin supplier outside the tuning/competition if-else, so it ran in all modes. In sim with `Constants.tuningMode = true`, HubShiftUtil returned random shift states.
+
+#### Fix
+- **Tuning mode branch**: Flywheel default command set to `flywheelSubsystem.stopHold()` with a comment explaining why.
+- **Competition branch**: Flywheel pre-spin (with hub-shift-aware velocity supplier) moved into the `else` block where FMS data is available.
+- **ControllerGuide.md**: Quick summary updated to note "AUTOMATIC (competition mode only — disabled in tuning mode)" and added "HOOD → returns to 0° when not actively shooting."
+
+#### Also Clarified
+- **DS Test mode vs Constants.tuningMode**: YAMS Live Tuning requires DS Test mode, but our robot does NOT use DS Test mode. Our tuning mode is gated on `Constants.tuningMode` (hardcoded boolean). `TestModeTuning.md` explicitly states "Driver Station 'Test' mode is not used."
+
+### Files Modified (Parts 3 & 4)
+- `src/main/java/frc/robot/RobotContainer.java` — swapped driver/operator bindings; moved flywheel pre-spin into competition branch
+- `docs/ControllerGuide.md` (renamed from OperatorGuide.md) — full rewrite for both controllers; added competition-mode note and hood entry to quick summary
+- `docs/README.md` — ControllerGuide.md reference
+- `docs/assistant/profile.md` — updated references
+
 ---
 
 End of 2026-03-23 session.

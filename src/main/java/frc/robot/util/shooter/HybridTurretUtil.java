@@ -39,7 +39,7 @@ public final class HybridTurretUtil {
      * @param target 3-D field-relative target point (e.g. hub center or pass landing zone)
      * @param iterations maximum number of convergence iterations
      * @param convergenceEpsilon distance change threshold below which the solver stops early
-     * @param table lookup table to use for hood angle, flywheel speed, and time-of-flight
+     * @param table lookup table to use for hood angle and time-of-flight
      * @return a fully populated {@link ShotSolution}
      */
     public static ShotSolution computeMovingShot(

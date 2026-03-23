@@ -155,12 +155,24 @@ public class Robot extends LoggedRobot {
         // timing (see the template project documentation for details)
         // Threads.setCurrentThreadPriority(true, 99);
 
+        // ── BatteryLogger (pre-scheduler) ────────────────────────────────────
+        // Set battery voltage BEFORE CommandScheduler.run() so that subsystem
+        // periodic() calls to reportCurrentUsage() use the current loop's voltage
+        // for power/energy calculations, not the previous loop's stale value.
+        batteryLogger.setBatteryVoltage(RobotController.getBatteryVoltage());
+        batteryLogger.setRioCurrent(RobotController.getInputCurrent());
+
         // Runs the Scheduler. This is responsible for polling buttons, adding
         // newly-scheduled commands, running already-scheduled commands, removing
         // finished or interrupted commands, and running subsystem periodic() methods.
         // This must be called from the robot's periodic block in order for anything in
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
+
+        // ── BatteryLogger (post-scheduler) ────────────────────────────────────
+        // Subsystems have now reported their current draws via reportCurrentUsage().
+        // Aggregate fixed device draws and publish cumulative energy telemetry.
+        batteryLogger.periodicAfterScheduler();
 
         // ── HubShift telemetry ────────────────────────────────────────────────
         // Official shift — for logging/replay only.
@@ -182,14 +194,6 @@ public class Robot extends LoggedRobot {
                 HubShiftUtil.getFirstActiveAlliance()
                         == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue));
         Logger.recordOutput("MatchTime", DriverStation.getMatchTime());
-
-        // ── BatteryLogger ─────────────────────────────────────────────────────
-        // Feed battery voltage and roboRIO current to the energy logger each loop.
-        // Subsystems report their own current via Robot.batteryLogger.reportCurrentUsage().
-        // periodicAfterScheduler() adds fixed device draws and publishes everything.
-        batteryLogger.setBatteryVoltage(RobotController.getBatteryVoltage());
-        batteryLogger.setRioCurrent(RobotController.getInputCurrent());
-        batteryLogger.periodicAfterScheduler();
 
         // Battery voltage — published every loop for Elastic dashboard widgets.
         // RobotController.getBatteryVoltage() is already cached by the HAL each loop.

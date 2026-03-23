@@ -10,7 +10,7 @@ Output:
     scripts/MRT3216_Diagnostics_Report.pdf
 """
 
-import os, re, bisect, io, datetime, struct as pystruct, math
+import os, re, bisect, io, sys, datetime, struct as pystruct, math
 from collections import defaultdict
 
 import numpy as np
@@ -35,8 +35,9 @@ from reportlab.platypus import Flowable
 from wpiutil.log import DataLogReader
 
 # ── Paths ────────────────────────────────────────────────────────────────────
-LOG_DIRS   = [r"C:\Users\danla\Desktop\Logs", r"C:\Users\danla\Desktop\Logs2"]
-OUTPUT_PDF = r"C:\Users\danla\Documents\GitHub\MRT3216-2026-Rebuilt\scripts\MRT3216_Diagnostics_Report.pdf"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIRS   = sys.argv[1:] if len(sys.argv) > 1 else [os.path.expanduser("~/Desktop/Logs"), os.path.expanduser("~/Desktop/Logs2")]
+OUTPUT_PDF = os.path.join(SCRIPT_DIR, "MRT3216_Diagnostics_Report.pdf")
 
 # ── Signal catalogue ─────────────────────────────────────────────────────────
 TELEOP = "/DriverStation/Enabled"

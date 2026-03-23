@@ -49,7 +49,6 @@ import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
 import frc.robot.constants.Constants;
@@ -240,34 +239,39 @@ public class TurretSubsystem extends SubsystemBase {
 
         // Encoder 2: RoboRIO PWM DutyCycleEncoder (10T pinion on 90T ring gear).
         // Created locally so DIO channel 0 is not claimed when CRT is disabled.
+        // Wrapped in try/finally to release the HAL DIO resource after the one-shot read.
         DutyCycleEncoder pwmEncoder =
                 new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
-        Supplier<Angle> enc2Supplier = () -> Rotations.of(pwmEncoder.get());
+        try {
+            Supplier<Angle> enc2Supplier = () -> Rotations.of(pwmEncoder.get());
 
-        // Build EasyCRT config
-        EasyCRTConfig config =
-                new EasyCRTConfig(enc1Supplier, enc2Supplier)
-                        .withCommonDriveGear(
-                                kCRTCommonRatio,
-                                kCRTDriveGearTeeth,
-                                kCRTEncoder1PinionTeeth,
-                                kCRTEncoder2PinionTeeth)
-                        .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
-                        .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
-                        .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
-                        .withMatchTolerance(kCRTMatchTolerance);
+            // Build EasyCRT config
+            EasyCRTConfig config =
+                    new EasyCRTConfig(enc1Supplier, enc2Supplier)
+                            .withCommonDriveGear(
+                                    kCRTCommonRatio,
+                                    kCRTDriveGearTeeth,
+                                    kCRTEncoder1PinionTeeth,
+                                    kCRTEncoder2PinionTeeth)
+                            .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
+                            .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
+                            .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
+                            .withMatchTolerance(kCRTMatchTolerance);
 
-        // Solve once
-        EasyCRT solver = new EasyCRT(config);
-        Optional<Angle> result = solver.getAngleOptional();
+            // Solve once
+            EasyCRT solver = new EasyCRT(config);
+            Optional<Angle> result = solver.getAngleOptional();
 
-        // Capture diagnostics
-        crtStatus = solver.getLastStatus();
-        crtErrorRot = solver.getLastErrorRotations();
-        crtIterations = solver.getLastIterations();
-        crtResolvedDeg = result.map(a -> a.in(Degrees)).orElse(Double.NaN);
+            // Capture diagnostics
+            crtStatus = solver.getLastStatus();
+            crtErrorRot = solver.getLastErrorRotations();
+            crtIterations = solver.getLastIterations();
+            crtResolvedDeg = result.map(a -> a.in(Degrees)).orElse(Double.NaN);
 
-        return result;
+            return result;
+        } finally {
+            pwmEncoder.close();
+        }
     }
 
     // endregion
@@ -408,12 +412,7 @@ public class TurretSubsystem extends SubsystemBase {
      * @return A command to track the supplier's angle with wrap-around.
      */
     public Command setAngle(Supplier<Angle> angle) {
-        return Commands.run(
-                        () -> {
-                            smartMotor.setPosition(wrapAngle(angle.get()));
-                        },
-                        this)
-                .withName(getName() + " SetAngle Wrapped Supplier");
+        return turret.setAngle(() -> wrapAngle(angle.get()));
     }
 
     /**

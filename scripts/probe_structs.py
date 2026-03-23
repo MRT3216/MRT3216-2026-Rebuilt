@@ -1,8 +1,12 @@
 """Probe struct record methods and raw bytes to understand how to decode ChassisSpeeds and Pose3d[]."""
+import sys
 from wpiutil.log import DataLogReader
 import struct as pystruct
 
-log_path = r"C:\Users\danla\Desktop\Logs2\akit_26-03-14_22-34-39_azfg_e9.wpilog"
+if len(sys.argv) < 2:
+    print("Usage: python probe_structs.py <path-to-wpilog>")
+    sys.exit(1)
+log_path = sys.argv[1]
 
 # Find entry IDs for structs we need
 targets = {

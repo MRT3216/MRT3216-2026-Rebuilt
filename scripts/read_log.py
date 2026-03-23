@@ -1,7 +1,11 @@
+import sys
 from wpiutil.log import DataLogReader
 from collections import defaultdict
 
-log_path = r"C:\Users\danla\Desktop\Logs2\akit_26-03-14_22-34-39_azfg_e9.wpilog"
+if len(sys.argv) < 2:
+    print("Usage: python read_log.py <path-to-wpilog>")
+    sys.exit(1)
+log_path = sys.argv[1]
 reader = DataLogReader(log_path)
 
 SIGNALS = {

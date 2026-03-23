@@ -6,7 +6,8 @@ from collections import defaultdict
 from wpiutil.log import DataLogReader
 
 # Write output to file and stdout
-output_path = r"C:\Users\danla\Documents\GitHub\MRT3216-2026-Rebuilt\scripts\match_output.txt"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+output_path = os.path.join(SCRIPT_DIR, "match_output.txt")
 _out = open(output_path, "w")
 
 def p(*args, **kwargs):
@@ -14,9 +15,9 @@ def p(*args, **kwargs):
     print(*args, **kwargs, file=_out)
     _out.flush()
 
-LOG_DIRS = [
-    r"C:\Users\danla\Desktop\Logs",
-    r"C:\Users\danla\Desktop\Logs2",
+LOG_DIRS = sys.argv[1:] if len(sys.argv) > 1 else [
+    os.path.expanduser("~/Desktop/Logs"),
+    os.path.expanduser("~/Desktop/Logs2"),
 ]
 
 # Signals to pull and which subsystem they belong to

@@ -60,7 +60,21 @@ public class TunerConstants {
 
     // Initial configs for the drive and steer motors and the azimuth encoder; these cannot be null.
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
-    private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration();
+    private static final TalonFXConfiguration driveInitialConfigs =
+            new TalonFXConfiguration()
+                    .withCurrentLimits(
+                            new CurrentLimitsConfigs()
+                                    // Stator current limit for thermal protection. kSlipCurrent (120A) handles
+                                    // traction detection, but without a stator limit the motors can sustain high
+                                    // current draws that risk brownouts and overheating.
+                                    .withStatorCurrentLimit(Amps.of(80))
+                                    .withStatorCurrentLimitEnable(true));
+    // NOTE: Open-loop voltage ramps can reduce wheel slip on hard acceleration.
+    // Several reference teams use them: LASA PR (0.5s), Lynk 9496 (0.25s).
+    // To enable, add to driveInitialConfigs above:
+    //     .withOpenLoopRamps(new OpenLoopRampsConfigs().withVoltageOpenLoopRampPeriod(0.25))
+    // Start with 0.25s and reduce if the robot feels sluggish on acceleration.
+    // See docs/TuningGuide.md "Interesting Patterns From Reference Teams" for context.
     private static final TalonFXConfiguration steerInitialConfigs =
             new TalonFXConfiguration()
                     .withCurrentLimits(
@@ -71,8 +85,27 @@ public class TunerConstants {
                                     .withStatorCurrentLimit(Amps.of(60))
                                     .withStatorCurrentLimitEnable(true));
     private static final CANcoderConfiguration encoderInitialConfigs = new CANcoderConfiguration();
-    // Configs for the Pigeon 2; leave this null to skip applying Pigeon 2 configs
-    private static final Pigeon2Configuration pigeonConfigs = null;
+    // Configs for the Pigeon 2.
+    //
+    // MountPose tells the Pigeon how it's physically oriented on the robot so it
+    // can remap its internal axes to match robot-forward/robot-right/robot-up.
+    //   • MountPoseYaw  — rotation in the horizontal plane (0° = arrow forward,
+    //                     -90° = arrow pointing left, 90° = arrow pointing right)
+    //   • MountPoseRoll — 0° = right-side-up, 180° = upside-down
+    //   • MountPosePitch— tilt forward/backward (usually 0°)
+    //
+    // If the Pigeon is mounted flat with its arrow pointing toward the front of
+    // the robot, leave all three at 0 (the default).
+    //
+    // Reference values from other teams (2026 season):
+    //   LASA PR2026:    roll=179.96°, pitch=1.14°, yaw=-90.45°
+    //   WHS 3467:       roll=180° (upside-down, arrow forward)
+    //   Hammerheads 5000: yaw=-90° (flat, arrow pointing left)
+    //
+    // TODO: Inspect the physical Pigeon 2 mounting on the robot and update these
+    //       values if it is not flat + forward-facing. See docs/TuningGuide.md
+    //       "Pigeon IMU Calibration" section for the full procedure.
+    private static final Pigeon2Configuration pigeonConfigs = new Pigeon2Configuration();
 
     // CAN bus that the devices are located on;
     // All swerve devices must share the same CAN bus

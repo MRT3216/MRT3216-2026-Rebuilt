@@ -6,26 +6,24 @@ import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.IntakeConstants.Pivot.kD;
-import static frc.robot.constants.IntakeConstants.Pivot.kD_sim;
-import static frc.robot.constants.IntakeConstants.Pivot.kGearing;
-import static frc.robot.constants.IntakeConstants.Pivot.kHardLimitMax;
-import static frc.robot.constants.IntakeConstants.Pivot.kHardLimitMin;
-import static frc.robot.constants.IntakeConstants.Pivot.kI;
-import static frc.robot.constants.IntakeConstants.Pivot.kI_sim;
-import static frc.robot.constants.IntakeConstants.Pivot.kLength;
-import static frc.robot.constants.IntakeConstants.Pivot.kMass;
-import static frc.robot.constants.IntakeConstants.Pivot.kMaxAccel;
-import static frc.robot.constants.IntakeConstants.Pivot.kMaxVelocity;
-import static frc.robot.constants.IntakeConstants.Pivot.kMotorInverted;
-import static frc.robot.constants.IntakeConstants.Pivot.kP;
-import static frc.robot.constants.IntakeConstants.Pivot.kP_sim;
-import static frc.robot.constants.IntakeConstants.Pivot.kSoftLimitMax;
-import static frc.robot.constants.IntakeConstants.Pivot.kSoftLimitMin;
-import static frc.robot.constants.IntakeConstants.Pivot.kStatorCurrentLimit;
-import static frc.robot.constants.IntakeConstants.Pivot.kTolerance;
-import static frc.robot.constants.TelemetryKeys.kIntakeArmMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kIntakeArmMotorTelemetry;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kGearing;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMax;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMin;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kI;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kI_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kLength;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMass;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMaxAccel;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMaxVelocity;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMotorInverted;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kP;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kP_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kSoftLimitMax;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kSoftLimitMin;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kStatorCurrentLimit;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kTolerance;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.Pair;
@@ -34,9 +32,9 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
@@ -59,6 +57,9 @@ import yams.motorcontrollers.local.SparkWrapper;
  * states (Inputs) are separated from software commands (Outputs).
  */
 public class IntakePivotSubsystem extends SubsystemBase {
+    private static final String kIntakeArmMotorTelemetry = "IntakeArmMotor";
+    private static final String kIntakeArmMechTelemetry = "IntakeArmMech";
+
     // region Inputs & telemetry
 
     /**
@@ -83,7 +84,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & controllers
+    // region Hardware
 
     /* Hardware controllers (left master, right follower) */
     private final SparkFlex leftPivotMotor =
@@ -93,7 +94,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Controller configuration / mechanism
+    // region Controller & mechanism
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -108,7 +109,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public IntakePivotSubsystem() {
@@ -148,11 +149,11 @@ public class IntakePivotSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     /**
-     * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
-     * to ensure telemetry is time-aligned.
+     * Updates the AdvantageKit "inputs" by reading hardware state. Provides synchronized telemetry
+     * for log replay.
      */
     private void updateInputs() {
         intakePivotInputs.angle = intakePivot.getAngle();
@@ -160,14 +161,11 @@ public class IntakePivotSubsystem extends SubsystemBase {
         intakePivotInputs.volts = smartMotor.getVoltage();
         intakePivotInputs.current = smartMotor.getStatorCurrent();
         intakePivotInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/IntakePivotIsMoving",
                 Math.abs(intakePivotInputs.velocity.in(DegreesPerSecond)) > 2.0);
-    }
 
-    @Override
-    public void simulationPeriodic() {
-        intakePivot.simIterate();
+        Robot.batteryLogger.reportCurrentUsage("IntakePivot", intakePivotInputs.current.in(Amps));
     }
 
     @Override
@@ -176,9 +174,15 @@ public class IntakePivotSubsystem extends SubsystemBase {
         Logger.processInputs("Intake/Pivot", intakePivotInputs);
         intakePivot.updateTelemetry();
     }
+
+    @Override
+    public void simulationPeriodic() {
+        intakePivot.simIterate();
+    }
+
     // endregion
 
-    // region Public API (queries & commands)
+    // region Public API
 
     /**
      * Sets the target angle for the intake arm.
@@ -190,6 +194,12 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.run(angle);
     }
 
+    /**
+     * Move the intake arm to the requested angle and finish when within tolerance.
+     *
+     * @param angle target arm angle
+     * @return a command that completes when the arm reaches the target
+     */
     public Command setAngleAndStop(Angle angle) {
         return intakePivot.runTo(angle, kTolerance);
     }
@@ -204,6 +214,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.set(dutyCycle);
     }
 
+    /** Run a YAMS SysId routine for feedforward characterization. */
     public Command sysId() {
         return intakePivot.sysId(Volts.of(7), Volts.of(2).per(Second), Seconds.of(4));
     }

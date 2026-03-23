@@ -2,32 +2,30 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kD;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kGearing;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMax;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kHardLimitMin;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kI;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kLength;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kMass;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kMotorInverted;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kP;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kP_sim;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kStartingPosition;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kStatorCurrentLimit;
-import static frc.robot.constants.ShooterConstants.HoodConstants.kTolerance;
-import static frc.robot.constants.ShooterConstants.HoodConstants.pivotFeedforward;
-import static frc.robot.constants.ShooterConstants.HoodConstants.pivotFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kHoodMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kHoodMotorTelemetry;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kD;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kD_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kGearing;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kHardLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kHardLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kI;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kI_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kLength;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMass;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMaxAccel;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMaxVelocity;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kMotorInverted;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kP;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kP_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kStartingPosition;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kTolerance;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.pivotFeedforward;
+import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.pivotFeedforwardSim;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -36,12 +34,12 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
-import frc.robot.constants.ShooterConstants.HoodConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 import frc.robot.util.PhoenixUtil;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
@@ -54,7 +52,11 @@ import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
 import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
 import yams.motorcontrollers.remote.TalonFXWrapper;
 
+/** Hood subsystem: positional pivot for the shooter hood angle. */
 public class HoodSubsystem extends SubsystemBase {
+    private static final String kHoodMotorTelemetry = "HoodMotor";
+    private static final String kHoodMechTelemetry = "HoodMech";
+
     // region Inputs & telemetry
 
     @AutoLog
@@ -69,21 +71,16 @@ public class HoodSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & signals
+    // region Hardware
 
     private final TalonFX motor = new TalonFX(RobotMap.Shooter.Hood.kMotorId);
 
     private final StatusSignal<Angle> positionSignal = motor.getPosition();
     private final StatusSignal<Double> referenceSignal = motor.getClosedLoopReference();
 
-    // Hood subsystem: positional pivot controlled via YAMS Pivot. This subsystem exposes
-    // command-returning APIs (setAngle, runTo) and keeps telemetry updated. There are no
-    // hardware limit-switches assumed here; any external limits are enforced via the
-    // mechanism soft/hard limits configured in ShooterConstants.
-
     // endregion
 
-    // region Controller configuration / mechanism
+    // region Controller & mechanism
 
     private final SmartMotorControllerConfig motorConfig;
     private final SmartMotorController smartMotor;
@@ -92,13 +89,14 @@ public class HoodSubsystem extends SubsystemBase {
 
     // endregion
 
+    // region Constructor
+
     public HoodSubsystem() {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withMechanismCircumference(Inches.of(1.26875 * Math.PI))
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(
-                                kP, kI, kD, DegreesPerSecond.of(270), DegreesPerSecondPerSecond.of(270))
+                        .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim)
                         .withFeedforward(pivotFeedforward())
                         .withSimFeedforward(pivotFeedforwardSim())
@@ -117,8 +115,7 @@ public class HoodSubsystem extends SubsystemBase {
                         // Ensure Arm has a known starting angle for simulation and replay
                         .withStartingPosition(kStartingPosition)
                         .withHardLimit(kHardLimitMin, kHardLimitMax)
-                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
-                        .withMOI(kLength, kMass);
+                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax);
 
         hood = new Pivot(hoodConfig);
 
@@ -128,7 +125,9 @@ public class HoodSubsystem extends SubsystemBase {
         motor.getVelocity().setUpdateFrequency(0);
     }
 
-    // region Lifecycle / periodic
+    // endregion
+
+    // region Lifecycle
 
     private void updateInputs() {
         // Refresh Phoenix signals so logged telemetry is time-aligned with hardware.
@@ -143,9 +142,11 @@ public class HoodSubsystem extends SubsystemBase {
         inputs.volts = smartMotor.getVoltage();
         inputs.current = smartMotor.getStatorCurrent();
         inputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/HoodIsMoving",
                 Math.abs(inputs.setpoint.in(Degrees) - inputs.angle.in(Degrees)) > 1.0);
+
+        Robot.batteryLogger.reportCurrentUsage("Hood", inputs.current.in(Amps));
     }
 
     @Override
@@ -154,6 +155,15 @@ public class HoodSubsystem extends SubsystemBase {
         Logger.processInputs("Hood", inputs);
         hood.updateTelemetry();
     }
+
+    @Override
+    public void simulationPeriodic() {
+        hood.simIterate();
+    }
+
+    // endregion
+
+    // region Public API
 
     /**
      * Gets the current measured hood angle.
@@ -173,15 +183,6 @@ public class HoodSubsystem extends SubsystemBase {
     public Angle getTarget() {
         return smartMotor.getMechanismPositionSetpoint().orElse(getPosition());
     }
-
-    @Override
-    public void simulationPeriodic() {
-        hood.simIterate();
-    }
-
-    // endregion
-
-    // region Public API - queries & commands
 
     /**
      * Returns a command that moves the hood to the requested absolute angle and holds that angle

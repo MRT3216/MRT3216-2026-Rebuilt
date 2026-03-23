@@ -176,6 +176,10 @@ simgui*.json
 # Simulation data log directory
 logs/
 
+# Script generated output files
+scripts/match_output.txt
+scripts/*.pdf
+
 # Folder that has CTRE Phoenix Sim device config storage
 ctre_sim/
 

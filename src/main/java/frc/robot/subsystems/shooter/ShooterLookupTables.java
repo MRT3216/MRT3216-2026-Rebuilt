@@ -1,4 +1,4 @@
-package frc.robot.constants;
+package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
@@ -11,23 +11,14 @@ import edu.wpi.first.units.measure.Time;
 /**
  * Shooter lookup tables (embedded defaults).
  *
- * <p>+ * Each row is {distance (m), hood angle (deg), time-of-flight (s)} and uses the project
+ * <p>Each row is {distance (m), hood angle (deg), time-of-flight (s)} and uses the project
  * convention where 0° = horizontal.
  */
 public final class ShooterLookupTables {
     private ShooterLookupTables() {}
 
-    public static final class LookupRow {
-        public final Distance distance;
-        public final Angle trajectoryAngle;
-        public final Time timeOfFlight;
-
-        public LookupRow(Distance distance, Angle trajectoryAngle, Time timeOfFlight) {
-            this.distance = distance;
-            this.trajectoryAngle = trajectoryAngle;
-            this.timeOfFlight = timeOfFlight;
-        }
-    }
+    /** Immutable row: distance, hood/trajectory angle, and time-of-flight. */
+    public record LookupRow(Distance distance, Angle trajectoryAngle, Time timeOfFlight) {}
 
     public static final LookupRow[] HUB;
     public static final LookupRow[] PASS;
@@ -47,19 +38,16 @@ public final class ShooterLookupTables {
             {5.5, 45.0, 1.25}
         };
 
-        double[][] hub = hubDefault;
-        double[][] pass = passDefault;
-
         // Convert raw double arrays into typed lookup rows to expose unit-aware values.
-        HUB = new LookupRow[hub.length];
-        for (int i = 0; i < hub.length; i++) {
-            var r = hub[i];
+        HUB = new LookupRow[hubDefault.length];
+        for (int i = 0; i < hubDefault.length; i++) {
+            var r = hubDefault[i];
             HUB[i] = new LookupRow(Meters.of(r[0]), Degrees.of(r[1]), Seconds.of(r[2]));
         }
 
-        PASS = new LookupRow[pass.length];
-        for (int i = 0; i < pass.length; i++) {
-            var r = pass[i];
+        PASS = new LookupRow[passDefault.length];
+        for (int i = 0; i < passDefault.length; i++) {
+            var r = passDefault[i];
             PASS[i] = new LookupRow(Meters.of(r[0]), Degrees.of(r[1]), Seconds.of(r[2]));
         }
     }

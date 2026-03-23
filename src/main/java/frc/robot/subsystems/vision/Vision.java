@@ -59,8 +59,8 @@ public class Vision extends SubsystemBase {
      * @param tagId fiducial ID of the AprilTag
      * @return Optional containing the Translation3d when the tag is present in the layout
      */
-    public Translation3d getTagTranslation3d(int tagId) {
-        return aprilTagLayout.getTagPose(tagId).map(Pose3d::getTranslation).orElse(null);
+    public Optional<Translation3d> getTagTranslation3d(int tagId) {
+        return aprilTagLayout.getTagPose(tagId).map(Pose3d::getTranslation);
     }
 
     /**
@@ -200,12 +200,18 @@ public class Vision extends SubsystemBase {
         }
 
         // Log summary data
-        // Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
-        // Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
-        // Logger.recordOutput(
-        //         "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
-        // Logger.recordOutput(
-        //         "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
+        Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
+        Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
+        Logger.recordOutput(
+                "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
+        Logger.recordOutput(
+                "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
+
+        // Dashboard-friendly summary: true when at least one camera accepted a pose
+        // this cycle. Wire to a boolean indicator widget in Elastic for at-a-glance
+        // vision health during matches.
+        Logger.recordOutput("Vision/Summary/HasTarget", !allRobotPosesAccepted.isEmpty());
+        Logger.recordOutput("Vision/Summary/TagCount", allTagPoses.size());
     }
 
     @FunctionalInterface

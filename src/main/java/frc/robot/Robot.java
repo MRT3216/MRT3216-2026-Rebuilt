@@ -17,15 +17,16 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Watchdog;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj.simulation.RoboRioSim;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.RobotType;
+import frc.robot.util.BatteryLogger;
 import frc.robot.util.Elastic;
 import frc.robot.util.Elastic.Notification;
 import frc.robot.util.Elastic.NotificationLevel;
 import frc.robot.util.HubShiftUtil;
+import frc.robot.util.TuningModeSync;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +47,8 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * <p>Main robot entrypoint and lifecycle manager.
  */
 public class Robot extends LoggedRobot {
+    public static final BatteryLogger batteryLogger = new BatteryLogger();
+
     private Command autonomousCommand;
     private RobotContainer robotContainer;
     // Low battery thresholds moved to Constants.RobotSafetyConstants
@@ -146,9 +149,18 @@ public class Robot extends LoggedRobot {
     /** This function is called periodically during all modes. */
     @Override
     public void robotPeriodic() {
+        // Sync tuningMode with NetworkTables for dashboard control
+        TuningModeSync.periodic();
         // Optionally switch the thread to high priority to improve loop
         // timing (see the template project documentation for details)
         // Threads.setCurrentThreadPriority(true, 99);
+
+        // ── BatteryLogger (pre-scheduler) ────────────────────────────────────
+        // Set battery voltage BEFORE CommandScheduler.run() so that subsystem
+        // periodic() calls to reportCurrentUsage() use the current loop's voltage
+        // for power/energy calculations, not the previous loop's stale value.
+        batteryLogger.setBatteryVoltage(RobotController.getBatteryVoltage());
+        batteryLogger.setRioCurrent(RobotController.getInputCurrent());
 
         // Runs the Scheduler. This is responsible for polling buttons, adding
         // newly-scheduled commands, running already-scheduled commands, removing
@@ -157,31 +169,40 @@ public class Robot extends LoggedRobot {
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
 
+        // ── BatteryLogger (post-scheduler) ────────────────────────────────────
+        // Subsystems have now reported their current draws via reportCurrentUsage().
+        // Aggregate fixed device draws and publish cumulative energy telemetry.
+        batteryLogger.periodicAfterScheduler();
+
         // ── HubShift telemetry ────────────────────────────────────────────────
+        // Official shift — for logging/replay only.
         var officialShift = HubShiftUtil.getOfficialShiftInfo();
-        var shiftedShift = HubShiftUtil.getShiftedShiftInfo();
         Logger.recordOutput("HubShift/CurrentShift", officialShift.currentShift().name());
         Logger.recordOutput("HubShift/Active", officialShift.active());
         Logger.recordOutput("HubShift/ElapsedTime", officialShift.elapsedTime());
         Logger.recordOutput("HubShift/RemainingTime", officialShift.remainingTime());
+
+        // Shifted shift — all co-pilot dashboard widgets use these keys.
+        var shiftedShift = HubShiftUtil.getShiftedShiftInfo();
         Logger.recordOutput("HubShift/ShiftedActive", shiftedShift.active());
         Logger.recordOutput("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
+        Logger.recordOutput("HubShift/ShiftedCurrentShift", shiftedShift.currentShift().name());
 
-        // Publish to SmartDashboard so Elastic widgets can subscribe.
-        SmartDashboard.putString("HubShift/CurrentShift", officialShift.currentShift().name());
-        SmartDashboard.putBoolean("HubShift/Active", officialShift.active());
-        SmartDashboard.putNumber("HubShift/RemainingTime", officialShift.remainingTime());
-        SmartDashboard.putNumber("HubShift/ElapsedTime", officialShift.elapsedTime());
-        SmartDashboard.putBoolean("HubShift/ShiftedActive", shiftedShift.active());
-        SmartDashboard.putNumber("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
-        SmartDashboard.putNumber("MatchTime", DriverStation.getMatchTime());
+        // Whether our alliance is active first (SHIFT1). Shown as "Active First?" on dashboard.
+        Logger.recordOutput(
+                "HubShift/ActiveFirst",
+                HubShiftUtil.getFirstActiveAlliance()
+                        == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue));
+        Logger.recordOutput("MatchTime", DriverStation.getMatchTime());
+
+        // Battery voltage — published every loop for Elastic dashboard widgets.
+        // RobotController.getBatteryVoltage() is already cached by the HAL each loop.
+        Logger.recordOutput("Battery/Voltage", RobotController.getBatteryVoltage());
 
         if (RobotController.getBatteryVoltage() > 0.0
                 && RobotController.getBatteryVoltage() <= Constants.RobotSafetyConstants.kLowBatteryVoltage
                 && disabledTimer.hasElapsed(Constants.RobotSafetyConstants.kLowBatteryDisabledSecs)) {
             lowBatteryAlert.set(true);
-            // TODO: Add this back if we have LEDs
-            // Leds.getGlobal().lowBatteryAlert = true;
         }
 
         // Return to non-RT thread priority (do not modify the first argument)

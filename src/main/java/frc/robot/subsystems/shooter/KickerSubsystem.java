@@ -1,37 +1,33 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Amps;
-// Diameter and mass are centralized in Constants.KickerConstants
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kD;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kGearReduction;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kI;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kP;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kP_sim;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kStatorCurrentLimit;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kTunableKickerRPM;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelDiameter;
-import static frc.robot.constants.ShooterConstants.KickerConstants.kWheelMass;
-import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforward;
-import static frc.robot.constants.ShooterConstants.KickerConstants.motorFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kKickerMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kKickerMotorTelemetry;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kD;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kD_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kGearReduction;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kI;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kI_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kP;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kP_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kTunableKickerRPM;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kWheelDiameter;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kWheelMass;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.motorFeedforward;
+import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.motorFeedforwardSim;
 
 import com.revrobotics.spark.SparkFlex;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
@@ -48,6 +44,9 @@ import yams.motorcontrollers.local.SparkWrapper;
 
 /** Kicker subsystem: controls the kicker wheel and telemetry. */
 public class KickerSubsystem extends SubsystemBase {
+    private static final String kKickerMotorTelemetry = "KickerMotor";
+    private static final String kKickerMechTelemetry = "KickerMech";
+
     // region Inputs & telemetry
 
     /**
@@ -73,10 +72,14 @@ public class KickerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & controller
+    // region Hardware
 
     private final SparkFlex motorController =
             new SparkFlex(RobotMap.Shooter.Kicker.kMotorId, SparkFlex.MotorType.kBrushless);
+
+    // endregion
+
+    // region Controller & mechanism
 
     private final SmartMotorControllerConfig motorConfig;
 
@@ -88,7 +91,7 @@ public class KickerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     /** Construct the KickerSubsystem and configure motor/telemetry settings. */
     public KickerSubsystem() {
@@ -104,7 +107,7 @@ public class KickerSubsystem extends SubsystemBase {
                         // mistakes)
                         .withFeedforward(motorFeedforward())
                         .withSimFeedforward(motorFeedforwardSim())
-                        // Telemetry name and verbosity levelP
+                        // Telemetry name and verbosity level
                         .withTelemetry(kKickerMotorTelemetry, Constants.telemetryVerbosity())
                         .withGearing(new MechanismGearing(GearBox.fromReductionStages(kGearReduction)))
                         .withMotorInverted(false)
@@ -132,7 +135,7 @@ public class KickerSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     /** Update the AdvantageKit "inputs" (data coming from the SMC) */
     private void updateInputs() {
@@ -140,16 +143,10 @@ public class KickerSubsystem extends SubsystemBase {
         kickerInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
         kickerInputs.volts = motor.getVoltage();
         kickerInputs.current = motor.getStatorCurrent();
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/KickerIsMoving", Math.abs(kickerInputs.velocity.in(RPM)) > 10.0);
-    }
 
-    // endregion
-
-    /** Advance the kicker simulation model by one simulation tick. */
-    @Override
-    public void simulationPeriodic() {
-        kicker.simIterate();
+        Robot.batteryLogger.reportCurrentUsage("Kicker", kickerInputs.current.in(Amps));
     }
 
     @Override
@@ -160,7 +157,15 @@ public class KickerSubsystem extends SubsystemBase {
         kicker.updateTelemetry();
     }
 
-    // region Public API (queries & commands)
+    /** Advance the kicker simulation model by one simulation tick. */
+    @Override
+    public void simulationPeriodic() {
+        kicker.simIterate();
+    }
+
+    // endregion
+
+    // region Public API
 
     /**
      * Gets the current velocity of the kicker.
@@ -175,7 +180,7 @@ public class KickerSubsystem extends SubsystemBase {
      * Set the kicker velocity.
      *
      * @param speed Speed to set.
-     * @return {@link RunCommand}
+     * @return a command that maintains the requested speed while scheduled
      */
     public Command setVelocity(AngularVelocity speed) {
         return kicker.setSpeed(speed);
@@ -197,6 +202,7 @@ public class KickerSubsystem extends SubsystemBase {
         return setVelocity(() -> RPM.of(kTunableKickerRPM.get()));
     }
 
+    /** Convenience helper: run the kicker in reverse to clear jams. */
     public Command clearKicker() {
         // Read the LoggedTunableNumber at runtime so dashboard edits apply while
         // the command is active.
@@ -204,24 +210,24 @@ public class KickerSubsystem extends SubsystemBase {
     }
 
     /**
-     * Set the dutycycle of the kicker.
+     * Set the duty cycle of the kicker.
      *
      * @param dutyCycle DutyCycle to set.
-     * @return {@link RunCommand}
+     * @return a command that applies the given duty cycle while scheduled
      */
     public Command setDutyCycle(double dutyCycle) {
         return kicker.set(dutyCycle);
     }
 
+    /**
+     * One-shot stop command: immediately disables closed-loop control and sets motor output to zero,
+     * then finishes. Use for imperative immediate stops (non-blocking). This does not hold the
+     * subsystem at zero after completion.
+     */
     public Command stopNow() {
-        /**
-         * One-shot stop command: immediately disables closed-loop control and sets motor output to
-         * zero, then finishes. Use for imperative immediate stops (non-blocking). This does not hold
-         * the subsystem at zero after completion.
-         */
         return Commands.runOnce(
                         () -> {
-                            kicker.set(0);
+                            motor.stopClosedLoopController();
                             motor.setDutyCycle(0);
                         },
                         this)
@@ -242,4 +248,6 @@ public class KickerSubsystem extends SubsystemBase {
                         this)
                 .withName("KickerStopHold");
     }
+
+    // endregion
 }

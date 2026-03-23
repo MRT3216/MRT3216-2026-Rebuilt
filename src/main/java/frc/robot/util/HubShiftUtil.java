@@ -2,7 +2,9 @@
 // https://github.com/Mechanical-Advantage/RobotCode2026Public/blob/main/src/main/java/org/littletonrobotics/frc2026/util/HubShiftUtil.java
 //
 // Modifications for MRT3216:
-//   - Removed LaunchCalculator dependency; TOF bounds are hardcoded constants
+//   - TOF bounds sourced from ShootingLookupTable (HUB mode) instead of LaunchCalculator,
+//     so they stay correct automatically when ShooterLookupTables.java is updated.
+//     Do NOT re-hardcode MIN_TOF / MAX_TOF here — edit ShooterLookupTables.java instead.
 //   - Made ShiftInfo / ShiftEnum public for Robot.java logging
 //   - Added FMS clock-sync and alliance-win override supplier
 
@@ -11,6 +13,7 @@ package frc.robot.util;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
+import frc.robot.util.shooter.ShootingLookupTable;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -73,20 +76,21 @@ public class HubShiftUtil {
     private static final double MAX_FUEL_COUNT_DELAY = 2.0;
     private static final double SHIFT_END_EXTENSION = 3.0;
 
-    // TOF bounds estimated from the MRT3216 lookup table (~0.4 s near, ~1.2 s far).
-    private static final double MIN_TOF = 0.4;
-    private static final double MAX_TOF = 1.2;
+    // TOF bounds read directly from the HUB lookup table so they stay in sync when
+    // ShooterLookupTables.java is updated — do not hardcode these values here.
+    private static final ShootingLookupTable HUB_TABLE =
+            new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
+    private static final double MIN_TOF = HUB_TABLE.getMinTimeOfFlight();
+    private static final double MAX_TOF = HUB_TABLE.getMaxTimeOfFlight();
 
     private static final double APPROACHING_FUDGE = -1.0 * (MIN_TOF + MIN_FUEL_COUNT_DELAY);
     private static final double ENDING_FUDGE = SHIFT_END_EXTENSION - (MAX_TOF + MAX_FUEL_COUNT_DELAY);
-
-    // ── Runtime state ───────────────────────────────────────────────────────────
 
     private static final Timer shiftTimer = new Timer();
     private static double shiftTimerOffset = 0.0;
     private static final double TIME_RESET_THRESHOLD = 3.0;
 
-    private static Supplier<Optional<Boolean>> allianceWinOverride = Optional::empty;
+    private static Supplier<Optional<Boolean>> allianceWinOverride = () -> Optional.empty();
 
     private HubShiftUtil() {}
 
@@ -234,8 +238,8 @@ public class HubShiftUtil {
                 remaining = ends[idx + 1] - current;
             }
 
-            // ShiftEnum indices: 0=TRANSITION,1=SHIFT1,2=SHIFT2,3=SHIFT3,4=SHIFT4,5=ENDGAME
-            ShiftEnum shift = ShiftEnum.values()[idx + 1]; // +1 to skip TRANSITION
+            // ShiftEnum: idx 0=TRANSITION, 1=SHIFT1, 2=SHIFT2, 3=SHIFT3, 4=SHIFT4, 5=ENDGAME
+            ShiftEnum shift = ShiftEnum.values()[idx];
             return new ShiftInfo(shift, elapsed, remaining, schedule[idx]);
         }
 

@@ -259,6 +259,21 @@ public class FieldConstants {
                 new Translation3d(LinesVertical.oppHubCenter, 0, openingHeight);
     }
 
+    /**
+     * Pass target landing zones — floor-level points on our alliance side where passed balls should
+     * land for later intake. Blue-alliance coordinates; use {@code AllianceFlipUtil.apply()} for red.
+     *
+     * <p>Left target is on the high-Y (left) side of the field, right target on the low-Y (right)
+     * side. Both are well inside the alliance zone, clear of the hub and bump structures.
+     */
+    public static class PassTarget {
+        /** Left-side landing zone (blue alliance, high Y). */
+        public static final Translation3d left = new Translation3d(1.5, 7.0, 0.0);
+
+        /** Right-side landing zone (blue alliance, low Y). */
+        public static final Translation3d right = new Translation3d(1.5, 1.0, 0.0);
+    }
+
     /** Tower related constants */
     public static class Tower {
         // Dimensions

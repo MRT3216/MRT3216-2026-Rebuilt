@@ -4,24 +4,22 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kD_sim;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kGearReduction;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kI_sim;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kP;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kP_sim;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMax;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kSoftLimitMin;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kStatorCurrentLimit;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kVelocityTolerance;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelDiameter;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.kWheelMass;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforward;
-import static frc.robot.constants.ShooterConstants.FlywheelConstants.motorFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kFlywheelMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kFlywheelMotorTelemetry;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kD;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kD_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kGearReduction;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kI;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kI_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kP;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kP_sim;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kStatorCurrentLimit;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kVelocityTolerance;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kWheelDiameter;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kWheelMass;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.motorFeedforward;
+import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.motorFeedforwardSim;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -31,10 +29,10 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
@@ -52,6 +50,9 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /** Flywheel subsystem: velocity control, open-loop duty, and telemetry helpers. */
 public class FlywheelSubsystem extends SubsystemBase {
+    private static final String kFlywheelMotorTelemetry = "FlywheelMotor";
+    private static final String kFlywheelMechTelemetry = "FlywheelMech";
+
     // region Inputs & telemetry
 
     @AutoLog
@@ -66,11 +67,15 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Hardware & controller
+    // region Hardware
 
     private final TalonFX leftMotor = new TalonFX(RobotMap.Shooter.Flywheel.kLeftMotorId);
     private final StatusSignal<AngularVelocity> velocitySignal = leftMotor.getVelocity();
     private final StatusSignal<Double> referenceSignal = leftMotor.getClosedLoopReference();
+
+    // endregion
+
+    // region Controller & mechanism
 
     private final SmartMotorControllerConfig motorConfig;
     private final TalonFXWrapper motor;
@@ -79,7 +84,7 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     public FlywheelSubsystem() {
         motorConfig =
@@ -116,7 +121,7 @@ public class FlywheelSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     private void updateInputs() {
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
@@ -129,14 +134,26 @@ public class FlywheelSubsystem extends SubsystemBase {
         flywheelInputs.volts = motor.getVoltage();
         flywheelInputs.current = motor.getStatorCurrent();
         flywheelInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-
-        boolean atSpeed =
-                flywheelInputs.setpoint.in(RPM) > 100.0
-                        && Math.abs(flywheelInputs.velocity.in(RPM) - flywheelInputs.setpoint.in(RPM))
-                                <= kVelocityTolerance.in(RPM);
-        SmartDashboard.putBoolean("Shooter/FlywheelAtSpeed", atSpeed);
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/FlywheelIsMoving", Math.abs(flywheelInputs.velocity.in(RPM)) > 10.0);
+
+        // Dashboard-friendly summary: true when the flywheel is spinning and within
+        // kVelocityTolerance of its setpoint. Wire to a boolean indicator in Elastic
+        // so the operator can confirm the shooter is ready before firing.
+        double setpointRPM = flywheelInputs.setpoint.in(RPM);
+        double velocityRPM = flywheelInputs.velocity.in(RPM);
+        boolean isSpunUp =
+                setpointRPM > 10.0 && Math.abs(velocityRPM - setpointRPM) < kVelocityTolerance.in(RPM);
+        Logger.recordOutput("Flywheel/IsSpunUp", isSpunUp);
+
+        Robot.batteryLogger.reportCurrentUsage("Flywheel", flywheelInputs.current.in(Amps));
+    }
+
+    @Override
+    public void periodic() {
+        updateInputs();
+        Logger.processInputs("Shooter/Flywheel", flywheelInputs);
+        flywheel.updateTelemetry();
     }
 
     @Override
@@ -144,15 +161,9 @@ public class FlywheelSubsystem extends SubsystemBase {
         flywheel.simIterate();
     }
 
-    @Override
-    public void periodic() {
-        updateInputs();
-        Logger.processInputs("Shooter/Flywheel", flywheelInputs);
-    }
-
     // endregion
 
-    // region Public API (queries & commands)
+    // region Public API
 
     /**
      * Command-returning API: set the flywheel closed-loop velocity while the returned Command is

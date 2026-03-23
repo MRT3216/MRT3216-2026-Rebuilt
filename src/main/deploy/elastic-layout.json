@@ -25,7 +25,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/SmartDashboard/MatchTime",
+                  "topic": "/AdvantageKit/MatchTime",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false
@@ -39,7 +39,7 @@
                 "height": 96.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/HubShift/Active",
+                  "topic": "/AdvantageKit/HubShift/Active",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF2222"
@@ -66,7 +66,7 @@
                 "height": 96.0,
                 "type": "Text Display",
                 "properties": {
-                  "topic": "/SmartDashboard/HubShift/CurrentShift",
+                  "topic": "/AdvantageKit/HubShift/CurrentShift",
                   "period": 0.1,
                   "show_type": false
                 }
@@ -79,7 +79,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/SmartDashboard/HubShift/RemainingTime",
+                  "topic": "/AdvantageKit/HubShift/RemainingTime",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false
@@ -93,7 +93,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/HubShift/ShiftedActive",
+                  "topic": "/AdvantageKit/HubShift/ShiftedActive",
                   "period": 0.06,
                   "true_color": "#00AAFF",
                   "false_color": "#444444"
@@ -107,7 +107,7 @@
                 "height": 64.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/SmartDashboard/HubShift/ShiftedRemainingTime",
+                  "topic": "/AdvantageKit/HubShift/ShiftedRemainingTime",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false
@@ -134,7 +134,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Flywheel/FX/VelocityRPM",
+                  "topic": "/AdvantageKit/Flywheel/FX/VelocityRPM",
                   "period": 0.1,
                   "decimal_places": 0,
                   "show_type": false
@@ -148,7 +148,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Hood/FX/PositionDegrees",
+                  "topic": "/AdvantageKit/Hood/FX/PositionDegrees",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false
@@ -162,7 +162,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/Shooter/Turret/PositionDegrees",
+                  "topic": "/AdvantageKit/Shooter/Turret/PositionDegrees",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false
@@ -176,7 +176,7 @@
                 "height": 96.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Shooter/FlywheelAtSpeed",
+                  "topic": "/AdvantageKit/Flywheel/IsSpunUp",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF6600"
@@ -217,7 +217,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Mechanisms/IntakePivotIsMoving",
+                  "topic": "/AdvantageKit/Mechanisms/IntakePivotIsMoving",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF2222"
@@ -231,7 +231,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Mechanisms/IntakeRollersIsMoving",
+                  "topic": "/AdvantageKit/Mechanisms/IntakeRollersIsMoving",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF2222"
@@ -245,7 +245,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Mechanisms/FlywheelIsMoving",
+                  "topic": "/AdvantageKit/Mechanisms/FlywheelIsMoving",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF2222"
@@ -259,7 +259,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Mechanisms/HoodIsMoving",
+                  "topic": "/AdvantageKit/Mechanisms/HoodIsMoving",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF2222"
@@ -273,7 +273,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Mechanisms/KickerIsMoving",
+                  "topic": "/AdvantageKit/Mechanisms/KickerIsMoving",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF2222"
@@ -287,7 +287,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Mechanisms/SpindexerIsMoving",
+                  "topic": "/AdvantageKit/Mechanisms/SpindexerIsMoving",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF2222"
@@ -301,7 +301,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Mechanisms/TurretIsMoving",
+                  "topic": "/AdvantageKit/Mechanisms/TurretIsMoving",
                   "period": 0.06,
                   "true_color": "#00FF00",
                   "false_color": "#FF2222"
@@ -376,7 +376,7 @@
                 "height": 128.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/SmartDashboard/MatchTime",
+                  "topic": "/AdvantageKit/MatchTime",
                   "period": 0.1,
                   "decimal_places": 1,
                   "show_type": false

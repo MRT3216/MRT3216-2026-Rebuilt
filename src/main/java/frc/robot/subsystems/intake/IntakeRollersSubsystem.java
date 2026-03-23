@@ -4,23 +4,21 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
-import static frc.robot.constants.IntakeConstants.Rollers.kD;
-import static frc.robot.constants.IntakeConstants.Rollers.kD_sim;
-import static frc.robot.constants.IntakeConstants.Rollers.kGearReduction;
-import static frc.robot.constants.IntakeConstants.Rollers.kI;
-import static frc.robot.constants.IntakeConstants.Rollers.kI_sim;
-import static frc.robot.constants.IntakeConstants.Rollers.kMotorInverted;
-import static frc.robot.constants.IntakeConstants.Rollers.kP;
-import static frc.robot.constants.IntakeConstants.Rollers.kP_sim;
-import static frc.robot.constants.IntakeConstants.Rollers.kSoftLimitMax;
-import static frc.robot.constants.IntakeConstants.Rollers.kSoftLimitMin;
-import static frc.robot.constants.IntakeConstants.Rollers.kStatorCurrentLimit;
-import static frc.robot.constants.IntakeConstants.Rollers.kWheelDiameter;
-import static frc.robot.constants.IntakeConstants.Rollers.kWheelMass;
-import static frc.robot.constants.IntakeConstants.Rollers.motorFeedforward;
-import static frc.robot.constants.IntakeConstants.Rollers.motorFeedforwardSim;
-import static frc.robot.constants.TelemetryKeys.kIntakeRollersMechTelemetry;
-import static frc.robot.constants.TelemetryKeys.kIntakeRollersMotorTelemetry;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kD;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kD_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kGearReduction;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kI;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kI_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kMotorInverted;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kP;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kP_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kSoftLimitMax;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kSoftLimitMin;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kStatorCurrentLimit;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kWheelDiameter;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kWheelMass;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.motorFeedforward;
+import static frc.robot.subsystems.intake.IntakeConstants.Rollers.motorFeedforwardSim;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -29,12 +27,11 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.constants.Constants;
-import frc.robot.constants.IntakeConstants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
 import org.littletonrobotics.junction.AutoLog;
@@ -51,6 +48,9 @@ import yams.motorcontrollers.remote.TalonFXWrapper;
 
 /** Intake rollers subsystem: controls dual rollers and telemetry. */
 public class IntakeRollersSubsystem extends SubsystemBase {
+    private static final String kIntakeRollersMotorTelemetry = "IntakeRollersMotor";
+    private static final String kIntakeRollersMechTelemetry = "IntakeRollersMech";
+
     // region Inputs & telemetry
 
     /**
@@ -74,9 +74,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // Explicit Phoenix refreshes are required for telemetry; call directly.
-
-    // region Hardware & controller
+    // region Hardware
 
     /* Hardware Objects */
     private final TalonFX leftMotor = new TalonFX(RobotMap.Intake.Roller.kMotorId);
@@ -87,7 +85,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Controller & mechanism
 
     /* Configuration for the Smart Motor Controller (SMC) */
     private final SmartMotorControllerConfig motorConfig;
@@ -102,7 +100,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Initialization helpers
+    // region Constructor
 
     /** Initializes the subsystem, sets signal update frequencies, and optimizes CAN utilization. */
     public IntakeRollersSubsystem() {
@@ -121,7 +119,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(kStatorCurrentLimit);
 
-        motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(2), motorConfig);
+        motor = new TalonFXWrapper(leftMotor, DCMotor.getKrakenX60Foc(1), motorConfig);
 
         intakeRollersConfig =
                 new FlyWheelConfig(motor)
@@ -143,7 +141,7 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
     // endregion
 
-    // region Lifecycle / periodic
+    // region Lifecycle
 
     /**
      * Updates the AdvantageKit "inputs" by refreshing hardware signals. Synchronizes TalonFX signals
@@ -166,16 +164,11 @@ public class IntakeRollersSubsystem extends SubsystemBase {
 
         // Sets the setpoint input based on the current SMC state
         intakeRollersInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/IntakeRollersIsMoving", Math.abs(intakeRollersInputs.velocity.in(RPM)) > 10.0);
-    }
 
-    @Override
-    public void simulationPeriodic() {
-        intakeRollers.simIterate();
+        Robot.batteryLogger.reportCurrentUsage("IntakeRollers", intakeRollersInputs.current.in(Amps));
     }
-
-    // region Lifecycle / periodic
 
     @Override
     public void periodic() {
@@ -184,9 +177,14 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         intakeRollers.updateTelemetry();
     }
 
+    @Override
+    public void simulationPeriodic() {
+        intakeRollers.simIterate();
+    }
+
     // endregion
 
-    // region Public API (queries & commands)
+    // region Public API
 
     /**
      * Gets the current velocity of the intake rollers.
@@ -217,10 +215,12 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.set(dutyCycle);
     }
 
+    /** Run the intake rollers at the configured intake velocity. */
     public Command intakeBalls() {
         return intakeRollers.setSpeed(IntakeConstants.Rollers.kTargetAngularVelocity);
     }
 
+    /** Run the intake rollers in reverse at full duty to eject game pieces. */
     public Command ejectBalls() {
         return intakeRollers.set(-1.0);
     }
@@ -231,7 +231,13 @@ public class IntakeRollersSubsystem extends SubsystemBase {
      * subsystem at zero after completion.
      */
     public Command stopNow() {
-        return Commands.runOnce(() -> intakeRollers.set(0), this).withName("IntakeRollersStopNow");
+        return Commands.runOnce(
+                        () -> {
+                            motor.stopClosedLoopController();
+                            motor.setDutyCycle(0);
+                        },
+                        this)
+                .withName("IntakeRollersStopNow");
     }
 
     /**
@@ -248,4 +254,6 @@ public class IntakeRollersSubsystem extends SubsystemBase {
                         this)
                 .withName("IntakeRollersStopHold");
     }
+
+    // endregion
 }

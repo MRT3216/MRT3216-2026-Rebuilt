@@ -1,4 +1,4 @@
-package frc.robot.constants;
+package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
@@ -17,47 +17,45 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Mass;
 
-/**
- * Intake rollers constants extracted from {@code Constants.java} so they live next to the subsystem
- * implementation under `subsystems/intake`.
- */
+/** Intake constants (rollers and pivot). Tuned by the team. */
 public final class IntakeConstants {
     private IntakeConstants() {}
 
-    /** Grouped roller constants to keep intake-related values organized. */
+    // -------------------------------------------------------------------------
+    // Rollers (velocity)
+    // -------------------------------------------------------------------------
+
     public static final class Rollers {
         private Rollers() {}
 
         // Mechanical
-        public static final boolean kMotorInverted = true;
         public static final Distance kWheelDiameter = Inches.of(1);
         public static final Mass kWheelMass = Pounds.of(0.5);
         public static final double kGearReduction = 2.0;
 
-        // Electrical / limits
+        // Motor wiring
+        public static final boolean kMotorInverted = true;
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
-        // PID (velocity loop) - zeroed for tuning
+        // PID
         public static final double kP = 0.5;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
-        // Feedforward - zeroed for tuning
+        // Feedforward
         public static final double kS = 0.39;
         public static final double kV = 0.24;
         public static final double kA = 0.0;
 
-        // Simulation overrides (zeroed for tuning)
-        public static final double kS_sim = 0.0;
-        public static final double kV_sim = 0.2477;
-        public static final double kA_sim = 0.0;
+        // Simulation overrides
         public static final double kP_sim = 0.01;
         public static final double kI_sim = 0.0;
         public static final double kD_sim = 0.0;
+        public static final double kS_sim = 0.0;
+        public static final double kV_sim = 0.2477;
+        public static final double kA_sim = 0.0;
 
-        // Telemetry keys are centralized in TelemetryKeys
-
-        /** Returns a preconfigured SimpleMotorFeedforward for the intake rollers. */
+        /** Returns a preconfigured feedforward for the intake rollers. */
         public static SimpleMotorFeedforward motorFeedforward() {
             return new SimpleMotorFeedforward(kS, kV, kA);
         }
@@ -67,22 +65,18 @@ public final class IntakeConstants {
             return new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim);
         }
 
-        /**
-         * Soft limits (human units) used for SysId / safety tooling. Defaults are conservative; tune on
-         * robot.
-         */
+        // Soft limits
         public static final AngularVelocity kSoftLimitMax = RPM.of(2500.0);
-
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
-        // Recommended / helper target velocity for button-driven checks
+        // Targets / tunables
         public static final AngularVelocity kTargetAngularVelocity = RPM.of(2000.0);
     }
 
-    /**
-     * Pivot-specific constants grouped under `IntakeConstants.Pivot` so both intake systems live in
-     * the same file next to the intake subsystems.
-     */
+    // -------------------------------------------------------------------------
+    // Pivot (positional)
+    // -------------------------------------------------------------------------
+
     public static final class Pivot {
         private Pivot() {}
 
@@ -95,58 +89,51 @@ public final class IntakeConstants {
         public static final boolean kMotorInverted = true;
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
-        // Feedforward - zeroed for tuning
+        // PID
+        public static final double kP = 0.0;
+        public static final double kI = 0.0;
+        public static final double kD = 0.0;
+
+        // Feedforward
         public static final double kG = 0.21;
         public static final double kS = 0.11;
         public static final double kV = 0.0;
         public static final double kA = 0.0;
 
-        // PID / motion limits
-        public static final double kP = 0.0;
-        public static final double kI = 0.0;
-        public static final double kD = 0.0;
-
-        // Increased initial limits per request: use 90 deg/s and 90 deg/s^2 for pivot
+        // Motion profile
         public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(90.0);
         public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(90.0);
 
-        // Simulation overrides (zeroed for tuning)
-        public static final double kG_sim = 0;
+        // Simulation overrides
+        public static final double kP_sim = 0.0;
+        public static final double kI_sim = 0.0;
+        public static final double kD_sim = 0.0;
+        public static final double kG_sim = 0.0;
         public static final double kS_sim = 0.0;
         public static final double kV_sim = 0.0;
         public static final double kA_sim = 0.0;
 
-        public static final double kP_sim = 0.0;
-        public static final double kI_sim = 0.0;
-        public static final double kD_sim = 0.0;
-
-        // Limits / presets
-        public static final Angle kHardLimitMax = Degrees.of(360);
-        public static final Angle kHardLimitMin = Degrees.of(0);
-        public static final Angle kSoftLimitMax = Degrees.of(360);
-        public static final Angle kSoftLimitMin = Degrees.of(0);
-
-        // public static final Angle kEncoderOffset = Rotation.of(0.65784466);
-
-        // Telemetry keys are centralized in TelemetryKeys
-
-        /** Gearing used specifically for external encoder wiring (motor:mechanism). */
-
-        // Arm position presets
-        public static final Angle kStowedAngle = Degrees.of(125);
-
-        public static final Angle kDeployedAngle = Degrees.of(0);
-
-        public static final Angle kTolerance = Degrees.of(1);
-
-        /** Returns a preconfigured ArmFeedforward for the intake pivot (ks, kg, kv). */
+        /** Returns a preconfigured ArmFeedforward for the intake pivot. */
         public static ArmFeedforward armFeedforward() {
             return new ArmFeedforward(kS, kG, kV);
         }
 
-        /** Simulation variant for the intake pivot arm feedforward. */
+        /** Simulation variant of the intake pivot feedforward. */
         public static ArmFeedforward armFeedforwardSim() {
             return new ArmFeedforward(kS_sim, kG_sim, kV_sim);
         }
+
+        // Hard limits
+        public static final Angle kHardLimitMax = Degrees.of(360);
+        public static final Angle kHardLimitMin = Degrees.of(0);
+
+        // Soft limits
+        public static final Angle kSoftLimitMax = Degrees.of(360);
+        public static final Angle kSoftLimitMin = Degrees.of(0);
+
+        // Presets / tunables
+        public static final Angle kStowedAngle = Degrees.of(125);
+        public static final Angle kDeployedAngle = Degrees.of(0);
+        public static final Angle kTolerance = Degrees.of(1);
     }
 }

@@ -1108,6 +1108,9 @@ smc.setMechanismPosition(absoluteEncoder.getPosition());
 
 Useful local references (already in repo)
  - `docs/TechnicalReference.md` — consolidated technical reference (YAMS, AdvantageKit, telemetry, vision, drive).
+ - `docs/TuningGuide.md` — comprehensive PID, feedforward, and motion profile tuning procedures for every subsystem.
+ - `docs/TUNING_CHECKLIST.md` — GitHub Issue-ready checklist for tracking tuning progress (mirrors TuningGuide sections).
+ - `docs/TurretAimPipeline.md` — turret wrap-around logic, encoder alignment, EasyCRT, aim pipeline.
  - `docs/OperatorGuide.md` — operator controls, shooting modes, LED patterns.
  - `docs/TestModeTuning.md` — test-mode tuning procedures and SysId workflow.
  - `docs/README.md` — documentation index.
@@ -1206,4 +1209,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-03-21 — expanded knowledge base with 10 new reference sections (WPILib PID tuning walkthrough, TrapezoidProfile & ProfiledPIDController, Elastic Dashboard, CTRE Tuner X & Swerve API, WPILib Triggers deep dive, PhotonVision constrained pose estimation, AdvantageScope log analysis, NetworkTables best practices, PathPlanner triggers/named commands/event markers, FRC battery management).*
+*Last edited: 2026-03-23 — docs audit (fixed stale dates, paths, line references across docs folder; added Profile Type column to TUNING_CHECKLIST.md; added TUNING_CHECKLIST.md to README.md index).*

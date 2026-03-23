@@ -37,7 +37,7 @@ Interactive tuning controls are enabled by setting `Constants.tuningMode = true`
 
 ### Background
 
-The shooter uses a distance-indexed lookup table (`ShooterLookupTables.java`) to map turret-to-hub distance → hood angle + time-of-flight. Flywheel RPM comes from the separate two-point `ShooterModel`, not the LUT.
+The shooter uses a distance-indexed lookup table (`subsystems/shooter/ShooterLookupTables.java`) to map turret-to-hub distance → hood angle + time-of-flight. Flywheel RPM comes from the separate two-point `ShooterModel`, not the LUT.
 
 The current HUB table has **6 rows** with uneven spacing (gaps up to 1.7 m in the critical 4–6 m band). Linear interpolation across large gaps degrades accuracy. The target is **10–12 rows** with ~0.5 m spacing where the hood angle curve changes fastest.
 
@@ -80,7 +80,7 @@ The current HUB table has **6 rows** with uneven spacing (gaps up to 1.7 m in th
 5. **Adjust `Shooter/HoodAngleDeg`** on the dashboard until balls consistently enter the hub.
 6. **Record** `{distance, hood angle, time-of-flight}` — measure TOF with a stopwatch or video frame count (launch → score).
 7. **Move to the next distance** and repeat.
-8. **Update `ShooterLookupTables.java`** with the recorded values.
+8. **Update `subsystems/shooter/ShooterLookupTables.java`** with the recorded values.
 
 ### Tips
 

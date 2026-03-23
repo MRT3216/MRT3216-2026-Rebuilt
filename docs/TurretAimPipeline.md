@@ -1,7 +1,7 @@
 # Turret Aim Pipeline — Programmer Reference
 
 **Branch:** Claude
-**Updated:** 2025-03-21
+**Updated:** 2026-03-23
 
 ---
 

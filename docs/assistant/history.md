@@ -182,3 +182,50 @@ End of 2026-03-21 session (part 1: constants reorg).
 ---
 
 End of 2026-03-21 session (part 2).
+
+---
+
+## Session: 2026-03-23 — TuningGuide Expansion & Docs Audit
+
+**Goal**: (1) Expand TuningGuide.md with exponential profile gains section and detailed mechanism subsections, (2) Audit all docs for accuracy and consistency.
+
+### Part 1: TuningGuide.md Expansion (commit a2c19b1)
+
+**Context**: User asked about exponential profiles and TorqueFOC in Q&A. This led to a request to add exponential profile coverage to TuningGuide.md and expand all mechanism sections.
+
+#### Steps
+1) User: Q&A about exponential profiles — how kV/kA serve as both feedforward gains and profile constraints, how YAMS handles them on TalonFX (hardware MotionMagicExpoVoltage) vs SparkWrapper (RIO-side Notifier thread running ExponentialProfile).
+2) User: Q&A about TorqueFOC — confirmed project uses FOC commutation (via DCMotor.getKrakenX60Foc) but NOT TorqueCurrentFOC control mode.
+3) User: Requested TuningGuide.md expansion — exponential profile section + expanded mechanism sections.
+4) Assistant: Added new "Exponential Profile Gains" section to the feedforward theory area of TuningGuide.
+5) Assistant: Expanded all 7 mechanism sections (Turret, Hood, Flywheel, Kicker, Spindexer, Intake Rollers, Intake Pivot) with: pre-flight checklists, numbered substeps, verification checklists, AdvantageScope signal tables, troubleshooting tables.
+6) Assistant: Added Profile Type column to Quick Reference Table.
+7) **Issue**: First round of 4 edits was lost between conversation turns (only Kicker expansion persisted). Diagnosed via git diff, redid all edits successfully.
+8) Commit a2c19b1 pushed: 694 insertions, 39 deletions.
+
+### Part 2: Docs Folder Audit
+
+**Context**: User asked to "make another pass through the tuning checklist and make sure its up to date and then check all the files in the docs folder."
+
+#### Issues Found & Fixed
+1. **README.md** — Missing `TUNING_CHECKLIST.md` from the documentation index. Added it.
+2. **TurretAimPipeline.md** — Date header said "2025-03-21" (wrong year). Fixed to "2026-03-23".
+3. **TUNING_CHECKLIST.md** — Feedforward line references said "approx line 127-128" but actual commented-out lines are 122-123 in IntakePivotSubsystem.java. Fixed to exact line numbers.
+4. **TUNING_CHECKLIST.md** — Gain Recording Sheet was missing a "Profile Type" column (TuningGuide Quick Reference now has one). Added the column with correct profile types for each mechanism.
+5. **TUNING_CHECKLIST.md** — Intake Pivot section lacked explanation of exponential profile behavior on SparkFlex. Added clarifying notes about RIO-side Notifier thread and kV/kA double duty.
+6. **TestModeTuning.md** — `ShooterLookupTables.java` references didn't include full path after constants reorg. Updated to `subsystems/shooter/ShooterLookupTables.java`.
+7. **OperatorGuide.md** — Reviewed, no issues found. Controller bindings match RobotContainer.
+8. **TechnicalReference.md** — Reviewed, no issues found. Brief but accurate.
+9. **assistant/profile.md** — Updated last-edited date.
+
+### Files Modified
+- `docs/README.md` — added TUNING_CHECKLIST.md entry
+- `docs/TurretAimPipeline.md` — fixed date
+- `docs/TUNING_CHECKLIST.md` — fixed line numbers, added Profile Type column, added exponential profile notes
+- `docs/TestModeTuning.md` — fixed ShooterLookupTables.java paths
+- `docs/assistant/profile.md` — updated last-edited date
+- `docs/assistant/history.md` — appended this session summary
+
+---
+
+End of 2026-03-23 session.

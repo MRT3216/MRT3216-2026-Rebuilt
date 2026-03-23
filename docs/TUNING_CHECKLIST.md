@@ -181,13 +181,15 @@
 
 > Motors: 2x SparkFlex + NEO Vortex (30:1), YAMS Arm + ExponentialProfile
 > Current: kP=0, kG=0.21, kS=0.11, kV=0, kA=0, Profile: 90 deg/s, 90 deg/s2
+> **Profile type: Exponential** — YAMS runs ExponentialProfile on RIO-side Notifier thread for SparkFlex.
+> kV and kA here serve double duty: feedforward gains AND exponential profile constraints (max velocity = 12V / kV, time constant = kA / kV).
 > CRITICAL: Feedforward is COMMENTED OUT in IntakePivotSubsystem.java. PID is all zeros. Pivot currently has NO active control.
 > Time budget: 30-60 minutes
 
 ### Pre-requisite: Enable Feedforward
 
-- [ ] Uncomment .withFeedforward(armFeedforward()) in IntakePivotSubsystem.java (approx line 127)
-- [ ] Uncomment .withSimFeedforward(armFeedforwardSim()) (approx line 128)
+- [ ] Uncomment .withFeedforward(armFeedforward()) in IntakePivotSubsystem.java (line 122)
+- [ ] Uncomment .withSimFeedforward(armFeedforwardSim()) (line 123)
 - [ ] Deploy and verify no errors
 
 ### Tune Gains
@@ -323,17 +325,17 @@
 
 > Fill in as you tune. Copy final values back into code.
 
-| Mechanism | kP | kI | kD | kS | kV | kA | kG | Profile Vel | Profile Accel |
-|-----------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:-----------:|:-------------:|
-| Drive Steer | 100 | 0 | 0.5 | 0.1 | 2.48 | 0 | - | Expo | Expo |
-| Drive Drive | ___ | 0 | 0 | ___ | ___ | - | - | - | - |
-| Turret | ___ | 0 | ___ | ___ | ___ | ___ | - | ___deg/s | ___deg/s2 |
-| Hood | ___ | 0 | ___ | ___ | ___ | ___ | - | ___deg/s | ___deg/s2 |
-| Flywheel | ___ | 0 | 0 | ___ | ___ | ___ | - | - | - |
-| Kicker | ___ | 0 | 0 | ___ | ___ | - | - | - | - |
-| Spindexer | ___ | 0 | 0 | ___ | ___ | - | - | - | - |
-| Intake Rollers | ___ | 0 | 0 | ___ | ___ | - | - | - | - |
-| Intake Pivot | ___ | 0 | ___ | ___ | ___ | ___ | ___ | ___deg/s | ___deg/s2 |
+| Mechanism | kP | kI | kD | kS | kV | kA | kG | Profile Type | Profile Vel | Profile Accel |
+|-----------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:------------:|:-----------:|:-------------:|
+| Drive Steer | 100 | 0 | 0.5 | 0.1 | 2.48 | 0 | - | Exponential | Expo | Expo |
+| Drive Drive | ___ | 0 | 0 | ___ | ___ | - | - | None | - | - |
+| Turret | ___ | 0 | ___ | ___ | ___ | ___ | - | Trapezoidal | ___deg/s | ___deg/s2 |
+| Hood | ___ | 0 | ___ | ___ | ___ | ___ | - | Trapezoidal | ___deg/s | ___deg/s2 |
+| Flywheel | ___ | 0 | 0 | ___ | ___ | ___ | - | None | - | - |
+| Kicker | ___ | 0 | 0 | ___ | ___ | - | - | None | - | - |
+| Spindexer | ___ | 0 | 0 | ___ | ___ | - | - | None | - | - |
+| Intake Rollers | ___ | 0 | 0 | ___ | ___ | - | - | None | - | - |
+| Intake Pivot | ___ | 0 | ___ | ___ | ___ | ___ | ___ | Exponential | ___deg/s | ___deg/s2 |
 
 ### Physical Measurements
 

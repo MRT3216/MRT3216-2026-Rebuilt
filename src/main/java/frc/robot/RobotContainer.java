@@ -388,19 +388,35 @@ public class RobotContainer {
     /**
      * Configure bindings used on the REAL robot for competition-style operation.
      *
-     * <p>Driver controller mappings should be limited to competition-safe behaviors (e.g. aim+shoot
-     * on the right trigger). Longer-lived or tuning helpers belong in {@link
+     * <p><b>Driver</b> owns driving and intake. <b>Operator</b> owns shooting, shoot-mode selection,
+     * and secondary ball-handling overrides. Longer-lived or tuning helpers belong in {@link
      * #configureTestButtonBindings()} and should be enabled only in tuning mode.
      */
     private void configureRealButtonBindings() {
+        // ── Driver: intake ──────────────────────────────────────────────
+
         // Right trigger toggles intake on/off (press once to start, press again to
         // cancel).
-        // .rightTrigger().onTrue(intakeSystem.intake());
+        driverController.rightTrigger().onTrue(intakeSystem.intake());
+        // TODO: Wire intaking LED when intake is running:
+        // driverController
+        //         .rightTrigger()
+        //         .onTrue(ledSubsystem.setIntakingLEDCommand(() -> true))
+        //         .onFalse(ledSubsystem.setIntakingLEDCommand(() -> false));
 
-        // Left trigger immediately stops rollers and holds them stopped while pressed.
-        // driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
+        // Left trigger immediately stops rollers.
+        driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
 
-        driverController
+        // Right bumper: agitate balls while held, then deploy intake on release.
+        driverController.rightBumper().whileTrue(intakeSystem.agitate()).onFalse(intakeSystem.deploy());
+
+        // Left bumper: eject balls from intake rollers while held.
+        driverController.leftBumper().whileTrue(intakeRollersSubsystem.ejectBalls());
+
+        // ── Operator: shooting ──────────────────────────────────────────
+
+        // Right trigger: hold to aim + feed a hub shot (shift-gated).
+        operatorController
                 .rightTrigger()
                 .whileTrue(
                         shooterSystem.aimAndShoot(
@@ -411,7 +427,7 @@ public class RobotContainer {
                                 ShootingLookupTable.Mode.HUB,
                                 () -> currentShootMode));
         // TODO: Wire aim-lock LED when shooting is active:
-        // driverController
+        // operatorController
         //         .rightTrigger()
         //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
         //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
@@ -419,36 +435,27 @@ public class RobotContainer {
         // Left trigger: hold to aim + feed a pass shot. Not shift-gated —
         // feeds freely while held regardless of hub shift state. Turret and hood
         // track the nearest pass target landing zone for the duration.
-        driverController
+        operatorController
                 .leftTrigger()
                 .whileTrue(
                         shooterSystem.aimAndShootPass(
                                 () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
         // TODO: Wire aim-lock LED when pass shooting is active:
-        // driverController
+        // operatorController
         //         .leftTrigger()
         //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
         //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
-        // Right bumper toggles intake on/off (press once to start, press again to
-        // cancel).
-        operatorController.rightBumper().onTrue(intakeSystem.intake());
-        // TODO: Wire intaking LED when intake is running:
-        // operatorController
-        //         .rightBumper()
-        //         .onTrue(ledSubsystem.setIntakingLEDCommand(() -> true))
-        //         .onFalse(ledSubsystem.setIntakingLEDCommand(() -> false));
+        // ── Operator: secondary ball-handling & overrides ───────────────
 
-        // Left bumper immediately stops rollers and holds them stopped while pressed.
-        operatorController.leftBumper().onTrue(intakeSystem.stopRollers());
+        // Right bumper: manually run intake rollers inward (override).
+        operatorController.rightBumper().whileTrue(intakeRollersSubsystem.intakeBalls());
 
-        operatorController.a().whileTrue(intakeSystem.agitate()).onFalse(intakeSystem.deploy());
-        operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
+        // Left bumper: clear / unjam shooter system while held.
+        operatorController.leftBumper().whileTrue(shooterSystem.clearShooterSystem());
 
-        operatorController.x().whileTrue(intakeRollersSubsystem.ejectBalls());
-        operatorController.y().whileTrue(intakeRollersSubsystem.intakeBalls());
+        // ── Operator: shoot-mode toggles ────────────────────────────────
 
-        // Operator stick toggles for shoot mode
         // Left stick press: toggle STATIC_DISTANCE mode
         operatorController
                 .leftStick()
@@ -476,18 +483,25 @@ public class RobotContainer {
                                     }
                                     Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
                                 }));
-        // Pulse right rumble once per second in the last 5s of an active shift —
-        // mirrors 6328's end-of-shift warning. Triggers on remainingTime threshold
-        // regardless of active state so the driver is warned before both active→inactive
-        // and inactive→active transitions.
+
+        // ── Shift-end rumble ────────────────────────────────────────────
+        // Pulse rumble once per second in the last 5s of an active shift —
+        // mirrors 6328's end-of-shift warning. Both controllers rumble so both
+        // driver and operator have situational awareness of shift boundaries.
         for (int i = 1; i <= 5; i++) {
             final double seconds = i;
             new Trigger(() -> HubShiftUtil.getShiftedShiftInfo().remainingTime() < seconds)
                     .and(RobotModeTriggers.teleop())
                     .onTrue(
                             Commands.runEnd(
-                                            () -> driverController.setRumble(RumbleType.kRightRumble, 1.0),
-                                            () -> driverController.setRumble(RumbleType.kRightRumble, 0.0))
+                                            () -> {
+                                                driverController.setRumble(RumbleType.kRightRumble, 1.0);
+                                                operatorController.setRumble(RumbleType.kRightRumble, 1.0);
+                                            },
+                                            () -> {
+                                                driverController.setRumble(RumbleType.kRightRumble, 0.0);
+                                                operatorController.setRumble(RumbleType.kRightRumble, 0.0);
+                                            })
                                     .withTimeout(0.25));
         }
     }

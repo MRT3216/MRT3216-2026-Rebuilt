@@ -4,7 +4,7 @@ This folder contains documentation for the MRT3216 codebase.
 
 ## Documentation Structure
 
-- **`OperatorGuide.md`** — Controller bindings, shooting modes, LED patterns, fallback logic, and quick reference
+- **`ControllerGuide.md`** — Controller bindings (driver & operator), shooting modes, LED patterns, fallback logic, and quick reference
 - **`TestModeTuning.md`** — Test mode usage, shooter calibration workflow, dashboard tunables, LUT calibration plan
 - **`TuningGuide.md`** — PID, feedforward, and motion profile tuning workflow for every subsystem including the CTRE drivetrain
 - **`TUNING_CHECKLIST.md`** — GitHub Issue-ready checklist for tracking tuning progress (mirrors TuningGuide sections)

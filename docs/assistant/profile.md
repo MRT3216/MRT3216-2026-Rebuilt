@@ -1111,7 +1111,7 @@ Useful local references (already in repo)
  - `docs/TuningGuide.md` — comprehensive PID, feedforward, and motion profile tuning procedures for every subsystem.
  - `docs/TUNING_CHECKLIST.md` — GitHub Issue-ready checklist for tracking tuning progress (mirrors TuningGuide sections).
  - `docs/TurretAimPipeline.md` — turret wrap-around logic, encoder alignment, EasyCRT, aim pipeline.
- - `docs/OperatorGuide.md` — operator controls, shooting modes, LED patterns.
+ - `docs/ControllerGuide.md` — driver & operator controls, shooting modes, LED patterns.
  - `docs/TestModeTuning.md` — test-mode tuning procedures and SysId workflow.
  - `docs/README.md` — documentation index.
  - `docs/assistant/profile.md` — this file; conventions, starter prompt, and reference material for assistant sessions.

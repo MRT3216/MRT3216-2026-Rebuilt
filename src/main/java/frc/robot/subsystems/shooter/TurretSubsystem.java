@@ -48,10 +48,10 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import java.util.Optional;
@@ -280,13 +280,15 @@ public class TurretSubsystem extends SubsystemBase {
      */
     private void updateInputs() {
         turretInputs.angle = turret.getAngle();
-        SmartDashboard.putNumber("Shooter/Turret/PositionDegrees", turretInputs.angle.in(Degrees));
+        Logger.recordOutput("Shooter/Turret/PositionDegrees", turretInputs.angle.in(Degrees));
         turretInputs.volts = smartMotor.getVoltage();
         turretInputs.current = smartMotor.getStatorCurrent();
         turretInputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/TurretIsMoving",
                 Math.abs(turretInputs.setpoint.in(Degrees) - turretInputs.angle.in(Degrees)) > 1.0);
+
+        Robot.batteryLogger.reportCurrentUsage("Turret", turretInputs.current.in(Amps));
     }
 
     @Override

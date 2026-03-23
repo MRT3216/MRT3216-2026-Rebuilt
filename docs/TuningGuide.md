@@ -836,16 +836,16 @@ Each camera adds CPU load — monitor in web interface. Stagger resolutions if n
 
 ### How Our NT Keys Work
 
-Our code publishes telemetry two ways:
+Our code publishes telemetry via AdvantageKit:
 
 | Method | NT Prefix | Used By |
 |--------|-----------|---------|
-| `Logger.recordOutput("Key", val)` | `/AdvantageKit/Key` | AdvantageScope replay & logging |
-| `SmartDashboard.putX("Key", val)` | `/SmartDashboard/Key` | Elastic dashboard widgets |
+| `Logger.recordOutput("Key", val)` | `/AdvantageKit/Key` | AdvantageScope replay, Elastic widgets |
+| `SmartDashboard.putX("Key", val)` | `/SmartDashboard/Key` | Field2d, Auto Chooser, DriveIsMoving (template code) |
 
-**Important:** `Logger.recordOutput` publishes under `/AdvantageKit/` which AdvantageScope reads perfectly, but Elastic widgets subscribe to `/SmartDashboard/` topics. Our code mirrors the most important values to SmartDashboard so both tools work simultaneously. All hub shift, match time, mechanism status, and shooter sensor data are mirrored.
+**Important:** Elastic can subscribe to **any** NT4 topic, including `/AdvantageKit/...` — it does NOT require `/SmartDashboard/`. Our `elastic-layout.json` points directly at `/AdvantageKit/` paths for all data published via `Logger.recordOutput`. Only the Field2d widget, Auto Chooser, and DriveIsMoving (published by the drive template) use `/SmartDashboard/`.
 
-In Elastic, when configuring a widget's NT path, always use `/SmartDashboard/Key`. In AdvantageScope, use `/AdvantageKit/Key`.
+In Elastic, most widget NT paths start with `/AdvantageKit/`. In AdvantageScope, the same paths appear under `AdvantageKit/`.
 
 ### Recommended Match Layout (6328-Style)
 
@@ -855,29 +855,29 @@ In Elastic, when configuring a widget's NT path, always use `/SmartDashboard/Key
 
 | Widget Type | NT Key (Elastic) | Elastic Widget | Notes |
 |-------------|------------------|----------------|-------|
-| Match Timer | `/SmartDashboard/MatchTime` | **Number** (large font) | Countdown from FMS. Most important number. |
-| Shift Timer | `/SmartDashboard/HubShift/ShiftedRemainingTime` | **Number** (large font) | Seconds until current shift ends (TOF-adjusted). |
-| Shift Active | `/SmartDashboard/HubShift/ShiftedActive` | **Boolean Box** | Green = our alliance can score. Red = opponent's turn. |
-| Game State | `/SmartDashboard/HubShift/CurrentShift` | **Text Display** | TRANSITION / SHIFT1 / SHIFT2 / SHIFT3 / SHIFT4 / ENDGAME |
-| Hub Active | `/SmartDashboard/HubShift/Active` | **Boolean Box** | Green when official shift is active. |
+| Match Timer | `/AdvantageKit/MatchTime` | **Number** (large font) | Countdown from FMS. Most important number. |
+| Shift Timer | `/AdvantageKit/HubShift/ShiftedRemainingTime` | **Number** (large font) | Seconds until current shift ends (TOF-adjusted). |
+| Shift Active | `/AdvantageKit/HubShift/ShiftedActive` | **Boolean Box** | Green = our alliance can score. Red = opponent's turn. |
+| Game State | `/AdvantageKit/HubShift/CurrentShift` | **Text Display** | TRANSITION / SHIFT1 / SHIFT2 / SHIFT3 / SHIFT4 / ENDGAME |
+| Hub Active | `/AdvantageKit/HubShift/Active` | **Boolean Box** | Green when official shift is active. |
 
 #### Row 2 — Shooter Status
 
 | Widget Type | NT Key (Elastic) | Elastic Widget | Notes |
 |-------------|------------------|----------------|-------|
-| Flywheel Ready | `/SmartDashboard/Shooter/FlywheelAtSpeed` | **Boolean Box** | Green = RPM on target. |
-| Flywheel RPM | `/SmartDashboard/Flywheel/FX/VelocityRPM` | **Number** | Current flywheel speed. |
-| Hood Angle | `/SmartDashboard/Hood/FX/PositionDegrees` | **Number** | Current hood position in degrees. |
-| Turret Angle | `/SmartDashboard/Shooter/Turret/PositionDegrees` | **Number** | Current turret position in degrees. |
+| Flywheel Ready | `/AdvantageKit/Flywheel/IsSpunUp` | **Boolean Box** | Green = RPM on target. |
+| Flywheel RPM | `/AdvantageKit/Flywheel/FX/VelocityRPM` | **Number** | Current flywheel speed. |
+| Hood Angle | `/AdvantageKit/Hood/FX/PositionDegrees` | **Number** | Current hood position in degrees. |
+| Turret Angle | `/AdvantageKit/Shooter/Turret/PositionDegrees` | **Number** | Current turret position in degrees. |
 
 #### Row 3 — Mechanisms & System Health
 
 | Widget Type | NT Key (Elastic) | Elastic Widget | Notes |
 |-------------|------------------|----------------|-------|
 | Battery | `/AdvantageKit/Battery/Voltage` | **Number** | Flash red < 11.5V. |
-| Drive Moving | `/SmartDashboard/Mechanisms/DriveIsMoving` | **Boolean Box** | Green = actively driving. |
-| All Mechanisms | `/SmartDashboard/Mechanisms/*IsMoving` | **Boolean Box** (each) | Quick at-a-glance mechanism health. |
-| Field View | `/SmartDashboard/Field` | **Field Widget** | 2D robot pose — verify auto worked. |
+| Drive Moving | `/SmartDashboard/Mechanisms/DriveIsMoving` | **Boolean Box** | Green = actively driving. (Drive template uses SmartDashboard.) |
+| All Mechanisms | `/AdvantageKit/Mechanisms/*IsMoving` | **Boolean Box** (each) | Quick at-a-glance mechanism health. |
+| Field View | `/SmartDashboard/Field` | **Field Widget** | 2D robot pose — verify auto worked. (Field2d uses SmartDashboard.) |
 
 ### Elastic Setup Step-by-Step
 

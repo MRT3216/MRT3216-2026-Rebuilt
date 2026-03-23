@@ -29,10 +29,10 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import frc.robot.util.PhoenixUtil;
@@ -126,7 +126,6 @@ public class FlywheelSubsystem extends SubsystemBase {
     private void updateInputs() {
         PhoenixUtil.refresh(velocitySignal, referenceSignal);
         Logger.recordOutput("Flywheel/FX/VelocityRPM", velocitySignal.getValue().in(RPM));
-        SmartDashboard.putNumber("Flywheel/FX/VelocityRPM", velocitySignal.getValue().in(RPM));
         Logger.recordOutput(
                 "Flywheel/FX/ReferenceRPM",
                 RPM.convertFrom(referenceSignal.getValue(), RotationsPerSecond));
@@ -135,7 +134,7 @@ public class FlywheelSubsystem extends SubsystemBase {
         flywheelInputs.volts = motor.getVoltage();
         flywheelInputs.current = motor.getStatorCurrent();
         flywheelInputs.setpoint = motor.getMechanismSetpointVelocity().orElse(RPM.of(0));
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/FlywheelIsMoving", Math.abs(flywheelInputs.velocity.in(RPM)) > 10.0);
 
         // Dashboard-friendly summary: true when the flywheel is spinning and within
@@ -146,7 +145,8 @@ public class FlywheelSubsystem extends SubsystemBase {
         boolean isSpunUp =
                 setpointRPM > 10.0 && Math.abs(velocityRPM - setpointRPM) < kVelocityTolerance.in(RPM);
         Logger.recordOutput("Flywheel/IsSpunUp", isSpunUp);
-        SmartDashboard.putBoolean("Shooter/FlywheelAtSpeed", isSpunUp);
+
+        Robot.batteryLogger.reportCurrentUsage("Flywheel", flywheelInputs.current.in(Amps));
     }
 
     @Override

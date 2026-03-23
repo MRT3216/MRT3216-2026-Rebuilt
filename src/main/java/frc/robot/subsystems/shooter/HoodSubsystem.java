@@ -34,9 +34,9 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
@@ -135,7 +135,6 @@ public class HoodSubsystem extends SubsystemBase {
 
         // Record raw Phoenix signals.
         Logger.recordOutput("Hood/FX/PositionDegrees", positionSignal.getValue().in(Degrees));
-        SmartDashboard.putNumber("Hood/FX/PositionDegrees", positionSignal.getValue().in(Degrees));
         Logger.recordOutput(
                 "Hood/FX/ReferenceDegrees", Degrees.convertFrom(referenceSignal.getValue(), Rotations));
 
@@ -143,9 +142,11 @@ public class HoodSubsystem extends SubsystemBase {
         inputs.volts = smartMotor.getVoltage();
         inputs.current = smartMotor.getStatorCurrent();
         inputs.setpoint = smartMotor.getMechanismPositionSetpoint().orElse(Degrees.of(0));
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/HoodIsMoving",
                 Math.abs(inputs.setpoint.in(Degrees) - inputs.angle.in(Degrees)) > 1.0);
+
+        Robot.batteryLogger.reportCurrentUsage("Hood", inputs.current.in(Amps));
     }
 
     @Override

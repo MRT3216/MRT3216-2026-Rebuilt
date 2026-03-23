@@ -17,11 +17,11 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Watchdog;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj.simulation.RoboRioSim;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.RobotType;
+import frc.robot.util.BatteryLogger;
 import frc.robot.util.Elastic;
 import frc.robot.util.Elastic.Notification;
 import frc.robot.util.Elastic.NotificationLevel;
@@ -47,6 +47,8 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * <p>Main robot entrypoint and lifecycle manager.
  */
 public class Robot extends LoggedRobot {
+    public static final BatteryLogger batteryLogger = new BatteryLogger();
+
     private Command autonomousCommand;
     private RobotContainer robotContainer;
     // Low battery thresholds moved to Constants.RobotSafetyConstants
@@ -181,16 +183,13 @@ public class Robot extends LoggedRobot {
                         == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue));
         Logger.recordOutput("MatchTime", DriverStation.getMatchTime());
 
-        // ── Elastic SmartDashboard mirror ─────────────────────────────────────
-        // Logger.recordOutput publishes under /AdvantageKit/ which Elastic cannot
-        // subscribe to by default. Mirror the most important driver-facing keys to
-        // /SmartDashboard/ so the elastic-layout.json widgets stay live.
-        SmartDashboard.putNumber("MatchTime", DriverStation.getMatchTime());
-        SmartDashboard.putBoolean("HubShift/Active", officialShift.active());
-        SmartDashboard.putString("HubShift/CurrentShift", officialShift.currentShift().name());
-        SmartDashboard.putNumber("HubShift/RemainingTime", officialShift.remainingTime());
-        SmartDashboard.putBoolean("HubShift/ShiftedActive", shiftedShift.active());
-        SmartDashboard.putNumber("HubShift/ShiftedRemainingTime", shiftedShift.remainingTime());
+        // ── BatteryLogger ─────────────────────────────────────────────────────
+        // Feed battery voltage and roboRIO current to the energy logger each loop.
+        // Subsystems report their own current via Robot.batteryLogger.reportCurrentUsage().
+        // periodicAfterScheduler() adds fixed device draws and publishes everything.
+        batteryLogger.setBatteryVoltage(RobotController.getBatteryVoltage());
+        batteryLogger.setRioCurrent(RobotController.getInputCurrent());
+        batteryLogger.periodicAfterScheduler();
 
         // Battery voltage — published every loop for Elastic dashboard widgets.
         // RobotController.getBatteryVoltage() is already cached by the HAL each loop.

@@ -264,6 +264,11 @@ public class RobotContainer {
                                 }
                                 return Degrees.of(Math.toDegrees(Math.atan2(y, x)));
                             }));
+
+            // In tuning mode the flywheel should stay idle — no hub-shift pre-spin.
+            // HubShiftUtil returns unpredictable state in sim (no FMS data), which
+            // would cause the flywheel to spin at seemingly random times.
+            flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
         } else {
             // Shift-aware turret tracking default command.
             //
@@ -314,25 +319,26 @@ public class RobotContainer {
             // under the trench. Hood tracking only happens inside aimAndShoot /
             // aimAndShootPass while the driver holds a trigger.
             hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(Degrees.of(0)));
+
+            // Flywheel pre-spins automatically when the shifted shift is active or
+            // within 5 seconds of becoming active — no button required. When the
+            // operator holds the right trigger, aimAndShoot preempts this default
+            // and tracks the exact speed from the lookup table.
+            flywheelSubsystem.setDefaultCommand(
+                    flywheelSubsystem.setVelocity(
+                            () -> {
+                                var shift = HubShiftUtil.getShiftedShiftInfo();
+                                if (shift.active() || shift.remainingTime() < 5.0) {
+                                    return FlywheelConstants.kFlywheelDefaultVelocity;
+                                }
+                                return edu.wpi.first.units.Units.RPM.of(0);
+                            }));
         }
 
         // Let spindexer coast by default. Use the persistent stopHold() default
         // which disables closed-loop control and keeps the duty/voltage at zero
         // while scheduled (the motor idle mode is COAST so it will freewheel).
         spindexerSubsystem.setDefaultCommand(spindexerSubsystem.stopHold());
-
-        // Flywheel pre-spins automatically when the shifted shift is active or within
-        // 5 seconds of becoming active — no button required. When the driver holds the
-        // right trigger, aimAndShoot preempts this default and tracks the exact speed.
-        flywheelSubsystem.setDefaultCommand(
-                flywheelSubsystem.setVelocity(
-                        () -> {
-                            var shift = HubShiftUtil.getShiftedShiftInfo();
-                            if (shift.active() || shift.remainingTime() < 5.0) {
-                                return FlywheelConstants.kFlywheelDefaultVelocity;
-                            }
-                            return edu.wpi.first.units.Units.RPM.of(0);
-                        }));
 
         // Ensure intake rollers default to stopped when no command is running —
         // they should not coast, so use the persistent stopHold() default.

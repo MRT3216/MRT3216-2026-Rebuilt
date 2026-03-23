@@ -71,9 +71,10 @@ OPERATOR:
   Right Bumper (hold)  →  manual intake rollers inward
   Left Bumper (hold)   →  clear / unjam shooter
 
-AUTOMATIC:
+AUTOMATIC (competition mode only — disabled in tuning mode):
   TURRET    →  auto-tracks hub (shift active) or pass target (shift inactive)
   FLYWHEEL  →  auto spins 5s before each shift window
+  HOOD      →  returns to 0° when not actively shooting
   LEDs      →  green wave = go, orange strobe = hurry, dim = wait
   RUMBLE    →  both controllers pulse in last 5s of shift
 ```

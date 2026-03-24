@@ -197,7 +197,9 @@ public class FlywheelSubsystem extends SubsystemBase {
     }
 
     public Command clearFlywheel() {
-        return flywheel.runTo(() -> RPM.of(kTunableFlywheelRPM.get() * -1), kVelocityTolerance);
+        return flywheel
+                .runTo(() -> RPM.of(kTunableFlywheelRPM.get() * -1), kVelocityTolerance)
+                .withName("Flywheel_Clear");
     }
 
     /**

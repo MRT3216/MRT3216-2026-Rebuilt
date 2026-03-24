@@ -292,7 +292,8 @@ public class ShooterSystem {
     public Command clearShooterSystem() {
         return flywheel
                 .clearFlywheel()
-                .alongWith(kicker.clearKicker().alongWith(spindexer.clearSpindexer()));
+                .alongWith(kicker.clearKicker().alongWith(spindexer.clearSpindexer()))
+                .withName("Shooter_ClearSystem");
     }
 
     /**
@@ -306,7 +307,11 @@ public class ShooterSystem {
 
     /** Stop flywheel, kicker, and spindexer immediately. */
     public Command stopShooting() {
-        return flywheel.stopNow().alongWith(kicker.stopNow()).alongWith(spindexer.stopNow());
+        return flywheel
+                .stopNow()
+                .alongWith(kicker.stopNow())
+                .alongWith(spindexer.stopNow())
+                .withName("Shooter_StopShooting");
     }
 
     // endregion

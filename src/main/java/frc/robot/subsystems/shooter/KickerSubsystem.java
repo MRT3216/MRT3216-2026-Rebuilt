@@ -199,14 +199,14 @@ public class KickerSubsystem extends SubsystemBase {
     public Command feedShooter() {
         // Read the LoggedTunableNumber at runtime so dashboard edits apply while
         // the command is active.
-        return setVelocity(() -> RPM.of(kTunableKickerRPM.get()));
+        return setVelocity(() -> RPM.of(kTunableKickerRPM.get())).withName("Kicker_FeedShooter");
     }
 
     /** Convenience helper: run the kicker in reverse to clear jams. */
     public Command clearKicker() {
         // Read the LoggedTunableNumber at runtime so dashboard edits apply while
         // the command is active.
-        return setVelocity(() -> RPM.of(kTunableKickerRPM.get() * -1));
+        return setVelocity(() -> RPM.of(kTunableKickerRPM.get() * -1)).withName("Kicker_Clear");
     }
 
     /**

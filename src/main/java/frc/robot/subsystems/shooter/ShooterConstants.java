@@ -359,7 +359,7 @@ public final class ShooterConstants {
         // internal PID sees position in mechanism rotations.
         //   kP=100 → 100V per full rotation → ~0.83V at 3° error → ~2.8V at 10° error
         // Start conservative and increase until response is snappy without oscillation.
-        public static final double kP = 100.0;
+        public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
@@ -369,7 +369,7 @@ public final class ShooterConstants {
         //   Theoretical kV = 12V / (5676 RPM / 27 / 60 rot/s) ≈ 3.42 V/(mech rot/s)
         // Start slightly below theoretical; friction and load will need tuning.
         public static final double kS = 0.2;
-        public static final double kV = 3.4;
+        public static final double kV = 1;
         public static final double kA = 0.01;
 
         // Motion profile
@@ -397,12 +397,12 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(95);
-        public static final Angle kHardLimitMin = Degrees.of(-95);
+        public static final Angle kHardLimitMax = Degrees.of(130);
+        public static final Angle kHardLimitMin = Degrees.of(-130);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(90);
-        public static final Angle kSoftLimitMin = Degrees.of(-90);
+        public static final Angle kSoftLimitMax = Degrees.of(120);
+        public static final Angle kSoftLimitMin = Degrees.of(-120);
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);

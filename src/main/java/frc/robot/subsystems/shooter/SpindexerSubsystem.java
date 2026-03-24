@@ -202,14 +202,14 @@ public class SpindexerSubsystem extends SubsystemBase {
     public Command feedShooter() {
         // Read the LoggedTunableNumber at runtime so dashboard edits apply while
         // the command is active.
-        return setVelocity(() -> RPM.of(kTunableIndexerRPM.get()));
+        return setVelocity(() -> RPM.of(kTunableIndexerRPM.get())).withName("Spindexer_FeedShooter");
     }
 
     /** Convenience helper: run the spindexer in reverse to clear jams. */
     public Command clearSpindexer() {
         // Read the LoggedTunableNumber at runtime so dashboard edits apply while
         // the command is active.
-        return setVelocity(() -> RPM.of(kTunableIndexerRPM.get() * -1));
+        return setVelocity(() -> RPM.of(kTunableIndexerRPM.get() * -1)).withName("Spindexer_Clear");
     }
 
     /**

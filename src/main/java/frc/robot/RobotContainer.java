@@ -261,19 +261,22 @@ public class RobotContainer {
             final double[] turretAccumulator = {0.0};
 
             turretSubsystem.setDefaultCommand(
-                    turretSubsystem.setAngle(
-                            () -> {
-                                boolean cw = driverController.getHID().getRawButton(6); // RB
-                                boolean ccw = driverController.getHID().getRawButton(5); // LB
-                                if (cw && !ccw) {
-                                    turretAccumulator[0] -= kRotateRateDegPerLoop;
-                                } else if (ccw && !cw) {
-                                    turretAccumulator[0] += kRotateRateDegPerLoop;
-                                }
-                                // Clamp to soft limits
-                                turretAccumulator[0] = Math.max(kSoftMin, Math.min(kSoftMax, turretAccumulator[0]));
-                                return Degrees.of(turretAccumulator[0]);
-                            }));
+                    turretSubsystem
+                            .setAngle(
+                                    () -> {
+                                        boolean cw = driverController.getHID().getRawButton(6); // RB
+                                        boolean ccw = driverController.getHID().getRawButton(5); // LB
+                                        if (cw && !ccw) {
+                                            turretAccumulator[0] -= kRotateRateDegPerLoop;
+                                        } else if (ccw && !cw) {
+                                            turretAccumulator[0] += kRotateRateDegPerLoop;
+                                        }
+                                        // Clamp to soft limits
+                                        turretAccumulator[0] =
+                                                Math.max(kSoftMin, Math.min(kSoftMax, turretAccumulator[0]));
+                                        return Degrees.of(turretAccumulator[0]);
+                                    })
+                            .withName("Turret_TuningBumperControl"));
 
             // In tuning mode the flywheel should stay idle — no hub-shift pre-spin.
             // HubShiftUtil returns unpredictable state in sim (no FMS data), which
@@ -296,53 +299,58 @@ public class RobotContainer {
             var passTable = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
 
             turretSubsystem.setDefaultCommand(
-                    turretSubsystem.setAngle(
-                            () -> {
-                                var shift = HubShiftUtil.getShiftedShiftInfo();
-                                var pose = drive.getPose();
-                                var speeds = drive.getChassisSpeeds();
+                    turretSubsystem
+                            .setAngle(
+                                    () -> {
+                                        var shift = HubShiftUtil.getShiftedShiftInfo();
+                                        var pose = drive.getPose();
+                                        var speeds = drive.getChassisSpeeds();
 
-                                Translation3d target;
-                                ShootingLookupTable table;
-                                if (shift.active()) {
-                                    target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                                    table = hubTable;
-                                } else {
-                                    // Flip targets to current alliance BEFORE comparing Y
-                                    // so the nearest-target pick works correctly on both
-                                    // alliances.
-                                    var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
-                                    var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
-                                    double robotY = pose.getY();
-                                    target =
-                                            Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
-                                                    ? left
-                                                    : right;
-                                    table = passTable;
-                                }
-                                return HybridTurretUtil.computeMovingShot(
-                                                pose, speeds, target, 3, kRefinementConvergenceEpsilon, table)
-                                        .turretAzimuth();
-                            }));
+                                        Translation3d target;
+                                        ShootingLookupTable table;
+                                        if (shift.active()) {
+                                            target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                                            table = hubTable;
+                                        } else {
+                                            // Flip targets to current alliance BEFORE comparing Y
+                                            // so the nearest-target pick works correctly on both
+                                            // alliances.
+                                            var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
+                                            var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
+                                            double robotY = pose.getY();
+                                            target =
+                                                    Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
+                                                            ? left
+                                                            : right;
+                                            table = passTable;
+                                        }
+                                        return HybridTurretUtil.computeMovingShot(
+                                                        pose, speeds, target, 3, kRefinementConvergenceEpsilon, table)
+                                                .turretAzimuth();
+                                    })
+                            .withName("Turret_DefaultTracking"));
 
             // Hood returns to 0° when not actively shooting — prevents decapitation
             // under the trench. Hood tracking only happens inside aimAndShoot /
             // aimAndShootPass while the driver holds a trigger.
-            hoodSubsystem.setDefaultCommand(hoodSubsystem.setAngle(Degrees.of(0)));
+            hoodSubsystem.setDefaultCommand(
+                    hoodSubsystem.setAngle(Degrees.of(0)).withName("Hood_DefaultStow"));
 
             // Flywheel pre-spins automatically when the shifted shift is active or
             // within 5 seconds of becoming active — no button required. When the
             // operator holds the right trigger, aimAndShoot preempts this default
             // and tracks the exact speed from the lookup table.
             flywheelSubsystem.setDefaultCommand(
-                    flywheelSubsystem.setVelocity(
-                            () -> {
-                                var shift = HubShiftUtil.getShiftedShiftInfo();
-                                if (shift.active() || shift.remainingTime() < 5.0) {
-                                    return FlywheelConstants.kFlywheelDefaultVelocity;
-                                }
-                                return edu.wpi.first.units.Units.RPM.of(0);
-                            }));
+                    flywheelSubsystem
+                            .setVelocity(
+                                    () -> {
+                                        var shift = HubShiftUtil.getShiftedShiftInfo();
+                                        if (shift.active() || shift.remainingTime() < 5.0) {
+                                            return FlywheelConstants.kFlywheelDefaultVelocity;
+                                        }
+                                        return edu.wpi.first.units.Units.RPM.of(0);
+                                    })
+                            .withName("Flywheel_DefaultPreSpin"));
         }
 
         // Let spindexer coast by default. Use the persistent stopHold() default

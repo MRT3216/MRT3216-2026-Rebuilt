@@ -228,5 +228,25 @@ public class FlywheelSubsystem extends SubsystemBase {
                 .withName("FlywheelStopHold");
     }
 
+    /** Returns the current flywheel velocity in RPM. */
+    public double getVelocityRPM() {
+        return flywheelInputs.velocity.in(RPM);
+    }
+
+    /** Returns the current flywheel setpoint in RPM. */
+    public double getSetpointRPM() {
+        return flywheelInputs.setpoint.in(RPM);
+    }
+
+    /**
+     * Returns {@code true} when the flywheel is spinning and within {@code kVelocityTolerance} of its
+     * setpoint.
+     */
+    public boolean atSpeed() {
+        double setpointRPM = flywheelInputs.setpoint.in(RPM);
+        double velocityRPM = flywheelInputs.velocity.in(RPM);
+        return setpointRPM > 10.0 && Math.abs(velocityRPM - setpointRPM) < kVelocityTolerance.in(RPM);
+    }
+
     // endregion
 }

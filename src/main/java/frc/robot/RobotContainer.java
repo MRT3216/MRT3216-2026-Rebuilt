@@ -56,6 +56,7 @@ import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
+import frc.robot.util.TuningDashboard;
 import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.Logger;
@@ -224,6 +225,12 @@ public class RobotContainer {
         // setupSysid();
         configureDefaultCommands();
         configureButtonBindings();
+
+        // Initialize the tuning Shuffleboard tab only when tuning mode is active.
+        // The tab never appears on the Elastic dashboard during competition.
+        if (Constants.tuningMode) {
+            TuningDashboard.initialize(drive, turretSubsystem, hoodSubsystem, flywheelSubsystem);
+        }
     }
 
     // endregion
@@ -243,26 +250,29 @@ public class RobotContainer {
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         if (Constants.tuningMode) {
+            // Bumper-based turret rotation for tuning mode.
+            // Hold RB to rotate clockwise, LB to rotate counter-clockwise.
+            // The setpoint is clamped at the soft limits (±190°) so the turret
+            // simply stops when it reaches the end of travel.
+            // Rate is in degrees per 20 ms loop (~180°/s at full speed).
+            final double kRotateRateDegPerLoop = 3.6; // 180 deg/s ÷ 50 Hz
+            final double kSoftMin = -190.0;
+            final double kSoftMax = 190.0;
+            final double[] turretAccumulator = {0.0};
+
             turretSubsystem.setDefaultCommand(
                     turretSubsystem.setAngle(
                             () -> {
-                                // Map right-stick angle to turret angle in degrees.
-                                // atan2 gives ±180° which covers the entire reachable range
-                                // (±190°). The extra ±10° past ±180° is handled by the
-                                // wrap-around logic in TurretSubsystem.wrapAngle() when the
-                                // solver requests angles in that zone during normal operation.
-                                //
-                                // Raw stick: X right = +1, Y up = -1 (Xbox convention).
-                                // We negate Y so stick-forward (−Y) = positive turret angle
-                                // (forward/away from driver). atan2(y, x) gives standard math
-                                // angle (CCW positive, 0° = right).
-                                double x = driverController.getRightX();
-                                double y = -driverController.getRightY();
-                                double deadband = 0.1;
-                                if (Math.hypot(x, y) < deadband) {
-                                    return turretSubsystem.getTarget();
+                                boolean cw = driverController.getHID().getRawButton(6); // RB
+                                boolean ccw = driverController.getHID().getRawButton(5); // LB
+                                if (cw && !ccw) {
+                                    turretAccumulator[0] -= kRotateRateDegPerLoop;
+                                } else if (ccw && !cw) {
+                                    turretAccumulator[0] += kRotateRateDegPerLoop;
                                 }
-                                return Degrees.of(Math.toDegrees(Math.atan2(y, x)));
+                                // Clamp to soft limits
+                                turretAccumulator[0] = Math.max(kSoftMin, Math.min(kSoftMax, turretAccumulator[0]));
+                                return Degrees.of(turretAccumulator[0]);
                             }));
 
             // In tuning mode the flywheel should stay idle — no hub-shift pre-spin.
@@ -534,8 +544,8 @@ public class RobotContainer {
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
 
-        driverController.leftBumper().whileTrue(intakePivotSubsystem.set(-.40).withTimeout(0.5));
-        driverController.rightBumper().whileTrue(intakeSystem.agitate());
+        // LB and RB are used for turret rotation in the default command (see
+        // configureDefaultCommands), so they are NOT bound here in tuning mode.
 
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
     }

@@ -389,19 +389,19 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(195);
-        public static final Angle kHardLimitMin = Degrees.of(-195);
+        public static final Angle kHardLimitMax = Degrees.of(95);
+        public static final Angle kHardLimitMin = Degrees.of(-95);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(190);
-        public static final Angle kSoftLimitMin = Degrees.of(-190);
+        public static final Angle kSoftLimitMax = Degrees.of(90);
+        public static final Angle kSoftLimitMin = Degrees.of(-90);
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);
 
         // ── EasyCRT absolute-position bootstrapping ──
         // Set to true to attempt CRT solve at boot; false falls back to kStartingPosition.
-        public static final boolean kUseCRT = false;
+        public static final boolean kUseCRT = true;
 
         // Encoder gearing: both absolute encoders mesh with the 90T ring gear (= turret).
         // commonRatio = 1.0 because the ring gear IS the turret (1:1).
@@ -424,8 +424,8 @@ public final class ShooterConstants {
         // Encoder offsets (rotations, added before wrap).
         // Calibrate: at mechanical zero, log raw encoder readings, then set these
         // so both read ≈ 0.0 at the zero pose.
-        public static final Angle kCRTEncoder1Offset = Rotations.of(0.0);
-        public static final Angle kCRTEncoder2Offset = Rotations.of(0.0);
+        public static final Angle kCRTEncoder1Offset = Rotations.of(-0.7983);
+        public static final Angle kCRTEncoder2Offset = Rotations.of(-0.86415);
 
         // Match tolerance: allowable modular error between predicted and measured encoder 2.
         // 0.02 rot ≈ 7.2° at the mechanism for our gearing — generous for initial bring-up.

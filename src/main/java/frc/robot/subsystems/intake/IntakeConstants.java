@@ -31,7 +31,7 @@ public final class IntakeConstants {
         // Mechanical
         public static final Distance kWheelDiameter = Inches.of(1);
         public static final Mass kWheelMass = Pounds.of(0.5);
-        public static final double kGearReduction = 2.0;
+        public static final double kGearReduction = 20 / 12.0;
 
         // Motor wiring
         public static final boolean kMotorInverted = true;

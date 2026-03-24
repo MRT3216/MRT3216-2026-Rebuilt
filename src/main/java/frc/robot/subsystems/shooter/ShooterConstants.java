@@ -357,9 +357,10 @@ public final class ShooterConstants {
         // PID — units are Volts per mechanism ROTATION of error (not degrees).
         // Because YAMS sets positionConversionFactor = 1/gearing, the SparkMax's
         // internal PID sees position in mechanism rotations.
-        //   kP=100 → 100V per full rotation → ~0.83V at 3° error → ~2.8V at 10° error
-        // Start conservative and increase until response is snappy without oscillation.
-        public static final double kP = 0.0;
+        //   kP=60 → 60V per full rotation → ~0.5V at 3° error → ~1.7V at 10° error
+        // This is the term that actively decelerates the turret as it approaches the
+        // setpoint. Without it, only friction stops the motor — causing overshoot/bounce.
+        public static final double kP = 60.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
@@ -367,9 +368,11 @@ public final class ShooterConstants {
         // velocityConversionFactor = (1/gearing)/60, making the SparkMax's velocity
         // units be mechanism rot/s.
         //   Theoretical kV = 12V / (5676 RPM / 27 / 60 rot/s) ≈ 3.42 V/(mech rot/s)
-        // Start slightly below theoretical; friction and load will need tuning.
-        public static final double kS = 0.2;
-        public static final double kV = 1;
+        // Set near theoretical — this is a physics-derived constant.  The "overshoot
+        // and bounce" seen at higher kV with kP=0 was actually the motor finally
+        // reaching cruise speed with no position correction to decelerate it.
+        public static final double kS = 0.15;
+        public static final double kV = 3.4;
         public static final double kA = 0.01;
 
         // Motion profile
@@ -397,12 +400,12 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(130);
-        public static final Angle kHardLimitMin = Degrees.of(-130);
+        public static final Angle kHardLimitMax = Degrees.of(190);
+        public static final Angle kHardLimitMin = Degrees.of(-190);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(120);
-        public static final Angle kSoftLimitMin = Degrees.of(-120);
+        public static final Angle kSoftLimitMax = Degrees.of(180);
+        public static final Angle kSoftLimitMin = Degrees.of(-180);
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);
@@ -413,12 +416,12 @@ public final class ShooterConstants {
 
         // Encoder gearing: both absolute encoders mesh with the 90T ring gear (= turret).
         // commonRatio = 1.0 because the ring gear IS the turret (1:1).
-        // Encoder 1 = REV Through Bore on SparkMax absolute-encoder port (13T pinion).
-        // Encoder 2 = PWM absolute encoder on RoboRIO DIO (10T pinion).
+        // Encoder 1 = REV Through Bore on SparkMax absolute-encoder port (10T pinion).
+        // Encoder 2 = PWM absolute encoder on RoboRIO DIO (13T pinion).
         public static final double kCRTCommonRatio = 1.0;
         public static final int kCRTDriveGearTeeth = 90;
-        public static final int kCRTEncoder1PinionTeeth = 13; // SparkMax abs enc — 90/13 ≈ 6.923:1
-        public static final int kCRTEncoder2PinionTeeth = 10; // RoboRIO PWM enc  — 90/10 = 9:1
+        public static final int kCRTEncoder1PinionTeeth = 10; // SparkMax abs enc — 90/10 = 9:1
+        public static final int kCRTEncoder2PinionTeeth = 13; // RoboRIO PWM enc  — 90/13 ≈ 6.923:1
 
         // Mechanism range — derived from the hard limits with a small margin so the CRT
         // solver's coverage window always exceeds the physical travel.  Changing the hard
@@ -430,14 +433,18 @@ public final class ShooterConstants {
                 Rotations.of(kHardLimitMax.in(Rotations) + kCRTRangeMarginRot);
 
         // Encoder offsets (rotations, added before wrap).
-        // Calibrate: at mechanical zero, log raw encoder readings, then set these
-        // so both read ≈ 0.0 at the zero pose.
-        public static final Angle kCRTEncoder1Offset = Rotations.of(-0.7983);
-        public static final Angle kCRTEncoder2Offset = Rotations.of(-0.86415);
+        // Calibrated 2025-03-24: averaged 4 boot samples at mechanical zero (sharpie mark).
+        //   Enc1 raw avg: 0.821,  Enc2 raw avg: 0.805
+        // Previous values: -0.7983 / -0.86415 (enc2 was 0.06 rot off → ~0.09 ErrorRot).
+        public static final Angle kCRTEncoder1Offset = Rotations.of(-0.821);
+        public static final Angle kCRTEncoder2Offset = Rotations.of(-0.805);
 
         // Match tolerance: allowable modular error between predicted and measured encoder 2.
-        // 0.02 rot ≈ 7.2° at the mechanism for our gearing — generous for initial bring-up.
-        // Tighten after verifying backlash/noise characteristics.
+        // After recalibrating offsets and fixing swapped pinion teeth (2025-03-24):
+        // After fixing swapped pinion teeth and recalibrating offsets (2025-03-24),
+        // worst-case ErrorRot across 7 positions (0° to ±180°) was 0.008.
+        // Set to 0.02 — 2.5× margin over worst case, well below
+        // the 0.144 rot candidate spacing (no AMBIGUOUS risk).
         public static final Angle kCRTMatchTolerance = Rotations.of(0.02);
 
         // Encoder inversions (set true if an encoder reads backwards w.r.t. mechanism positive).

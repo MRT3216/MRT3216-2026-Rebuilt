@@ -91,6 +91,23 @@ YAMS version notes (latest: 2026.1.17 as of 2026-03-19):
 - 2025.10.29: Fixed ArmFeedforward velocity calculation (Rotations→Radians) for Spark/Nova.
 - 2025.10.27: `Shooter` renamed to `FlyWheel`.
 
+Library source code access (use `github_repo` tool — DO NOT decompile JARs)
+---------------------------------------------------------------------------
+The assistant has **direct access** to source code of all major dependencies via the `github_repo` tool. When you need to read library internals (e.g., how YAMS passes feedforward to SparkMax, or how PathPlanner builds auto commands), use `github_repo` with the repo name below — **do NOT extract/decompile JARs from the Gradle cache**.
+
+| Library | GitHub Repo | Key source paths |
+|---|---|---|
+| **YAMS** | `Yet-Another-Software-Suite/YAMS` | `yams/java/yams/motorcontrollers/local/SparkWrapper.java`, `SmartMotorController.java`, `SmartMotorControllerConfig.java`, `yams/java/yams/mechanisms/positional/Pivot.java` |
+| **PathPlanner** | `mjansen4857/pathplanner` | `pathplannerlib/src/main/java/com/pathplanner/lib/` |
+| **AdvantageKit** | `Mechanical-Advantage/AdvantageKit` | `junction/core/src/`, `junction/autolog/src/` |
+| **PhotonVision** | `PhotonVision/photonvision` | `photon-lib/src/main/java/org/photonvision/` |
+| **REVLib** | `REVrobotics/REV-Software-Binaries` | (binary-only; use REV docs instead) |
+| **CTRE Phoenix 6** | `CrossTheRoadElec/PhoenixFRC-Releases` | (binary-only; use CTRE docs instead) |
+| **WPILib** | `wpilibsuite/allwpilib` | `wpimath/src/main/java/edu/wpi/first/math/`, `wpilibj/src/main/java/edu/wpi/first/wpilibj/` |
+| **EasyCRT** | `Yet-Another-Software-Suite/YAMS` | `yams/java/yams/units/EasyCRT.java`, `EasyCRTConfig.java` |
+
+**Usage example**: `github_repo(repo="Yet-Another-Software-Suite/YAMS", query="SparkWrapper setPosition trapezoid profile")`
+
 Why these conventions
 - Predictability: command-returning APIs align with WPILib scheduler ownership expectations.
 - Safety: one-shot stops avoid deadlocking sequences that need to progress; `stopHold()` provides a stable idle state.

@@ -354,15 +354,23 @@ public final class ShooterConstants {
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
-        // PID
-        public static final double kP = 3.0;
+        // PID — units are Volts per mechanism ROTATION of error (not degrees).
+        // Because YAMS sets positionConversionFactor = 1/gearing, the SparkMax's
+        // internal PID sees position in mechanism rotations.
+        //   kP=100 → 100V per full rotation → ~0.83V at 3° error → ~2.8V at 10° error
+        // Start conservative and increase until response is snappy without oscillation.
+        public static final double kP = 100.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
 
-        // Feedforward
-        public static final double kS = 0.0;
-        public static final double kV = 1.0;
-        public static final double kA = 0.05;
+        // Feedforward — kV units are Volts per (mechanism rot/s) because YAMS sets
+        // velocityConversionFactor = (1/gearing)/60, making the SparkMax's velocity
+        // units be mechanism rot/s.
+        //   Theoretical kV = 12V / (5676 RPM / 27 / 60 rot/s) ≈ 3.42 V/(mech rot/s)
+        // Start slightly below theoretical; friction and load will need tuning.
+        public static final double kS = 0.2;
+        public static final double kV = 3.4;
+        public static final double kA = 0.01;
 
         // Motion profile
         // NEO free speed = 5676 RPM through 27:1 = ~1261°/s max mechanism speed.

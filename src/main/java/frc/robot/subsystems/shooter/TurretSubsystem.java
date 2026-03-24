@@ -126,13 +126,6 @@ public class TurretSubsystem extends SubsystemBase {
     private final SparkMax pivotMotor =
             new SparkMax(RobotMap.Shooter.Turret.kMotorId, SparkMax.MotorType.kBrushless);
 
-    /**
-     * PWM absolute encoder on RoboRIO DIO, used as encoder 2 for CRT. Kept alive as a field so we can
-     * log its raw reading every loop for offset calibration — even when CRT solving is disabled.
-     */
-    private final DutyCycleEncoder turretPwmEncoder =
-            new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
-
     // endregion
 
     // region Controller & mechanism
@@ -245,34 +238,40 @@ public class TurretSubsystem extends SubsystemBase {
                 () -> Rotations.of(pivotMotor.getAbsoluteEncoder().getPosition());
 
         // Encoder 2: RoboRIO PWM DutyCycleEncoder (10T pinion on 90T ring gear).
-        // Uses the persistent field `turretPwmEncoder` so the DIO channel stays
-        // claimed for continuous logging even after the solve completes.
-        Supplier<Angle> enc2Supplier = () -> Rotations.of(turretPwmEncoder.get());
+        // Created locally so DIO channel 0 is not claimed when CRT is disabled.
+        // Wrapped in try/finally to release the HAL DIO resource after the one-shot read.
+        DutyCycleEncoder pwmEncoder =
+                new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
+        try {
+            Supplier<Angle> enc2Supplier = () -> Rotations.of(pwmEncoder.get());
 
-        // Build EasyCRT config
-        EasyCRTConfig config =
-                new EasyCRTConfig(enc1Supplier, enc2Supplier)
-                        .withCommonDriveGear(
-                                kCRTCommonRatio,
-                                kCRTDriveGearTeeth,
-                                kCRTEncoder1PinionTeeth,
-                                kCRTEncoder2PinionTeeth)
-                        .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
-                        .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
-                        .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
-                        .withMatchTolerance(kCRTMatchTolerance);
+            // Build EasyCRT config
+            EasyCRTConfig config =
+                    new EasyCRTConfig(enc1Supplier, enc2Supplier)
+                            .withCommonDriveGear(
+                                    kCRTCommonRatio,
+                                    kCRTDriveGearTeeth,
+                                    kCRTEncoder1PinionTeeth,
+                                    kCRTEncoder2PinionTeeth)
+                            .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
+                            .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
+                            .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
+                            .withMatchTolerance(kCRTMatchTolerance);
 
-        // Solve once
-        EasyCRT solver = new EasyCRT(config);
-        Optional<Angle> result = solver.getAngleOptional();
+            // Solve once
+            EasyCRT solver = new EasyCRT(config);
+            Optional<Angle> result = solver.getAngleOptional();
 
-        // Capture diagnostics
-        crtStatus = solver.getLastStatus();
-        crtErrorRot = solver.getLastErrorRotations();
-        crtIterations = solver.getLastIterations();
-        crtResolvedDeg = result.map(a -> a.in(Degrees)).orElse(Double.NaN);
+            // Capture diagnostics
+            crtStatus = solver.getLastStatus();
+            crtErrorRot = solver.getLastErrorRotations();
+            crtIterations = solver.getLastIterations();
+            crtResolvedDeg = result.map(a -> a.in(Degrees)).orElse(Double.NaN);
 
-        return result;
+            return result;
+        } finally {
+            pwmEncoder.close();
+        }
     }
 
     // endregion
@@ -292,12 +291,6 @@ public class TurretSubsystem extends SubsystemBase {
         Logger.recordOutput(
                 "Mechanisms/TurretIsMoving",
                 Math.abs(turretInputs.setpoint.in(Degrees) - turretInputs.angle.in(Degrees)) > 1.0);
-
-        // Raw absolute encoder readings (0–1 rotations) for CRT offset calibration.
-        // Enc1 = SparkMax through-bore (13T pinion), Enc2 = RoboRIO PWM (10T pinion).
-        Logger.recordOutput(
-                "Shooter/Turret/CRT/Enc1RawRot", pivotMotor.getAbsoluteEncoder().getPosition());
-        Logger.recordOutput("Shooter/Turret/CRT/Enc2RawRot", turretPwmEncoder.get());
 
         Robot.batteryLogger.reportCurrentUsage("Turret", turretInputs.current.in(Amps));
     }

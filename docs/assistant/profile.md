@@ -75,8 +75,14 @@ Important YAMS gotchas:
 - `startRun(() -> smc.stopClosedLoopController(), () -> smc.setDutyCycle(x)).finallyDo(() -> smc.startClosedLoopController())` — official pattern for duty cycle override when in CLOSED_LOOP mode.
 - The `Subsystem` passed to `SmartMotorControllerConfig(this)` is only used for YAMS-generated commands (e.g., `arm.run()`). If you call `SmartMotorController` methods directly in your own `run(...)` commands, the subsystem requirement comes from your command factory, not YAMS.
 - `getRotorVelocity()` on **SparkWrapper** is BUGGY in the version used by this project — reads position instead of velocity. Derive motor velocity as `mechanismVelocity × kGearReduction` instead. `TalonFXWrapper` and `TalonFXSWrapper` read `getRotorVelocity()` directly from the Phoenix 6 StatusSignal and are not affected by this bug.
-- AdvantageKit serializes `AngularVelocity` as rad/s regardless of the unit used to create it. AdvantageScope always displays in rad/s. 700 RPM ≈ 73.3 rad/s.
+- AdvantageKit serializes `AngularVelocity` as rad/s regardless of the unit used to create it. AdvantageScope always displays in rad/s. 700 RPM ≈ 73.3 rad/s. Similarly, `Angle` is serialized in radians.
 - SparkMAX persists configuration to flash. After code changes, a robot **reboot** is required to re-apply new YAMS config. Stale flash params cause unexpected behavior (e.g., wrong speed).
+- **SparkMax PID/FF unit system with YAMS**: YAMS sets `positionConversionFactor = rotorToMechanismRatio` (= 1/gearing) and `velocityConversionFactor = (1/gearing)/60`. This makes the SparkMax's internal PID see position in **mechanism rotations** and velocity in **mechanism rot/s**. Consequently:
+  - **kP** is in Volts per mechanism **rotation** of error (not degrees!). For a 27:1 turret, kP=100 gives ~0.83V at 3° error.
+  - **kV** is in Volts per mechanism rot/s. For a NEO through 27:1, theoretical kV ≈ 3.42 V/(mech rot/s).
+  - **kS** is in Volts (no unit conversion needed).
+  - **kA** is in Volts per (mechanism rot/s²).
+  - When using trapezoid profile, YAMS sets `ControlType.kMAXMotionPositionControl` — all PID + FF runs **on the SparkMax hardware**, not the RoboRIO. RIO-side closed-loop thread (Notifier) is only used for exponential profiles or LQR.
 
 YAMS version notes (latest: 2026.1.17 as of 2026-03-19):
 - 2026.1.16: Fixed non-profiled closed-loop control in SparkMax, TalonFX, TalonFXS. If using non-profiled PID (no maxVel/maxAccel), ensure using ≥2026.1.16.
@@ -1209,4 +1215,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-03-23 — docs audit (fixed stale dates, paths, line references across docs folder; added Profile Type column to TUNING_CHECKLIST.md; added TUNING_CHECKLIST.md to README.md index).*
+*Last edited: 2026-03-24 — added SparkMax PID/FF unit system gotcha (mechanism rotations, not degrees); turret kP=100, kV=3.4 with unit explanation; CRT calibration complete; TuningDashboard created.*

@@ -263,3 +263,114 @@ End of 2026-03-21 session (part 2).
 ---
 
 End of 2026-03-23 session.
+
+---
+
+## Session: 2026-03-23 / 2026-03-24 — TuningDashboard, CRT Calibration, Turret Tuning
+
+**Goal**: (1) Create TuningDashboard Shuffleboard tab, (2) Calibrate CRT encoder offsets on real robot, (3) Diagnose and fix turret PID/FF tuning issue.
+
+### Part 5: TuningDashboard Creation
+
+**Context**: User wanted a Shuffleboard-based tuning dashboard for use during real-robot tuning sessions.
+
+#### Steps
+1) Created `src/main/java/frc/robot/util/TuningDashboard.java` — static utility class that builds a "Tuning" Shuffleboard tab with:
+   - **Turret Viz**: Mechanism2d (4×4) showing turret angle + setpoint ligament
+   - **Turret**: angle, setpoint, volts, current readouts
+   - **Hood**: angle, setpoint readouts
+   - **Flywheel**: velocity RPM, setpoint RPM, at-speed boolean
+   - **LUT Calibration**: measured distance, model RPM prediction, LUT nearest row string
+   - **Status**: isAimReady, competitionMode booleans
+2) Added `getVelocityRPM()`, `getSetpointRPM()`, `atSpeed()` getters to `FlywheelSubsystem.java`.
+3) Wired `TuningDashboard.initialize()` into `RobotContainer` constructor (gated on `tuningMode`).
+4) Wired `TuningDashboard.periodic()` into `Robot.java` after `CommandScheduler.run()`.
+5) Fixed compile errors: `BuiltInWidgets.kMechanismWidget` doesn't exist (changed to `kTextView`), `Transform3d` to `Transform2d` for `HybridTurretUtil.turretOrigin()`, distance calculation corrected.
+
+**Issue discovered**: Elastic Dashboard does NOT auto-discover Shuffleboard tabs. The Shuffleboard API publishes data to `/Shuffleboard/Tuning/` in NetworkTables, but Elastic needs manual widget layout or SmartDashboard key discovery. Data is accessible in Elastic under NT but requires manual widget setup.
+
+### Part 6: Turret Tuning Command — Clamp Instead of Wrap
+
+**Context**: User wanted the turret tuning command (bumper-based rotation) to use simple clamping at ±90° soft limits instead of the wrap-around logic designed for competition auto-aim.
+
+#### Changes
+- `RobotContainer`: Turret tuning default command changed from `turret.setAngle(wrapAngle(...))` to `turret.setAngle(Degrees.of(MathUtil.clamp(current + increment, -90, 90)))`.
+- Removed `setAngleRaw` from TurretSubsystem (was a temporary bypass that skipped wrapAngle; not needed with clamping approach).
+
+### Part 7: CRT Encoder Calibration on Real Robot
+
+**Context**: User was at the real robot and needed to calibrate the EasyCRT encoder offsets for absolute turret position bootstrapping.
+
+#### Process
+1) Initially added `DutyCycleEncoder` as a persistent field with raw encoder logging in `updateInputs()` — this let the user see raw readings in AdvantageScope.
+2) User positioned turret at mechanical zero, read raw encoder values from logs.
+3) CRT offsets entered as negative of raw readings: `kCRTEncoder1Offset = Rotations.of(-0.7983)`, `kCRTEncoder2Offset = Rotations.of(-0.86415)`.
+4) **CRT solve succeeded!** Status = SOLVED on real robot boot.
+5) User later reverted the persistent DutyCycleEncoder field approach (CRT offsets were calibrated; no longer needed persistent access to the raw encoder).
+
+#### Key Learning
+- EasyCRT uses `.plus(offset)` on raw readings, so offset = negative of raw reading at mechanical zero.
+- AdvantageKit `@AutoLog` serializes `Angle` in **radians** (base SI unit), not degrees — users need to apply unit conversion in AdvantageScope.
+
+### Part 8: Turret PID/FF Unit Analysis & Fix
+
+**Context**: User reported turret was very slow and had ~3° steady-state error even with kP=2, kS=0.2, kV=0.7. Agent went unresponsive during initial investigation (token budget).
+
+#### Root Cause Analysis
+
+**Critical discovery**: The SparkMax's on-board PID and feedforward operate in **mechanism rotations** (not degrees) because YAMS sets:
+- `positionConversionFactor = rotorToMechanismRatio = 1/27` → position in mechanism rotations
+- `velocityConversionFactor = (1/27)/60` → velocity in mechanism rot/s
+
+Since the turret uses a trapezoid profile, YAMS configures `ControlType.kMAXMotionPositionControl`, meaning **all PID + FF runs on the SparkMax hardware** (not RoboRIO).
+
+REV docs confirm: kV = "Volts per velocity as measured by feedback sensor, **after the conversion factor**"
+
+##### kV was ~5× too low
+- kV=0.7 at cruise (1000°/s = 2.778 rot/s): FF = 0.2 + 0.7 × 2.778 = **2.1V** (need ~9.5V)
+- Correct kV ≈ **3.42** V/(mech rot/s): FF = 0.2 + 3.42 × 2.778 = **9.7V**
+- Calculation: NEO free speed 5676 RPM, at cruise motor RPM = 2.778 × 27 × 60 = 4500, voltage = 4500/473 = 9.51V, kV = 9.51/2.778 = 3.42
+
+##### kP was astronomically too low
+- kP=2 means 2V per **full rotation** (360°) of error
+- At 3° error: 2 × (3/360) = **0.017V** — essentially zero correction
+- Need kP ≈ **100** to get ~0.83V at 3° error, ~2.8V at 10° error
+
+#### Fix Applied
+- `kP`: 0.0 → **100.0** (start conservative, increase if needed)
+- `kV`: 0.7 → **3.4** (slightly below theoretical 3.42, tune on robot)
+- Added detailed unit explanation comments in ShooterConstants.java
+
+### Part 9: Soft/Hard Limit Changes (user-modified on robot)
+
+During real-robot testing, the user also changed:
+- Soft limits: ±190° → ±90°
+- Hard limits: ±195° → ±95°
+- kA: 0.05 → 0.01
+- Gearing confirmed at 27:1 (was previously 27, verified correct)
+
+### Files Modified This Session
+- `src/main/java/frc/robot/util/TuningDashboard.java` — **NEW**: Shuffleboard tuning tab
+- `src/main/java/frc/robot/subsystems/shooter/FlywheelSubsystem.java` — added getVelocityRPM(), getSetpointRPM(), atSpeed() getters
+- `src/main/java/frc/robot/Robot.java` — added TuningDashboard.periodic() + import
+- `src/main/java/frc/robot/RobotContainer.java` — TuningDashboard.initialize(), turret tuning command clamped (not wrapped), flywheel default in tuning → stopHold()
+- `src/main/java/frc/robot/subsystems/shooter/ShooterConstants.java` — turret kP=100, kV=3.4, kA=0.01, limits ±90/±95, unit explanation comments
+- `src/main/java/frc/robot/subsystems/shooter/TurretSubsystem.java` — CRT offsets calibrated (user also reverted persistent DutyCycleEncoder field)
+- `docs/ControllerGuide.md` — competition-mode-only note in quick summary
+
+### Key Technical Findings
+1. **SparkMax PID/FF units with YAMS**: When YAMS sets conversion factors, all SparkMax on-board PID/FF operates in mechanism units (rotations, rot/s). kP is Volts/rotation, kV is Volts/(rot/s). This makes raw kP/kV values much larger than you'd expect if thinking in degrees.
+2. **MAXMotion with trapezoid profile**: Runs entirely on SparkMax hardware. No RIO-side closed-loop thread (that's only for exponential profiles or LQR).
+3. **EasyCRT calibration**: Offset = negative of raw reading at mechanical zero. The .plus(offset) call handles the correction.
+4. **Elastic vs Shuffleboard**: Elastic doesn't auto-discover Shuffleboard API tabs. Need either manual Elastic layout or switch to SmartDashboard.putNumber() approach.
+
+### Turret Tuning Next Steps (for next session at robot)
+1. Deploy with kP=100, kV=3.4, kS=0.2, kA=0.01
+2. Test feedforward first: disable kP (set to 0), command a constant velocity, verify turret moves at expected speed
+3. Re-enable kP=100, test step response. Increase to 150-200 if sluggish, decrease if oscillating
+4. Add kD (start ~1.0) if there's overshoot or oscillation
+5. Fine-tune kS if turret has a dead zone at very low speeds
+
+---
+
+End of 2026-03-23/24 session.

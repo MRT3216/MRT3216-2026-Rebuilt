@@ -126,6 +126,14 @@ public class TurretSubsystem extends SubsystemBase {
     private final SparkMax pivotMotor =
             new SparkMax(RobotMap.Shooter.Turret.kMotorId, SparkMax.MotorType.kBrushless);
 
+    /**
+     * PWM absolute encoder on the RoboRIO DIO channel, kept as a persistent field so raw readings can
+     * be logged continuously (not just at boot). This enables live monitoring when manually rotating
+     * the turret back to zero.
+     */
+    private final DutyCycleEncoder pwmEncoder =
+            new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
+
     // endregion
 
     // region Controller & mechanism
@@ -263,83 +271,77 @@ public class TurretSubsystem extends SubsystemBase {
      * @return the resolved mechanism angle, or empty if all attempts fail.
      */
     private Optional<Angle> attemptCRTSolve() {
-        // Encoder 1: SparkMax absolute encoder (13T pinion on 90T ring gear)
+        // Encoder 1: SparkMax absolute encoder (10T pinion on 90T ring gear)
         Supplier<Angle> enc1Supplier =
                 () -> Rotations.of(pivotMotor.getAbsoluteEncoder().getPosition());
 
-        // Encoder 2: RoboRIO PWM DutyCycleEncoder (10T pinion on 90T ring gear).
-        // Created locally so DIO channel 0 is not claimed when CRT is disabled.
-        // Wrapped in try/finally to release the HAL DIO resource after the one-shot read.
-        DutyCycleEncoder pwmEncoder =
-                new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
+        // Encoder 2: RoboRIO PWM DutyCycleEncoder (13T pinion on 90T ring gear).
+        // Uses the persistent field `pwmEncoder` so it remains available for continuous telemetry.
+
+        // Wait for the PWM encoder to latch valid data before reading.
         try {
-            // Wait for the PWM encoder to latch valid data before reading.
-            try {
-                Thread.sleep(kCRTInitialSettleMs);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            Thread.sleep(kCRTInitialSettleMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        Supplier<Angle> enc2Supplier = () -> Rotations.of(pwmEncoder.get());
+
+        // Build EasyCRT config
+        EasyCRTConfig config =
+                new EasyCRTConfig(enc1Supplier, enc2Supplier)
+                        .withCommonDriveGear(
+                                kCRTCommonRatio,
+                                kCRTDriveGearTeeth,
+                                kCRTEncoder1PinionTeeth,
+                                kCRTEncoder2PinionTeeth)
+                        .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
+                        .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
+                        .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
+                        .withMatchTolerance(kCRTMatchTolerance);
+
+        EasyCRT solver = new EasyCRT(config);
+
+        // Retry loop — each attempt re-reads both encoders via the suppliers.
+        for (int attempt = 1; attempt <= kCRTMaxAttempts; attempt++) {
+            // Log raw encoder readings (before offset/wrap) for offset calibration.
+            double rawEnc1 = pivotMotor.getAbsoluteEncoder().getPosition();
+            double rawEnc2 = pwmEncoder.get();
+            Logger.recordOutput("Shooter/Turret/CRT/RawEncoder1Rot", rawEnc1);
+            Logger.recordOutput("Shooter/Turret/CRT/RawEncoder2Rot", rawEnc2);
+
+            Optional<Angle> result = solver.getAngleOptional();
+
+            // Capture diagnostics (overwritten each attempt; final state is what we log).
+            crtStatus = solver.getLastStatus();
+            crtErrorRot = solver.getLastErrorRotations();
+            crtIterations = solver.getLastIterations();
+            crtResolvedDeg = result.map(a -> a.in(Degrees)).orElse(Double.NaN);
+
+            if (result.isPresent()) {
+                Logger.recordOutput("Shooter/Turret/CRT/AttemptsUsed", attempt);
+                return result;
             }
 
-            Supplier<Angle> enc2Supplier = () -> Rotations.of(pwmEncoder.get());
+            // Only retry on NO_SOLUTION (encoder may not be ready yet).
+            // AMBIGUOUS and INVALID_CONFIG won't improve with more reads.
+            if (crtStatus != CRTStatus.NO_SOLUTION) {
+                break;
+            }
 
-            // Build EasyCRT config
-            EasyCRTConfig config =
-                    new EasyCRTConfig(enc1Supplier, enc2Supplier)
-                            .withCommonDriveGear(
-                                    kCRTCommonRatio,
-                                    kCRTDriveGearTeeth,
-                                    kCRTEncoder1PinionTeeth,
-                                    kCRTEncoder2PinionTeeth)
-                            .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
-                            .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
-                            .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
-                            .withMatchTolerance(kCRTMatchTolerance);
-
-            EasyCRT solver = new EasyCRT(config);
-
-            // Retry loop — each attempt re-reads both encoders via the suppliers.
-            for (int attempt = 1; attempt <= kCRTMaxAttempts; attempt++) {
-                // Log raw encoder readings (before offset/wrap) for offset calibration.
-                double rawEnc1 = pivotMotor.getAbsoluteEncoder().getPosition();
-                double rawEnc2 = pwmEncoder.get();
-                Logger.recordOutput("Shooter/Turret/CRT/RawEncoder1Rot", rawEnc1);
-                Logger.recordOutput("Shooter/Turret/CRT/RawEncoder2Rot", rawEnc2);
-
-                Optional<Angle> result = solver.getAngleOptional();
-
-                // Capture diagnostics (overwritten each attempt; final state is what we log).
-                crtStatus = solver.getLastStatus();
-                crtErrorRot = solver.getLastErrorRotations();
-                crtIterations = solver.getLastIterations();
-                crtResolvedDeg = result.map(a -> a.in(Degrees)).orElse(Double.NaN);
-
-                if (result.isPresent()) {
-                    Logger.recordOutput("Shooter/Turret/CRT/AttemptsUsed", attempt);
-                    return result;
-                }
-
-                // Only retry on NO_SOLUTION (encoder may not be ready yet).
-                // AMBIGUOUS and INVALID_CONFIG won't improve with more reads.
-                if (crtStatus != CRTStatus.NO_SOLUTION) {
+            // Wait for more PWM cycles before retrying.
+            if (attempt < kCRTMaxAttempts) {
+                try {
+                    Thread.sleep(kCRTRetryDelayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     break;
                 }
-
-                // Wait for more PWM cycles before retrying.
-                if (attempt < kCRTMaxAttempts) {
-                    try {
-                        Thread.sleep(kCRTRetryDelayMs);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
             }
-
-            Logger.recordOutput("Shooter/Turret/CRT/AttemptsUsed", kCRTMaxAttempts);
-            return Optional.empty();
-        } finally {
-            pwmEncoder.close();
         }
+
+        Logger.recordOutput("Shooter/Turret/CRT/AttemptsUsed", kCRTMaxAttempts);
+        return Optional.empty();
     }
 
     // endregion

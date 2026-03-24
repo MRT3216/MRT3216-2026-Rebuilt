@@ -2,13 +2,34 @@
 
 Purpose
 -------
-This file captures an actionable, medium-length summary of the project's command-based & YAMS usage patterns so the assistant and contributors can restore the same conventions on any machine.
+This file is the **primary context document** for AI assistants working on this FRC robot codebase.
+
+**Project**: FRC Team 3216's 2026 robot code — Java, WPILib 2026, YAMS motor framework, AdvantageKit logging, Phoenix Pro (TalonFX/Kraken), REV SparkMax (NEO).
+**Branch**: `Claude` (all assistant work happens here)
+**Build**: `.\gradlew compileJava` from project root
+
+Quick reference — jump to section:
+- **[Planning / execution model split](#planning--execution-model-split)** — read first if you received an execution plan
+- **[Core design decisions](#core-design-decisions-concise)** — command patterns, stop semantics
+- **[Important YAMS gotchas](#important-yams-gotchas)** — SparkMax unit system, reboot requirement, etc.
+- **[Key files & where to look](#key-files--where-to-look-quick-map)** — file path quick-reference
+- **[Library source code access](#library-source-code-access)** — how to read dependency source
 
 What this contains
 - Key design decisions and rationale
 - Practical examples you can paste into code
 - Important repo locations to check first when making changes
 - A reusable starter prompt to paste into assistant sessions
+
+Planning / execution model split
+---------------------------------
+This project uses two tiers of AI assistant:
+- **Planner** (expensive model — e.g., Claude Opus): reads codebase, makes design decisions, outputs a structured execution plan.
+- **Executor** (cheaper model — e.g., Claude Sonnet, GPT-4o): follows the plan step-by-step, making mechanical edits with no judgment calls.
+
+The plan format is defined in [`docs/assistant/plan-format.md`](plan-format.md). When you receive a plan, follow it literally. If a step fails, report the error and stop — don't improvise.
+
+If you are an executor model and there is **no plan attached**, treat this file as your primary context. Read "Core design decisions", "Key files & where to look", and "Important YAMS gotchas" before making any changes.
 
 Core design decisions (concise)
 ------------------------------
@@ -70,7 +91,8 @@ SmartMotorControllerConfig key options:
 - `.withLooselyCoupledFollowers(SmartMotorController...)` → for motors on independent shafts that should follow same setpoint.
 - `.clone()` → available since 2026.1.2; use when sharing config across multiple motors with minor differences.
 
-Important YAMS gotchas:
+Important YAMS gotchas
+----------------------
 - **ALWAYS create the Mechanism object** even if you only use SmartMotorController directly — the Mechanism constructor re-applies modified config (soft limits, etc.) to the motor. Skipping this means your config changes won't apply.
 - `startRun(() -> smc.stopClosedLoopController(), () -> smc.setDutyCycle(x)).finallyDo(() -> smc.startClosedLoopController())` — official pattern for duty cycle override when in CLOSED_LOOP mode.
 - The `Subsystem` passed to `SmartMotorControllerConfig(this)` is only used for YAMS-generated commands (e.g., `arm.run()`). If you call `SmartMotorController` methods directly in your own `run(...)` commands, the subsystem requirement comes from your command factory, not YAMS.
@@ -114,6 +136,7 @@ Why these conventions
 - Tuning ergonomics: follow-target re-appliers and no-requirements bumps let operators adjust without interrupting feeding/aiming.
 
 Key files & where to look (quick map)
+--------------------------------------
 - Shooter high-level: `src/main/java/frc/robot/systems/ShooterSystem.java`
 - Flywheel: `src/main/java/frc/robot/subsystems/shooter/FlywheelSubsystem.java`
 - Kicker/Spindexer: `src/main/java/frc/robot/subsystems/shooter/KickerSubsystem.java` and `SpindexerSubsystem.java`

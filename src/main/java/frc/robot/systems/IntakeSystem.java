@@ -42,7 +42,7 @@ public class IntakeSystem {
 
     // endregion
 
-    // region Public API
+    // region Public API — closed-loop (requires tuned PID/FF)
 
     /** Returns the current logical state of the intake. */
     public IntakeStates getState() {
@@ -52,6 +52,8 @@ public class IntakeSystem {
     /**
      * Deploy if stowed, then run the intake rollers. The state check is deferred so it is evaluated
      * at runtime rather than at command-creation time.
+     *
+     * <p><b>Requires tuned pivot PID/FF.</b> For an untuned robot use {@link #dutyCycleIntake()}.
      *
      * @return a command to perform the intake action
      */
@@ -67,6 +69,8 @@ public class IntakeSystem {
      * Eject (reverse) the intake: deploy if needed and run rollers in reverse. The state check is
      * deferred so it is evaluated at runtime.
      *
+     * <p><b>Requires tuned pivot PID/FF.</b>
+     *
      * @return a command to perform the eject action
      */
     public Command eject() {
@@ -79,6 +83,8 @@ public class IntakeSystem {
 
     /**
      * Agitate the intake by oscillating the pivot while running the rollers.
+     *
+     * <p><b>Requires tuned pivot PID/FF.</b> For an untuned robot use {@link #dutyCycleAgitate()}.
      *
      * @return a repeating agitation command
      */
@@ -123,6 +129,69 @@ public class IntakeSystem {
                         () -> currentState == IntakeStates.Deployed)
                 .withName("Intake.Stow");
     }
+
+    // endregion
+
+    // region Public API — duty-cycle (no PID/FF required)
+
+    /**
+     * Deploy the intake arm using a timed duty-cycle pulse, then run the intake rollers. No pivot
+     * PID/FF gains are required — the arm drops under a fixed voltage for a fixed duration.
+     *
+     * <p>This is the "battle-tested" approach that works without tuned gains. Once the pivot PID/FF
+     * is characterized, switch callers to {@link #intake()} for positional accuracy.
+     *
+     * @return a command to deploy via duty-cycle and run rollers
+     */
+    public Command dutyCycleIntake() {
+        return Commands.either(
+                        intakeRollers.intakeBalls(),
+                        dutyCycleDeploy().andThen(intakeRollers.intakeBalls()),
+                        () -> currentState == IntakeStates.Deployed)
+                .withName("Intake.DutyCycleIntake");
+    }
+
+    /**
+     * Agitate the intake by oscillating the pivot with timed duty-cycle pulses while running the
+     * rollers. No pivot PID/FF gains are required.
+     *
+     * <p>Uses ±0.05 duty-cycle at 0.25 s per direction. When the command ends (button released), the
+     * logical state is reset to {@link IntakeStates#Stowed} so that the follow-up deploy command
+     * (typically wired to {@code onFalse}) actually fires — agitation drifts the arm inward and it
+     * needs a fresh deploy pulse afterward.
+     *
+     * @return a repeating agitation command
+     */
+    public Command dutyCycleAgitate() {
+        return intakeRollers
+                .intakeBalls()
+                .alongWith(
+                        Commands.repeatingSequence(
+                                intakePivot
+                                        .set(0.08)
+                                        .withTimeout(0.3)
+                                        .andThen(intakePivot.set(-0.05).withTimeout(0.25))))
+                .finallyDo(() -> currentState = IntakeStates.Stowed)
+                .withName("Intake.DutyCycleAgitate");
+    }
+
+    /**
+     * Deploy the intake arm using a timed duty-cycle pulse and update the logical state. Runs the
+     * pivot at −20 % for 0.3 s, which was the proven deploy method before PID/FF tuning.
+     *
+     * @return a command that deploys the intake via duty-cycle
+     */
+    public Command dutyCycleDeploy() {
+        return intakePivot
+                .set(-0.20)
+                .withTimeout(0.3)
+                .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
+                .withName("Intake.DutyCycleDeploy");
+    }
+
+    // endregion
+
+    // region Public API — common
 
     /** Convenience command to stop the rollers (persistent hold). */
     public Command stopRollers() {

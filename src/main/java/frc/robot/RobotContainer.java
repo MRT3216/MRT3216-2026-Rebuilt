@@ -209,7 +209,9 @@ public class RobotContainer {
         }
 
         // Register auto commands
-        NamedCommands.registerCommand("Run Intake", intakeSystem.intake());
+        // Use duty-cycle intake for auto until pivot PID/FF gains are tuned.
+        // Switch to intakeSystem.intake() / intakeSystem.agitate() once tuned.
+        NamedCommands.registerCommand("Run Intake", intakeSystem.dutyCycleIntake());
         NamedCommands.registerCommand(
                 "Aim and Shoot",
                 shooterSystem.aimAndShoot(
@@ -219,7 +221,7 @@ public class RobotContainer {
                         3,
                         ShootingLookupTable.Mode.HUB,
                         () -> currentShootMode));
-        NamedCommands.registerCommand("Agitate", intakeSystem.agitate());
+        NamedCommands.registerCommand("Agitate", intakeSystem.dutyCycleAgitate());
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooting());
 
         setupAutoChooser();
@@ -425,9 +427,9 @@ public class RobotContainer {
     private void configureRealButtonBindings() {
         // ── Driver: intake ──────────────────────────────────────────────
 
-        // Right trigger toggles intake on/off (press once to start, press again to
-        // cancel).
-        driverController.rightTrigger().onTrue(intakeSystem.intake());
+        // Right trigger: duty-cycle intake (deploy arm via timed pulse, then run
+        // rollers). Switch to intakeSystem.intake() once pivot PID/FF gains are tuned.
+        driverController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
         // TODO: Wire intaking LED when intake is running:
         // driverController
         //         .rightTrigger()
@@ -437,8 +439,12 @@ public class RobotContainer {
         // Left trigger immediately stops rollers.
         driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
 
-        // Right bumper: agitate balls while held, then deploy intake on release.
-        driverController.rightBumper().whileTrue(intakeSystem.agitate()).onFalse(intakeSystem.deploy());
+        // Right bumper: duty-cycle agitate while held, then deploy on release.
+        // Switch to intakeSystem.agitate() / intakeSystem.deploy() once tuned.
+        driverController
+                .rightBumper()
+                .whileTrue(intakeSystem.dutyCycleAgitate())
+                .onFalse(intakeSystem.dutyCycleDeploy());
 
         // Left bumper: eject balls from intake rollers while held.
         driverController.leftBumper().whileTrue(intakeRollersSubsystem.ejectBalls());
@@ -557,13 +563,19 @@ public class RobotContainer {
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
 
-        driverController.rightBumper().onTrue(intakeSystem.intake());
+        // Duty-cycle intake: deploy arm via timed pulse, then run rollers while held.
+        // Switch to intakeSystem.intake() once pivot PID/FF gains are tuned.
+        driverController.rightBumper().whileTrue(intakeSystem.dutyCycleIntake());
 
-        // Left trigger immediately stops rollers.
+        // Left bumper immediately stops rollers.
         driverController.leftBumper().onTrue(intakeSystem.stopRollers());
 
-        // Right bumper: agitate balls while held, then deploy intake on release.
-        // driverController.rightBumper().whileTrue(intakeSystem.agitate()).onFalse(intakeSystem.deploy());
+        // Left trigger: duty-cycle agitate while held, re-deploy on release.
+        // Switch to intakeSystem.agitate() once pivot PID/FF gains are tuned.
+        driverController
+                .leftTrigger()
+                .whileTrue(intakeSystem.dutyCycleAgitate())
+                .onFalse(intakeSystem.dutyCycleDeploy());
 
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
     }

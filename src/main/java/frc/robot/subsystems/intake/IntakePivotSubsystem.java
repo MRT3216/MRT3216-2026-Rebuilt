@@ -8,6 +8,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD_sim;
+import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kEncoderZeroOffset;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kGearing;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMax;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMin;
@@ -130,6 +131,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withExternalEncoder(leftPivotMotor.getAbsoluteEncoder())
                         .withExternalEncoderInverted(false)
                         .withUseExternalFeedbackEncoder(true)
+                        .withExternalEncoderZeroOffset(kEncoderZeroOffset)
                         .withExternalEncoderGearing(new MechanismGearing(GearBox.fromStages("1:1")))
                         .withFollowers(Pair.of(rightPivotMotor, true));
 

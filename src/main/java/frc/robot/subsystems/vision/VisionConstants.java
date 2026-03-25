@@ -30,7 +30,8 @@ import edu.wpi.first.math.geometry.Transform3d;
 public final class VisionConstants {
     private VisionConstants() {}
 
-    // AprilTag layout — final so the JVM initializes it exactly once at class-load time
+    // AprilTag layout — final so the JVM initializes it exactly once at class-load
+    // time
     public static final AprilTagFieldLayout aprilTagLayout =
             AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
 
@@ -42,7 +43,8 @@ public final class VisionConstants {
 
     // Robot to camera transforms
     // (Not used by Limelight, configure in web UI instead)
-    // NOTE: Rotation3d args mix Degrees and Radians — this is intentional (pitch is in radians).
+    // NOTE: Rotation3d args mix Degrees and Radians — this is intentional (pitch is
+    // in radians).
     public static final Transform3d robotToCameraLeft =
             new Transform3d(
                     Inches.of(-11.791238),
@@ -79,10 +81,11 @@ public final class VisionConstants {
     // (Adjusted automatically based on distance and # of tags)
     //
     // Reference values from other teams (2026 season):
-    //   BroncBotz 3481:  VecBuilder.fill(0.05, 0.05, 0.022)
-    //   6328:            Uses per-camera trust factors, similar scale
+    // BroncBotz 3481: VecBuilder.fill(0.05, 0.05, 0.022)
+    // 6328: Uses per-camera trust factors, similar scale
     //
-    // Lower values = trust vision more. Increase if the robot "jumps" on the field view.
+    // Lower values = trust vision more. Increase if the robot "jumps" on the field
+    // view.
     public static final double linearStdDevBaseline = 0.02; // Meters
     public static final double angularStdDevBaseline = 0.06; // Radians
 

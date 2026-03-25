@@ -48,28 +48,28 @@ public final class VisionConstants {
                     Inches.of(-11.791238),
                     Inches.of(12.876205),
                     Inches.of(14.154937),
-                    new Rotation3d(Degrees.of(0.0), Radians.of(0.4), Degrees.of(75)));
+                    new Rotation3d(Degrees.of(0.0), Radians.of(-0.4), Degrees.of(75)));
 
     public static final Transform3d robotToCameraRight =
             new Transform3d(
-                    Inches.of(-11.625209),
-                    Inches.of(-12.340245),
-                    Inches.of(14.169104),
-                    new Rotation3d(Degrees.of(0), Radians.of(0.4), Degrees.of(285)));
+                    Inches.of(-11.427808),
+                    Inches.of(-12.304215),
+                    Inches.of(14.175991),
+                    new Rotation3d(Degrees.of(0), Radians.of(-0.4), Degrees.of(285)));
 
     public static final Transform3d robotToCameraFront =
             new Transform3d(
                     Inches.of(-11.234075),
                     Inches.of(-10.772856),
                     Inches.of(20.375546),
-                    new Rotation3d(Degrees.of(0), Radians.of(0.4), Degrees.of(15)));
+                    new Rotation3d(Degrees.of(0), Radians.of(-0.4), Degrees.of(15)));
 
     public static final Transform3d robotToCameraBack =
             new Transform3d(
                     Inches.of(-12.865422),
                     Inches.of(11.805673),
                     Inches.of(16.151008),
-                    new Rotation3d(Degrees.of(0), Radians.of(0.4), Degrees.of(195)));
+                    new Rotation3d(Degrees.of(0), Radians.of(-0.4), Degrees.of(195)));
 
     // Basic filtering thresholds
     public static final double maxAmbiguity = 0.3;

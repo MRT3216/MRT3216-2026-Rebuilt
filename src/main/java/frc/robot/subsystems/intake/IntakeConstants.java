@@ -89,6 +89,9 @@ public final class IntakeConstants {
         public static final boolean kMotorInverted = true;
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
+        // Absolute encoder zero offset — raw reading when arm is at true 0°
+        public static final Angle kEncoderZeroOffset = Degrees.of(305.05);
+
         // PID
         public static final double kP = 0.0;
         public static final double kI = 0.0;
@@ -124,15 +127,15 @@ public final class IntakeConstants {
         }
 
         // Hard limits
-        public static final Angle kHardLimitMax = Degrees.of(360);
+        public static final Angle kHardLimitMax = Degrees.of(134);
         public static final Angle kHardLimitMin = Degrees.of(0);
 
         // Soft limits
-        public static final Angle kSoftLimitMax = Degrees.of(360);
+        public static final Angle kSoftLimitMax = Degrees.of(130);
         public static final Angle kSoftLimitMin = Degrees.of(0);
 
         // Presets / tunables
-        public static final Angle kStowedAngle = Degrees.of(125);
+        public static final Angle kStowedAngle = Degrees.of(130);
         public static final Angle kDeployedAngle = Degrees.of(0);
         public static final Angle kTolerance = Degrees.of(1);
     }

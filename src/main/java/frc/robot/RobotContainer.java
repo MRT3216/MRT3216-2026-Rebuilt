@@ -39,6 +39,7 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
+import frc.robot.subsystems.lights.LEDSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -87,7 +88,7 @@ public class RobotContainer {
     // TODO: Uncomment when LEDs are physically wired to the roboRIO PWM port.
     // Verify RobotMap.LEDs.kPort and Constants.LEDsConstants.kNumLEDs match the
     // actual hardware before enabling.
-    // private final LEDSubsystem ledSubsystem = new LEDSubsystem();
+    private final LEDSubsystem ledSubsystem = new LEDSubsystem();
 
     // Aggregated shooter system
     private final ShooterSystem shooterSystem =
@@ -250,33 +251,38 @@ public class RobotContainer {
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         if (Constants.tuningMode) {
-            // Bumper-based turret rotation for tuning mode.
-            // Hold RB to rotate clockwise, LB to rotate counter-clockwise.
-            // The setpoint is clamped at the soft limits (±190°) so the turret
-            // simply stops when it reaches the end of travel.
+            // D-pad turret rotation for tuning mode.
+            // Hold D-pad RIGHT to rotate clockwise, D-pad LEFT to rotate
+            // counter-clockwise. Uses the POV hat so it does NOT conflict with
+            // LB/RB intake bindings in configureTestButtonBindings().
             // Rate is in degrees per 20 ms loop (~180°/s at full speed).
             final double kRotateRateDegPerLoop = 3.6; // 180 deg/s ÷ 50 Hz
             final double kSoftMin = -190.0;
             final double kSoftMax = 190.0;
+            // Re-seeded to the turret's current position each time the command initializes
+            // (i.e., on every enable) so the turret doesn't snap to a stale setpoint.
             final double[] turretAccumulator = {0.0};
 
             turretSubsystem.setDefaultCommand(
-                    turretSubsystem
-                            .setAngle(
-                                    () -> {
-                                        boolean cw = driverController.getHID().getRawButton(6); // RB
-                                        boolean ccw = driverController.getHID().getRawButton(5); // LB
-                                        if (cw && !ccw) {
-                                            turretAccumulator[0] -= kRotateRateDegPerLoop;
-                                        } else if (ccw && !cw) {
-                                            turretAccumulator[0] += kRotateRateDegPerLoop;
-                                        }
-                                        // Clamp to soft limits
-                                        turretAccumulator[0] =
-                                                Math.max(kSoftMin, Math.min(kSoftMax, turretAccumulator[0]));
-                                        return Degrees.of(turretAccumulator[0]);
-                                    })
-                            .withName("Turret_TuningBumperControl"));
+                    Commands.sequence(
+                                    Commands.runOnce(
+                                            () -> turretAccumulator[0] = turretSubsystem.getPosition().in(Degrees)),
+                                    turretSubsystem.setAngle(
+                                            () -> {
+                                                int pov = driverController.getHID().getPOV();
+                                                boolean cw = (pov == 90); // D-pad RIGHT
+                                                boolean ccw = (pov == 270); // D-pad LEFT
+                                                if (cw && !ccw) {
+                                                    turretAccumulator[0] -= kRotateRateDegPerLoop;
+                                                } else if (ccw && !cw) {
+                                                    turretAccumulator[0] += kRotateRateDegPerLoop;
+                                                }
+                                                // Clamp to soft limits
+                                                turretAccumulator[0] =
+                                                        Math.max(kSoftMin, Math.min(kSoftMax, turretAccumulator[0]));
+                                                return Degrees.of(turretAccumulator[0]);
+                                            }))
+                            .withName("Turret_TuningDpadControl"));
 
             // In tuning mode the flywheel should stay idle — no hub-shift pre-spin.
             // HubShiftUtil returns unpredictable state in sim (no FMS data), which
@@ -548,12 +554,16 @@ public class RobotContainer {
                                 ShootingLookupTable.Mode.HUB));
 
         driverController.b().whileTrue(intakeRollersSubsystem.setVelocity(kTargetAngularVelocity));
-
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
 
-        // LB and RB are used for turret rotation in the default command (see
-        // configureDefaultCommands), so they are NOT bound here in tuning mode.
+        driverController.rightBumper().onTrue(intakeSystem.intake());
+
+        // Left trigger immediately stops rollers.
+        driverController.leftBumper().onTrue(intakeSystem.stopRollers());
+
+        // Right bumper: agitate balls while held, then deploy intake on release.
+        // driverController.rightBumper().whileTrue(intakeSystem.agitate()).onFalse(intakeSystem.deploy());
 
         driverController.rightTrigger().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
     }

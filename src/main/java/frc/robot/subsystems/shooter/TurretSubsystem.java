@@ -162,7 +162,7 @@ public class TurretSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
+                        .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
                         .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
                         .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
@@ -431,6 +431,28 @@ public class TurretSubsystem extends SubsystemBase {
             if (dist < bestDist) {
                 best = candidates[i];
                 bestDist = dist;
+            }
+        }
+
+        // If the nearest candidate is outside soft limits, try the other candidates
+        // that ARE within limits. This handles the wrap-around case: when the target
+        // crosses the dead zone, the nearest candidate gets clamped at the limit,
+        // but the opposite-side candidate (360° away) may be reachable.
+        if (best < minDeg || best > maxDeg) {
+            double fallback = best;
+            double fallbackDist = Double.MAX_VALUE;
+            for (double c : candidates) {
+                if (c >= minDeg && c <= maxDeg) {
+                    double dist = Math.abs(c - currentDeg);
+                    if (dist < fallbackDist) {
+                        fallback = c;
+                        fallbackDist = dist;
+                    }
+                }
+            }
+            // If we found a valid in-range candidate, use it; otherwise clamp
+            if (fallback != best) {
+                return Degrees.of(fallback);
             }
         }
 

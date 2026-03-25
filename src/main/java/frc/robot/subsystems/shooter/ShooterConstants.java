@@ -167,13 +167,17 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID
-        public static final double kP = 0.02;
+        // Startup spike to ~60 is consistent across all kP/kD values — it's
+        // from the instantaneous FF step, not correctable by PID alone.
+        // kP=0.05 + kD=0.005 keeps steady-state close and doesn't add to spike.
+        public static final double kP = 0.05;
         public static final double kI = 0.0;
-        public static final double kD = 0.0;
+        public static final double kD = 0.005;
 
         // Feedforward
+        // kV=0.5 settled ~4 RPM low. Bumped to 0.52 for tighter steady-state.
         public static final double kS = 0.25;
-        public static final double kV = 0.6;
+        public static final double kV = 0.52;
         public static final double kA = 0.0;
 
         // Simulation overrides
@@ -357,29 +361,34 @@ public final class ShooterConstants {
         // PID — units are Volts per mechanism ROTATION of error (not degrees).
         // Because YAMS sets positionConversionFactor = 1/gearing, the SparkMax's
         // internal PID sees position in mechanism rotations.
-        //   kP=60 → 60V per full rotation → ~0.5V at 3° error → ~1.7V at 10° error
-        // This is the term that actively decelerates the turret as it approaches the
-        // setpoint. Without it, only friction stops the motor — causing overshoot/bounce.
-        public static final double kP = 60.0;
+        //
+        // All PID + FF runs on SparkMax hardware (MAXMotion trapezoidal).
+        // kV=3.4 (theoretical) caused massive overshoot — too much energy in cruise.
+        // kV=0 caused no movement — SparkMax needs FF to drive MAXMotion.
+        // kV=2.0 + kP=12 + kD=0.1 was our best result: smooth, ~10° overshoot.
+        // Bumping kD to 0.3 to actively brake during decel and reduce that overshoot.
+        // PID — units are Volts per mechanism ROTATION of error (not degrees).
+        //
+        // DISABLING MAXMotion — using plain position PID instead.
+        // Old competition code used kP=3, kV=1.0, kA=0.05 with plain position
+        // PID and it worked (just too fast). MAXMotion caused persistent
+        // overshoot because the profile reference runs ahead and FF carries
+        // energy that kP can't brake.
+        //
+        // Plain position PID (no MAXMotion). kP for accuracy, kD for damping.
+        // MAXMotion was tried but couldn't achieve both speed and accuracy.
+        public static final double kP = 3.0;
         public static final double kI = 0.0;
-        public static final double kD = 0.0;
+        public static final double kD = 0.3;
 
-        // Feedforward — kV units are Volts per (mechanism rot/s) because YAMS sets
-        // velocityConversionFactor = (1/gearing)/60, making the SparkMax's velocity
-        // units be mechanism rot/s.
-        //   Theoretical kV = 12V / (5676 RPM / 27 / 60 rot/s) ≈ 3.42 V/(mech rot/s)
-        // Set near theoretical — this is a physics-derived constant.  The "overshoot
-        // and bounce" seen at higher kV with kP=0 was actually the motor finally
-        // reaching cruise speed with no position correction to decelerate it.
-        public static final double kS = 0.15;
-        public static final double kV = 3.4;
-        public static final double kA = 0.01;
+        // Feedforward
+        public static final double kS = 0.0;
+        public static final double kV = 1.0;
+        public static final double kA = 0.05;
 
-        // Motion profile
-        // NEO free speed = 5676 RPM through 27:1 = ~1261°/s max mechanism speed.
-        // Set cruise velocity to ~80% of theoretical max for headroom.
-        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(1000.0);
-        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(7200.0);
+        // Motion profile — kept for sim config only (not used on real robot).
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(720.0);
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(3600.0);
 
         // Simulation overrides
         public static final double kP_sim = 3.5;

@@ -444,8 +444,8 @@ public class RobotContainer {
      * use <b>aim only</b> (no flywheel/feed) so balls aren't accidentally fired during testing.
      * Operator controller handles intake/eject identically to competition.
      *
-     * <p><b>Driver:</b> RT = hybrid aim hub, LT = hybrid aim pass, A = agitate, B = clear shooter, X
-     * = defence LEDs, Y = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM fudge.
+     * <p><b>Driver:</b> RT = hybrid aim hub (no feed), A = agitate, B = clear shooter, X = defence
+     * LEDs, Y = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM fudge.
      *
      * <p><b>Operator:</b> RT = intake, LT = eject.
      */
@@ -467,17 +467,6 @@ public class RobotContainer {
         // Aim-lock LED while hub aiming.
         driverController
                 .rightTrigger()
-                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
-
-        // Left trigger: hybrid aim at nearest pass target (aim only).
-        driverController
-                .leftTrigger()
-                .whileTrue(
-                        shooterSystem.hybridAimPass(() -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
-        // Aim-lock LED while pass aiming.
-        driverController
-                .leftTrigger()
                 .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
                 .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 

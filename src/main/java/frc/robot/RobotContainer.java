@@ -9,8 +9,6 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kTargetAngularVelocity;
-import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMax;
-import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMin;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 
@@ -249,102 +247,63 @@ public class RobotContainer {
         // Kicker should stop (do not coast) when idle — use persistent stopHold()
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
-        if (Constants.tuningMode) {
-            // D-pad turret rotation for tuning mode.
-            // Hold D-pad RIGHT to rotate clockwise, D-pad LEFT to rotate
-            // counter-clockwise. Uses the POV hat so it does NOT conflict with
-            // LB/RB intake bindings in configureTestButtonBindings().
-            // Rate is in degrees per 20 ms loop (~180°/s at full speed).
-            final double kRotateRateDegPerLoop = 3.6; // 180 deg/s ÷ 50 Hz
-            final double kSoftMin = kSoftLimitMin.in(Degrees);
-            final double kSoftMax = kSoftLimitMax.in(Degrees);
-            // Re-seeded to the turret's current position each time the command initializes
-            // (i.e., on every enable) so the turret doesn't snap to a stale setpoint.
-            final double[] turretAccumulator = {turretSubsystem.getTarget().in(Degrees)};
 
-            turretSubsystem.setDefaultCommand(
-                    Commands.sequence(
-                                    Commands.runOnce(
-                                            () -> turretAccumulator[0] = turretSubsystem.getPosition().in(Degrees)),
-                                    turretSubsystem.setAngle(
-                                            () -> {
-                                                int pov = driverController.getHID().getPOV();
-                                                boolean cw = (pov == 90); // D-pad RIGHT
-                                                boolean ccw = (pov == 270); // D-pad LEFT
-                                                if (cw && !ccw) {
-                                                    turretAccumulator[0] -= kRotateRateDegPerLoop;
-                                                } else if (ccw && !cw) {
-                                                    turretAccumulator[0] += kRotateRateDegPerLoop;
-                                                }
-                                                // Clamp to soft limits
-                                                turretAccumulator[0] =
-                                                        Math.max(kSoftMin, Math.min(kSoftMax, turretAccumulator[0]));
-                                                return Degrees.of(turretAccumulator[0]);
-                                            }))
-                            .withName("Turret_TuningDpadControl"));
+        // Shift-aware turret tracking default command.
+        //
+        // When the hub shift is active the turret continuously tracks the alliance
+        // hub center (HUB table). When the shift is inactive it tracks the nearest
+        // pass target landing zone (PASS table). Motion-compensated via
+        // HybridTurretUtil.computeMovingShot() each periodic loop.
+        //
+        // This default is preempted by aimAndShoot / aimAndShootPass when the
+        // driver holds a trigger — the subsystem requirement ensures the trigger
+        // command takes priority, and tracking resumes automatically on release.
 
-            // In tuning mode the flywheel should stay idle — no hub-shift pre-spin.
-            // HubShiftUtil returns unpredictable state in sim (no FMS data), which
-            // would cause the flywheel to spin at seemingly random times.
-            flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
-        } else {
-            // Shift-aware turret tracking default command.
-            //
-            // When the hub shift is active the turret continuously tracks the alliance
-            // hub center (HUB table). When the shift is inactive it tracks the nearest
-            // pass target landing zone (PASS table). Motion-compensated via
-            // HybridTurretUtil.computeMovingShot() each periodic loop.
-            //
-            // This default is preempted by aimAndShoot / aimAndShootPass when the
-            // driver holds a trigger — the subsystem requirement ensures the trigger
-            // command takes priority, and tracking resumes automatically on release.
+        // Build the two lookup tables once — reused every loop by the turret default.
+        var hubTable = new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
+        var passTable = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
 
-            // Build the two lookup tables once — reused every loop by the turret default.
-            var hubTable = new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
-            var passTable = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
+        turretSubsystem.setDefaultCommand(
+                turretSubsystem
+                        .setAngle(
+                                () -> {
+                                    var shift = HubShiftUtil.getShiftedShiftInfo();
+                                    var pose = drive.getPose();
+                                    var speeds = drive.getChassisSpeeds();
 
-            turretSubsystem.setDefaultCommand(
-                    turretSubsystem
-                            .setAngle(
-                                    () -> {
-                                        var shift = HubShiftUtil.getShiftedShiftInfo();
-                                        var pose = drive.getPose();
-                                        var speeds = drive.getChassisSpeeds();
+                                    Translation3d target;
+                                    ShootingLookupTable table;
+                                    if (shift.active()) {
+                                        target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                                        table = hubTable;
+                                    } else {
+                                        // Flip targets to current alliance BEFORE comparing Y
+                                        // so the nearest-target pick works correctly on both
+                                        // alliances.
+                                        var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
+                                        var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
+                                        double robotY = pose.getY();
+                                        target =
+                                                Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
+                                                        ? left
+                                                        : right;
+                                        table = passTable;
+                                    }
+                                    return HybridTurretUtil.computeMovingShot(
+                                                    pose, speeds, target, 3, kRefinementConvergenceEpsilon, table)
+                                            .turretAzimuth();
+                                })
+                        .withName("Turret_DefaultTracking"));
 
-                                        Translation3d target;
-                                        ShootingLookupTable table;
-                                        if (shift.active()) {
-                                            target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                                            table = hubTable;
-                                        } else {
-                                            // Flip targets to current alliance BEFORE comparing Y
-                                            // so the nearest-target pick works correctly on both
-                                            // alliances.
-                                            var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
-                                            var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
-                                            double robotY = pose.getY();
-                                            target =
-                                                    Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
-                                                            ? left
-                                                            : right;
-                                            table = passTable;
-                                        }
-                                        return HybridTurretUtil.computeMovingShot(
-                                                        pose, speeds, target, 3, kRefinementConvergenceEpsilon, table)
-                                                .turretAzimuth();
-                                    })
-                            .withName("Turret_DefaultTracking"));
+        // Hood returns to 0° when not actively shooting — prevents decapitation
+        // under the trench. Hood tracking only happens inside aimAndShoot /
+        // aimAndShootPass while the driver holds a trigger.
+        hoodSubsystem.setDefaultCommand(
+                hoodSubsystem.setAngle(Degrees.of(0)).withName("Hood_DefaultStow"));
 
-            // Hood returns to 0° when not actively shooting — prevents decapitation
-            // under the trench. Hood tracking only happens inside aimAndShoot /
-            // aimAndShootPass while the driver holds a trigger.
-            hoodSubsystem.setDefaultCommand(
-                    hoodSubsystem.setAngle(Degrees.of(0)).withName("Hood_DefaultStow"));
-
-            // Flywheel stays idle by default — it only spins when the driver
-            // holds right trigger (hybridAimAndShoot commands exact LUT speed).
-            flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
-        }
+        // Flywheel stays idle by default — it only spins when the driver
+        // holds right trigger (hybridAimAndShoot commands exact LUT speed).
+        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
 
         // Let spindexer coast by default. Use the persistent stopHold() default
         // which disables closed-loop control and keeps the duty/voltage at zero
@@ -403,9 +362,9 @@ public class RobotContainer {
     /**
      * Configure bindings used on the REAL robot for competition-style operation.
      *
-     * <p><b>Driver</b> owns driving and intake. <b>Operator</b> owns shooting, shoot-mode selection,
-     * and secondary ball-handling overrides. Longer-lived or tuning helpers belong in {@link
-     * #configureTestButtonBindings()} and should be enabled only in tuning mode.
+     * <p><b>Driver</b> owns driving and shooting (hub + pass). <b>Operator</b> owns intake,
+     * shoot-mode selection, and secondary ball-handling overrides. Longer-lived or tuning helpers
+     * belong in {@link #configureTestButtonBindings()} and should be enabled only in tuning mode.
      */
     private void configureRealButtonBindings() {
         // ── Driver: shooting ─────────────────────────────────────────
@@ -426,6 +385,19 @@ public class RobotContainer {
         // Aim-lock LED while hub shooting is active.
         driverController
                 .rightTrigger()
+                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+
+        // Left trigger: pass shot — aims at nearest pass target landing zone,
+        // uses PASS lookup table. Turret, hood, flywheel, and feed all fire.
+        driverController
+                .leftTrigger()
+                .whileTrue(
+                        shooterSystem.aimAndShootPass(
+                                () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
+        // Aim-lock LED while pass shooting is active.
+        driverController
+                .leftTrigger()
                 .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
                 .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 

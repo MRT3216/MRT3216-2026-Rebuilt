@@ -374,3 +374,90 @@ During real-robot testing, the user also changed:
 ---
 
 End of 2026-03-23/24 session.
+
+---
+
+## Session: 2026-03-25 -- CRT Completion, Gain Tuning, Hybrid Aiming Wiring
+
+Branch: Claude -> merged to main
+
+### CRT Validation (completed)
+- CRT fully validated across 7+ positions. Worst-case ErrorRot = 0.008 (tolerance = 0.02)
+- Final offsets: Enc1 = -0.821, Enc2 = -0.805
+- Pinion teeth: Enc1 = 10T (SparkMax), Enc2 = 13T (RoboRIO PWM DIO)
+- CRT retry logic: 100ms settle + 5 retries implemented and working
+- Tolerance tightened from 0.05 to 0.02 (commit 190f001)
+- Continuous raw encoder logging added then removed (commit 198b1d8)
+- pwmEncoder kept as persistent field in TurretSubsystem (not local to attemptCRTSolve)
+
+### Turret Gain Tuning (in progress)
+Progression of gains tested on real robot:
+- kP=60 -> motor saturation, massive overshoot (15V at 90 deg error)
+- kP=3/kV=3.4 -> slow, oscillating
+- kP=6/kV=2.4 -> still overshooting
+- kP=8/kD=0.3/kV=2.4 -> better small moves, big moves still overshoot
+- kP=8/kD=0.5/kV=2.4 -> too slow (kD resists all motion)
+- kP=10/kD=0.15/kV=2.4/maxVel=800/maxAccel=3600 -> still overshooting big moves
+- kP=15/kD=0.15/kV=1.8/maxVel=800/maxAccel=3600 -> last deployed, untested after snap-to-zero fix
+
+Current constants in code: kP=3, kD=0.3, kV=1.0, kA=0.05, maxVel=720, maxAccel=3600
+(Note: the on-robot deployed values may differ from code if tuned via dashboard)
+
+**Key finding**: SparkMax MAXMotion kV needs to be lower than theoretical (3.4) because
+the profile cruise velocity feeds too much voltage. kV=1.8-2.4 range worked better.
+
+### Snap-to-Zero Fix
+- Problem: turret snapped to 0 deg on every enable because turretAccumulator was initialized to {0.0}
+- Fix: Changed to Commands.sequence with runOnce to re-seed turretAccumulator from turretSubsystem.getPosition() on each enable
+- This ensures the D-pad tuning command starts from wherever the turret actually is
+
+### Branch Cleanup
+- Claude branch merged to main (PR #9)
+- Deleted local branches: Claude, Pivot-Arm-Banch, copilot/sub-pr-7
+- Deleted remote branches: copilot/sub-pr-7, copilot/sub-pr-9, copilot/sub-pr-9-again
+- Only remaining branch: new-mechanism (2 PathPlanner commits)
+
+### Hybrid Aiming Wired in Tuning Mode (commit 18f6e29)
+Following docs/HybridAiming.md guide, wired hybrid aiming for tuning mode:
+
+**ShooterSystem.java**: Added hybridAim() method -- aim-only variant of hybridAimAndShoot.
+Turret clamped to +/-deadband, hood tracks, telemetry logs, but NO flywheel spin and NO feed.
+Safe for testing alignment without firing balls.
+
+**ShooterConstants.java**: kTurretDeadbandDeg changed from 90.0 to 30.0 (+/-30 deg turret clamp)
+
+**RobotContainer.java** tuning mode changes:
+- Drive default: joystickDrive -> joystickDriveAimAtTarget (drivetrain heading assist, gated on RT > 0.5)
+- RT: testShoot -> hybridAim (aim only, no shoot)
+- A: aim (turret-only) -> testShoot (turret 0 deg + flywheel + feed)
+- Old A binding commented out for easy reversal
+- B/X/Y/bumpers/LT unchanged
+
+### Turret Limits (current in code)
+- Hard limits: +/-190 deg
+- Soft limits: +/-180 deg
+- Hybrid aiming clamp: +/-30 deg (only applies when hybridAim/hybridAimAndShoot active)
+
+### Technical Notes
+- VS Code editor tool (replace_string_in_file) edits in-memory buffers but does not always flush to disk.
+  When this happens, changes appear in grep_search/read_file but git sees no diff.
+  Workaround: use terminal-based Python scripts with pathlib to write files directly.
+  This is a session-specific bug that occurs when context gets very large.
+- spotlessApply runs before compileJava and reformats all .java files. It reformats but does not revert content.
+- PowerShell Set-Content corrupts UTF-8 special characters (replaced em-dashes, degree symbols with garbage).
+  Use [System.IO.File]::WriteAllBytes with UTF8 encoding instead, or Python pathlib.
+
+### Next Steps for Next Session
+1. **Turret gain tuning**: Resume with kP=15/kV=1.8 gains (or current code values). Small moves OK, big moves still overshoot. Consider:
+   - Reducing maxVel further (try 600 deg/s)
+   - Increasing kD slightly (0.2-0.3 range)
+   - Testing with hybridAim where turret only needs +/-30 deg moves (much safer for tuning)
+2. **Test hybrid aiming on robot**: Verify drivetrain heading assist + clamped turret tracking works
+3. **Hood tuning**: Hood gains not yet tuned on real robot
+4. **Flywheel tuning**: Flywheel gains partially tuned (kP=0.2, kV=0.12 in code)
+5. **LUT calibration**: See docs/TestModeTuning.md for the 12-row calibration plan
+
+---
+
+End of 2026-03-25 session.
+

@@ -396,6 +396,18 @@
               "true_icon": "None",
               "false_icon": "None"
             }
+          },
+          {
+            "title": "Tuning Mode",
+            "x": 640.0,
+            "y": 128.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Toggle Button",
+            "properties": {
+              "topic": "/Tuning/tuningMode",
+              "period": 0.06
+            }
           }
         ]
       }

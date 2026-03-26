@@ -520,6 +520,50 @@ public class ShooterSystem {
         return Commands.parallel(turretCmd.alongWith(hoodCmd), telemetryCmd).withName("HybridAim");
     }
 
+    /**
+     * Hybrid aim only for <b>pass shots</b> — turret and hood track the nearest pass target (turret
+     * clamped to ±deadband), but the flywheel does NOT spin and the feed path does NOT run. Useful
+     * for testing hybrid pass aiming alignment in tuning mode without accidentally firing balls.
+     *
+     * @param robotPose supplier of the robot pose
+     * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
+     * @param refinementIterations number of solver refinement iterations
+     * @return a command that aims (clamped turret + hood) at the nearest pass target while scheduled,
+     *     without spinning up or feeding
+     */
+    public Command hybridAimPass(
+            Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, int refinementIterations) {
+        var table = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
+        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
+
+        Supplier<Translation3d> targetSupplier =
+                () -> {
+                    var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
+                    var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
+                    double robotY = robotPose.get().getY();
+                    return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY()) ? left : right;
+                };
+
+        var solution =
+                makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
+
+        var turretCmd =
+                turret.setAngle(
+                        () -> {
+                            double rawDeg = solution.get().turretAzimuth().in(Degrees);
+                            double clampedDeg =
+                                    edu.wpi.first.math.MathUtil.clamp(
+                                            rawDeg,
+                                            turretHomeAngleDeg - turretClampDeg,
+                                            turretHomeAngleDeg + turretClampDeg);
+                            return Degrees.of(clampedDeg);
+                        });
+        var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), telemetryCmd).withName("HybridAimPass");
+    }
+
     // endregion
 
     // region Private helpers

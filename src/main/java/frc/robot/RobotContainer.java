@@ -8,7 +8,6 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kTargetAngularVelocity;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -441,33 +440,20 @@ public class RobotContainer {
     }
 
     /**
-     * Enable test/tuning-specific bindings. These are small helpers intended for development and
-     * should not be active during normal competition operation. This method should be idempotent in
-     * higher-level flows (constructor only currently). Add more bindings here as needed when
-     * experimenting.
+     * Tuning-mode bindings mirror competition layout on a single driver controller, except triggers
+     * use <b>aim only</b> (no flywheel/feed) so balls aren't accidentally fired during testing.
+     * Operator controller handles intake/eject identically to competition.
+     *
+     * <p><b>Driver:</b> RT = hybrid aim hub, LT = hybrid aim pass, A = agitate, B = clear shooter, X
+     * = defence LEDs, Y = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM fudge.
+     *
+     * <p><b>Operator:</b> RT = intake, LT = eject.
      */
     private void configureTestButtonBindings() {
-        // A button: test shoot (turret 0°, flywheel + feed).
-        driverController.a().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
+        // ── Driver: aiming (aim only — no flywheel or feed) ──────────
 
-        driverController.b().whileTrue(intakeRollersSubsystem.setVelocity(kTargetAngularVelocity));
-        driverController.x().whileTrue(spindexerSubsystem.feedShooter());
-        driverController.y().whileTrue(kickerSubsystem.feedShooter());
-
-        // Duty-cycle intake: deploy arm via timed pulse, then run rollers while held.
-        driverController.rightBumper().whileTrue(intakeSystem.dutyCycleIntake());
-
-        // Left bumper immediately stops rollers.
-        driverController.leftBumper().onTrue(intakeSystem.stopRollers());
-
-        // Left trigger: duty-cycle agitate while held, re-deploy on release.
-        driverController
-                .leftTrigger()
-                .whileTrue(intakeSystem.dutyCycleAgitate())
-                .onFalse(intakeSystem.dutyCycleDeploy());
-
-        // Right trigger: hybrid aim (turret clamped ±30°, drivetrain heading assist,
-        // no flywheel/feed). See docs/HybridAiming.md.
+        // Right trigger: hybrid aim at hub (turret clamped ±30°,
+        // drivetrain heading assist, no flywheel/feed).
         driverController
                 .rightTrigger()
                 .whileTrue(
@@ -478,6 +464,82 @@ public class RobotContainer {
                                 3,
                                 ShootingLookupTable.Mode.HUB,
                                 () -> currentShootMode));
+        // Aim-lock LED while hub aiming.
+        driverController
+                .rightTrigger()
+                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+
+        // Left trigger: hybrid aim at nearest pass target (aim only).
+        driverController
+                .leftTrigger()
+                .whileTrue(
+                        shooterSystem.hybridAimPass(() -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
+        // Aim-lock LED while pass aiming.
+        driverController
+                .leftTrigger()
+                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+
+        // ── Operator: intake ───────────────────────────────────────────
+
+        // Right trigger: hold to intake (deploy arm + run rollers).
+        operatorController.rightTrigger().whileTrue(intakeSystem.intake());
+
+        // Left trigger: hold to reverse intake (eject balls).
+        operatorController.leftTrigger().whileTrue(intakeSystem.eject());
+
+        // ── Driver: secondary ball-handling & overrides ─────────────────
+
+        // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
+        driverController.a().whileTrue(intakeSystem.agitate());
+
+        // B button: clear / unjam shooter system while held.
+        driverController.b().whileTrue(shooterSystem.clearShooterSystem());
+
+        // X button: defence mode (red/blue strobe LEDs while held).
+        driverController
+                .x()
+                .onTrue(ledSubsystem.setDefenceModeLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setDefenceModeLEDCommand(() -> false));
+
+        // ── Driver: shoot-mode toggle ───────────────────────────────────
+
+        // Y button: toggle between FULL and FULL_STATIC.
+        driverController
+                .y()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    if (currentShootMode == ShootMode.FULL_STATIC) {
+                                        currentShootMode = ShootMode.FULL;
+                                    } else {
+                                        currentShootMode = ShootMode.FULL_STATIC;
+                                    }
+                                    Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
+                                }));
+
+        // ── Driver: RPM fudge adjustment ────────────────────────────────
+
+        driverController
+                .rightBumper()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    double next = Math.min(kRPMFudgeRPM.get() + 50, 200);
+                                    kRPMFudgeRPM.set(next);
+                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
+                                }));
+
+        driverController
+                .leftBumper()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    double next = Math.max(kRPMFudgeRPM.get() - 50, -200);
+                                    kRPMFudgeRPM.set(next);
+                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
+                                }));
     }
 
     // endregion

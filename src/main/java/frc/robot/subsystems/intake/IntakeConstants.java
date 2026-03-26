@@ -135,7 +135,8 @@ public final class IntakeConstants {
         public static final Angle kSoftLimitMin = Degrees.of(0);
 
         // Presets / tunables
-        public static final Angle kStowedAngle = Degrees.of(130);
+        public static final Angle kEncoderZeroOffset = Degrees.of(123.4); // TODO: Tune this
+        public static final Angle kStowedAngle = Degrees.of(125);
         public static final Angle kDeployedAngle = Degrees.of(0);
         public static final Angle kTolerance = Degrees.of(1);
     }

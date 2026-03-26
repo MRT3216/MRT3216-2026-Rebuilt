@@ -42,7 +42,6 @@ import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 import frc.robot.subsystems.lights.*;
-import frc.robot.subsystems.lights.LEDSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -86,10 +85,6 @@ public class RobotContainer {
     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
     private final IntakeRollersSubsystem intakeRollersSubsystem = new IntakeRollersSubsystem();
-
-    // TODO: Uncomment when LEDs are physically wired to the roboRIO PWM port.
-    // Verify RobotMap.LEDs.kPort and Constants.LEDsConstants.kNumLEDs match the
-    // actual hardware before enabling.
     private final LEDSubsystem ledSubsystem = new LEDSubsystem();
 
     // Aggregated shooter system
@@ -207,8 +202,6 @@ public class RobotContainer {
         }
 
         // Register auto commands
-        // Use duty-cycle intake for auto until pivot PID/FF gains are tuned.
-        // Switch to intakeSystem.intake() / intakeSystem.agitate() once tuned.
         NamedCommands.registerCommand("Run Intake", intakeSystem.dutyCycleIntake());
         NamedCommands.registerCommand(
                 "Aim and Shoot",
@@ -223,7 +216,6 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooting());
 
         setupAutoChooser();
-        // setupSysid();
         configureDefaultCommands();
         configureButtonBindings();
 
@@ -363,9 +355,7 @@ public class RobotContainer {
 
         // Ensure intake pivot holds its commanded setpoint when no one owns it so
         // live tuning and dashboard writes persist.
-        intakePivotSubsystem.setDefaultCommand(
-                // intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getPosition()));
-                intakePivotSubsystem.set(0));
+        intakePivotSubsystem.setDefaultCommand(intakePivotSubsystem.set(0));
     }
 
     // endregion
@@ -416,7 +406,7 @@ public class RobotContainer {
      * #configureTestButtonBindings()} and should be enabled only in tuning mode.
      */
     private void configureRealButtonBindings() {
-        // ── Driver: intake ──────────────────────────────────────────────
+        // ── Driver: shooting ─────────────────────────────────────────
 
         // Right trigger: hybrid aim and shoot — turret clamped ±30°,
         // drivetrain heading assist (via drive default command), full feed.
@@ -431,22 +421,16 @@ public class RobotContainer {
                                 3,
                                 ShootingLookupTable.Mode.HUB,
                                 () -> currentShootMode));
-        // TODO: Wire intaking LED when intake is running:
-        // driverController
-        //         .rightTrigger()
-        //         .onTrue(ledSubsystem.setIntakingLEDCommand(() -> true))
-        //         .onFalse(ledSubsystem.setIntakingLEDCommand(() -> false));
+        // Aim-lock LED while hub shooting is active.
+        driverController
+                .rightTrigger()
+                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
         // ── Operator: intake ───────────────────────────────────────────
 
         // Right trigger: hold to intake (deploy arm + run rollers).
         operatorController.rightTrigger().whileTrue(intakeSystem.intake());
-
-        // TODO: Wire aim-lock LED when shooting is active:
-        // operatorController
-        //         .rightTrigger()
-        //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-        //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
         // Left trigger: hold to aim + feed a pass shot. Not shift-gated —
         // feeds freely while held regardless of hub shift state. Turret and hood
@@ -456,11 +440,11 @@ public class RobotContainer {
                 .whileTrue(
                         shooterSystem.aimAndShootPass(
                                 () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
-        // TODO: Wire aim-lock LED when pass shooting is active:
-        // operatorController
-        //         .leftTrigger()
-        //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-        //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+        // Aim-lock LED while pass shooting is active.
+        operatorController
+                .leftTrigger()
+                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
         // ── Operator: secondary ball-handling & overrides ───────────────
 
@@ -537,30 +521,17 @@ public class RobotContainer {
         // A button: test shoot (turret 0°, flywheel + feed).
         driverController.a().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
 
-        // Previous A binding — turret-only aim (no hybrid clamp):
-        // driverController
-        //         .a()
-        //         .whileTrue(
-        //                 shooterSystem.aim(
-        //                         () -> drive.getPose(),
-        //                         () -> drive.getChassisSpeeds(),
-        //                         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-        //                         3,
-        //                         ShootingLookupTable.Mode.HUB));
-
         driverController.b().whileTrue(intakeRollersSubsystem.setVelocity(kTargetAngularVelocity));
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
         driverController.y().whileTrue(kickerSubsystem.feedShooter());
 
         // Duty-cycle intake: deploy arm via timed pulse, then run rollers while held.
-        // Switch to intakeSystem.intake() once pivot PID/FF gains are tuned.
         driverController.rightBumper().whileTrue(intakeSystem.dutyCycleIntake());
 
         // Left bumper immediately stops rollers.
         driverController.leftBumper().onTrue(intakeSystem.stopRollers());
 
         // Left trigger: duty-cycle agitate while held, re-deploy on release.
-        // Switch to intakeSystem.agitate() once pivot PID/FF gains are tuned.
         driverController
                 .leftTrigger()
                 .whileTrue(intakeSystem.dutyCycleAgitate())
@@ -598,36 +569,6 @@ public class RobotContainer {
                                                 new Pose2d(drive.getPose().getTranslation(), new Rotation2d()))),
                         drive)
                 .ignoringDisable(true);
-    }
-
-    /**
-     * SysId helper: registers SysId routines on the dashboard.
-     *
-     * <p>Disabled by default. To enable SysId options, call {@code setupSysid()} from the constructor
-     * and uncomment the implementation inside this method.
-     */
-    @SuppressWarnings("unused")
-    private void setupSysid() {
-        // Set up SysId routines
-        autoChooser = new LoggedDashboardChooser<>("Tuning", AutoBuilder.buildAutoChooser());
-        autoChooser.addOption(
-                "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
-        autoChooser.addOption(
-                "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
-        autoChooser.addOption(
-                "Drive SysId (Quasistatic Forward)",
-                drive.sysIdQuasistatic(
-                        edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward));
-        autoChooser.addOption(
-                "Drive SysId (Quasistatic Reverse)",
-                drive.sysIdQuasistatic(
-                        edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse));
-        autoChooser.addOption(
-                "Drive SysId (Dynamic Forward)",
-                drive.sysIdDynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward));
-        autoChooser.addOption(
-                "Drive SysId (Dynamic Reverse)",
-                drive.sysIdDynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse));
     }
 
     /**

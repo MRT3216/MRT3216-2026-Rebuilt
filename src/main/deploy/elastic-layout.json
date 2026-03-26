@@ -25,7 +25,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/MatchTime",
+                  "topic": "/AdvantageKit/RealOutputs/MatchTime",
                   "period": 0.1
                 }
               },
@@ -37,7 +37,7 @@
                 "height": 96.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/HubShift/Active",
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/Active",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -66,7 +66,7 @@
                 "height": 96.0,
                 "type": "Text Display",
                 "properties": {
-                  "topic": "/AdvantageKit/HubShift/CurrentShift",
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/CurrentShift",
                   "period": 0.1,
                   "show_submit_button": false
                 }
@@ -79,7 +79,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/HubShift/RemainingTime",
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/RemainingTime",
                   "period": 0.1
                 }
               },
@@ -91,7 +91,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/HubShift/ShiftedActive",
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/ShiftedActive",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -107,7 +107,7 @@
                 "height": 64.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/HubShift/ShiftedRemainingTime",
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/ShiftedRemainingTime",
                   "period": 0.1
                 }
               }
@@ -132,7 +132,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/Flywheel/FX/VelocityRPM",
+                  "topic": "/AdvantageKit/RealOutputs/Flywheel/FX/VelocityRPM",
                   "period": 0.1
                 }
               },
@@ -144,7 +144,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/Hood/FX/PositionDegrees",
+                  "topic": "/AdvantageKit/RealOutputs/Hood/FX/PositionDegrees",
                   "period": 0.1
                 }
               },
@@ -156,7 +156,7 @@
                 "height": 96.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/Shooter/Turret/PositionDegrees",
+                  "topic": "/AdvantageKit/RealOutputs/Shooter/Turret/PositionDegrees",
                   "period": 0.1
                 }
               },
@@ -168,7 +168,7 @@
                 "height": 96.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/Flywheel/IsSpunUp",
+                  "topic": "/AdvantageKit/RealOutputs/Flywheel/IsSpunUp",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -197,7 +197,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/SmartDashboard/Mechanisms/DriveIsMoving",
+                  "topic": "/AdvantageKit/RealOutputs/Mechanisms/DriveIsMoving",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -213,7 +213,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/Mechanisms/IntakePivotIsMoving",
+                  "topic": "/AdvantageKit/RealOutputs/Mechanisms/IntakePivotIsMoving",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -229,7 +229,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/Mechanisms/IntakeRollersIsMoving",
+                  "topic": "/AdvantageKit/RealOutputs/Mechanisms/IntakeRollersIsMoving",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -245,7 +245,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/Mechanisms/FlywheelIsMoving",
+                  "topic": "/AdvantageKit/RealOutputs/Mechanisms/FlywheelIsMoving",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -261,7 +261,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/Mechanisms/HoodIsMoving",
+                  "topic": "/AdvantageKit/RealOutputs/Mechanisms/HoodIsMoving",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -277,7 +277,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/Mechanisms/KickerIsMoving",
+                  "topic": "/AdvantageKit/RealOutputs/Mechanisms/KickerIsMoving",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -293,7 +293,7 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/Mechanisms/SpindexerIsMoving",
+                  "topic": "/AdvantageKit/RealOutputs/Mechanisms/SpindexerIsMoving",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
@@ -309,12 +309,78 @@
                 "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/Mechanisms/TurretIsMoving",
+                  "topic": "/AdvantageKit/RealOutputs/Mechanisms/TurretIsMoving",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
                   "true_icon": "None",
                   "false_icon": "None"
+                }
+              }
+            ]
+          },
+          {
+            "title": "Status",
+            "x": 0.0,
+            "y": 192.0,
+            "width": 256.0,
+            "height": 384.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "TOP"
+            },
+            "children": [
+              {
+                "title": "Vision Has Target",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/Vision/Summary/HasTarget",
+                  "period": 0.06,
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
+                }
+              },
+              {
+                "title": "Battery Voltage",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 96.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/Battery/Voltage",
+                  "period": 0.1
+                }
+              },
+              {
+                "title": "Hub Distance (m)",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 96.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/ShooterTelemetry/hubDistanceMeters",
+                  "period": 0.1
+                }
+              },
+              {
+                "title": "Shoot Mode",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 256.0,
+                "height": 96.0,
+                "type": "Text Display",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/ShooterTelemetry/shootMode",
+                  "period": 0.1,
+                  "show_submit_button": false
                 }
               }
             ]
@@ -372,7 +438,7 @@
                 "height": 128.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/MatchTime",
+                  "topic": "/AdvantageKit/RealOutputs/MatchTime",
                   "period": 0.1
                 }
               }
@@ -413,7 +479,29 @@
             ]
           }
         ],
-        "containers": []
+        "containers": [
+          {
+            "title": "Field",
+            "x": 0.0,
+            "y": 128.0,
+            "width": 512.0,
+            "height": 384.0,
+            "type": "Field",
+            "properties": {
+              "topic": "/SmartDashboard/Field",
+              "period": 0.06,
+              "field_game": "Rebuilt",
+              "robot_width": 0.66,
+              "robot_length": 0.66,
+              "show_other_objects": true,
+              "show_trajectories": true,
+              "field_rotation": 0.0,
+              "robot_color": 4294901760,
+              "trajectory_color": 4294967295,
+              "show_robot_outside_widget": true
+            }
+          }
+        ]
       }
     },
     {

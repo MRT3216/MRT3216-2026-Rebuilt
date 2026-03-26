@@ -26,9 +26,7 @@
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/MatchTime",
-                  "period": 0.1,
-                  "decimal_places": 1,
-                  "show_type": false
+                  "period": 0.1
                 }
               },
               {
@@ -41,8 +39,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/HubShift/Active",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               }
             ]
@@ -68,7 +68,7 @@
                 "properties": {
                   "topic": "/AdvantageKit/HubShift/CurrentShift",
                   "period": 0.1,
-                  "show_type": false
+                  "show_submit_button": false
                 }
               },
               {
@@ -80,9 +80,7 @@
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/HubShift/RemainingTime",
-                  "period": 0.1,
-                  "decimal_places": 1,
-                  "show_type": false
+                  "period": 0.1
                 }
               },
               {
@@ -95,8 +93,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/HubShift/ShiftedActive",
                   "period": 0.06,
-                  "true_color": "#00AAFF",
-                  "false_color": "#444444"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               },
               {
@@ -108,9 +108,7 @@
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/HubShift/ShiftedRemainingTime",
-                  "period": 0.1,
-                  "decimal_places": 1,
-                  "show_type": false
+                  "period": 0.1
                 }
               }
             ]
@@ -135,9 +133,7 @@
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/Flywheel/FX/VelocityRPM",
-                  "period": 0.1,
-                  "decimal_places": 0,
-                  "show_type": false
+                  "period": 0.1
                 }
               },
               {
@@ -149,9 +145,7 @@
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/Hood/FX/PositionDegrees",
-                  "period": 0.1,
-                  "decimal_places": 1,
-                  "show_type": false
+                  "period": 0.1
                 }
               },
               {
@@ -163,9 +157,7 @@
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/Shooter/Turret/PositionDegrees",
-                  "period": 0.1,
-                  "decimal_places": 1,
-                  "show_type": false
+                  "period": 0.1
                 }
               },
               {
@@ -178,8 +170,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/Flywheel/IsSpunUp",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF6600"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               }
             ]
@@ -189,7 +183,7 @@
             "x": 1024.0,
             "y": 0.0,
             "width": 256.0,
-            "height": 512.0,
+            "height": 576.0,
             "type": "List Layout",
             "properties": {
               "label_position": "TOP"
@@ -205,8 +199,10 @@
                 "properties": {
                   "topic": "/SmartDashboard/Mechanisms/DriveIsMoving",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               },
               {
@@ -219,8 +215,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/Mechanisms/IntakePivotIsMoving",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               },
               {
@@ -233,8 +231,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/Mechanisms/IntakeRollersIsMoving",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               },
               {
@@ -247,8 +247,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/Mechanisms/FlywheelIsMoving",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               },
               {
@@ -261,8 +263,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/Mechanisms/HoodIsMoving",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               },
               {
@@ -275,8 +279,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/Mechanisms/KickerIsMoving",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               },
               {
@@ -289,8 +295,10 @@
                 "properties": {
                   "topic": "/AdvantageKit/Mechanisms/SpindexerIsMoving",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               },
               {
@@ -303,28 +311,16 @@
                 "properties": {
                   "topic": "/AdvantageKit/Mechanisms/TurretIsMoving",
                   "period": 0.06,
-                  "true_color": "#00FF00",
-                  "false_color": "#FF2222"
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               }
             ]
-          },
-          {
-            "title": "Field",
-            "x": 0.0,
-            "y": 512.0,
-            "width": 1280.0,
-            "height": 448.0,
-            "type": "Field2d",
-            "properties": {
-              "topic": "/SmartDashboard/Field",
-              "period": 0.06,
-              "show_other_objects": true,
-              "show_trajectory": false,
-              "field_image": "2026-rebuilt"
-            }
           }
-        ]
+        ],
+        "containers": []
       }
     },
     {
@@ -352,7 +348,7 @@
                 "properties": {
                   "topic": "/SmartDashboard/Auto Chooser",
                   "period": 0.1,
-                  "show_type": false
+                  "sort_options": false
                 }
               }
             ]
@@ -377,29 +373,13 @@
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/MatchTime",
-                  "period": 0.1,
-                  "decimal_places": 1,
-                  "show_type": false
+                  "period": 0.1
                 }
               }
             ]
-          },
-          {
-            "title": "Field",
-            "x": 0.0,
-            "y": 128.0,
-            "width": 768.0,
-            "height": 448.0,
-            "type": "Field2d",
-            "properties": {
-              "topic": "/SmartDashboard/Field",
-              "period": 0.06,
-              "show_other_objects": true,
-              "show_trajectory": true,
-              "field_image": "2026-rebuilt"
-            }
           }
-        ]
+        ],
+        "containers": []
       }
     },
     {
@@ -427,24 +407,91 @@
                 "properties": {
                   "topic": "/SmartDashboard/Auto Chooser",
                   "period": 0.1,
-                  "show_type": false
+                  "sort_options": false
                 }
               }
             ]
+          }
+        ],
+        "containers": []
+      }
+    },
+    {
+      "name": "Tuning",
+      "grid_layout": {
+        "layouts": [],
+        "containers": [
+          {
+            "title": "distanceInches",
+            "x": 0.0,
+            "y": 0.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/AdvantageKit/RealOutputs/TestShoot/distanceInches",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": false
+            }
           },
           {
-            "title": "Field",
+            "title": "distanceMeters",
+            "x": 128.0,
+            "y": 0.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/AdvantageKit/RealOutputs/TestShoot/distanceMeters",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "effectiveRPM",
             "x": 0.0,
             "y": 128.0,
-            "width": 768.0,
-            "height": 448.0,
-            "type": "Field2d",
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
             "properties": {
-              "topic": "/SmartDashboard/Field",
+              "topic": "/AdvantageKit/RealOutputs/TestShoot/effectiveRPM",
               "period": 0.06,
-              "show_other_objects": true,
-              "show_trajectory": false,
-              "field_image": "2026-rebuilt"
+              "data_type": "double",
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "hoodAngleDeg",
+            "x": 128.0,
+            "y": 128.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/AdvantageKit/RealOutputs/TestShoot/hoodAngleDeg",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": false
+            }
+          },
+          {
+            "title": "rpmOverrideActive",
+            "x": 640.0,
+            "y": 0.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Boolean Box",
+            "properties": {
+              "topic": "/AdvantageKit/RealOutputs/TestShoot/rpmOverrideActive",
+              "period": 0.06,
+              "data_type": "boolean",
+              "true_color": 4283215696,
+              "false_color": 4294198070,
+              "true_icon": "None",
+              "false_icon": "None"
             }
           }
         ]

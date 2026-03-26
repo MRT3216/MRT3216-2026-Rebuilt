@@ -26,6 +26,7 @@ import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
+import frc.robot.subsystems.shooter.ShooterConstants.HybridAimingConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.ShootMode;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
@@ -312,6 +313,107 @@ public class ShooterSystem {
                 .alongWith(kicker.stopNow())
                 .alongWith(spindexer.stopNow())
                 .withName("Shooter_StopShooting");
+    }
+
+    // ── Hybrid Aiming (drivetrain coarse + turret fine) ─────────────────
+    //
+    // The methods below implement hybrid aiming where the DRIVETRAIN handles
+    // coarse heading correction and the TURRET handles only the residual.
+    // This keeps the turret within a small comfort zone, protecting wiring.
+    //
+    // ** NOT CURRENTLY WIRED ** — all existing turret-only code is unchanged.
+    // To activate, see the swap-in instructions in HybridAimingConstants javadoc.
+
+    /**
+     * Hybrid aim-and-shoot: the turret tracks the <em>residual</em> angle that the drivetrain hasn't
+     * corrected, rather than the full robot-relative angle to the target.
+     *
+     * <p>This is a drop-in replacement for {@link #aimAndShoot}. The turret command is identical
+     * except its azimuth is clamped to ±{@link HybridAimingConstants#kTurretDeadbandDeg} around the
+     * home angle so the turret never swings far from center. The drivetrain's {@code
+     * joystickDriveAimAtTarget} command (in {@link frc.robot.commands.DriveCommands}) handles the
+     * coarse heading correction.
+     *
+     * <p>All tuning constants (clamp width, home angle) are read directly from {@link
+     * HybridAimingConstants} — matching the pattern used by {@link #aimAndShoot}.
+     *
+     * <p><b>How to wire (example):</b>
+     *
+     * <pre>{@code
+     * // In RobotContainer.configureButtonBindings():
+     * operatorController.rightTrigger().whileTrue(
+     *     shooterSystem.hybridAimAndShoot(
+     *         () -> drive.getPose(),
+     *         () -> drive.getChassisSpeeds(),
+     *         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+     *         3,
+     *         ShootingLookupTable.Mode.HUB,
+     *         () -> currentShootMode));
+     *
+     * // Swap the drive default command to the hybrid variant while aiming,
+     * // OR make the drive default always be joystickDriveAimAtTarget with
+     * // aimEnabled gated by a BooleanSupplier (e.g. operatorController.rightTrigger()).
+     * }</pre>
+     *
+     * @param robotPose supplier of the robot pose
+     * @param fieldSpeeds supplier of chassis speeds
+     * @param targetSupplier supplier of the 3D target point
+     * @param refinementIterations number of solver refinement iterations
+     * @param tableMode lookup table mode
+     * @param shootMode supplier of the current {@link ShootMode}
+     * @return a command that aims (clamped turret) and feeds while scheduled
+     */
+    public Command hybridAimAndShoot(
+            Supplier<Pose2d> robotPose,
+            Supplier<ChassisSpeeds> fieldSpeeds,
+            Supplier<Translation3d> targetSupplier,
+            int refinementIterations,
+            ShootingLookupTable.Mode tableMode,
+            Supplier<ShootMode> shootMode) {
+        var table = new ShootingLookupTable(tableMode);
+
+        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
+
+        var solution =
+                makeModeAwareSolutionSupplier(
+                        robotPose, fieldSpeeds, targetSupplier, refinementIterations, table, shootMode);
+
+        // Turret: tracks computed azimuth but CLAMPED to ±turretClampDeg around
+        // the home angle. For a forward-facing shooter (home=0°) this clamps to
+        // e.g. [-30°, +30°]. For a rear-facing shooter (home=180°) this clamps
+        // to e.g. [150°, 210°]. The drivetrain heading controller is responsible
+        // for keeping the full angle small enough that this clamp rarely
+        // activates — it's a safety net, not the primary control path.
+        var turretCmd =
+                turret.setAngle(
+                        () -> {
+                            if (shootMode.get() == ShootMode.FULL_STATIC) {
+                                return Degrees.of(turretHomeAngleDeg);
+                            }
+                            double rawDeg = solution.get().turretAzimuth().in(Degrees);
+                            double clampedDeg =
+                                    edu.wpi.first.math.MathUtil.clamp(
+                                            rawDeg,
+                                            turretHomeAngleDeg - turretClampDeg,
+                                            turretHomeAngleDeg + turretClampDeg);
+
+                            Logger.recordOutput("HybridAiming/rawTurretAzimuthDeg", rawDeg);
+                            Logger.recordOutput("HybridAiming/clampedTurretAzimuthDeg", clampedDeg);
+                            Logger.recordOutput(
+                                    "HybridAiming/turretClamped",
+                                    Math.abs(rawDeg - turretHomeAngleDeg) > turretClampDeg);
+
+                            return Degrees.of(clampedDeg);
+                        });
+
+        var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
+        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
+        var feedCmd = makeFeedSequence(solution);
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution, shootMode);
+
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
+                .withName("HybridAimAndShoot");
     }
 
     // endregion

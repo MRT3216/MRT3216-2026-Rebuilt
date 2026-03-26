@@ -460,4 +460,101 @@ public final class ShooterConstants {
         public static final boolean kCRTEncoder1Inverted = false;
         public static final boolean kCRTEncoder2Inverted = false;
     }
+
+    // -------------------------------------------------------------------------
+    // Hybrid Aiming (drivetrain coarse + turret fine)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Constants for hybrid aiming mode where the <em>drivetrain</em> handles coarse heading
+     * correction and the <em>turret</em> handles only the residual fine adjustment.
+     *
+     * <p><b>Why hybrid?</b> A full-rotation turret stresses the wiring loom every time it swings
+     * across large angles. In hybrid mode the turret stays within a small comfort zone (±{@link
+     * #kTurretDeadbandDeg}°), dramatically reducing cable wear. The drivetrain rotates the whole
+     * robot to keep the target roughly in front, and the turret corrects the last few degrees.
+     *
+     * <p><b>How it works:</b>
+     *
+     * <ol>
+     *   <li>Each loop, compute the <em>full</em> robot-relative angle to the target (same math as the
+     *       existing {@code HybridTurretUtil}).
+     *   <li>If that angle is within ±{@code kTurretDeadbandDeg}, the drivetrain does nothing and the
+     *       turret tracks normally — the driver retains full rotational control.
+     *   <li>If the angle exceeds the deadband, the drivetrain heading controller kicks in and rotates
+     *       the robot toward the target, bleeding off error until the turret can handle the
+     *       remainder.
+     *   <li>The turret always receives the <em>actual</em> residual error (full angle minus whatever
+     *       the drivetrain has already corrected), so it never needs to travel far.
+     * </ol>
+     *
+     * <p><b>Swapping in:</b> This is a drop-in alternative to the current turret-only aiming. See
+     * {@code ShooterSystem.hybridAimAndShoot()} and {@code DriveCommands.joystickDriveAimAtTarget()}
+     * for the ready-to-wire commands. To activate, replace the {@code aimAndShoot} call in {@code
+     * RobotContainer.configureButtonBindings()} with {@code hybridAimAndShoot} and swap the drive
+     * default command to {@code joystickDriveAimAtTarget} while shooting is active.
+     *
+     * <p>All current turret-only code is unaffected — this is purely additive.
+     */
+    public static final class HybridAimingConstants {
+        private HybridAimingConstants() {}
+
+        /**
+         * Turret "home" angle in degrees — the direction the shooter faces when the turret is at its
+         * resting position, measured relative to the robot's front.
+         *
+         * <ul>
+         *   <li>{@code 0.0} — shooter faces forward (default).
+         *   <li>{@code 180.0} — shooter faces backward. The drivetrain will aim the <em>rear</em> of
+         *       the robot at the target, and the turret clamp will center around 180° instead of 0°.
+         *   <li>Any other value works too (e.g. 90° for a side-mounted shooter).
+         * </ul>
+         *
+         * <p>This offset is applied in two places:
+         *
+         * <ol>
+         *   <li><b>DriveCommands.joystickDriveAimAtTarget</b> — the drivetrain heading setpoint is
+         *       offset so the correct face of the robot points at the target.
+         *   <li><b>ShooterSystem.hybridAimAndShoot</b> — the turret clamp is centered around this angle
+         *       instead of 0°.
+         * </ol>
+         */
+        public static final double kTurretHomeAngleDeg = 0.0;
+
+        /**
+         * Turret "comfort zone" half-width in degrees. When the robot-relative angle to the target is
+         * within ±this value <em>of the home angle</em>, the drivetrain does NOT auto-rotate and the
+         * driver has full manual heading control. The turret handles the full angle on its own.
+         *
+         * <p>30° is a good starting point — gives the turret a ±30° working window (60° total) which is
+         * well within our ±180° travel but keeps the turret near center.
+         */
+        public static final double kTurretDeadbandDeg = 90.0;
+
+        /**
+         * PID gains for the drivetrain heading controller used in hybrid aiming mode. These control how
+         * aggressively the robot chassis rotates toward the target when the turret angle exceeds the
+         * deadband.
+         *
+         * <p>Start conservative — the driver should barely notice the heading correction. Increase kP
+         * if the robot is too sluggish snapping to the target; add kD if it overshoots.
+         *
+         * <p>Units: radians/sec output per radian of heading error (continuous input ±π).
+         */
+        public static final double kHeadingKP = 3.0;
+
+        public static final double kHeadingKI = 0.0;
+        public static final double kHeadingKD = 0.2;
+
+        /**
+         * Maximum rotational velocity (rad/s) and acceleration (rad/s²) for the profiled heading
+         * controller. Limits how fast the drivetrain can snap to the target heading.
+         *
+         * <p>Lower values make the correction smoother and less jarring for the driver; higher values
+         * get on-target faster but may feel aggressive.
+         */
+        public static final double kHeadingMaxVelocity = 4.0; // rad/s
+
+        public static final double kHeadingMaxAcceleration = 8.0; // rad/s²
+    }
 }

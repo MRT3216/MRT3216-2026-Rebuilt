@@ -7,88 +7,48 @@
       "grid_layout": {
         "layouts": [
           {
-            "title": "Match",
+            "title": "Shift Tracking",
             "x": 0.0,
             "y": 0.0,
-            "width": 256.0,
-            "height": 192.0,
+            "width": 960.0,
+            "height": 256.0,
             "type": "List Layout",
             "properties": {
-              "label_position": "TOP"
+              "label_position": "HIDDEN"
             },
             "children": [
               {
                 "title": "Match Time",
                 "x": 0.0,
                 "y": 0.0,
-                "width": 256.0,
-                "height": 96.0,
-                "type": "Number Display",
+                "width": 320.0,
+                "height": 256.0,
+                "type": "Match Time",
                 "properties": {
                   "topic": "/AdvantageKit/RealOutputs/MatchTime",
-                  "period": 0.1
-                }
-              },
-              {
-                "title": "Hub Active",
-                "x": 0.0,
-                "y": 0.0,
-                "width": 256.0,
-                "height": 96.0,
-                "type": "Boolean Box",
-                "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/HubShift/Active",
                   "period": 0.06,
-                  "true_color": 4283215696,
-                  "false_color": 4294198070,
-                  "true_icon": "None",
-                  "false_icon": "None"
-                }
-              }
-            ]
-          },
-          {
-            "title": "Hub Shift",
-            "x": 256.0,
-            "y": 0.0,
-            "width": 384.0,
-            "height": 320.0,
-            "type": "List Layout",
-            "properties": {
-              "label_position": "TOP"
-            },
-            "children": [
-              {
-                "title": "Current Shift",
-                "x": 0.0,
-                "y": 0.0,
-                "width": 384.0,
-                "height": 96.0,
-                "type": "Text Display",
-                "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/HubShift/CurrentShift",
-                  "period": 0.1,
-                  "show_submit_button": false
+                  "time_display_mode": "Minutes and Seconds",
+                  "red_start_time": 15
                 }
               },
               {
-                "title": "Shift Remaining (s)",
+                "title": "Remaining Shift Time",
                 "x": 0.0,
                 "y": 0.0,
-                "width": 384.0,
-                "height": 96.0,
+                "width": 320.0,
+                "height": 256.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/HubShift/RemainingTime",
-                  "period": 0.1
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/ShiftedRemainingTime",
+                  "period": 0.06
                 }
               },
               {
-                "title": "Shifted Active",
+                "title": "Shift Active",
                 "x": 0.0,
                 "y": 0.0,
-                "width": 384.0,
-                "height": 64.0,
+                "width": 320.0,
+                "height": 256.0,
                 "type": "Boolean Box",
                 "properties": {
                   "topic": "/AdvantageKit/RealOutputs/HubShift/ShiftedActive",
@@ -98,38 +58,93 @@
                   "true_icon": "None",
                   "false_icon": "None"
                 }
-              },
+              }
+            ]
+          },
+          {
+            "title": "Game Info",
+            "x": 0.0,
+            "y": 256.0,
+            "width": 960.0,
+            "height": 192.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "HIDDEN"
+            },
+            "children": [
               {
-                "title": "Shifted Remaining (s)",
+                "title": "Hub Distance (m)",
                 "x": 0.0,
                 "y": 0.0,
-                "width": 384.0,
-                "height": 64.0,
+                "width": 320.0,
+                "height": 192.0,
                 "type": "Number Display",
                 "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/HubShift/ShiftedRemainingTime",
+                  "topic": "/AdvantageKit/RealOutputs/ShooterTelemetry/hubDistanceMeters",
                   "period": 0.1
+                }
+              },
+              {
+                "title": "Game State",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 320.0,
+                "height": 192.0,
+                "type": "Text Display",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/ShiftedCurrentShift",
+                  "period": 0.1,
+                  "show_submit_button": false
+                }
+              },
+              {
+                "title": "Active First?",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 320.0,
+                "height": 192.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/ActiveFirst",
+                  "period": 0.06,
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
                 }
               }
             ]
           },
           {
             "title": "Shooter",
-            "x": 640.0,
-            "y": 0.0,
-            "width": 384.0,
-            "height": 512.0,
+            "x": 0.0,
+            "y": 448.0,
+            "width": 640.0,
+            "height": 320.0,
             "type": "List Layout",
             "properties": {
               "label_position": "TOP"
             },
             "children": [
               {
+                "title": "Shoot Mode",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 640.0,
+                "height": 64.0,
+                "type": "Text Display",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/ShooterTelemetry/shootMode",
+                  "period": 0.1,
+                  "show_submit_button": false
+                }
+              },
+              {
                 "title": "Flywheel Speed (RPM)",
                 "x": 0.0,
                 "y": 0.0,
-                "width": 384.0,
-                "height": 96.0,
+                "width": 640.0,
+                "height": 64.0,
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/RealOutputs/Flywheel/FX/VelocityRPM",
@@ -137,11 +152,27 @@
                 }
               },
               {
+                "title": "Flywheel at Speed",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 640.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/Flywheel/IsSpunUp",
+                  "period": 0.06,
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
+                }
+              },
+              {
                 "title": "Hood Angle (deg)",
                 "x": 0.0,
                 "y": 0.0,
-                "width": 384.0,
-                "height": 96.0,
+                "width": 640.0,
+                "height": 64.0,
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/RealOutputs/Hood/FX/PositionDegrees",
@@ -152,35 +183,89 @@
                 "title": "Turret Angle (deg)",
                 "x": 0.0,
                 "y": 0.0,
-                "width": 384.0,
-                "height": 96.0,
+                "width": 640.0,
+                "height": 64.0,
                 "type": "Number Display",
                 "properties": {
                   "topic": "/AdvantageKit/RealOutputs/Shooter/Turret/PositionDegrees",
                   "period": 0.1
                 }
-              },
+              }
+            ]
+          },
+          {
+            "title": "Status",
+            "x": 640.0,
+            "y": 448.0,
+            "width": 320.0,
+            "height": 320.0,
+            "type": "List Layout",
+            "properties": {
+              "label_position": "TOP"
+            },
+            "children": [
               {
-                "title": "Flywheel at Speed",
+                "title": "Vision Has Target",
                 "x": 0.0,
                 "y": 0.0,
-                "width": 384.0,
-                "height": 96.0,
+                "width": 320.0,
+                "height": 64.0,
                 "type": "Boolean Box",
                 "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/Flywheel/IsSpunUp",
+                  "topic": "/AdvantageKit/RealOutputs/Vision/Summary/HasTarget",
                   "period": 0.06,
                   "true_color": 4283215696,
                   "false_color": 4294198070,
                   "true_icon": "None",
                   "false_icon": "None"
                 }
+              },
+              {
+                "title": "Battery Voltage",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 320.0,
+                "height": 64.0,
+                "type": "Number Display",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/Battery/Voltage",
+                  "period": 0.1
+                }
+              },
+              {
+                "title": "Hub Active",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 320.0,
+                "height": 64.0,
+                "type": "Boolean Box",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/Active",
+                  "period": 0.06,
+                  "true_color": 4283215696,
+                  "false_color": 4294198070,
+                  "true_icon": "None",
+                  "false_icon": "None"
+                }
+              },
+              {
+                "title": "Current Shift",
+                "x": 0.0,
+                "y": 0.0,
+                "width": 320.0,
+                "height": 64.0,
+                "type": "Text Display",
+                "properties": {
+                  "topic": "/AdvantageKit/RealOutputs/HubShift/CurrentShift",
+                  "period": 0.1,
+                  "show_submit_button": false
+                }
               }
             ]
           },
           {
             "title": "Mechanisms",
-            "x": 1024.0,
+            "x": 960.0,
             "y": 0.0,
             "width": 256.0,
             "height": 576.0,
@@ -318,72 +403,6 @@
                 }
               }
             ]
-          },
-          {
-            "title": "Status",
-            "x": 0.0,
-            "y": 192.0,
-            "width": 256.0,
-            "height": 384.0,
-            "type": "List Layout",
-            "properties": {
-              "label_position": "TOP"
-            },
-            "children": [
-              {
-                "title": "Vision Has Target",
-                "x": 0.0,
-                "y": 0.0,
-                "width": 256.0,
-                "height": 64.0,
-                "type": "Boolean Box",
-                "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/Vision/Summary/HasTarget",
-                  "period": 0.06,
-                  "true_color": 4283215696,
-                  "false_color": 4294198070,
-                  "true_icon": "None",
-                  "false_icon": "None"
-                }
-              },
-              {
-                "title": "Battery Voltage",
-                "x": 0.0,
-                "y": 0.0,
-                "width": 256.0,
-                "height": 96.0,
-                "type": "Number Display",
-                "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/Battery/Voltage",
-                  "period": 0.1
-                }
-              },
-              {
-                "title": "Hub Distance (m)",
-                "x": 0.0,
-                "y": 0.0,
-                "width": 256.0,
-                "height": 96.0,
-                "type": "Number Display",
-                "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/ShooterTelemetry/hubDistanceMeters",
-                  "period": 0.1
-                }
-              },
-              {
-                "title": "Shoot Mode",
-                "x": 0.0,
-                "y": 0.0,
-                "width": 256.0,
-                "height": 96.0,
-                "type": "Text Display",
-                "properties": {
-                  "topic": "/AdvantageKit/RealOutputs/ShooterTelemetry/shootMode",
-                  "period": 0.1,
-                  "show_submit_button": false
-                }
-              }
-            ]
           }
         ],
         "containers": []
@@ -484,8 +503,8 @@
             "title": "Field",
             "x": 0.0,
             "y": 128.0,
-            "width": 512.0,
-            "height": 384.0,
+            "width": 384.0,
+            "height": 512.0,
             "type": "Field",
             "properties": {
               "topic": "/SmartDashboard/Field",
@@ -495,7 +514,7 @@
               "robot_length": 0.66,
               "show_other_objects": true,
               "show_trajectories": true,
-              "field_rotation": 0.0,
+              "field_rotation": 90.0,
               "robot_color": 4294901760,
               "trajectory_color": 4294967295,
               "show_robot_outside_widget": true

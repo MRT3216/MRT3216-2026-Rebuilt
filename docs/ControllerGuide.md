@@ -52,7 +52,7 @@
 **Read the LEDs like a traffic light:**
 - 🟢 Green wave = your shift is live, go score
 - 🟠 Orange strobe = shift is about to change, wrap up
-- 🔵 Dim cyan/red = not your shift, hold or pass
+- 🔵 Dim blue/red = not your shift, hold or pass
 - 🟣 Purple strobe = intake is running
 - 🟢 Solid green = aim locked, trigger held
 

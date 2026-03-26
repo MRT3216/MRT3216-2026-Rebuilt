@@ -14,19 +14,21 @@ import frc.robot.util.HubShiftUtil;
 import java.util.function.BooleanSupplier;
 
 /**
- * LED subsystem — drives addressable LEDs based on robot state and hub shift timing.
+ * LED subsystem — drives addressable LEDs based on robot state and hub shift
+ * timing.
  *
- * <p>Pattern priority (highest first):
+ * <p>
+ * Pattern priority (highest first):
  *
  * <ol>
- *   <li>Disabled — slow teal/orange team wave
- *   <li>Autonomous — fast orange/cyan wave
- *   <li>Defence mode — red/blue strobe
- *   <li>Intaking — purple strobe
- *   <li>Aim lock — solid green
- *   <li>Shift ending (≤5 s remaining) — fast orange strobe warning
- *   <li>Shift active — green/black wave ("go score!")
- *   <li>Shift inactive — dim alliance color
+ * <li>Disabled — slow teal/orange team wave
+ * <li>Autonomous — fast orange/cyan wave
+ * <li>Defence mode — red/blue strobe
+ * <li>Intaking — purple strobe
+ * <li>Aim lock — solid green
+ * <li>Shift ending (≤5 s remaining) — fast orange strobe warning
+ * <li>Shift active — green/black wave ("go score!")
+ * <li>Shift inactive — dim alliance color
  * </ol>
  */
 public class LEDSubsystem extends SubsystemBase {
@@ -41,7 +43,9 @@ public class LEDSubsystem extends SubsystemBase {
 
     private Color allianceColor = Color.kCyan;
 
-    /** Flags set by external commands to override the default shift-based pattern. */
+    /**
+     * Flags set by external commands to override the default shift-based pattern.
+     */
     private boolean intaking = false;
 
     private boolean aimLock = false;
@@ -57,8 +61,8 @@ public class LEDSubsystem extends SubsystemBase {
     private static final double WAVE_FAST_DURATION = 0.25;
     private static final double WAVE_ALLIANCE_CYCLE_LENGTH = 15.0;
     private static final double WAVE_ALLIANCE_DURATION = 2.0;
-    private static final double STROBE_FAST_DURATION = 0.1;
-    private static final double STROBE_DEFENCE_DURATION = 0.25;
+    private static final double STROBE_FAST_DURATION = 0.25;
+    private static final double STROBE_DEFENCE_DURATION = 0.35;
 
     /** Seconds before a shift transition at which the warning strobe begins. */
     private static final double SHIFT_WARNING_SECS = 5.0;
@@ -86,10 +90,9 @@ public class LEDSubsystem extends SubsystemBase {
 
         // Keep alliance color up to date when connected to FMS.
         if (DriverStation.isFMSAttached()) {
-            allianceColor =
-                    DriverStation.getAlliance()
-                            .map(a -> a == Alliance.Blue ? Color.kCyan : Color.kRed)
-                            .orElse(Color.kCyan);
+            allianceColor = DriverStation.getAlliance()
+                    .map(a -> a == Alliance.Blue ? Color.kBlue : Color.kRed)
+                    .orElse(Color.kCyan);
         }
 
         if (DriverStation.isDisabled()) {
@@ -156,9 +159,10 @@ public class LEDSubsystem extends SubsystemBase {
      * Hub-shift-aware teleop pattern.
      *
      * <ul>
-     *   <li>Shift ending (≤5 s) — fast orange strobe so the driver prepares for the transition
-     *   <li>Shift active — green wave = "go score!"
-     *   <li>Shift inactive — dim alliance color = "hold / pass"
+     * <li>Shift ending (≤5 s) — fast orange strobe so the driver prepares for the
+     * transition
+     * <li>Shift active — green wave = "go score!"
+     * <li>Shift inactive — dim alliance color = "hold / pass"
      * </ul>
      */
     private void applyShiftPattern() {

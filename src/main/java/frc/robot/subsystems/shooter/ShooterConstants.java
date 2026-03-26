@@ -36,22 +36,19 @@ public final class ShooterConstants {
     // -------------------------------------------------------------------------
 
     /**
-     * Competition shoot modes, toggled by operator stick presses.
+     * Competition shoot modes, toggled by operator Y button.
      *
      * <ul>
      *   <li>{@link #FULL} — full SOTF: lead-compensated distance for RPM/hood, turret tracks azimuth
      *       (when azimuth tracking is enabled).
-     *   <li>{@link #STATIC_DISTANCE} — SOTF disabled: uses raw turret-to-hub distance for RPM/hood,
-     *       but turret still tracks azimuth (future-proofing for when azimuth is enabled).
-     *   <li>{@link #FULL_STATIC} — proven comp mode: raw distance AND turret locked at 0°.
+     *   <li>{@link #FULL_STATIC} — manual aim fallback: raw distance AND turret locked at 0°. The
+     *       driver must face the hub manually.
      * </ul>
      */
     public enum ShootMode {
         /** Full shoot-on-the-fly with lead compensation. */
         FULL,
-        /** Raw hub distance (no lead), turret still tracks azimuth. */
-        STATIC_DISTANCE,
-        /** Raw hub distance, turret locked at 0°. Battle-tested comp fallback. */
+        /** Raw hub distance, turret locked at 0°. Manual aim fallback. */
         FULL_STATIC
     }
 
@@ -62,10 +59,11 @@ public final class ShooterConstants {
      * Mid-match RPM fudge factor (absolute RPM offset). Added directly to the flywheel RPM computed
      * by the shooting model: {@code finalRPM = modelRPM + fudge}.
      *
-     * <p>Intended to be adjusted in 25 RPM increments by the operator via a dashboard slider (±200
-     * RPM range). Positive values increase RPM (shots landing short), negative values decrease RPM
-     * (shots overshooting). Always active regardless of {@link ShootMode}. Published to NetworkTables
-     * unconditionally so the operator can adjust mid-match from the dashboard.
+     * <p>Adjusted in 50 RPM increments by the operator via RB (+50) / LB (−50), clamped to ±200 RPM.
+     * Also accessible via the Elastic dashboard Number Slider. Positive values increase RPM (shots
+     * landing short), negative values decrease RPM (shots overshooting). Always active regardless of
+     * {@link ShootMode}. Published to NetworkTables unconditionally so the operator can see the
+     * current value on the dashboard.
      */
     public static final LoggedTunableNumber kRPMFudgeRPM =
             new LoggedTunableNumber("Shooter/RPMFudge", 0.0, true);

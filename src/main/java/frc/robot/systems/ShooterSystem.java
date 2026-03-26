@@ -174,14 +174,12 @@ public class ShooterSystem {
      *
      * <ul>
      *   <li>{@link ShootMode#FULL} — full shoot-on-the-fly with lead compensation.
-     *   <li>{@link ShootMode#STATIC_DISTANCE} — raw hub distance (no lead), turret still tracks
-     *       azimuth.
-     *   <li>{@link ShootMode#FULL_STATIC} — raw hub distance, turret locked at 0°. Battle-tested comp
+     *   <li>{@link ShootMode#FULL_STATIC} — raw hub distance, turret locked at 0°. Manual aim
      *       fallback.
      * </ul>
      *
-     * <p>The RPM fudge factor ({@code Shooter/RPMFudgePercent}) is always applied on top of the model
-     * RPM regardless of mode.
+     * <p>The RPM fudge factor ({@code Shooter/RPMFudge}) is always applied on top of the model RPM
+     * regardless of mode.
      *
      * @param robotPose supplier of the robot pose
      * @param fieldSpeeds supplier of chassis speeds (for lead compensation in FULL mode)
@@ -206,8 +204,8 @@ public class ShooterSystem {
                 makeModeAwareSolutionSupplier(
                         robotPose, fieldSpeeds, targetSupplier, refinementIterations, table, shootMode);
 
-        // Turret: tracks computed azimuth in FULL and STATIC_DISTANCE modes, locks
-        // at 0° in FULL_STATIC (the proven comp fallback).
+        // Turret: tracks computed azimuth in FULL mode, locks at 0° in
+        // FULL_STATIC (the manual aim fallback).
         var turretCmd =
                 turret.setAngle(
                         () -> {
@@ -502,7 +500,7 @@ public class ShooterSystem {
                                     kRefinementConvergenceEpsilon,
                                     table);
                 } else {
-                    // STATIC_DISTANCE and FULL_STATIC both use raw distance
+                    // FULL_STATIC uses raw distance (no lead compensation)
                     cache[0] =
                             HybridTurretUtil.computeStaticShot(robotPose.get(), targetSupplier.get(), table);
                 }

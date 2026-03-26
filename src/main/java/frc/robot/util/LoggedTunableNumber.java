@@ -73,6 +73,22 @@ public class LoggedTunableNumber implements DoubleSupplier {
     }
 
     /**
+     * Programmatically set the value. When tuning mode is active this writes through to the
+     * underlying {@link org.littletonrobotics.junction.networktables.LoggedNetworkNumber}, so
+     * dashboard widgets (e.g. Number Slider) will update on the next cycle. When tuning mode is
+     * inactive the default value is overwritten directly.
+     *
+     * @param value The new value
+     */
+    public void set(double value) {
+        if (tuningMode && dashboardNumber != null) {
+            dashboardNumber.set(value);
+        } else {
+            defaultValue = value;
+        }
+    }
+
+    /**
      * Checks whether the number has changed since our last check
      *
      * @param id Unique identifier for the caller to avoid conflicts when shared between multiple

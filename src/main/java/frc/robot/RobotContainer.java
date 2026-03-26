@@ -11,6 +11,7 @@ import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kTargetAngularVelocity;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMax;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -100,9 +101,10 @@ public class RobotContainer {
     private final CommandXboxController operatorController = new CommandXboxController(1);
 
     /**
-     * Current shoot mode — toggled by operator stick presses during teleop. Starts at {@link
-     * ShootMode#FULL} (full SOTF). Read by {@code aimAndShoot} each loop cycle so changes take effect
-     * immediately, even mid-shot.
+     * Current shoot mode — toggled by operator Y button during teleop. Starts at {@link
+     * ShootMode#FULL} (full SOTF). Pressing Y toggles to {@link ShootMode#FULL_STATIC} (turret locked
+     * at 0°, no lead compensation) and back. Read by {@code aimAndShoot} each loop cycle so changes
+     * take effect immediately, even mid-shot.
      */
     private ShootMode currentShootMode = ShootMode.FULL;
 
@@ -432,56 +434,29 @@ public class RobotContainer {
         // Right trigger: hold to intake (deploy arm + run rollers).
         operatorController.rightTrigger().whileTrue(intakeSystem.intake());
 
-        // Left trigger: hold to aim + feed a pass shot. Not shift-gated —
-        // feeds freely while held regardless of hub shift state. Turret and hood
-        // track the nearest pass target landing zone for the duration.
-        operatorController
-                .leftTrigger()
-                .whileTrue(
-                        shooterSystem.aimAndShootPass(
-                                () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
-        // Aim-lock LED while pass shooting is active.
-        operatorController
-                .leftTrigger()
-                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+        // Left trigger: hold to reverse intake (eject balls).
+        operatorController.leftTrigger().whileTrue(intakeSystem.eject());
 
         // ── Operator: secondary ball-handling & overrides ───────────────
 
         // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
         operatorController.a().whileTrue(intakeSystem.agitate());
 
-        // Right bumper: manually run intake rollers inward (override).
-        operatorController.rightBumper().whileTrue(intakeRollersSubsystem.intakeBalls());
+        // B button: clear / unjam shooter system while held.
+        operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
 
-        // Left bumper: clear / unjam shooter system while held.
-        operatorController.leftBumper().whileTrue(shooterSystem.clearShooterSystem());
-
-        // X Button: Defence mode (red/blue strobe LEDs while held)
+        // X button: defence mode (red/blue strobe LEDs while held).
         operatorController
                 .x()
                 .onTrue(ledSubsystem.setDefenceModeLEDCommand(() -> true))
                 .onFalse(ledSubsystem.setDefenceModeLEDCommand(() -> false));
 
-        // ── Operator: shoot-mode toggles ────────────────────────────────
+        // ── Operator: shoot-mode toggle ─────────────────────────────────
 
-        // Left stick press: toggle STATIC_DISTANCE mode
+        // Y button: toggle between FULL (auto-aim + SOTF) and FULL_STATIC
+        // (turret locked at 0°, no lead compensation — manual aim fallback).
         operatorController
-                .leftStick()
-                .onTrue(
-                        Commands.runOnce(
-                                () -> {
-                                    if (currentShootMode == ShootMode.STATIC_DISTANCE) {
-                                        currentShootMode = ShootMode.FULL;
-                                    } else {
-                                        currentShootMode = ShootMode.STATIC_DISTANCE;
-                                    }
-                                    Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
-                                }));
-
-        // Right stick press: toggle FULL_STATIC mode (battle-tested comp fallback)
-        operatorController
-                .rightStick()
+                .y()
                 .onTrue(
                         Commands.runOnce(
                                 () -> {
@@ -491,6 +466,31 @@ public class RobotContainer {
                                         currentShootMode = ShootMode.FULL_STATIC;
                                     }
                                     Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
+                                }));
+
+        // ── Operator: RPM fudge adjustment ──────────────────────────────
+        // RB/LB adjust the RPM fudge factor in ±50 RPM increments.
+        // Writes through to the LoggedTunableNumber so the dashboard
+        // Number Slider updates in real time. Clamped to ±200 RPM.
+
+        operatorController
+                .rightBumper()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    double next = Math.min(kRPMFudgeRPM.get() + 50, 200);
+                                    kRPMFudgeRPM.set(next);
+                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
+                                }));
+
+        operatorController
+                .leftBumper()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    double next = Math.max(kRPMFudgeRPM.get() - 50, -200);
+                                    kRPMFudgeRPM.set(next);
+                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
                                 }));
 
         // ── Shift-end rumble ────────────────────────────────────────────

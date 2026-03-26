@@ -460,3 +460,159 @@ Safe for testing alignment without firing balls.
 ---
 
 End of 2026-03-25 session.
+
+---
+
+## Session: 2026-03-26 — Pre-Boise Controller Cleanup, Tuning Mode Rewrite, Asymmetric Turret Limits
+
+Branch: Pre-Boise
+
+### Overview
+
+Large multi-phase session preparing for the Boise competition. Covered operator remap, shoot mode
+simplification, tuning mode rewrite (single controller), D-pad turret snap angles, asymmetric turret
+travel limits, and extensive documentation updates. All changes deployed to robot and build-verified.
+
+### Phase 1: Single Controller Tuning Mode
+
+**Context**: User wanted only one controller (driver) in tuning mode instead of splitting across
+driver + operator. Moved intake/eject onto driver controller.
+
+#### Changes
+- LT = intake, D-pad Down = eject (moved from operator)
+- Removed all `operatorController` references from `configureTestButtonBindings`
+- Removed X button defence LED binding (not needed in tuning)
+- Added X = `testShoot(() -> drive.getPose())` for quick fire testing
+
+### Phase 2: RobotContainer Cleanup + ControllerGuide Rewrite (commit 33d6fc5)
+
+- Fixed `currentShootMode` javadoc
+- Reorganized tuning-mode section headers
+- Complete rewrite of `docs/ControllerGuide.md`: competition mode (driver + operator), tuning mode
+  (driver only), shooting modes, RPM fudge, defaults, LED patterns, rumble alerts, quick summary
+
+### Phase 3: D-pad Turret Snap Angles in Tuning Mode
+
+Added 5 D-pad snap angle bindings for quick turret positioning during tuning:
+- D-pad Up = 0° (home), Left = 90°, Right = −90°, Up-Left = 45°, Up-Right = −45°
+- D-pad Down remains eject (no conflict — different POV angle)
+- All use `turretSubsystem.setAngle(Degrees.of(...))` with `whileTrue`
+
+### Phase 4: Fix Stale ±30° References
+
+User caught stale comment "turret clamped ±30°" — actual constant was `kTurretDeadbandDeg = 90.0`.
+Fixed 3 locations: `configureRealButtonBindings` RT comment, `configureTestButtonBindings` RT comment,
+`ControllerGuide.md` hub shot description.
+
+### Phase 5: Asymmetric Turret Travel Limits (major refactor)
+
+**Motivation**: User wanted different travel range in each direction (e.g., −90° to +130°) with
+constants that are trivial to change.
+
+#### Constants (ShooterConstants.java → HybridAimingConstants)
+- Replaced `kTurretDeadbandDeg = 90.0` with two constants:
+  - `kTurretMinDeg = -90.0` (CW limit, negative)
+  - `kTurretMaxDeg = 130.0` (CCW limit, positive)
+- All class-level and field-level javadoc updated for asymmetric terminology
+- Updated "Swapping in" javadoc → "Currently active" (hybrid is now wired)
+
+#### ShooterSystem.java (3 methods updated)
+All three hybrid methods (`hybridAimAndShoot`, `hybridAimAndShootPass`, `hybridAim`):
+- `turretClampDeg` local → `turretMinDeg` + `turretMaxDeg` locals
+- `clamp(raw, home - clamp, home + clamp)` → `clamp(raw, home + min, home + max)`
+- Telemetry `turretClamped` check: `Math.abs(raw - home) > clamp` → directional bounds check
+- Section header updated: "NOT CURRENTLY WIRED" → "Currently wired in RobotContainer"
+- Javadoc references updated from `kTurretDeadbandDeg` to `kTurretMinDeg`/`kTurretMaxDeg`
+
+#### DriveCommands.java (heading assist ramp zone)
+- `HYBRID_DEADBAND_DEG` → `HYBRID_MIN_DEG` / `HYBRID_MAX_DEG`
+- Symmetric `innerThresholdRad` → per-side `innerMinRad` = min + margin, `innerMaxRad` = max − margin
+- Ramp logic rewritten: `Math.abs(robotRelativeAngle)` comparison replaced with directional checks
+  - Inner zone: `angle >= innerMinRad && angle <= innerMaxRad` → rampFactor = 0
+  - Outer zone: `angle <= minRad || angle >= maxRad` → rampFactor = 1
+  - Min-side ramp: `(innerMinRad - angle) / marginRad`
+  - Max-side ramp: `(angle - innerMaxRad) / marginRad`
+- Telemetry key: `outsideDeadband` → `outsideTravelWindow`
+
+#### RobotContainer.java
+- 3 RT comments updated to say "asymmetric travel limits" instead of "±90°" or "±deadband"
+
+#### Documentation updates
+- **ControllerGuide.md**: Hub shot line → "turret clamped −90° / +130°"
+- **HybridAiming.md**: Full overhaul:
+  - Title: "Switching Between" → "Control Scheme Reference"
+  - "Turret-Only (current default)" → "Hybrid (current default)"
+  - Constants table: `kTurretDeadbandDeg` row → `kTurretMinDeg` + `kTurretMaxDeg` rows
+  - Ramp zone diagram: symmetric → asymmetric with both sides shown
+  - Architecture diagram: "±deadband" → "[home+min, home+max]"
+  - Tuning procedure: updated step 6 for asymmetric
+  - Telemetry table: `outsideDeadband` → `outsideTravelWindow`
+  - Code snippet comments updated
+
+### How to Change the Turret Angle Range
+
+**One file, two constants** in `ShooterConstants.java → HybridAimingConstants`:
+
+```java
+public static final double kTurretMinDeg = -90.0;  // ← CW limit (negative)
+public static final double kTurretMaxDeg = 130.0;   // ← CCW limit (positive)
+```
+
+Everything else reads from these automatically — ShooterSystem (3 methods), DriveCommands (ramp
+zones), all computed at init time from the constants. Optionally adjust `kThresholdMarginDeg` (15°)
+if the travel window becomes very narrow.
+
+### Files Modified
+- `src/main/java/frc/robot/RobotContainer.java` — single-controller tuning mode, D-pad snap angles,
+  testShoot on X, comment updates for asymmetric limits
+- `src/main/java/frc/robot/systems/ShooterSystem.java` — asymmetric clamp in 3 hybrid methods,
+  section header + javadoc updates
+- `src/main/java/frc/robot/commands/DriveCommands.java` — asymmetric ramp zone logic
+- `src/main/java/frc/robot/subsystems/shooter/ShooterConstants.java` — kTurretMinDeg/kTurretMaxDeg,
+  javadoc overhaul
+- `docs/ControllerGuide.md` — full rewrite with tuning mode, D-pad snap angles, asymmetric values
+- `docs/HybridAiming.md` — full overhaul for asymmetric limits + "currently active" framing
+
+### Tuning Mode Controller Layout (single driver controller)
+
+| Button | Action |
+|--------|--------|
+| Left Stick | Field-relative drive (translation) |
+| Right Stick | Field-relative drive (rotation) |
+| RT (hold) | Hybrid aim at hub (aim only — no flywheel/feed) |
+| LT (hold) | Intake |
+| A (hold) | Agitate |
+| B (hold) | Clear / unjam |
+| X (hold) | Test shoot (turret 0° + flywheel + feed) |
+| Y (press) | Toggle shoot mode (FULL ↔ FULL_STATIC) |
+| RB (press) | +50 RPM fudge |
+| LB (press) | −50 RPM fudge |
+| D-pad Up | Turret snap → 0° |
+| D-pad Down | Eject |
+| D-pad Left | Turret snap → 90° |
+| D-pad Right | Turret snap → −90° |
+| D-pad Up-Left | Turret snap → 45° |
+| D-pad Up-Right | Turret snap → −45° |
+| Start | Reset gyro |
+
+### Current Turret Limits (in code)
+- Hard limits: ±190°
+- Soft limits: ±180°
+- Hybrid aiming travel window: −90° to +130° (asymmetric, only during hybrid aim commands)
+- D-pad snap angles: 0°, ±45°, ±90°
+
+### Commits This Session
+- **33d6fc5** — RobotContainer cleanup + ControllerGuide rewrite (pushed)
+- Remaining changes uncommitted (D-pad snaps, comment fixes, asymmetric limits)
+
+### Next Steps
+1. **Commit remaining changes** to Pre-Boise branch
+2. **Test on robot**: verify asymmetric turret limits, D-pad snaps, single-controller tuning
+3. **PadCrafter controller diagrams**: user to create visual controller maps and drop images in docs/
+4. **Turret gain tuning**: resume with current gains on robot
+5. **Hood / flywheel tuning**: not yet done on real robot
+6. **LUT calibration**: see docs/TestModeTuning.md
+
+---
+
+End of 2026-03-26 session.

@@ -465,17 +465,19 @@ public final class ShooterConstants {
      * correction and the <em>turret</em> handles only the residual fine adjustment.
      *
      * <p><b>Why hybrid?</b> A full-rotation turret stresses the wiring loom every time it swings
-     * across large angles. In hybrid mode the turret stays within a small comfort zone (±{@link
-     * #kTurretDeadbandDeg}°), dramatically reducing cable wear. The drivetrain rotates the whole
-     * robot to keep the target roughly in front, and the turret corrects the last few degrees.
+     * across large angles. In hybrid mode the turret stays within an asymmetric comfort zone ({@link
+     * #kTurretMinDeg}° to {@link #kTurretMaxDeg}°), dramatically reducing cable wear. The drivetrain
+     * rotates the whole robot to keep the target roughly in front, and the turret corrects the last
+     * few degrees.
      *
      * <p><b>How it works:</b>
      *
      * <ol>
      *   <li>Each loop, compute the <em>full</em> robot-relative angle to the target (same math as the
      *       existing {@code HybridTurretUtil}).
-     *   <li>If that angle is within ±{@code kTurretDeadbandDeg}, the drivetrain does nothing and the
-     *       turret tracks normally — the driver retains full rotational control.
+     *   <li>If that angle is within the turret travel window ({@code kTurretMinDeg} to {@code
+     *       kTurretMaxDeg}), the drivetrain does nothing and the turret tracks normally — the driver
+     *       retains full rotational control.
      *   <li>If the angle exceeds the deadband, the drivetrain heading controller kicks in and rotates
      *       the robot toward the target, bleeding off error until the turret can handle the
      *       remainder.
@@ -483,13 +485,12 @@ public final class ShooterConstants {
      *       the drivetrain has already corrected), so it never needs to travel far.
      * </ol>
      *
-     * <p><b>Swapping in:</b> This is a drop-in alternative to the current turret-only aiming. See
-     * {@code ShooterSystem.hybridAimAndShoot()} and {@code DriveCommands.joystickDriveAimAtTarget()}
-     * for the ready-to-wire commands. To activate, replace the {@code aimAndShoot} call in {@code
-     * RobotContainer.configureButtonBindings()} with {@code hybridAimAndShoot} and swap the drive
-     * default command to {@code joystickDriveAimAtTarget} while shooting is active.
+     * <p><b>Currently active.</b> Wired in {@code RobotContainer} for both competition and tuning
+     * modes. The relevant commands are {@code ShooterSystem.hybridAimAndShoot()} (and variants) and
+     * {@code DriveCommands.joystickDriveAimAtTarget()}.
      *
-     * <p>All current turret-only code is unaffected — this is purely additive.
+     * <p>To revert to turret-only aiming, replace {@code hybridAimAndShoot} with {@code aimAndShoot}
+     * and swap the drive default back to {@code DriveCommands.joystickDrive()}.
      */
     public static final class HybridAimingConstants {
         private HybridAimingConstants() {}
@@ -517,33 +518,38 @@ public final class ShooterConstants {
         public static final double kTurretHomeAngleDeg = 0.0;
 
         /**
-         * Turret "comfort zone" half-width in degrees. When the robot-relative angle to the target is
-         * within ±this value <em>of the home angle</em>, the drivetrain does NOT auto-rotate and the
-         * driver has full manual heading control. The turret handles the full angle on its own.
+         * Turret travel limits in degrees, relative to the home angle. These define the asymmetric
+         * window the turret is allowed to sweep before the drivetrain heading controller takes over.
          *
-         * <p>90° gives the turret a ±90° working window (180° total) which matches our ±90° nominal
-         * travel. Combined with the 15° ramp margin, the drivetrain starts helping at 75° — leaving 15°
-         * of turret headroom before hitting the soft limit.
+         * <p>{@code kTurretMinDeg} is the most-negative (clockwise) limit and {@code kTurretMaxDeg} is
+         * the most-positive (counter-clockwise) limit. For example, {@code -90} / {@code +130} gives
+         * 90° of clockwise travel and 130° of counter-clockwise travel from the home angle.
+         *
+         * <p>The drivetrain ramp zone (see {@link #kThresholdMarginDeg}) applies independently on each
+         * side — the ramp starts at {@code limit ± margin} and reaches full correction at the limit.
          */
-        public static final double kTurretDeadbandDeg = 90.0;
+        public static final double kTurretMinDeg = -90.0;
+
+        public static final double kTurretMaxDeg = 130.0;
 
         /**
-         * Margin (in degrees) before the turret reaches the deadband edge where the drivetrain begins
-         * ramping in heading correction. Instead of a hard on/off at the deadband boundary, the
-         * drivetrain assist fades in linearly over this margin — giving it a head start so the chassis
-         * is already rotating by the time the turret reaches its clamp limit.
+         * Margin (in degrees) before the turret reaches each travel limit where the drivetrain begins
+         * ramping in heading correction. Instead of a hard on/off at the limit boundary, the drivetrain
+         * assist fades in linearly over this margin — giving it a head start so the chassis is already
+         * rotating by the time the turret reaches its clamp limit.
          *
-         * <p><b>Zones (measured from turret home):</b>
+         * <p><b>Zones (measured from turret home, per side):</b>
          *
          * <ul>
-         *   <li><b>0° – (deadband − margin)°:</b> Turret-only zone. Drivetrain does nothing.
-         *   <li><b>(deadband − margin)° – deadband°:</b> Ramp zone. Drivetrain correction scales
-         *       linearly from 0% → 100%.
-         *   <li><b>&gt; deadband°:</b> Full correction — same as before.
+         *   <li><b>0° – (limit − margin)°:</b> Turret-only zone. Drivetrain does nothing.
+         *   <li><b>(limit − margin)° – limit°:</b> Ramp zone. Drivetrain correction scales linearly
+         *       from 0% → 100%.
+         *   <li><b>&gt; limit°:</b> Full correction — same as before.
          * </ul>
          *
-         * <p>With deadband=90° and margin=15°: the drivetrain starts helping at 75° and reaches full
-         * strength at 90°. Inspired by 254/1323/4481's 2022 graduated turret-wrap-prevention systems.
+         * <p>With min=-90°, max=+130° and margin=15°: the drivetrain starts helping at -75° / +115° and
+         * reaches full strength at -90° / +130°. Inspired by 254/1323/4481's 2022 graduated
+         * turret-wrap-prevention systems.
          *
          * <p>Set to 0.0 to disable the ramp and revert to hard on/off behavior.
          */
@@ -551,8 +557,8 @@ public final class ShooterConstants {
 
         /**
          * PID gains for the drivetrain heading controller used in hybrid aiming mode. These control how
-         * aggressively the robot chassis rotates toward the target when the turret angle exceeds the
-         * deadband.
+         * aggressively the robot chassis rotates toward the target when the turret angle exceeds its
+         * travel limits.
          *
          * <p>Start conservative — the driver should barely notice the heading correction. Increase kP
          * if the robot is too sluggish snapping to the target; add kD if it overshoots.

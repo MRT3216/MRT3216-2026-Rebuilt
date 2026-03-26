@@ -324,9 +324,9 @@ public class RobotContainer {
     private void configureRealButtonBindings() {
         // ── Driver: shooting ─────────────────────────────────────────
 
-        // Right trigger: hybrid aim and shoot — turret clamped ±30°,
-        // drivetrain heading assist (via drive default command), full feed.
-        // See docs/HybridAiming.md.
+        // Right trigger: hybrid aim and shoot — turret clamped to asymmetric
+        // travel limits (see HybridAimingConstants), drivetrain heading assist
+        // (via drive default command), full feed. See docs/HybridAiming.md.
         driverController
                 .rightTrigger()
                 .whileTrue(
@@ -344,7 +344,7 @@ public class RobotContainer {
                 .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
         // Left trigger: hybrid pass shot — aims at nearest pass target landing
-        // zone with turret clamped to ±deadband, drivetrain heading assist.
+        // zone with turret clamped to travel limits, drivetrain heading assist.
         // Uses PASS lookup table. Feed is ungated (fires freely).
         driverController
                 .leftTrigger()
@@ -443,15 +443,15 @@ public class RobotContainer {
      * Tuning-mode bindings use <b>only the driver controller</b> so a single person can test in the
      * pit. Triggers use <b>aim only</b> (no flywheel/feed) so balls aren't accidentally fired.
      *
-     * <p><b>Driver:</b> RT = hybrid aim hub (no feed), LT = intake, D-pad Down = eject, A = agitate,
-     * B = clear shooter, X = test shoot, Y = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM
-     * fudge.
+     * <p><b>Driver:</b> RT = hybrid aim hub (no feed), LT = intake, D-pad Down = eject, D-pad
+     * Up/Left/Right/diagonals = turret snap angles, A = agitate, B = clear shooter, X = test shoot, Y
+     * = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM fudge.
      */
     private void configureTestButtonBindings() {
         // ── Driver: aiming ──────────────────────────────────────────────
 
-        // Right trigger: hybrid aim at hub (turret clamped ±30°,
-        // drivetrain heading assist). Aim only — no flywheel or feed.
+        // Right trigger: hybrid aim at hub (turret clamped to asymmetric
+        // travel limits, drivetrain heading assist). Aim only — no flywheel or feed.
         driverController
                 .rightTrigger()
                 .whileTrue(
@@ -475,6 +475,15 @@ public class RobotContainer {
 
         // D-pad down: hold to reverse intake (eject balls).
         driverController.povDown().whileTrue(intakeSystem.eject());
+
+        // ── Driver: turret snap angles ──────────────────────────────────
+        // D-pad directions snap the turret to fixed angles while held.
+        // Releases fall back to the Turret_DefaultStow (0°) default command.
+        driverController.povUp().whileTrue(turretSubsystem.setAngle(Degrees.of(0)));
+        driverController.povLeft().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
+        driverController.povRight().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+        driverController.povUpLeft().whileTrue(turretSubsystem.setAngle(Degrees.of(45)));
+        driverController.povUpRight().whileTrue(turretSubsystem.setAngle(Degrees.of(-45)));
 
         // ── Driver: ball-handling & shooter overrides ────────────────────
 

@@ -48,7 +48,8 @@ public class DriveCommands {
 
     // Hybrid aiming constants
     private static final double HYBRID_HOME_ANGLE_DEG = HybridAimingConstants.kTurretHomeAngleDeg;
-    private static final double HYBRID_DEADBAND_DEG = HybridAimingConstants.kTurretDeadbandDeg;
+    private static final double HYBRID_MIN_DEG = HybridAimingConstants.kTurretMinDeg;
+    private static final double HYBRID_MAX_DEG = HybridAimingConstants.kTurretMaxDeg;
     private static final double HYBRID_MARGIN_DEG = HybridAimingConstants.kThresholdMarginDeg;
     private static final double HYBRID_HEADING_KP = HybridAimingConstants.kHeadingKP;
     private static final double HYBRID_HEADING_KD = HybridAimingConstants.kHeadingKD;
@@ -354,7 +355,7 @@ public class DriveCommands {
             Supplier<Pose2d> robotPoseSupplier,
             Supplier<Boolean> aimEnabled) {
 
-        // Heading PID — only active when the target is outside the turret deadband.
+        // Heading PID — only active when the target is outside the turret travel window.
         ProfiledPIDController headingController =
                 new ProfiledPIDController(
                         HYBRID_HEADING_KP,
@@ -363,10 +364,14 @@ public class DriveCommands {
                         new TrapezoidProfile.Constraints(HYBRID_HEADING_MAX_VEL, HYBRID_HEADING_MAX_ACCEL));
         headingController.enableContinuousInput(-Math.PI, Math.PI);
 
-        double deadbandRad = Math.toRadians(HYBRID_DEADBAND_DEG);
+        double minRad = Math.toRadians(HYBRID_MIN_DEG);
+        double maxRad = Math.toRadians(HYBRID_MAX_DEG);
         double homeAngleRad = Math.toRadians(HYBRID_HOME_ANGLE_DEG);
         double marginRad = Math.toRadians(HYBRID_MARGIN_DEG);
-        double innerThresholdRad = deadbandRad - marginRad;
+        // Inner thresholds: the edges of the ramp zone closest to center.
+        // Within [innerMinRad, innerMaxRad] the turret handles aiming alone.
+        double innerMinRad = minRad + marginRad; // e.g. -90 + 15 = -75°
+        double innerMaxRad = maxRad - marginRad; // e.g. 130 - 15 = 115°
 
         return Commands.run(
                         () -> {
@@ -399,21 +404,24 @@ public class DriveCommands {
                                 Logger.recordOutput(
                                         "HybridAiming/robotRelativeAngleDeg", Math.toDegrees(robotRelativeAngle));
                                 Logger.recordOutput(
-                                        "HybridAiming/outsideDeadband", Math.abs(robotRelativeAngle) > deadbandRad);
+                                        "HybridAiming/outsideTravelWindow",
+                                        robotRelativeAngle < minRad || robotRelativeAngle > maxRad);
 
-                                double absAngle = Math.abs(robotRelativeAngle);
                                 double rampFactor; // 0.0 = turret only, 1.0 = full drivetrain assist
 
-                                if (absAngle <= innerThresholdRad) {
+                                if (robotRelativeAngle >= innerMinRad && robotRelativeAngle <= innerMaxRad) {
                                     // === Inner zone: turret handles it alone ===
                                     rampFactor = 0.0;
                                     headingController.reset(pose.getRotation().getRadians());
-                                } else if (absAngle >= deadbandRad) {
+                                } else if (robotRelativeAngle <= minRad || robotRelativeAngle >= maxRad) {
                                     // === Outer zone: full drivetrain correction ===
                                     rampFactor = 1.0;
+                                } else if (robotRelativeAngle < innerMinRad) {
+                                    // === Min-side ramp zone: linear ramp from inner to min limit ===
+                                    rampFactor = (innerMinRad - robotRelativeAngle) / marginRad;
                                 } else {
-                                    // === Ramp zone: linear interpolation from 0% → 100% ===
-                                    rampFactor = (absAngle - innerThresholdRad) / marginRad;
+                                    // === Max-side ramp zone: linear ramp from inner to max limit ===
+                                    rampFactor = (robotRelativeAngle - innerMaxRad) / marginRad;
                                 }
 
                                 if (rampFactor > 0.0) {

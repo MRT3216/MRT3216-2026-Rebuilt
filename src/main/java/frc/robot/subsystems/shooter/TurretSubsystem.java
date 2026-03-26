@@ -78,13 +78,13 @@ import yams.units.EasyCRTConfig;
  * <h3>Wrap-around behavior</h3>
  *
  * The turret's travel range is defined by {@code kSoftLimitMin} / {@code kSoftLimitMax} (currently
- * ±190°, 380° total). When the shot solver or stick input requests an angle, {@link
+ * ±90°, 180° total). When the shot solver or stick input requests an angle, {@link
  * #wrapAngle(Angle)} selects the ±360° equivalent <em>closest to the turret's current position</em>
  * and clamps to the soft limits. This prevents unnecessary full-rotation swings when {@code atan2}
- * wraps at ±180° — a common pitfall since our travel exceeds 360° coverage by 20°.
+ * wraps at ±180°.
  *
- * <p>The algorithm naturally handles both symmetric limits (±190°) and asymmetric limits (e.g.,
- * −60° / +320° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants
+ * <p>The algorithm naturally handles both symmetric limits (±90°) and asymmetric limits (e.g.,
+ * −60° / +120° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants
  * need to change.
  *
  * <p><b>Note:</b> YAMS {@code PivotConfig.withWrapping()} cannot be used here because it calls
@@ -390,12 +390,10 @@ public class TurretSubsystem extends SubsystemBase {
      * <h4>Why position-aware?</h4>
      *
      * The shot solver ({@link frc.robot.util.shooter.HybridTurretUtil}) computes a robot-relative
-     * azimuth via {@code atan2}, which returns values in (−180°, 180°]. Our turret can reach ±190°,
-     * so there is a 10° band on each side (180°–190°) that {@code atan2} maps to the opposite sign.
-     * For example, a target at +181° from robot-forward is reported as −179° by {@code atan2}. If the
-     * turret is currently at +185°, a naïve wrap would command −179° — a 364° swing instead of a 4°
-     * move. By considering the ±360° equivalents and picking the one nearest the current position,
-     * the turret moves the short way and only wraps when it truly needs to cross the dead zone.
+     * azimuth via {@code atan2}, which returns values in (−180°, 180°]. Our turret can reach ±90°,
+     * which is well within the range covered by {@code atan2}, so no dead-zone wrapping is needed.
+     * The position-aware candidate selection still avoids unnecessarily long rotation swings if the
+     * turret is near a limit and the target moves across ±180°.
      *
      * <h4>Algorithm</h4>
      *
@@ -407,7 +405,7 @@ public class TurretSubsystem extends SubsystemBase {
      *   <li>Clamp to [{@code kSoftLimitMin}, {@code kSoftLimitMax}].
      * </ol>
      *
-     * <p>The final clamp handles the rear dead zone gracefully — if all candidates fall outside the
+     * <p>The final clamp handles boundary cases gracefully — if all candidates fall outside the
      * soft limits, the turret drives as close as it can.
      *
      * @param requested the raw target angle (any range, typically from the shot solver or stick
@@ -435,8 +433,8 @@ public class TurretSubsystem extends SubsystemBase {
         }
 
         // If the nearest candidate is outside soft limits, try the other candidates
-        // that ARE within limits. This handles the wrap-around case: when the target
-        // crosses the dead zone, the nearest candidate gets clamped at the limit,
+        // that ARE within limits. This handles the boundary case: when the target
+        // is outside the soft-limit range, the nearest candidate gets clamped at the limit,
         // but the opposite-side candidate (360° away) may be reachable.
         if (best < minDeg || best > maxDeg) {
             double fallback = best;

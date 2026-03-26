@@ -10,6 +10,8 @@ package frc.robot;
 import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kTargetAngularVelocity;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMax;
+import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMin;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -259,8 +261,8 @@ public class RobotContainer {
             // LB/RB intake bindings in configureTestButtonBindings().
             // Rate is in degrees per 20 ms loop (~180°/s at full speed).
             final double kRotateRateDegPerLoop = 3.6; // 180 deg/s ÷ 50 Hz
-            final double kSoftMin = -190.0;
-            final double kSoftMax = 190.0;
+            final double kSoftMin = kSoftLimitMin.in(Degrees);
+            final double kSoftMax = kSoftLimitMax.in(Degrees);
             // Re-seeded to the turret's current position each time the command initializes
             // (i.e., on every enable) so the turret doesn't snap to a stale setpoint.
             final double[] turretAccumulator = {turretSubsystem.getTarget().in(Degrees)};

@@ -226,9 +226,7 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID — intentionally zero: kicker runs feedforward-only on the real robot.
-        // FF-only kicker is common: BroncBotz 3481 also uses kP=0 with kS/kV only.
-        // 6328 uses kP=3.0 on their kicker — add PID if ours stalls on ball contact.
-        // TODO: Re-tune PID for all mechanisms during Monday bring-up.
+        // Add PID if the kicker stalls on ball contact (6328 uses kP=3.0).
         public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
@@ -362,21 +360,7 @@ public final class ShooterConstants {
         // Because YAMS sets positionConversionFactor = 1/gearing, the SparkMax's
         // internal PID sees position in mechanism rotations.
         //
-        // All PID + FF runs on SparkMax hardware (MAXMotion trapezoidal).
-        // kV=3.4 (theoretical) caused massive overshoot — too much energy in cruise.
-        // kV=0 caused no movement — SparkMax needs FF to drive MAXMotion.
-        // kV=2.0 + kP=12 + kD=0.1 was our best result: smooth, ~10° overshoot.
-        // Bumping kD to 0.3 to actively brake during decel and reduce that overshoot.
-        // PID — units are Volts per mechanism ROTATION of error (not degrees).
-        //
-        // DISABLING MAXMotion — using plain position PID instead.
-        // Old competition code used kP=3, kV=1.0, kA=0.05 with plain position
-        // PID and it worked (just too fast). MAXMotion caused persistent
-        // overshoot because the profile reference runs ahead and FF carries
-        // energy that kP can't brake.
-        //
         // Plain position PID (no MAXMotion). kP for accuracy, kD for damping.
-        // MAXMotion was tried but couldn't achieve both speed and accuracy.
         public static final double kP = 3.0;
         public static final double kI = 0.0;
         public static final double kD = 0.3;

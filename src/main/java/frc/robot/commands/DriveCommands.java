@@ -49,6 +49,7 @@ public class DriveCommands {
     // Hybrid aiming constants
     private static final double HYBRID_HOME_ANGLE_DEG = HybridAimingConstants.kTurretHomeAngleDeg;
     private static final double HYBRID_DEADBAND_DEG = HybridAimingConstants.kTurretDeadbandDeg;
+    private static final double HYBRID_MARGIN_DEG = HybridAimingConstants.kThresholdMarginDeg;
     private static final double HYBRID_HEADING_KP = HybridAimingConstants.kHeadingKP;
     private static final double HYBRID_HEADING_KD = HybridAimingConstants.kHeadingKD;
     private static final double HYBRID_HEADING_MAX_VEL = HybridAimingConstants.kHeadingMaxVelocity;
@@ -364,6 +365,8 @@ public class DriveCommands {
 
         double deadbandRad = Math.toRadians(HYBRID_DEADBAND_DEG);
         double homeAngleRad = Math.toRadians(HYBRID_HOME_ANGLE_DEG);
+        double marginRad = Math.toRadians(HYBRID_MARGIN_DEG);
+        double innerThresholdRad = deadbandRad - marginRad;
 
         return Commands.run(
                         () -> {
@@ -398,19 +401,32 @@ public class DriveCommands {
                                 Logger.recordOutput(
                                         "HybridAiming/outsideDeadband", Math.abs(robotRelativeAngle) > deadbandRad);
 
-                                if (Math.abs(robotRelativeAngle) > deadbandRad) {
-                                    // Target is outside turret comfort zone — drivetrain corrects.
+                                double absAngle = Math.abs(robotRelativeAngle);
+                                double rampFactor; // 0.0 = turret only, 1.0 = full drivetrain assist
+
+                                if (absAngle <= innerThresholdRad) {
+                                    // === Inner zone: turret handles it alone ===
+                                    rampFactor = 0.0;
+                                    headingController.reset(pose.getRotation().getRadians());
+                                } else if (absAngle >= deadbandRad) {
+                                    // === Outer zone: full drivetrain correction ===
+                                    rampFactor = 1.0;
+                                } else {
+                                    // === Ramp zone: linear interpolation from 0% → 100% ===
+                                    rampFactor = (absAngle - innerThresholdRad) / marginRad;
+                                }
+
+                                if (rampFactor > 0.0) {
                                     // Setpoint = field angle to target minus the home offset, so the
                                     // turret-home face of the robot points at the target.
                                     double desiredHeading = MathUtil.angleModulus(fieldAngleToTarget - homeAngleRad);
                                     headingOmega =
-                                            headingController.calculate(pose.getRotation().getRadians(), desiredHeading);
-                                } else {
-                                    // Inside deadband — turret handles it, reset heading controller
-                                    // so it doesn't wind up.
-                                    headingController.reset(pose.getRotation().getRadians());
+                                            rampFactor
+                                                    * headingController.calculate(
+                                                            pose.getRotation().getRadians(), desiredHeading);
                                 }
 
+                                Logger.recordOutput("HybridAiming/rampFactor", rampFactor);
                                 Logger.recordOutput("HybridAiming/headingOmega", headingOmega);
                             } else {
                                 // Aiming disabled — reset controller to avoid stale state.

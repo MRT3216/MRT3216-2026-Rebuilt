@@ -526,10 +526,33 @@ public final class ShooterConstants {
          * within ±this value <em>of the home angle</em>, the drivetrain does NOT auto-rotate and the
          * driver has full manual heading control. The turret handles the full angle on its own.
          *
-         * <p>30° is a good starting point — gives the turret a ±30° working window (60° total) which is
-         * well within our ±180° travel but keeps the turret near center.
+         * <p>75° gives the turret a ±75° working window (150° total) which is well within our ±90°
+         * nominal travel. Combined with the 15° ramp margin, the drivetrain starts helping at 60° —
+         * leaving 15° of turret headroom before hitting the ±90° physical limit.
          */
-        public static final double kTurretDeadbandDeg = 30.0;
+        public static final double kTurretDeadbandDeg = 75.0;
+
+        /**
+         * Margin (in degrees) before the turret reaches the deadband edge where the drivetrain begins
+         * ramping in heading correction. Instead of a hard on/off at the deadband boundary, the
+         * drivetrain assist fades in linearly over this margin — giving it a head start so the chassis
+         * is already rotating by the time the turret reaches its clamp limit.
+         *
+         * <p><b>Zones (measured from turret home):</b>
+         *
+         * <ul>
+         *   <li><b>0° – (deadband − margin)°:</b> Turret-only zone. Drivetrain does nothing.
+         *   <li><b>(deadband − margin)° – deadband°:</b> Ramp zone. Drivetrain correction scales
+         *       linearly from 0% → 100%.
+         *   <li><b>&gt; deadband°:</b> Full correction — same as before.
+         * </ul>
+         *
+         * <p>With deadband=75° and margin=15°: the drivetrain starts helping at 60° and reaches full
+         * strength at 75°. Inspired by 254/1323/4481's 2022 graduated turret-wrap-prevention systems.
+         *
+         * <p>Set to 0.0 to disable the ramp and revert to hard on/off behavior.
+         */
+        public static final double kThresholdMarginDeg = 15.0;
 
         /**
          * PID gains for the drivetrain heading controller used in hybrid aiming mode. These control how

@@ -415,6 +415,58 @@ public class ShooterSystem {
     }
 
     /**
+     * Hybrid aim-and-shoot for <b>pass shots</b>: the turret tracks the nearest pass target landing
+     * zone with the same clamped-turret hybrid approach as {@link #hybridAimAndShoot}. Feeding is
+     * <em>not</em> shift-gated — fires freely while the trigger is held regardless of hub shift
+     * state.
+     *
+     * @param robotPose supplier of the robot pose
+     * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
+     * @param refinementIterations number of solver refinement iterations
+     * @return a command that aims (clamped turret) and feeds a pass shot while scheduled
+     */
+    public Command hybridAimAndShootPass(
+            Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, int refinementIterations) {
+        var table = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
+
+        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
+
+        // Select the nearest pass target landing zone by robot Y position each loop.
+        Supplier<Translation3d> targetSupplier =
+                () -> {
+                    var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
+                    var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
+                    double robotY = robotPose.get().getY();
+                    return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY()) ? left : right;
+                };
+
+        var solution =
+                makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
+
+        // Turret: clamped to ±turretClampDeg around home angle, same as hybridAimAndShoot.
+        var turretCmd =
+                turret.setAngle(
+                        () -> {
+                            double rawDeg = solution.get().turretAzimuth().in(Degrees);
+                            double clampedDeg =
+                                    edu.wpi.first.math.MathUtil.clamp(
+                                            rawDeg,
+                                            turretHomeAngleDeg - turretClampDeg,
+                                            turretHomeAngleDeg + turretClampDeg);
+                            return Degrees.of(clampedDeg);
+                        });
+
+        var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
+        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
+        var feedCmd = makeFeedSequenceUngated();
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
+
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
+                .withName("HybridPassShoot");
+    }
+
+    /**
      * Hybrid aim only — turret and hood track the target (turret clamped to ±deadband), but the
      * flywheel does NOT spin and the feed path does NOT run. Useful for testing hybrid aiming
      * alignment in tuning mode without accidentally firing balls.

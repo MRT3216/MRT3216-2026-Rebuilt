@@ -10,14 +10,12 @@ package frc.robot;
 import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kTargetAngularVelocity;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
-import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -58,7 +56,6 @@ import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
 import frc.robot.util.TuningDashboard;
-import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -248,52 +245,11 @@ public class RobotContainer {
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
 
-        // Shift-aware turret tracking default command.
-        //
-        // When the hub shift is active the turret continuously tracks the alliance
-        // hub center (HUB table). When the shift is inactive it tracks the nearest
-        // pass target landing zone (PASS table). Motion-compensated via
-        // HybridTurretUtil.computeMovingShot() each periodic loop.
-        //
-        // This default is preempted by aimAndShoot / aimAndShootPass when the
-        // driver holds a trigger — the subsystem requirement ensures the trigger
-        // command takes priority, and tracking resumes automatically on release.
-
-        // Build the two lookup tables once — reused every loop by the turret default.
-        var hubTable = new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
-        var passTable = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
-
+        // Turret holds at home (0°) when not actively shooting. The hybrid
+        // aim-and-shoot commands (RT / LT) take over while the driver holds a
+        // trigger — subsystem requirement preempts this default automatically.
         turretSubsystem.setDefaultCommand(
-                turretSubsystem
-                        .setAngle(
-                                () -> {
-                                    var shift = HubShiftUtil.getShiftedShiftInfo();
-                                    var pose = drive.getPose();
-                                    var speeds = drive.getChassisSpeeds();
-
-                                    Translation3d target;
-                                    ShootingLookupTable table;
-                                    if (shift.active()) {
-                                        target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                                        table = hubTable;
-                                    } else {
-                                        // Flip targets to current alliance BEFORE comparing Y
-                                        // so the nearest-target pick works correctly on both
-                                        // alliances.
-                                        var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
-                                        var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
-                                        double robotY = pose.getY();
-                                        target =
-                                                Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
-                                                        ? left
-                                                        : right;
-                                        table = passTable;
-                                    }
-                                    return HybridTurretUtil.computeMovingShot(
-                                                    pose, speeds, target, 3, kRefinementConvergenceEpsilon, table)
-                                            .turretAzimuth();
-                                })
-                        .withName("Turret_DefaultTracking"));
+                turretSubsystem.setAngle(Degrees.of(0)).withName("Turret_DefaultStow"));
 
         // Hood returns to 0° when not actively shooting — prevents decapitation
         // under the trench. Hood tracking only happens inside aimAndShoot /
@@ -388,12 +344,13 @@ public class RobotContainer {
                 .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
                 .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
-        // Left trigger: pass shot — aims at nearest pass target landing zone,
-        // uses PASS lookup table. Turret, hood, flywheel, and feed all fire.
+        // Left trigger: hybrid pass shot — aims at nearest pass target landing
+        // zone with turret clamped to ±deadband, drivetrain heading assist.
+        // Uses PASS lookup table. Feed is ungated (fires freely).
         driverController
                 .leftTrigger()
                 .whileTrue(
-                        shooterSystem.aimAndShootPass(
+                        shooterSystem.hybridAimAndShootPass(
                                 () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
         // Aim-lock LED while pass shooting is active.
         driverController

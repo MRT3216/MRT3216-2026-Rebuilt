@@ -59,15 +59,28 @@ public final class ShooterConstants {
     public static final Distance kRefinementConvergenceEpsilon = Meters.of(0.01);
 
     /**
-     * Mid-match RPM fudge factor (percentage). Applied as a multiplier to the flywheel RPM computed
-     * by the two-point model: {@code finalRPM = modelRPM × (1 + fudge/100)}.
+     * Mid-match RPM fudge factor (absolute RPM offset). Added directly to the flywheel RPM computed
+     * by the shooting model: {@code finalRPM = modelRPM + fudge}.
      *
-     * <p>Positive values increase RPM (shots landing short), negative values decrease RPM (shots
-     * overshooting). Always active regardless of {@link ShootMode}. Published to NetworkTables
+     * <p>Intended to be adjusted in 25 RPM increments by the operator via a dashboard slider (±200
+     * RPM range). Positive values increase RPM (shots landing short), negative values decrease RPM
+     * (shots overshooting). Always active regardless of {@link ShootMode}. Published to NetworkTables
      * unconditionally so the operator can adjust mid-match from the dashboard.
      */
-    public static final LoggedTunableNumber kRPMFudgePercent =
-            new LoggedTunableNumber("Shooter/RPMFudgePercent", 0.0, true);
+    public static final LoggedTunableNumber kRPMFudgeRPM =
+            new LoggedTunableNumber("Shooter/RPMFudge", 0.0, true);
+
+    /**
+     * Mid-match distance fudge factor (meters). Added to the lead distance before the shooting model
+     * lookup: {@code effectiveDistance = leadDistance + fudge}.
+     *
+     * <p>Positive values pretend the hub is farther away (more RPM, steeper hood — use when shots
+     * land short). Negative values pretend the hub is closer (less RPM, flatter hood — use when shots
+     * overshoot). Always active regardless of {@link ShootMode}. Published to NetworkTables
+     * unconditionally so the operator can adjust mid-match via the dashboard slider.
+     */
+    public static final LoggedTunableNumber kDistanceFudgeMeters =
+            new LoggedTunableNumber("Shooter/DistanceFudgeMeters", 0.0, true);
 
     // -------------------------------------------------------------------------
     // Flywheel (velocity)
@@ -393,12 +406,12 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(190);
-        public static final Angle kHardLimitMin = Degrees.of(-190);
+        public static final Angle kHardLimitMax = Degrees.of(100);
+        public static final Angle kHardLimitMin = Degrees.of(-100);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(180);
-        public static final Angle kSoftLimitMin = Degrees.of(-180);
+        public static final Angle kSoftLimitMax = Degrees.of(95);
+        public static final Angle kSoftLimitMin = Degrees.of(-95);
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);
@@ -510,11 +523,11 @@ public final class ShooterConstants {
          * within ±this value <em>of the home angle</em>, the drivetrain does NOT auto-rotate and the
          * driver has full manual heading control. The turret handles the full angle on its own.
          *
-         * <p>75° gives the turret a ±75° working window (150° total) which is well within our ±90°
-         * nominal travel. Combined with the 15° ramp margin, the drivetrain starts helping at 60° —
-         * leaving 15° of turret headroom before hitting the ±90° physical limit.
+         * <p>90° gives the turret a ±90° working window (180° total) which matches our ±90° nominal
+         * travel. Combined with the 15° ramp margin, the drivetrain starts helping at 75° — leaving 15°
+         * of turret headroom before hitting the soft limit.
          */
-        public static final double kTurretDeadbandDeg = 75.0;
+        public static final double kTurretDeadbandDeg = 90.0;
 
         /**
          * Margin (in degrees) before the turret reaches the deadband edge where the drivetrain begins
@@ -531,8 +544,8 @@ public final class ShooterConstants {
          *   <li><b>&gt; deadband°:</b> Full correction — same as before.
          * </ul>
          *
-         * <p>With deadband=75° and margin=15°: the drivetrain starts helping at 60° and reaches full
-         * strength at 75°. Inspired by 254/1323/4481's 2022 graduated turret-wrap-prevention systems.
+         * <p>With deadband=90° and margin=15°: the drivetrain starts helping at 75° and reaches full
+         * strength at 90°. Inspired by 254/1323/4481's 2022 graduated turret-wrap-prevention systems.
          *
          * <p>Set to 0.0 to disable the ramp and revert to hard on/off behavior.
          */

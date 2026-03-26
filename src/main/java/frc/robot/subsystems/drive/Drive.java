@@ -217,7 +217,7 @@ public class Drive extends SubsystemBase {
 
         // Publish drive activity for Elastic Mechanisms panel
         ChassisSpeeds speeds = getChassisSpeeds();
-        SmartDashboard.putBoolean(
+        Logger.recordOutput(
                 "Mechanisms/DriveIsMoving",
                 Math.abs(speeds.vxMetersPerSecond) > 0.05
                         || Math.abs(speeds.vyMetersPerSecond) > 0.05

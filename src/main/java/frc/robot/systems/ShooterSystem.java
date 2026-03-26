@@ -9,7 +9,7 @@ import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kF
 import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
 import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
-import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgePercent;
+import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -576,13 +576,13 @@ public class ShooterSystem {
 
     /**
      * Apply the RPM fudge factor to the model speed for the given solution. Returns the final
-     * flywheel target: {@code modelRPM × (1 + fudge/100)}.
+     * flywheel target: {@code modelRPM + fudge}.
      */
     private static AngularVelocity applyFudge(
             Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         var modelSpeed = ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
-        double fudge = kRPMFudgePercent.get();
-        return RPM.of(modelSpeed.in(RPM) * (1.0 + fudge / 100.0));
+        double fudge = kRPMFudgeRPM.get();
+        return RPM.of(modelSpeed.in(RPM) + fudge);
     }
 
     /**
@@ -608,7 +608,7 @@ public class ShooterSystem {
 
                             // Active mode and fudge
                             Logger.recordOutput("ShooterTelemetry/shootMode", mode.name());
-                            Logger.recordOutput("ShooterTelemetry/rpmFudgePercent", kRPMFudgePercent.get());
+                            Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", kRPMFudgeRPM.get());
 
                             // Lead distance (includes motion-predicted lead in FULL mode,
                             // raw hub distance in STATIC modes)
@@ -623,7 +623,7 @@ public class ShooterSystem {
                             Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
 
                             double modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance()).in(RPM);
-                            double fudgedRpm = modelRpm * (1.0 + kRPMFudgePercent.get() / 100.0);
+                            double fudgedRpm = modelRpm + kRPMFudgeRPM.get();
                             Logger.recordOutput("ShooterTelemetry/modelRPM", modelRpm);
                             Logger.recordOutput("ShooterTelemetry/fudgedRPM", fudgedRpm);
                             Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));

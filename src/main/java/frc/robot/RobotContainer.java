@@ -41,6 +41,7 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
+import frc.robot.subsystems.lights.*;
 import frc.robot.subsystems.lights.LEDSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
@@ -55,7 +56,6 @@ import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
-import frc.robot.subsystems.lights.*;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
@@ -437,15 +437,11 @@ public class RobotContainer {
         //         .onTrue(ledSubsystem.setIntakingLEDCommand(() -> true))
         //         .onFalse(ledSubsystem.setIntakingLEDCommand(() -> false));
 
-        
         // ── Operator: intake ───────────────────────────────────────────
 
         // Right trigger: hold to intake (deploy arm + run rollers).
-        operatorController
-                .rightTrigger()
-                .whileTrue(intakeSystem.intake());
-                                
-                                
+        operatorController.rightTrigger().whileTrue(intakeSystem.intake());
+
         // TODO: Wire aim-lock LED when shooting is active:
         // operatorController
         //         .rightTrigger()

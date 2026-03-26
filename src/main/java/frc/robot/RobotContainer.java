@@ -263,7 +263,7 @@ public class RobotContainer {
             final double kSoftMax = 190.0;
             // Re-seeded to the turret's current position each time the command initializes
             // (i.e., on every enable) so the turret doesn't snap to a stale setpoint.
-            final double[] turretAccumulator = {0.0};
+            final double[] turretAccumulator = {turretSubsystem.getTarget().in(Degrees)};
 
             turretSubsystem.setDefaultCommand(
                     Commands.sequence(

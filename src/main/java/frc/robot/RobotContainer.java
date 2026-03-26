@@ -255,6 +255,19 @@ public class RobotContainer {
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         if (Constants.tuningMode) {
+            // Hybrid drive default: drivetrain auto-rotates toward the hub when
+            // the driver holds right trigger (aimEnabled). Full manual control
+            // otherwise. Overrides the unconditional joystickDrive set above.
+            drive.setDefaultCommand(
+                    DriveCommands.joystickDriveAimAtTarget(
+                            drive,
+                            () -> -driverController.getLeftY(),
+                            () -> -driverController.getLeftX(),
+                            () -> -driverController.getRightX(),
+                            () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint).toTranslation2d(),
+                            () -> drive.getPose(),
+                            () -> driverController.getRightTriggerAxis() > 0.5));
+
             // D-pad turret rotation for tuning mode.
             // Hold D-pad RIGHT to rotate clockwise, D-pad LEFT to rotate
             // counter-clockwise. Uses the POV hat so it does NOT conflict with
@@ -551,15 +564,19 @@ public class RobotContainer {
      * experimenting.
      */
     private void configureTestButtonBindings() {
-        driverController
-                .a()
-                .whileTrue(
-                        shooterSystem.aim(
-                                () -> drive.getPose(),
-                                () -> drive.getChassisSpeeds(),
-                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                                3,
-                                ShootingLookupTable.Mode.HUB));
+        // A button: test shoot (turret 0°, flywheel + feed).
+        driverController.a().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
+
+        // Previous A binding — turret-only aim (no hybrid clamp):
+        // driverController
+        //         .a()
+        //         .whileTrue(
+        //                 shooterSystem.aim(
+        //                         () -> drive.getPose(),
+        //                         () -> drive.getChassisSpeeds(),
+        //                         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+        //                         3,
+        //                         ShootingLookupTable.Mode.HUB));
 
         driverController.b().whileTrue(intakeRollersSubsystem.setVelocity(kTargetAngularVelocity));
         driverController.x().whileTrue(spindexerSubsystem.feedShooter());
@@ -579,7 +596,18 @@ public class RobotContainer {
                 .whileTrue(intakeSystem.dutyCycleAgitate())
                 .onFalse(intakeSystem.dutyCycleDeploy());
 
-        driverController.rightTrigger().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
+        // Right trigger: hybrid aim (turret clamped ±30°, drivetrain heading assist,
+        // no flywheel/feed). See docs/HybridAiming.md.
+        driverController
+                .rightTrigger()
+                .whileTrue(
+                        shooterSystem.hybridAim(
+                                () -> drive.getPose(),
+                                () -> drive.getChassisSpeeds(),
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                ShootingLookupTable.Mode.HUB,
+                                () -> currentShootMode));
     }
 
     // endregion

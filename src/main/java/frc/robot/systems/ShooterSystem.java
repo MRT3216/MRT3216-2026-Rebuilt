@@ -416,6 +416,60 @@ public class ShooterSystem {
                 .withName("HybridAimAndShoot");
     }
 
+    /**
+     * Hybrid aim only — turret and hood track the target (turret clamped to ±deadband), but the
+     * flywheel does NOT spin and the feed path does NOT run. Useful for testing hybrid aiming
+     * alignment in tuning mode without accidentally firing balls.
+     *
+     * <p>Pair with {@link frc.robot.commands.DriveCommands#joystickDriveAimAtTarget} as the drive
+     * default command to get the full hybrid aiming experience.
+     *
+     * @param robotPose supplier of the robot pose
+     * @param fieldSpeeds supplier of chassis speeds
+     * @param targetSupplier supplier of the 3D target point
+     * @param refinementIterations number of solver refinement iterations
+     * @param tableMode lookup table mode
+     * @param shootMode supplier of the current {@link ShootMode}
+     * @return a command that aims (clamped turret + hood) while scheduled, without spinning up or
+     *     feeding
+     */
+    public Command hybridAim(
+            Supplier<Pose2d> robotPose,
+            Supplier<ChassisSpeeds> fieldSpeeds,
+            Supplier<Translation3d> targetSupplier,
+            int refinementIterations,
+            ShootingLookupTable.Mode tableMode,
+            Supplier<ShootMode> shootMode) {
+        var table = new ShootingLookupTable(tableMode);
+        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
+        var solution =
+                makeModeAwareSolutionSupplier(
+                        robotPose, fieldSpeeds, targetSupplier, refinementIterations, table, shootMode);
+        var turretCmd =
+                turret.setAngle(
+                        () -> {
+                            if (shootMode.get() == ShootMode.FULL_STATIC) {
+                                return Degrees.of(turretHomeAngleDeg);
+                            }
+                            double rawDeg = solution.get().turretAzimuth().in(Degrees);
+                            double clampedDeg =
+                                    edu.wpi.first.math.MathUtil.clamp(
+                                            rawDeg,
+                                            turretHomeAngleDeg - turretClampDeg,
+                                            turretHomeAngleDeg + turretClampDeg);
+                            Logger.recordOutput("HybridAiming/rawTurretAzimuthDeg", rawDeg);
+                            Logger.recordOutput("HybridAiming/clampedTurretAzimuthDeg", clampedDeg);
+                            Logger.recordOutput(
+                                    "HybridAiming/turretClamped",
+                                    Math.abs(rawDeg - turretHomeAngleDeg) > turretClampDeg);
+                            return Degrees.of(clampedDeg);
+                        });
+        var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution, shootMode);
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), telemetryCmd).withName("HybridAim");
+    }
+
     // endregion
 
     // region Private helpers

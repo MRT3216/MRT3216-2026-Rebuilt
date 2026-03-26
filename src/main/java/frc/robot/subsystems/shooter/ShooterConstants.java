@@ -529,7 +529,7 @@ public final class ShooterConstants {
          * <p>30° is a good starting point — gives the turret a ±30° working window (60° total) which is
          * well within our ±180° travel but keeps the turret near center.
          */
-        public static final double kTurretDeadbandDeg = 90.0;
+        public static final double kTurretDeadbandDeg = 30.0;
 
         /**
          * PID gains for the drivetrain heading controller used in hybrid aiming mode. These control how

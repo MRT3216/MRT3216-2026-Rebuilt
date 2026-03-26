@@ -45,7 +45,6 @@ import frc.robot.subsystems.lights.LEDSubsystem;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
-import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.ShootMode;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
@@ -165,20 +164,16 @@ public class RobotContainer {
                                     new ModuleIOSim(TunerConstants.BackLeft),
                                     new ModuleIOSim(TunerConstants.BackRight));
 
+                    // Use only front + back cameras in sim to keep the loop under
+                    // 20ms. PhotonVision's VisionSystemSim is CPU-heavy (~8-10ms per
+                    // camera); 4 cameras blow the budget. Two cameras still give full
+                    // 360° pose-estimation coverage for testing.
                     vision =
                             new Vision(
                                     drive::addVisionMeasurement,
                                     new VisionIOPhotonVisionSim(
                                             VisionConstants.cameraFrontName,
                                             VisionConstants.robotToCameraFront,
-                                            drive::getPose),
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraLeftName,
-                                            VisionConstants.robotToCameraLeft,
-                                            drive::getPose),
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraRightName,
-                                            VisionConstants.robotToCameraRight,
                                             drive::getPose),
                                     new VisionIOPhotonVisionSim(
                                             VisionConstants.cameraBackName,
@@ -243,13 +238,18 @@ public class RobotContainer {
     // region Default commands
 
     private void configureDefaultCommands() {
-        // Default command, normal field-relative drive
+        // Hybrid drive default: drivetrain auto-rotates toward the hub when
+        // the driver holds right trigger (aimEnabled). Full manual control
+        // otherwise. See docs/HybridAiming.md.
         drive.setDefaultCommand(
-                DriveCommands.joystickDrive(
+                DriveCommands.joystickDriveAimAtTarget(
                         drive,
                         () -> -driverController.getLeftY(),
                         () -> -driverController.getLeftX(),
-                        () -> -driverController.getRightX()));
+                        () -> -driverController.getRightX(),
+                        () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint).toTranslation2d(),
+                        () -> drive.getPose(),
+                        () -> driverController.getRightTriggerAxis() > 0.5));
 
         // Kicker should stop (do not coast) when idle — use persistent stopHold()
         // so the subsystem remains at zero output when no one owns it.
@@ -359,21 +359,9 @@ public class RobotContainer {
             hoodSubsystem.setDefaultCommand(
                     hoodSubsystem.setAngle(Degrees.of(0)).withName("Hood_DefaultStow"));
 
-            // Flywheel pre-spins automatically when the shifted shift is active or
-            // within 5 seconds of becoming active — no button required. When the
-            // operator holds the right trigger, aimAndShoot preempts this default
-            // and tracks the exact speed from the lookup table.
-            flywheelSubsystem.setDefaultCommand(
-                    flywheelSubsystem
-                            .setVelocity(
-                                    () -> {
-                                        var shift = HubShiftUtil.getShiftedShiftInfo();
-                                        if (shift.active() || shift.remainingTime() < 5.0) {
-                                            return FlywheelConstants.kFlywheelDefaultVelocity;
-                                        }
-                                        return edu.wpi.first.units.Units.RPM.of(0);
-                                    })
-                            .withName("Flywheel_DefaultPreSpin"));
+            // Flywheel stays idle by default — it only spins when the driver
+            // holds right trigger (hybridAimAndShoot commands exact LUT speed).
+            flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
         }
 
         // Let spindexer coast by default. Use the persistent stopHold() default
@@ -442,9 +430,19 @@ public class RobotContainer {
     private void configureRealButtonBindings() {
         // ── Driver: intake ──────────────────────────────────────────────
 
-        // Right trigger: duty-cycle intake (deploy arm via timed pulse, then run
-        // rollers). Switch to intakeSystem.intake() once pivot PID/FF gains are tuned.
-        driverController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
+        // Right trigger: hybrid aim and shoot — turret clamped ±30°,
+        // drivetrain heading assist (via drive default command), full feed.
+        // See docs/HybridAiming.md.
+        driverController
+                .rightTrigger()
+                .whileTrue(
+                        shooterSystem.hybridAimAndShoot(
+                                () -> drive.getPose(),
+                                () -> drive.getChassisSpeeds(),
+                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                                3,
+                                ShootingLookupTable.Mode.HUB,
+                                () -> currentShootMode));
         // TODO: Wire intaking LED when intake is running:
         // driverController
         //         .rightTrigger()
@@ -454,15 +452,14 @@ public class RobotContainer {
         // Left trigger immediately stops rollers.
         driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
 
-        // Right bumper: duty-cycle agitate while held, then deploy on release.
-        // Switch to intakeSystem.agitate() / intakeSystem.deploy() once tuned.
-        driverController
-                .rightBumper()
-                .whileTrue(intakeSystem.dutyCycleAgitate())
-                .onFalse(intakeSystem.dutyCycleDeploy());
+        // Right bumper: duty-cycle intake while held.
+        driverController.rightBumper().whileTrue(intakeSystem.dutyCycleIntake());
 
-        // Left bumper: eject balls from intake rollers while held.
-        driverController.leftBumper().whileTrue(intakeRollersSubsystem.ejectBalls());
+        // Left bumper: duty-cycle agitate while held.
+        driverController.leftBumper().whileTrue(intakeSystem.dutyCycleAgitate());
+
+        // A button: eject balls from intake rollers while held.
+        driverController.a().whileTrue(intakeRollersSubsystem.ejectBalls());
 
         // ── Operator: shooting ──────────────────────────────────────────
 

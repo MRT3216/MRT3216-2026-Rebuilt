@@ -31,7 +31,7 @@ public final class Constants {
      * This flag allows enabling tuning behavior via code/config rather than relying on the Driver
      * Station Test mode switch.
      */
-    public static boolean tuningMode = true;
+    public static boolean tuningMode = false;
 
     /**
      * Use {@link #getMode()} to determine the runtime mode (REAL, SIM, REPLAY). Extra telemetry and

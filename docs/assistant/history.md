@@ -460,4 +460,3 @@ Safe for testing alignment without firing balls.
 ---
 
 End of 2026-03-25 session.
-

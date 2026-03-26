@@ -85,13 +85,24 @@ public final class TuningDashboard {
                 turretArmLigament.append(
                         new MechanismLigament2d("Hood", 0.3, 0, 4, new Color8Bit(255, 165, 0)));
 
-        // Dead-zone markers (thin red) — the ±10° zone past ±180° where atan2
-        // can't reach but the turret physically can (±190° soft limit).
+        // Hard-limit markers (thin red) — the physical stops at kHardLimitMax / kHardLimitMin.
         // These are static reference lines.
         deadZoneCW =
-                root.append(new MechanismLigament2d("DeadZoneCW", 1.2, 190, 1, new Color8Bit(255, 0, 0)));
+                root.append(
+                        new MechanismLigament2d(
+                                "DeadZoneCW",
+                                1.2,
+                                TurretConstants.kHardLimitMax.in(Degrees),
+                                1,
+                                new Color8Bit(255, 0, 0)));
         deadZoneCCW =
-                root.append(new MechanismLigament2d("DeadZoneCCW", 1.2, -190, 1, new Color8Bit(255, 0, 0)));
+                root.append(
+                        new MechanismLigament2d(
+                                "DeadZoneCCW",
+                                1.2,
+                                TurretConstants.kHardLimitMin.in(Degrees),
+                                1,
+                                new Color8Bit(255, 0, 0)));
 
         // Soft limit markers (thin yellow)
         softLimitCW =

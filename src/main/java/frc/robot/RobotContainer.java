@@ -55,6 +55,7 @@ import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.systems.IntakeSystem;
 import frc.robot.systems.ShooterSystem;
+import frc.robot.subsystems.lights.*;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
@@ -255,19 +256,6 @@ public class RobotContainer {
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
         if (Constants.tuningMode) {
-            // Hybrid drive default: drivetrain auto-rotates toward the hub when
-            // the driver holds right trigger (aimEnabled). Full manual control
-            // otherwise. Overrides the unconditional joystickDrive set above.
-            drive.setDefaultCommand(
-                    DriveCommands.joystickDriveAimAtTarget(
-                            drive,
-                            () -> -driverController.getLeftY(),
-                            () -> -driverController.getLeftX(),
-                            () -> -driverController.getRightX(),
-                            () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint).toTranslation2d(),
-                            () -> drive.getPose(),
-                            () -> driverController.getRightTriggerAxis() > 0.5));
-
             // D-pad turret rotation for tuning mode.
             // Hold D-pad RIGHT to rotate clockwise, D-pad LEFT to rotate
             // counter-clockwise. Uses the POV hat so it does NOT conflict with
@@ -449,31 +437,15 @@ public class RobotContainer {
         //         .onTrue(ledSubsystem.setIntakingLEDCommand(() -> true))
         //         .onFalse(ledSubsystem.setIntakingLEDCommand(() -> false));
 
-        // Left trigger immediately stops rollers.
-        driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
+        
+        // ── Operator: intake ───────────────────────────────────────────
 
-        // Right bumper: duty-cycle intake while held.
-        driverController.rightBumper().whileTrue(intakeSystem.dutyCycleIntake());
-
-        // Left bumper: duty-cycle agitate while held.
-        driverController.leftBumper().whileTrue(intakeSystem.dutyCycleAgitate());
-
-        // A button: eject balls from intake rollers while held.
-        driverController.a().whileTrue(intakeRollersSubsystem.ejectBalls());
-
-        // ── Operator: shooting ──────────────────────────────────────────
-
-        // Right trigger: hold to aim + feed a hub shot (shift-gated).
+        // Right trigger: hold to intake (deploy arm + run rollers).
         operatorController
                 .rightTrigger()
-                .whileTrue(
-                        shooterSystem.aimAndShoot(
-                                () -> drive.getPose(),
-                                () -> drive.getChassisSpeeds(),
-                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                                3,
-                                ShootingLookupTable.Mode.HUB,
-                                () -> currentShootMode));
+                .whileTrue(intakeSystem.intake());
+                                
+                                
         // TODO: Wire aim-lock LED when shooting is active:
         // operatorController
         //         .rightTrigger()
@@ -496,11 +468,20 @@ public class RobotContainer {
 
         // ── Operator: secondary ball-handling & overrides ───────────────
 
+        // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
+        operatorController.a().whileTrue(intakeSystem.agitate());
+
         // Right bumper: manually run intake rollers inward (override).
         operatorController.rightBumper().whileTrue(intakeRollersSubsystem.intakeBalls());
 
         // Left bumper: clear / unjam shooter system while held.
         operatorController.leftBumper().whileTrue(shooterSystem.clearShooterSystem());
+
+        // X Button: Defence mode (red/blue strobe LEDs while held)
+        operatorController
+                .x()
+                .onTrue(ledSubsystem.setDefenceModeLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setDefenceModeLEDCommand(() -> false));
 
         // ── Operator: shoot-mode toggles ────────────────────────────────
 
@@ -533,23 +514,19 @@ public class RobotContainer {
                                 }));
 
         // ── Shift-end rumble ────────────────────────────────────────────
-        // Pulse rumble once per second in the last 5s of an active shift —
-        // mirrors 6328's end-of-shift warning. Both controllers rumble so both
-        // driver and operator have situational awareness of shift boundaries.
+        // Pulse rumble once per second in the last 5s of each hub shift —
+        // mirrors 6328's end-of-shift warning. remainingTime() counts down
+        // within the current shift window (25-30s each), so each pulse fires
+        // once per shift boundary. Both controllers rumble so driver and
+        // operator have situational awareness of shift transitions.
         for (int i = 1; i <= 5; i++) {
             final double seconds = i;
             new Trigger(() -> HubShiftUtil.getShiftedShiftInfo().remainingTime() < seconds)
                     .and(RobotModeTriggers.teleop())
                     .onTrue(
                             Commands.runEnd(
-                                            () -> {
-                                                driverController.setRumble(RumbleType.kRightRumble, 1.0);
-                                                operatorController.setRumble(RumbleType.kRightRumble, 1.0);
-                                            },
-                                            () -> {
-                                                driverController.setRumble(RumbleType.kRightRumble, 0.0);
-                                                operatorController.setRumble(RumbleType.kRightRumble, 0.0);
-                                            })
+                                            () -> operatorController.setRumble(RumbleType.kRightRumble, 1.0),
+                                            () -> operatorController.setRumble(RumbleType.kRightRumble, 0.0))
                                     .withTimeout(0.25));
         }
     }

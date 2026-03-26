@@ -318,21 +318,21 @@ public class DriveCommands {
      *
      * <p><b>This is the drivetrain half of the hybrid aiming system.</b> The driver retains full
      * translational control (left stick) and rotational control (right stick). When the
-     * robot-relative angle to the target exceeds the configured deadband, a profiled PID heading
-     * controller blends additional rotational velocity to steer the chassis toward the target. Inside
-     * the deadband the controller outputs zero — the turret handles the residual.
+     * robot-relative angle to the target grows large enough, a profiled PID heading controller blends
+     * additional rotational velocity to steer the chassis toward the target.
      *
-     * <p>The deadband creates a "comfort zone" where the turret operates alone. Once the target
-     * drifts outside that zone, the drivetrain smoothly rotates to re-center it, keeping the turret
-     * near its home angle and minimizing wiring stress.
+     * <p>Three zones control the heading correction strength (measured from turret home):
      *
-     * <p>All tuning constants (PID gains, deadband, home angle) are read directly from {@link
-     * HybridAimingConstants} — matching the pattern used by {@link #joystickDriveAtAngle}.
+     * <ul>
+     *   <li><b>Inner zone</b> (0° – inner threshold): turret handles aiming alone, heading PID is
+     *       reset.
+     *   <li><b>Ramp zone</b> (inner threshold – deadband): heading PID output scales linearly from 0%
+     *       → 100%, giving the chassis a smooth head start.
+     *   <li><b>Outer zone</b> (&gt; deadband): full heading PID correction.
+     * </ul>
      *
-     * <p><b>Not currently wired.</b> To activate hybrid aiming, use this command as the drive default
-     * (or as a {@code whileTrue} alongside the shoot trigger) instead of {@link #joystickDrive(Drive,
-     * DoubleSupplier, DoubleSupplier, DoubleSupplier)}. See {@link HybridAimingConstants} for tuning
-     * knobs and swap-in instructions.
+     * <p>All tuning constants (PID gains, deadband, margin, home angle) are read from {@link
+     * HybridAimingConstants}.
      *
      * @param drive the swerve drive subsystem
      * @param xSupplier left stick Y axis (forward/back) — negated by caller

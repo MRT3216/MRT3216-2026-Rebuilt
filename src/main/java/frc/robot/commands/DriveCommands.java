@@ -24,12 +24,14 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.Constants.DriveControlConstants;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.shooter.ShooterConstants.HybridAimingConstants;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
     private static final double DEADBAND = DriveControlConstants.kDeadband;
@@ -43,6 +45,15 @@ public class DriveCommands {
             DriveControlConstants.kWheelRadiusMaxVelocity; // Rad/Sec
     private static final double WHEEL_RADIUS_RAMP_RATE =
             DriveControlConstants.kWheelRadiusRampRate; // Rad/Sec^2
+
+    // Hybrid aiming constants
+    private static final double HYBRID_HOME_ANGLE_DEG = HybridAimingConstants.kTurretHomeAngleDeg;
+    private static final double HYBRID_DEADBAND_DEG = HybridAimingConstants.kTurretDeadbandDeg;
+    private static final double HYBRID_HEADING_KP = HybridAimingConstants.kHeadingKP;
+    private static final double HYBRID_HEADING_KD = HybridAimingConstants.kHeadingKD;
+    private static final double HYBRID_HEADING_MAX_VEL = HybridAimingConstants.kHeadingMaxVelocity;
+    private static final double HYBRID_HEADING_MAX_ACCEL =
+            HybridAimingConstants.kHeadingMaxAcceleration;
 
     private DriveCommands() {}
 
@@ -295,5 +306,142 @@ public class DriveCommands {
         double currentAngle = rotation.getDegrees();
         double snappedAngle = Math.round(currentAngle / 45.0) * 45.0;
         return Rotation2d.fromDegrees(snappedAngle);
+    }
+
+    // =========================================================================
+    // Hybrid Aiming — drivetrain coarse heading + turret fine correction
+    // =========================================================================
+
+    /**
+     * Field-relative drive with automatic heading correction toward a target point.
+     *
+     * <p><b>This is the drivetrain half of the hybrid aiming system.</b> The driver retains full
+     * translational control (left stick) and rotational control (right stick). When the
+     * robot-relative angle to the target exceeds the configured deadband, a profiled PID heading
+     * controller blends additional rotational velocity to steer the chassis toward the target. Inside
+     * the deadband the controller outputs zero — the turret handles the residual.
+     *
+     * <p>The deadband creates a "comfort zone" where the turret operates alone. Once the target
+     * drifts outside that zone, the drivetrain smoothly rotates to re-center it, keeping the turret
+     * near its home angle and minimizing wiring stress.
+     *
+     * <p>All tuning constants (PID gains, deadband, home angle) are read directly from {@link
+     * HybridAimingConstants} — matching the pattern used by {@link #joystickDriveAtAngle}.
+     *
+     * <p><b>Not currently wired.</b> To activate hybrid aiming, use this command as the drive default
+     * (or as a {@code whileTrue} alongside the shoot trigger) instead of {@link #joystickDrive(Drive,
+     * DoubleSupplier, DoubleSupplier, DoubleSupplier)}. See {@link HybridAimingConstants} for tuning
+     * knobs and swap-in instructions.
+     *
+     * @param drive the swerve drive subsystem
+     * @param xSupplier left stick Y axis (forward/back) — negated by caller
+     * @param ySupplier left stick X axis (left/right) — negated by caller
+     * @param omegaSupplier right stick X axis (rotation) — negated by caller
+     * @param targetSupplier field-relative 2D target point (e.g. hub center, alliance-flipped)
+     * @param robotPoseSupplier current robot field pose
+     * @param aimEnabled supplier that gates whether the heading controller is active. When false
+     *     (e.g. driver not holding shoot trigger), this behaves exactly like {@link
+     *     #joystickDrive(Drive, DoubleSupplier, DoubleSupplier, DoubleSupplier)}.
+     * @return a command that drives with optional heading aim assist
+     */
+    public static Command joystickDriveAimAtTarget(
+            Drive drive,
+            DoubleSupplier xSupplier,
+            DoubleSupplier ySupplier,
+            DoubleSupplier omegaSupplier,
+            Supplier<Translation2d> targetSupplier,
+            Supplier<Pose2d> robotPoseSupplier,
+            Supplier<Boolean> aimEnabled) {
+
+        // Heading PID — only active when the target is outside the turret deadband.
+        ProfiledPIDController headingController =
+                new ProfiledPIDController(
+                        HYBRID_HEADING_KP,
+                        0.0,
+                        HYBRID_HEADING_KD,
+                        new TrapezoidProfile.Constraints(HYBRID_HEADING_MAX_VEL, HYBRID_HEADING_MAX_ACCEL));
+        headingController.enableContinuousInput(-Math.PI, Math.PI);
+
+        double deadbandRad = Math.toRadians(HYBRID_DEADBAND_DEG);
+        double homeAngleRad = Math.toRadians(HYBRID_HOME_ANGLE_DEG);
+
+        return Commands.run(
+                        () -> {
+                            // --- Translation (identical to joystickDrive) ---
+                            Translation2d linearVelocity =
+                                    getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+
+                            // --- Rotation: driver + optional heading assist ---
+                            double driverOmega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
+                            driverOmega = Math.copySign(driverOmega * driverOmega, driverOmega);
+
+                            double headingOmega = 0.0;
+                            boolean isAiming = aimEnabled.get();
+
+                            if (isAiming) {
+                                // Compute robot-relative angle to target
+                                Pose2d pose = robotPoseSupplier.get();
+                                Translation2d target = targetSupplier.get();
+                                double dx = target.getX() - pose.getX();
+                                double dy = target.getY() - pose.getY();
+                                double fieldAngleToTarget = Math.atan2(dy, dx);
+
+                                // Robot-relative angle to target, measured from the turret home
+                                // direction. If home=0° this is the angle from robot front; if
+                                // home=180° this is the angle from robot rear.
+                                double robotRelativeAngle =
+                                        MathUtil.angleModulus(
+                                                fieldAngleToTarget - pose.getRotation().getRadians() - homeAngleRad);
+
+                                Logger.recordOutput(
+                                        "HybridAiming/robotRelativeAngleDeg", Math.toDegrees(robotRelativeAngle));
+                                Logger.recordOutput(
+                                        "HybridAiming/outsideDeadband", Math.abs(robotRelativeAngle) > deadbandRad);
+
+                                if (Math.abs(robotRelativeAngle) > deadbandRad) {
+                                    // Target is outside turret comfort zone — drivetrain corrects.
+                                    // Setpoint = field angle to target minus the home offset, so the
+                                    // turret-home face of the robot points at the target.
+                                    double desiredHeading = MathUtil.angleModulus(fieldAngleToTarget - homeAngleRad);
+                                    headingOmega =
+                                            headingController.calculate(pose.getRotation().getRadians(), desiredHeading);
+                                } else {
+                                    // Inside deadband — turret handles it, reset heading controller
+                                    // so it doesn't wind up.
+                                    headingController.reset(pose.getRotation().getRadians());
+                                }
+
+                                Logger.recordOutput("HybridAiming/headingOmega", headingOmega);
+                            } else {
+                                // Aiming disabled — reset controller to avoid stale state.
+                                headingController.reset(robotPoseSupplier.get().getRotation().getRadians());
+                            }
+
+                            Logger.recordOutput("HybridAiming/aimEnabled", isAiming);
+
+                            // Combine driver input and heading correction.
+                            // Driver omega is scaled to max angular speed; heading omega is in
+                            // raw rad/s already.
+                            double totalOmega = driverOmega * drive.getMaxAngularSpeedRadPerSec() + headingOmega;
+
+                            // Build field-relative chassis speeds
+                            ChassisSpeeds speeds =
+                                    new ChassisSpeeds(
+                                            linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
+                                            totalOmega);
+                            boolean isFlipped =
+                                    DriverStation.getAlliance().isPresent()
+                                            && DriverStation.getAlliance().get() == Alliance.Red;
+                            drive.runVelocity(
+                                    ChassisSpeeds.fromFieldRelativeSpeeds(
+                                            speeds,
+                                            isFlipped
+                                                    ? drive.getRotation().plus(new Rotation2d(Math.PI))
+                                                    : drive.getRotation()));
+                        },
+                        drive)
+                .beforeStarting(
+                        () -> headingController.reset(robotPoseSupplier.get().getRotation().getRadians()));
     }
 }

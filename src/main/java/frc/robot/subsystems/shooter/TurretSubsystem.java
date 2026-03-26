@@ -78,14 +78,14 @@ import yams.units.EasyCRTConfig;
  * <h3>Wrap-around behavior</h3>
  *
  * The turret's travel range is defined by {@code kSoftLimitMin} / {@code kSoftLimitMax} (currently
- * ±190°, 380° total). When the shot solver or stick input requests an angle, {@link
+ * ±90°, 180° total). When the shot solver or stick input requests an angle, {@link
  * #wrapAngle(Angle)} selects the ±360° equivalent <em>closest to the turret's current position</em>
  * and clamps to the soft limits. This prevents unnecessary full-rotation swings when {@code atan2}
- * wraps at ±180° — a common pitfall since our travel exceeds 360° coverage by 20°.
+ * wraps at ±180°.
  *
- * <p>The algorithm naturally handles both symmetric limits (±190°) and asymmetric limits (e.g.,
- * −60° / +320° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants
- * need to change.
+ * <p>The algorithm naturally handles both symmetric limits (±90°) and asymmetric limits (e.g., −60°
+ * / +120° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants need
+ * to change.
  *
  * <p><b>Note:</b> YAMS {@code PivotConfig.withWrapping()} cannot be used here because it calls
  * {@code SmartMotorControllerConfig.withContinuousWrapping()}, which is incompatible with soft
@@ -126,6 +126,14 @@ public class TurretSubsystem extends SubsystemBase {
     private final SparkMax pivotMotor =
             new SparkMax(RobotMap.Shooter.Turret.kMotorId, SparkMax.MotorType.kBrushless);
 
+    /**
+     * PWM absolute encoder on the RoboRIO DIO channel, kept as a persistent field so raw readings can
+     * be logged continuously (not just at boot). This enables live monitoring when manually rotating
+     * the turret back to zero.
+     */
+    private final DutyCycleEncoder pwmEncoder =
+            new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
+
     // endregion
 
     // region Controller & mechanism
@@ -154,7 +162,7 @@ public class TurretSubsystem extends SubsystemBase {
         motorConfig =
                 new SmartMotorControllerConfig(this)
                         .withControlMode(ControlMode.CLOSED_LOOP)
-                        .withClosedLoopController(kP, kI, kD, kMaxVelocity, kMaxAccel)
+                        .withClosedLoopController(kP, kI, kD)
                         .withSimClosedLoopController(kP_sim, kI_sim, kD_sim, kMaxVelocity, kMaxAccel)
                         .withFeedforward(new SimpleMotorFeedforward(kS, kV, kA))
                         .withSimFeedforward(new SimpleMotorFeedforward(kS_sim, kV_sim, kA_sim))
@@ -213,6 +221,32 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     /**
+     * Maximum number of CRT solve attempts before giving up.
+     *
+     * <p>PWM duty-cycle encoders need a few signal cycles (~2–5 ms each at 1 kHz) before the RoboRIO
+     * reports a valid reading. Retrying with short delays gives the hardware time to stabilize
+     * without blocking the constructor for an excessive amount of time.
+     */
+    private static final int kCRTMaxAttempts = 5;
+
+    /**
+     * Milliseconds to wait between CRT solve attempts.
+     *
+     * <p>A typical PWM absolute encoder outputs at 1 kHz (1 ms period). Waiting 10 ms between retries
+     * guarantees several full PWM cycles have been captured by the DIO hardware.
+     */
+    private static final long kCRTRetryDelayMs = 10;
+
+    /**
+     * Milliseconds to wait after creating the {@link DutyCycleEncoder} before the first read.
+     *
+     * <p>The RoboRIO's DIO duty-cycle measurement needs at least one full PWM period to latch a valid
+     * reading. Reading immediately after construction almost always returns 0.0, which causes the
+     * solver to fail. 100 ms is conservative and negligible at boot.
+     */
+    private static final long kCRTInitialSettleMs = 100;
+
+    /**
      * Attempts to resolve the turret's absolute position using EasyCRT.
      *
      * <p>Reads two absolute encoders that mesh with the 90T turret ring gear through different pinion
@@ -226,52 +260,88 @@ public class TurretSubsystem extends SubsystemBase {
      *       duty-cycle signal. Read via {@code turretPwmEncoder.get()} (returns 0–1 rotations).
      * </ul>
      *
-     * <p>Configures the CRT solver with the turret's ring-gear / pinion gearing and runs a single
-     * solve. Stores diagnostic fields ({@link #crtStatus}, {@link #crtErrorRot}, {@link
-     * #crtIterations}) for telemetry regardless of outcome.
+     * <p>A newly-created {@link DutyCycleEncoder} may not have a valid reading immediately — the
+     * RoboRIO's DIO needs at least one full PWM cycle to latch. This method waits {@value
+     * #kCRTInitialSettleMs} ms after construction, then retries up to {@value #kCRTMaxAttempts} times
+     * with {@value #kCRTRetryDelayMs} ms delays if the solver returns {@code NO_SOLUTION}.
      *
-     * @return the resolved mechanism angle, or empty if the solve fails.
+     * <p>Stores diagnostic fields ({@link #crtStatus}, {@link #crtErrorRot}, {@link #crtIterations})
+     * for telemetry regardless of outcome.
+     *
+     * @return the resolved mechanism angle, or empty if all attempts fail.
      */
     private Optional<Angle> attemptCRTSolve() {
-        // Encoder 1: SparkMax absolute encoder (13T pinion on 90T ring gear)
+        // Encoder 1: SparkMax absolute encoder (10T pinion on 90T ring gear)
         Supplier<Angle> enc1Supplier =
                 () -> Rotations.of(pivotMotor.getAbsoluteEncoder().getPosition());
 
-        // Encoder 2: RoboRIO PWM DutyCycleEncoder (10T pinion on 90T ring gear).
-        // Created locally so DIO channel 0 is not claimed when CRT is disabled.
-        // Wrapped in try/finally to release the HAL DIO resource after the one-shot read.
-        DutyCycleEncoder pwmEncoder =
-                new DutyCycleEncoder(RobotMap.Shooter.Turret.kAbsoluteEncoderPwmChannel);
+        // Encoder 2: RoboRIO PWM DutyCycleEncoder (13T pinion on 90T ring gear).
+        // Uses the persistent field `pwmEncoder` so it remains available for continuous telemetry.
+
+        // Wait for the PWM encoder to latch valid data before reading.
         try {
-            Supplier<Angle> enc2Supplier = () -> Rotations.of(pwmEncoder.get());
+            Thread.sleep(kCRTInitialSettleMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
-            // Build EasyCRT config
-            EasyCRTConfig config =
-                    new EasyCRTConfig(enc1Supplier, enc2Supplier)
-                            .withCommonDriveGear(
-                                    kCRTCommonRatio,
-                                    kCRTDriveGearTeeth,
-                                    kCRTEncoder1PinionTeeth,
-                                    kCRTEncoder2PinionTeeth)
-                            .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
-                            .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
-                            .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
-                            .withMatchTolerance(kCRTMatchTolerance);
+        Supplier<Angle> enc2Supplier = () -> Rotations.of(pwmEncoder.get());
 
-            // Solve once
-            EasyCRT solver = new EasyCRT(config);
+        // Build EasyCRT config
+        EasyCRTConfig config =
+                new EasyCRTConfig(enc1Supplier, enc2Supplier)
+                        .withCommonDriveGear(
+                                kCRTCommonRatio,
+                                kCRTDriveGearTeeth,
+                                kCRTEncoder1PinionTeeth,
+                                kCRTEncoder2PinionTeeth)
+                        .withMechanismRange(kCRTMechanismMin, kCRTMechanismMax)
+                        .withAbsoluteEncoderOffsets(kCRTEncoder1Offset, kCRTEncoder2Offset)
+                        .withAbsoluteEncoderInversions(kCRTEncoder1Inverted, kCRTEncoder2Inverted)
+                        .withMatchTolerance(kCRTMatchTolerance);
+
+        EasyCRT solver = new EasyCRT(config);
+
+        // Retry loop — each attempt re-reads both encoders via the suppliers.
+        for (int attempt = 1; attempt <= kCRTMaxAttempts; attempt++) {
+            // Log raw encoder readings (before offset/wrap) for offset calibration.
+            double rawEnc1 = pivotMotor.getAbsoluteEncoder().getPosition();
+            double rawEnc2 = pwmEncoder.get();
+            Logger.recordOutput("Shooter/Turret/CRT/RawEncoder1Rot", rawEnc1);
+            Logger.recordOutput("Shooter/Turret/CRT/RawEncoder2Rot", rawEnc2);
+
             Optional<Angle> result = solver.getAngleOptional();
 
-            // Capture diagnostics
+            // Capture diagnostics (overwritten each attempt; final state is what we log).
             crtStatus = solver.getLastStatus();
             crtErrorRot = solver.getLastErrorRotations();
             crtIterations = solver.getLastIterations();
             crtResolvedDeg = result.map(a -> a.in(Degrees)).orElse(Double.NaN);
 
-            return result;
-        } finally {
-            pwmEncoder.close();
+            if (result.isPresent()) {
+                Logger.recordOutput("Shooter/Turret/CRT/AttemptsUsed", attempt);
+                return result;
+            }
+
+            // Only retry on NO_SOLUTION (encoder may not be ready yet).
+            // AMBIGUOUS and INVALID_CONFIG won't improve with more reads.
+            if (crtStatus != CRTStatus.NO_SOLUTION) {
+                break;
+            }
+
+            // Wait for more PWM cycles before retrying.
+            if (attempt < kCRTMaxAttempts) {
+                try {
+                    Thread.sleep(kCRTRetryDelayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
         }
+
+        Logger.recordOutput("Shooter/Turret/CRT/AttemptsUsed", kCRTMaxAttempts);
+        return Optional.empty();
     }
 
     // endregion
@@ -320,12 +390,10 @@ public class TurretSubsystem extends SubsystemBase {
      * <h4>Why position-aware?</h4>
      *
      * The shot solver ({@link frc.robot.util.shooter.HybridTurretUtil}) computes a robot-relative
-     * azimuth via {@code atan2}, which returns values in (−180°, 180°]. Our turret can reach ±190°,
-     * so there is a 10° band on each side (180°–190°) that {@code atan2} maps to the opposite sign.
-     * For example, a target at +181° from robot-forward is reported as −179° by {@code atan2}. If the
-     * turret is currently at +185°, a naïve wrap would command −179° — a 364° swing instead of a 4°
-     * move. By considering the ±360° equivalents and picking the one nearest the current position,
-     * the turret moves the short way and only wraps when it truly needs to cross the dead zone.
+     * azimuth via {@code atan2}, which returns values in (−180°, 180°]. Our turret can reach ±90°,
+     * which is well within the range covered by {@code atan2}, so no dead-zone wrapping is needed.
+     * The position-aware candidate selection still avoids unnecessarily long rotation swings if the
+     * turret is near a limit and the target moves across ±180°.
      *
      * <h4>Algorithm</h4>
      *
@@ -337,8 +405,8 @@ public class TurretSubsystem extends SubsystemBase {
      *   <li>Clamp to [{@code kSoftLimitMin}, {@code kSoftLimitMax}].
      * </ol>
      *
-     * <p>The final clamp handles the rear dead zone gracefully — if all candidates fall outside the
-     * soft limits, the turret drives as close as it can.
+     * <p>The final clamp handles boundary cases gracefully — if all candidates fall outside the soft
+     * limits, the turret drives as close as it can.
      *
      * @param requested the raw target angle (any range, typically from the shot solver or stick
      *     input).
@@ -361,6 +429,28 @@ public class TurretSubsystem extends SubsystemBase {
             if (dist < bestDist) {
                 best = candidates[i];
                 bestDist = dist;
+            }
+        }
+
+        // If the nearest candidate is outside soft limits, try the other candidates
+        // that ARE within limits. This handles the boundary case: when the target
+        // is outside the soft-limit range, the nearest candidate gets clamped at the limit,
+        // but the opposite-side candidate (360° away) may be reachable.
+        if (best < minDeg || best > maxDeg) {
+            double fallback = best;
+            double fallbackDist = Double.MAX_VALUE;
+            for (double c : candidates) {
+                if (c >= minDeg && c <= maxDeg) {
+                    double dist = Math.abs(c - currentDeg);
+                    if (dist < fallbackDist) {
+                        fallback = c;
+                        fallbackDist = dist;
+                    }
+                }
+            }
+            // If we found a valid in-range candidate, use it; otherwise clamp
+            if (fallback != best) {
+                return Degrees.of(fallback);
             }
         }
 

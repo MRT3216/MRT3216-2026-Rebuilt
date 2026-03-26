@@ -143,8 +143,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withLength(kLength)
                         .withTelemetry(kIntakeArmMechTelemetry, Constants.telemetryVerbosity())
                         .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
-                        .withHardLimit(kHardLimitMin, kHardLimitMax)
-                        .withStartingPosition(Degrees.of(0));
+                        .withHardLimit(kHardLimitMin, kHardLimitMax);
 
         intakePivot = new Arm(intakePivotConfig);
     }

@@ -21,6 +21,7 @@ import java.util.function.BooleanSupplier;
  * <ol>
  *   <li>Disabled — slow teal/orange team wave
  *   <li>Autonomous — fast orange/cyan wave
+ *   <li>Defence mode — red/blue strobe
  *   <li>Intaking — purple strobe
  *   <li>Aim lock — solid green
  *   <li>Shift ending (≤5 s remaining) — fast orange strobe warning
@@ -45,6 +46,8 @@ public class LEDSubsystem extends SubsystemBase {
 
     private boolean aimLock = false;
 
+    private boolean defenceMode = false;
+
     // endregion
 
     // region Constants
@@ -55,6 +58,7 @@ public class LEDSubsystem extends SubsystemBase {
     private static final double WAVE_ALLIANCE_CYCLE_LENGTH = 15.0;
     private static final double WAVE_ALLIANCE_DURATION = 2.0;
     private static final double STROBE_FAST_DURATION = 0.1;
+    private static final double STROBE_DEFENCE_DURATION = 0.25;
 
     /** Seconds before a shift transition at which the warning strobe begins. */
     private static final double SHIFT_WARNING_SECS = 5.0;
@@ -96,9 +100,11 @@ public class LEDSubsystem extends SubsystemBase {
             wave(Color.kDarkOrange, Color.kCyan, WAVE_FAST_CYCLE_LENGTH, WAVE_FAST_DURATION);
         } else {
             // ── Teleop ──────────────────────────────────────────────────────
-            // Command-driven overrides (intaking > aimLock) take priority,
+            // Command-driven overrides (defenceMode > intaking > aimLock) take priority,
             // then shift-aware patterns fill the gaps.
-            if (intaking) {
+            if (defenceMode) {
+                strobe(Color.kRed, Color.kBlue, STROBE_DEFENCE_DURATION);
+            } else if (intaking) {
                 strobe(Color.kPurple, STROBE_FAST_DURATION);
             } else if (aimLock) {
                 setColor(Color.kGreen);
@@ -133,6 +139,15 @@ public class LEDSubsystem extends SubsystemBase {
                 });
     }
 
+    /** Command to set the defence-mode LED flag. */
+    public Command setDefenceModeLEDCommand(BooleanSupplier on) {
+        return this.runOnce(
+                () -> {
+                    clearState();
+                    defenceMode = on.getAsBoolean();
+                });
+    }
+
     // endregion
 
     // region Private helpers
@@ -164,6 +179,7 @@ public class LEDSubsystem extends SubsystemBase {
     private void clearState() {
         intaking = false;
         aimLock = false;
+        defenceMode = false;
     }
 
     /** Return a dimmed copy of the given color (brightness 0.0–1.0). */
@@ -197,8 +213,12 @@ public class LEDSubsystem extends SubsystemBase {
     }
 
     private void strobe(Color color, double duration) {
+        strobe(color, Color.kBlack, duration);
+    }
+
+    private void strobe(Color c1, Color c2, double duration) {
         boolean on = ((Timer.getFPGATimestamp() % duration) / duration) > 0.5;
-        setColor(on ? color : Color.kBlack);
+        setColor(on ? c1 : c2);
     }
 
     // endregion

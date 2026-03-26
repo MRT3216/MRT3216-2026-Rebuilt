@@ -26,6 +26,7 @@ import frc.robot.util.Elastic;
 import frc.robot.util.Elastic.Notification;
 import frc.robot.util.Elastic.NotificationLevel;
 import frc.robot.util.HubShiftUtil;
+import frc.robot.util.TuningDashboard;
 import frc.robot.util.TuningModeSync;
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -168,6 +169,9 @@ public class Robot extends LoggedRobot {
         // This must be called from the robot's periodic block in order for anything in
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
+
+        // Update tuning dashboard Mechanism2d visualization (no-ops if not initialized)
+        TuningDashboard.periodic();
 
         // ── BatteryLogger (post-scheduler) ────────────────────────────────────
         // Subsystems have now reported their current draws via reportCurrentUsage().

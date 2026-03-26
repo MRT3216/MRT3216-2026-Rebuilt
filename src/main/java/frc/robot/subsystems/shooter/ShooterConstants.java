@@ -167,13 +167,17 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID
-        public static final double kP = 0.02;
+        // Startup spike to ~60 is consistent across all kP/kD values — it's
+        // from the instantaneous FF step, not correctable by PID alone.
+        // kP=0.05 + kD=0.005 keeps steady-state close and doesn't add to spike.
+        public static final double kP = 0.05;
         public static final double kI = 0.0;
-        public static final double kD = 0.0;
+        public static final double kD = 0.005;
 
         // Feedforward
+        // kV=0.5 settled ~4 RPM low. Bumped to 0.52 for tighter steady-state.
         public static final double kS = 0.25;
-        public static final double kV = 0.6;
+        public static final double kV = 0.52;
         public static final double kA = 0.0;
 
         // Simulation overrides
@@ -354,21 +358,37 @@ public final class ShooterConstants {
         public static final boolean kMotorInverted = false;
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
-        // PID
+        // PID — units are Volts per mechanism ROTATION of error (not degrees).
+        // Because YAMS sets positionConversionFactor = 1/gearing, the SparkMax's
+        // internal PID sees position in mechanism rotations.
+        //
+        // All PID + FF runs on SparkMax hardware (MAXMotion trapezoidal).
+        // kV=3.4 (theoretical) caused massive overshoot — too much energy in cruise.
+        // kV=0 caused no movement — SparkMax needs FF to drive MAXMotion.
+        // kV=2.0 + kP=12 + kD=0.1 was our best result: smooth, ~10° overshoot.
+        // Bumping kD to 0.3 to actively brake during decel and reduce that overshoot.
+        // PID — units are Volts per mechanism ROTATION of error (not degrees).
+        //
+        // DISABLING MAXMotion — using plain position PID instead.
+        // Old competition code used kP=3, kV=1.0, kA=0.05 with plain position
+        // PID and it worked (just too fast). MAXMotion caused persistent
+        // overshoot because the profile reference runs ahead and FF carries
+        // energy that kP can't brake.
+        //
+        // Plain position PID (no MAXMotion). kP for accuracy, kD for damping.
+        // MAXMotion was tried but couldn't achieve both speed and accuracy.
         public static final double kP = 3.0;
         public static final double kI = 0.0;
-        public static final double kD = 0.0;
+        public static final double kD = 0.3;
 
         // Feedforward
         public static final double kS = 0.0;
         public static final double kV = 1.0;
         public static final double kA = 0.05;
 
-        // Motion profile
-        // NEO free speed = 5676 RPM through 27:1 = ~1261°/s max mechanism speed.
-        // Set cruise velocity to ~80% of theoretical max for headroom.
-        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(1000.0);
-        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(7200.0);
+        // Motion profile — kept for sim config only (not used on real robot).
+        public static final AngularVelocity kMaxVelocity = DegreesPerSecond.of(720.0);
+        public static final AngularAcceleration kMaxAccel = DegreesPerSecondPerSecond.of(3600.0);
 
         // Simulation overrides
         public static final double kP_sim = 3.5;
@@ -389,28 +409,28 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(195);
-        public static final Angle kHardLimitMin = Degrees.of(-195);
+        public static final Angle kHardLimitMax = Degrees.of(190);
+        public static final Angle kHardLimitMin = Degrees.of(-190);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(190);
-        public static final Angle kSoftLimitMin = Degrees.of(-190);
+        public static final Angle kSoftLimitMax = Degrees.of(180);
+        public static final Angle kSoftLimitMin = Degrees.of(-180);
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);
 
         // ── EasyCRT absolute-position bootstrapping ──
         // Set to true to attempt CRT solve at boot; false falls back to kStartingPosition.
-        public static final boolean kUseCRT = false;
+        public static final boolean kUseCRT = true;
 
         // Encoder gearing: both absolute encoders mesh with the 90T ring gear (= turret).
         // commonRatio = 1.0 because the ring gear IS the turret (1:1).
-        // Encoder 1 = REV Through Bore on SparkMax absolute-encoder port (13T pinion).
-        // Encoder 2 = PWM absolute encoder on RoboRIO DIO (10T pinion).
+        // Encoder 1 = REV Through Bore on SparkMax absolute-encoder port (10T pinion).
+        // Encoder 2 = PWM absolute encoder on RoboRIO DIO (13T pinion).
         public static final double kCRTCommonRatio = 1.0;
         public static final int kCRTDriveGearTeeth = 90;
-        public static final int kCRTEncoder1PinionTeeth = 13; // SparkMax abs enc — 90/13 ≈ 6.923:1
-        public static final int kCRTEncoder2PinionTeeth = 10; // RoboRIO PWM enc  — 90/10 = 9:1
+        public static final int kCRTEncoder1PinionTeeth = 10; // SparkMax abs enc — 90/10 = 9:1
+        public static final int kCRTEncoder2PinionTeeth = 13; // RoboRIO PWM enc  — 90/13 ≈ 6.923:1
 
         // Mechanism range — derived from the hard limits with a small margin so the CRT
         // solver's coverage window always exceeds the physical travel.  Changing the hard
@@ -422,18 +442,119 @@ public final class ShooterConstants {
                 Rotations.of(kHardLimitMax.in(Rotations) + kCRTRangeMarginRot);
 
         // Encoder offsets (rotations, added before wrap).
-        // Calibrate: at mechanical zero, log raw encoder readings, then set these
-        // so both read ≈ 0.0 at the zero pose.
-        public static final Angle kCRTEncoder1Offset = Rotations.of(0.0);
-        public static final Angle kCRTEncoder2Offset = Rotations.of(0.0);
+        // Calibrated 2025-03-24: averaged 4 boot samples at mechanical zero (sharpie mark).
+        //   Enc1 raw avg: 0.821,  Enc2 raw avg: 0.805
+        // Previous values: -0.7983 / -0.86415 (enc2 was 0.06 rot off → ~0.09 ErrorRot).
+        public static final Angle kCRTEncoder1Offset = Rotations.of(-0.821);
+        public static final Angle kCRTEncoder2Offset = Rotations.of(-0.805);
 
         // Match tolerance: allowable modular error between predicted and measured encoder 2.
-        // 0.02 rot ≈ 7.2° at the mechanism for our gearing — generous for initial bring-up.
-        // Tighten after verifying backlash/noise characteristics.
+        // After recalibrating offsets and fixing swapped pinion teeth (2025-03-24):
+        // After fixing swapped pinion teeth and recalibrating offsets (2025-03-24),
+        // worst-case ErrorRot across 7 positions (0° to ±180°) was 0.008.
+        // Set to 0.02 — 2.5× margin over worst case, well below
+        // the 0.144 rot candidate spacing (no AMBIGUOUS risk).
         public static final Angle kCRTMatchTolerance = Rotations.of(0.02);
 
         // Encoder inversions (set true if an encoder reads backwards w.r.t. mechanism positive).
         public static final boolean kCRTEncoder1Inverted = false;
         public static final boolean kCRTEncoder2Inverted = false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Hybrid Aiming (drivetrain coarse + turret fine)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Constants for hybrid aiming mode where the <em>drivetrain</em> handles coarse heading
+     * correction and the <em>turret</em> handles only the residual fine adjustment.
+     *
+     * <p><b>Why hybrid?</b> A full-rotation turret stresses the wiring loom every time it swings
+     * across large angles. In hybrid mode the turret stays within a small comfort zone (±{@link
+     * #kTurretDeadbandDeg}°), dramatically reducing cable wear. The drivetrain rotates the whole
+     * robot to keep the target roughly in front, and the turret corrects the last few degrees.
+     *
+     * <p><b>How it works:</b>
+     *
+     * <ol>
+     *   <li>Each loop, compute the <em>full</em> robot-relative angle to the target (same math as the
+     *       existing {@code HybridTurretUtil}).
+     *   <li>If that angle is within ±{@code kTurretDeadbandDeg}, the drivetrain does nothing and the
+     *       turret tracks normally — the driver retains full rotational control.
+     *   <li>If the angle exceeds the deadband, the drivetrain heading controller kicks in and rotates
+     *       the robot toward the target, bleeding off error until the turret can handle the
+     *       remainder.
+     *   <li>The turret always receives the <em>actual</em> residual error (full angle minus whatever
+     *       the drivetrain has already corrected), so it never needs to travel far.
+     * </ol>
+     *
+     * <p><b>Swapping in:</b> This is a drop-in alternative to the current turret-only aiming. See
+     * {@code ShooterSystem.hybridAimAndShoot()} and {@code DriveCommands.joystickDriveAimAtTarget()}
+     * for the ready-to-wire commands. To activate, replace the {@code aimAndShoot} call in {@code
+     * RobotContainer.configureButtonBindings()} with {@code hybridAimAndShoot} and swap the drive
+     * default command to {@code joystickDriveAimAtTarget} while shooting is active.
+     *
+     * <p>All current turret-only code is unaffected — this is purely additive.
+     */
+    public static final class HybridAimingConstants {
+        private HybridAimingConstants() {}
+
+        /**
+         * Turret "home" angle in degrees — the direction the shooter faces when the turret is at its
+         * resting position, measured relative to the robot's front.
+         *
+         * <ul>
+         *   <li>{@code 0.0} — shooter faces forward (default).
+         *   <li>{@code 180.0} — shooter faces backward. The drivetrain will aim the <em>rear</em> of
+         *       the robot at the target, and the turret clamp will center around 180° instead of 0°.
+         *   <li>Any other value works too (e.g. 90° for a side-mounted shooter).
+         * </ul>
+         *
+         * <p>This offset is applied in two places:
+         *
+         * <ol>
+         *   <li><b>DriveCommands.joystickDriveAimAtTarget</b> — the drivetrain heading setpoint is
+         *       offset so the correct face of the robot points at the target.
+         *   <li><b>ShooterSystem.hybridAimAndShoot</b> — the turret clamp is centered around this angle
+         *       instead of 0°.
+         * </ol>
+         */
+        public static final double kTurretHomeAngleDeg = 0.0;
+
+        /**
+         * Turret "comfort zone" half-width in degrees. When the robot-relative angle to the target is
+         * within ±this value <em>of the home angle</em>, the drivetrain does NOT auto-rotate and the
+         * driver has full manual heading control. The turret handles the full angle on its own.
+         *
+         * <p>30° is a good starting point — gives the turret a ±30° working window (60° total) which is
+         * well within our ±180° travel but keeps the turret near center.
+         */
+        public static final double kTurretDeadbandDeg = 90.0;
+
+        /**
+         * PID gains for the drivetrain heading controller used in hybrid aiming mode. These control how
+         * aggressively the robot chassis rotates toward the target when the turret angle exceeds the
+         * deadband.
+         *
+         * <p>Start conservative — the driver should barely notice the heading correction. Increase kP
+         * if the robot is too sluggish snapping to the target; add kD if it overshoots.
+         *
+         * <p>Units: radians/sec output per radian of heading error (continuous input ±π).
+         */
+        public static final double kHeadingKP = 3.0;
+
+        public static final double kHeadingKI = 0.0;
+        public static final double kHeadingKD = 0.2;
+
+        /**
+         * Maximum rotational velocity (rad/s) and acceleration (rad/s²) for the profiled heading
+         * controller. Limits how fast the drivetrain can snap to the target heading.
+         *
+         * <p>Lower values make the correction smoother and less jarring for the driver; higher values
+         * get on-target faster but may feel aggressive.
+         */
+        public static final double kHeadingMaxVelocity = 4.0; // rad/s
+
+        public static final double kHeadingMaxAcceleration = 8.0; // rad/s²
     }
 }

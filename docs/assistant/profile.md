@@ -2,13 +2,34 @@
 
 Purpose
 -------
-This file captures an actionable, medium-length summary of the project's command-based & YAMS usage patterns so the assistant and contributors can restore the same conventions on any machine.
+This file is the **primary context document** for AI assistants working on this FRC robot codebase.
+
+**Project**: FRC Team 3216's 2026 robot code — Java, WPILib 2026, YAMS motor framework, AdvantageKit logging, Phoenix Pro (TalonFX/Kraken), REV SparkMax (NEO).
+**Branch**: `Claude` (all assistant work happens here)
+**Build**: `.\gradlew compileJava` from project root
+
+Quick reference — jump to section:
+- **[Planning / execution model split](#planning--execution-model-split)** — read first if you received an execution plan
+- **[Core design decisions](#core-design-decisions-concise)** — command patterns, stop semantics
+- **[Important YAMS gotchas](#important-yams-gotchas)** — SparkMax unit system, reboot requirement, etc.
+- **[Key files & where to look](#key-files--where-to-look-quick-map)** — file path quick-reference
+- **[Library source code access](#library-source-code-access)** — how to read dependency source
 
 What this contains
 - Key design decisions and rationale
 - Practical examples you can paste into code
 - Important repo locations to check first when making changes
 - A reusable starter prompt to paste into assistant sessions
+
+Planning / execution model split
+---------------------------------
+This project uses two tiers of AI assistant:
+- **Planner** (expensive model — e.g., Claude Opus): reads codebase, makes design decisions, outputs a structured execution plan.
+- **Executor** (cheaper model — e.g., Claude Sonnet, GPT-4o): follows the plan step-by-step, making mechanical edits with no judgment calls.
+
+The plan format is defined in [`docs/assistant/plan-format.md`](plan-format.md). When you receive a plan, follow it literally. If a step fails, report the error and stop — don't improvise.
+
+If you are an executor model and there is **no plan attached**, treat this file as your primary context. Read "Core design decisions", "Key files & where to look", and "Important YAMS gotchas" before making any changes.
 
 Core design decisions (concise)
 ------------------------------
@@ -70,13 +91,20 @@ SmartMotorControllerConfig key options:
 - `.withLooselyCoupledFollowers(SmartMotorController...)` → for motors on independent shafts that should follow same setpoint.
 - `.clone()` → available since 2026.1.2; use when sharing config across multiple motors with minor differences.
 
-Important YAMS gotchas:
+Important YAMS gotchas
+----------------------
 - **ALWAYS create the Mechanism object** even if you only use SmartMotorController directly — the Mechanism constructor re-applies modified config (soft limits, etc.) to the motor. Skipping this means your config changes won't apply.
 - `startRun(() -> smc.stopClosedLoopController(), () -> smc.setDutyCycle(x)).finallyDo(() -> smc.startClosedLoopController())` — official pattern for duty cycle override when in CLOSED_LOOP mode.
 - The `Subsystem` passed to `SmartMotorControllerConfig(this)` is only used for YAMS-generated commands (e.g., `arm.run()`). If you call `SmartMotorController` methods directly in your own `run(...)` commands, the subsystem requirement comes from your command factory, not YAMS.
 - `getRotorVelocity()` on **SparkWrapper** is BUGGY in the version used by this project — reads position instead of velocity. Derive motor velocity as `mechanismVelocity × kGearReduction` instead. `TalonFXWrapper` and `TalonFXSWrapper` read `getRotorVelocity()` directly from the Phoenix 6 StatusSignal and are not affected by this bug.
-- AdvantageKit serializes `AngularVelocity` as rad/s regardless of the unit used to create it. AdvantageScope always displays in rad/s. 700 RPM ≈ 73.3 rad/s.
+- AdvantageKit serializes `AngularVelocity` as rad/s regardless of the unit used to create it. AdvantageScope always displays in rad/s. 700 RPM ≈ 73.3 rad/s. Similarly, `Angle` is serialized in radians.
 - SparkMAX persists configuration to flash. After code changes, a robot **reboot** is required to re-apply new YAMS config. Stale flash params cause unexpected behavior (e.g., wrong speed).
+- **SparkMax PID/FF unit system with YAMS**: YAMS sets `positionConversionFactor = rotorToMechanismRatio` (= 1/gearing) and `velocityConversionFactor = (1/gearing)/60`. This makes the SparkMax's internal PID see position in **mechanism rotations** and velocity in **mechanism rot/s**. Consequently:
+  - **kP** is in Volts per mechanism **rotation** of error (not degrees!). For a 27:1 turret, kP=100 gives ~0.83V at 3° error.
+  - **kV** is in Volts per mechanism rot/s. For a NEO through 27:1, theoretical kV ≈ 3.42 V/(mech rot/s).
+  - **kS** is in Volts (no unit conversion needed).
+  - **kA** is in Volts per (mechanism rot/s²).
+  - When using trapezoid profile, YAMS sets `ControlType.kMAXMotionPositionControl` — all PID + FF runs **on the SparkMax hardware**, not the RoboRIO. RIO-side closed-loop thread (Notifier) is only used for exponential profiles or LQR.
 
 YAMS version notes (latest: 2026.1.17 as of 2026-03-19):
 - 2026.1.16: Fixed non-profiled closed-loop control in SparkMax, TalonFX, TalonFXS. If using non-profiled PID (no maxVel/maxAccel), ensure using ≥2026.1.16.
@@ -85,12 +113,30 @@ YAMS version notes (latest: 2026.1.17 as of 2026-03-19):
 - 2025.10.29: Fixed ArmFeedforward velocity calculation (Rotations→Radians) for Spark/Nova.
 - 2025.10.27: `Shooter` renamed to `FlyWheel`.
 
+Library source code access (use `github_repo` tool — DO NOT decompile JARs)
+---------------------------------------------------------------------------
+The assistant has **direct access** to source code of all major dependencies via the `github_repo` tool. When you need to read library internals (e.g., how YAMS passes feedforward to SparkMax, or how PathPlanner builds auto commands), use `github_repo` with the repo name below — **do NOT extract/decompile JARs from the Gradle cache**.
+
+| Library | GitHub Repo | Key source paths |
+|---|---|---|
+| **YAMS** | `Yet-Another-Software-Suite/YAMS` | `yams/java/yams/motorcontrollers/local/SparkWrapper.java`, `SmartMotorController.java`, `SmartMotorControllerConfig.java`, `yams/java/yams/mechanisms/positional/Pivot.java` |
+| **PathPlanner** | `mjansen4857/pathplanner` | `pathplannerlib/src/main/java/com/pathplanner/lib/` |
+| **AdvantageKit** | `Mechanical-Advantage/AdvantageKit` | `junction/core/src/`, `junction/autolog/src/` |
+| **PhotonVision** | `PhotonVision/photonvision` | `photon-lib/src/main/java/org/photonvision/` |
+| **REVLib** | `REVrobotics/REV-Software-Binaries` | (binary-only; use REV docs instead) |
+| **CTRE Phoenix 6** | `CrossTheRoadElec/PhoenixFRC-Releases` | (binary-only; use CTRE docs instead) |
+| **WPILib** | `wpilibsuite/allwpilib` | `wpimath/src/main/java/edu/wpi/first/math/`, `wpilibj/src/main/java/edu/wpi/first/wpilibj/` |
+| **EasyCRT** | `Yet-Another-Software-Suite/YAMS` | `yams/java/yams/units/EasyCRT.java`, `EasyCRTConfig.java` |
+
+**Usage example**: `github_repo(repo="Yet-Another-Software-Suite/YAMS", query="SparkWrapper setPosition trapezoid profile")`
+
 Why these conventions
 - Predictability: command-returning APIs align with WPILib scheduler ownership expectations.
 - Safety: one-shot stops avoid deadlocking sequences that need to progress; `stopHold()` provides a stable idle state.
 - Tuning ergonomics: follow-target re-appliers and no-requirements bumps let operators adjust without interrupting feeding/aiming.
 
 Key files & where to look (quick map)
+--------------------------------------
 - Shooter high-level: `src/main/java/frc/robot/systems/ShooterSystem.java`
 - Flywheel: `src/main/java/frc/robot/subsystems/shooter/FlywheelSubsystem.java`
 - Kicker/Spindexer: `src/main/java/frc/robot/subsystems/shooter/KickerSubsystem.java` and `SpindexerSubsystem.java`
@@ -1108,7 +1154,10 @@ smc.setMechanismPosition(absoluteEncoder.getPosition());
 
 Useful local references (already in repo)
  - `docs/TechnicalReference.md` — consolidated technical reference (YAMS, AdvantageKit, telemetry, vision, drive).
- - `docs/OperatorGuide.md` — operator controls, shooting modes, LED patterns.
+ - `docs/TuningGuide.md` — comprehensive PID, feedforward, and motion profile tuning procedures for every subsystem.
+ - `docs/TUNING_CHECKLIST.md` — GitHub Issue-ready checklist for tracking tuning progress (mirrors TuningGuide sections).
+ - `docs/TurretAimPipeline.md` — turret wrap-around logic, encoder alignment, EasyCRT, aim pipeline.
+ - `docs/ControllerGuide.md` — driver & operator controls, shooting modes, LED patterns.
  - `docs/TestModeTuning.md` — test-mode tuning procedures and SysId workflow.
  - `docs/README.md` — documentation index.
  - `docs/assistant/profile.md` — this file; conventions, starter prompt, and reference material for assistant sessions.
@@ -1206,4 +1255,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-03-21 — expanded knowledge base with 10 new reference sections (WPILib PID tuning walkthrough, TrapezoidProfile & ProfiledPIDController, Elastic Dashboard, CTRE Tuner X & Swerve API, WPILib Triggers deep dive, PhotonVision constrained pose estimation, AdvantageScope log analysis, NetworkTables best practices, PathPlanner triggers/named commands/event markers, FRC battery management).*
+*Last edited: 2026-03-24 — added SparkMax PID/FF unit system gotcha (mechanism rotations, not degrees); turret kP=100, kV=3.4 with unit explanation; CRT calibration complete; TuningDashboard created.*

@@ -45,6 +45,7 @@ import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
 import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.ShootMode;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
 import frc.robot.subsystems.vision.Vision;
@@ -259,8 +260,8 @@ public class RobotContainer {
             // LB/RB intake bindings in configureTestButtonBindings().
             // Rate is in degrees per 20 ms loop (~180°/s at full speed).
             final double kRotateRateDegPerLoop = 3.6; // 180 deg/s ÷ 50 Hz
-            final double kSoftMin = -190.0;
-            final double kSoftMax = 190.0;
+            final double kSoftMin = TurretConstants.kSoftLimitMin.in(Degrees);
+            final double kSoftMax = TurretConstants.kSoftLimitMax.in(Degrees);
             // Re-seeded to the turret's current position each time the command initializes
             // (i.e., on every enable) so the turret doesn't snap to a stale setpoint.
             final double[] turretAccumulator = {turretSubsystem.getTarget().in(Degrees)};

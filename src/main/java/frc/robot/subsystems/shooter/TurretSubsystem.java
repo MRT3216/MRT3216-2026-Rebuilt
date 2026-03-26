@@ -83,9 +83,9 @@ import yams.units.EasyCRTConfig;
  * and clamps to the soft limits. This prevents unnecessary full-rotation swings when {@code atan2}
  * wraps at ±180°.
  *
- * <p>The algorithm naturally handles both symmetric limits (±90°) and asymmetric limits (e.g.,
- * −60° / +120° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants
- * need to change.
+ * <p>The algorithm naturally handles both symmetric limits (±90°) and asymmetric limits (e.g., −60°
+ * / +120° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants need
+ * to change.
  *
  * <p><b>Note:</b> YAMS {@code PivotConfig.withWrapping()} cannot be used here because it calls
  * {@code SmartMotorControllerConfig.withContinuousWrapping()}, which is incompatible with soft
@@ -405,8 +405,8 @@ public class TurretSubsystem extends SubsystemBase {
      *   <li>Clamp to [{@code kSoftLimitMin}, {@code kSoftLimitMax}].
      * </ol>
      *
-     * <p>The final clamp handles boundary cases gracefully — if all candidates fall outside the
-     * soft limits, the turret drives as close as it can.
+     * <p>The final clamp handles boundary cases gracefully — if all candidates fall outside the soft
+     * limits, the turret drives as close as it can.
      *
      * @param requested the raw target angle (any range, typically from the shot solver or stick
      *     input).

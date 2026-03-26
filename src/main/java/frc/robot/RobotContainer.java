@@ -9,9 +9,9 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kTargetAngularVelocity;
-import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMax;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMin;
+import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;

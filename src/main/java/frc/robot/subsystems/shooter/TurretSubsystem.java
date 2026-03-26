@@ -78,14 +78,14 @@ import yams.units.EasyCRTConfig;
  * <h3>Wrap-around behavior</h3>
  *
  * The turret's travel range is defined by {@code kSoftLimitMin} / {@code kSoftLimitMax} (currently
- * ±90°, 180° total). When the shot solver or stick input requests an angle, {@link
- * #wrapAngle(Angle)} selects the ±360° equivalent <em>closest to the turret's current position</em>
- * and clamps to the soft limits. This prevents unnecessary full-rotation swings when {@code atan2}
- * wraps at ±180°.
+ * ±180°, 360° total — hard limits are ±190°). When the shot solver or stick input requests an
+ * angle, {@link #wrapAngle(Angle)} selects the ±360° equivalent <em>closest to the turret's current
+ * position</em> and clamps to the soft limits. This prevents unnecessary full-rotation swings when
+ * {@code atan2} wraps at ±180°.
  *
- * <p>The algorithm naturally handles both symmetric limits (±90°) and asymmetric limits (e.g., −60°
- * / +120° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants need
- * to change.
+ * <p>The algorithm naturally handles both symmetric limits (±180°) and asymmetric limits (e.g.,
+ * −60° / +320° if the turret's encoder zero isn't straight-forward). Only the soft-limit constants
+ * need to change.
  *
  * <p><b>Note:</b> YAMS {@code PivotConfig.withWrapping()} cannot be used here because it calls
  * {@code SmartMotorControllerConfig.withContinuousWrapping()}, which is incompatible with soft
@@ -390,10 +390,11 @@ public class TurretSubsystem extends SubsystemBase {
      * <h4>Why position-aware?</h4>
      *
      * The shot solver ({@link frc.robot.util.shooter.HybridTurretUtil}) computes a robot-relative
-     * azimuth via {@code atan2}, which returns values in (−180°, 180°]. Our turret can reach ±90°,
-     * which is well within the range covered by {@code atan2}, so no dead-zone wrapping is needed.
-     * The position-aware candidate selection still avoids unnecessarily long rotation swings if the
-     * turret is near a limit and the target moves across ±180°.
+     * azimuth via {@code atan2}, which returns values in (−180°, 180°]. Our turret can reach ±180°
+     * (soft limits), so the full {@code atan2} range is covered. A 10° dead zone exists on each side
+     * between the soft limits (±180°) and the hard stops (±190°). The position-aware candidate
+     * selection avoids unnecessarily long rotation swings if the turret is near a limit and the
+     * target moves across ±180°.
      *
      * <h4>Algorithm</h4>
      *

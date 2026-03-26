@@ -95,10 +95,10 @@ public class RobotContainer {
     private final CommandXboxController operatorController = new CommandXboxController(1);
 
     /**
-     * Current shoot mode — toggled by operator Y button during teleop. Starts at {@link
-     * ShootMode#FULL} (full SOTF). Pressing Y toggles to {@link ShootMode#FULL_STATIC} (turret locked
-     * at 0°, no lead compensation) and back. Read by {@code aimAndShoot} each loop cycle so changes
-     * take effect immediately, even mid-shot.
+     * Current shoot mode — toggled by the Y button during teleop. Starts at {@link ShootMode#FULL}
+     * (full SOTF). Pressing Y toggles to {@link ShootMode#FULL_STATIC} (turret locked at 0°, no lead
+     * compensation) and back. Read by {@code aimAndShoot} each loop cycle so changes take effect
+     * immediately, even mid-shot. take effect immediately, even mid-shot.
      */
     private ShootMode currentShootMode = ShootMode.FULL;
 
@@ -440,20 +440,18 @@ public class RobotContainer {
     }
 
     /**
-     * Tuning-mode bindings mirror competition layout on a single driver controller, except triggers
-     * use <b>aim only</b> (no flywheel/feed) so balls aren't accidentally fired during testing.
-     * Operator controller handles intake/eject identically to competition.
+     * Tuning-mode bindings use <b>only the driver controller</b> so a single person can test in the
+     * pit. Triggers use <b>aim only</b> (no flywheel/feed) so balls aren't accidentally fired.
      *
-     * <p><b>Driver:</b> RT = hybrid aim hub (no feed), A = agitate, B = clear shooter, X = defence
-     * LEDs, Y = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM fudge.
-     *
-     * <p><b>Operator:</b> RT = intake, LT = eject.
+     * <p><b>Driver:</b> RT = hybrid aim hub (no feed), LT = intake, D-pad Down = eject, A = agitate,
+     * B = clear shooter, X = test shoot, Y = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM
+     * fudge.
      */
     private void configureTestButtonBindings() {
-        // ── Driver: aiming (aim only — no flywheel or feed) ──────────
+        // ── Driver: aiming ──────────────────────────────────────────────
 
         // Right trigger: hybrid aim at hub (turret clamped ±30°,
-        // drivetrain heading assist, no flywheel/feed).
+        // drivetrain heading assist). Aim only — no flywheel or feed.
         driverController
                 .rightTrigger()
                 .whileTrue(
@@ -470,15 +468,15 @@ public class RobotContainer {
                 .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
                 .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
-        // ── Operator: intake ───────────────────────────────────────────
+        // ── Driver: intake ──────────────────────────────────────────────
 
-        // Right trigger: hold to intake (deploy arm + run rollers).
-        operatorController.rightTrigger().whileTrue(intakeSystem.intake());
+        // Left trigger: hold to intake (deploy arm + run rollers).
+        driverController.leftTrigger().whileTrue(intakeSystem.intake());
 
-        // Left trigger: hold to reverse intake (eject balls).
-        operatorController.leftTrigger().whileTrue(intakeSystem.eject());
+        // D-pad down: hold to reverse intake (eject balls).
+        driverController.povDown().whileTrue(intakeSystem.eject());
 
-        // ── Driver: secondary ball-handling & overrides ─────────────────
+        // ── Driver: ball-handling & shooter overrides ────────────────────
 
         // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
         driverController.a().whileTrue(intakeSystem.agitate());
@@ -486,11 +484,9 @@ public class RobotContainer {
         // B button: clear / unjam shooter system while held.
         driverController.b().whileTrue(shooterSystem.clearShooterSystem());
 
-        // X button: defence mode (red/blue strobe LEDs while held).
-        driverController
-                .x()
-                .onTrue(ledSubsystem.setDefenceModeLEDCommand(() -> true))
-                .onFalse(ledSubsystem.setDefenceModeLEDCommand(() -> false));
+        // X button: test shoot (turret at 0°, spin flywheel + feed) while held.
+        // Fires without vision — verifies shooter mechanism in the pit.
+        driverController.x().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
 
         // ── Driver: shoot-mode toggle ───────────────────────────────────
 

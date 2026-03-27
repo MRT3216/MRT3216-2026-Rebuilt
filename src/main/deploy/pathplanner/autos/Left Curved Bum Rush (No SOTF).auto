@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Right Curved Enter"
+                  "pathName": "Left Curved Enter"
                 }
               },
               {
@@ -26,7 +26,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right Curved Leave (No SOTF)"
+            "pathName": "Left Curved Leave (No SOTF)"
           }
         },
         {
@@ -48,7 +48,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Hybrid Aim and Shoot"
+                  "name": "Aim and Shoot"
                 }
               }
             ]
@@ -67,65 +67,22 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Right Human Player Enter (No SOTF)"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 5.0
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Right Human Player Leave (No SOTF)"
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 5.0
+                  "pathName": "Left Reposition (No SOTF)"
                 }
               },
               {
                 "type": "named",
                 "data": {
-                  "name": "Agitate"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Hybrid Aim and Shoot"
+                  "name": "Run Intake"
                 }
               }
             ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stop Shooter"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Right Reposition (No SOTF)"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Right",
+  "folder": "Left",
   "choreoAuto": false
 }

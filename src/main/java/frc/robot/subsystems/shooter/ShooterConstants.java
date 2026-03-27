@@ -404,12 +404,12 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(100);
-        public static final Angle kHardLimitMin = Degrees.of(-100);
+        public static final Angle kHardLimitMax = Degrees.of(135);
+        public static final Angle kHardLimitMin = Degrees.of(-95);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(95);
-        public static final Angle kSoftLimitMin = Degrees.of(-95);
+        public static final Angle kSoftLimitMax = Degrees.of(130);
+        public static final Angle kSoftLimitMin = Degrees.of(-90);
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);

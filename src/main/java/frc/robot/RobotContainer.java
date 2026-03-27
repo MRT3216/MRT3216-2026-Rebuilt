@@ -369,15 +369,19 @@ public class RobotContainer {
         // ── Operator: intake ───────────────────────────────────────────
 
         // Right trigger: hold to intake (deploy arm + run rollers).
-        operatorController.rightTrigger().whileTrue(intakeSystem.intake());
+        operatorController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
 
         // Left trigger: hold to reverse intake (eject balls).
-        operatorController.leftTrigger().whileTrue(intakeSystem.eject());
+        operatorController.leftTrigger().whileTrue(intakeSystem.dutyCycleEject());
 
         // ── Operator: secondary ball-handling & overrides ───────────────
 
         // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
-        operatorController.a().whileTrue(intakeSystem.agitate());
+        // On release, reset state and redeploy so intake resumes immediately.
+        operatorController
+                .a()
+                .whileTrue(intakeSystem.dutyCycleAgitate())
+                .onFalse(intakeSystem.dutyCycleIntake());
 
         // B button: clear / unjam shooter system while held.
         operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
@@ -452,9 +456,10 @@ public class RobotContainer {
      * Tuning-mode bindings use <b>only the driver controller</b> so a single person can test in the
      * pit. Triggers use <b>aim only</b> (no flywheel/feed) so balls aren't accidentally fired.
      *
-     * <p><b>Driver:</b> RT = hybrid aim hub (no feed), LT = intake, D-pad Down = eject, D-pad
-     * Up/Left/Right/diagonals = turret snap angles, A = agitate, B = clear shooter, X = test shoot, Y
-     * = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM fudge.
+     * <p><b>Driver:</b> RT = hybrid aim hub (no feed), LT = intake, D-pad Down = turret snap to max
+     * travel (130°), D-pad Up/Left/Right/diagonals = turret snap angles, A = agitate, B = clear
+     * shooter, X = test shoot, Y = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM fudge. LED
+     * bindings are disabled in tuning mode to save loop time.
      */
     private void configureTestButtonBindings() {
         // ── Driver: aiming ──────────────────────────────────────────────
@@ -471,19 +476,16 @@ public class RobotContainer {
                                 3,
                                 ShootingLookupTable.Mode.HUB,
                                 () -> currentShootMode));
-        // Aim-lock LED while hub aiming.
-        driverController
-                .rightTrigger()
-                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+        // LED bindings are skipped in tuning mode to save loop time.
 
         // ── Driver: intake ──────────────────────────────────────────────
 
         // Left trigger: hold to intake (deploy arm + run rollers).
-        driverController.leftTrigger().whileTrue(intakeSystem.intake());
+        driverController.leftTrigger().whileTrue(intakeSystem.dutyCycleIntake());
 
-        // D-pad down: hold to reverse intake (eject balls).
-        driverController.povDown().whileTrue(intakeSystem.eject());
+        // D-pad down: snap turret to max travel limit (130°) for verifying
+        // asymmetric range. Releases fall back to Turret_DefaultStow (0°).
+        driverController.povDown().whileTrue(turretSubsystem.setAngle(Degrees.of(130)));
 
         // ── Driver: turret snap angles ──────────────────────────────────
         // D-pad directions snap the turret to fixed angles while held.
@@ -497,7 +499,11 @@ public class RobotContainer {
         // ── Driver: ball-handling & shooter overrides ────────────────────
 
         // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
-        driverController.a().whileTrue(intakeSystem.agitate());
+        // On release, reset state and redeploy so intake resumes immediately.
+        driverController
+                .a()
+                .whileTrue(intakeSystem.dutyCycleAgitate())
+                .onFalse(intakeSystem.dutyCycleIntake());
 
         // B button: clear / unjam shooter system while held.
         driverController.b().whileTrue(shooterSystem.clearShooterSystem());
@@ -505,6 +511,14 @@ public class RobotContainer {
         // X button: test shoot (turret at 0°, spin flywheel + feed) while held.
         // Fires without vision — verifies shooter mechanism in the pit.
         driverController.x().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
+
+        // ── Operator: intake ───────────────────────────────────────────
+
+        // Right trigger: hold to intake (deploy arm + run rollers).
+        operatorController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
+
+        // Left trigger: hold to reverse intake (eject balls).
+        operatorController.leftTrigger().whileTrue(intakeSystem.dutyCycleEject());
 
         // ── Driver: shoot-mode toggle ───────────────────────────────────
 

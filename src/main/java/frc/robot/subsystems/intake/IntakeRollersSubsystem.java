@@ -220,9 +220,9 @@ public class IntakeRollersSubsystem extends SubsystemBase {
         return intakeRollers.setSpeed(IntakeConstants.Rollers.kTargetAngularVelocity);
     }
 
-    /** Run the intake rollers in reverse at full duty to eject game pieces. */
+    /** Run the intake rollers in reverse at the same speed as intake to eject game pieces. */
     public Command ejectBalls() {
-        return intakeRollers.set(-1.0);
+        return intakeRollers.setSpeed(IntakeConstants.Rollers.kTargetAngularVelocity.negate());
     }
 
     /**

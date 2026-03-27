@@ -7,6 +7,8 @@
 
 package frc.robot;
 
+import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
+
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -198,6 +200,10 @@ public class Robot extends LoggedRobot {
                 HubShiftUtil.getFirstActiveAlliance()
                         == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue));
         Logger.recordOutput("MatchTime", DriverStation.getMatchTime());
+
+        // RPM fudge — logged every cycle so the dashboard display is always current
+        // even when no shoot command is active.
+        Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", kRPMFudgeRPM.get());
 
         // Battery voltage — published every loop for Elastic dashboard widgets.
         // RobotController.getBatteryVoltage() is already cached by the HAL each loop.

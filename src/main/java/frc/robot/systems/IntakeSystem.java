@@ -152,6 +152,20 @@ public class IntakeSystem {
     }
 
     /**
+     * Eject (reverse) the intake using duty-cycle deploy: deploy if needed and run rollers in
+     * reverse. No pivot PID/FF gains are required.
+     *
+     * @return a command to deploy via duty-cycle and run rollers in reverse
+     */
+    public Command dutyCycleEject() {
+        return Commands.either(
+                        intakeRollers.ejectBalls(),
+                        dutyCycleDeploy().andThen(intakeRollers.ejectBalls()),
+                        () -> currentState == IntakeStates.Deployed)
+                .withName("Intake.DutyCycleEject");
+    }
+
+    /**
      * Agitate the intake by oscillating the pivot with timed duty-cycle pulses while running the
      * rollers. No pivot PID/FF gains are required.
      *

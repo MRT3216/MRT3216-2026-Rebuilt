@@ -80,9 +80,22 @@
           }
         },
         {
-          "type": "path",
+          "type": "deadline",
           "data": {
-            "pathName": "2nd Fast Right Leave (SOTF)"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "2nd Right Leave (Curved) (SOTF)"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Run Intake"
+                }
+              }
+            ]
           }
         },
         {

@@ -48,7 +48,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Hybrid Aim and Shoot"
+                  "name": "Aim and Shoot"
                 }
               }
             ]
@@ -67,7 +67,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2nd Fast Right Enter"
+                  "pathName": "2nd Fast Right Enter (Curved)"
                 }
               },
               {
@@ -80,19 +80,13 @@
           }
         },
         {
-          "type": "path",
-          "data": {
-            "pathName": "2nd Fast Right Leave (SOTF)"
-          }
-        },
-        {
           "type": "race",
           "data": {
             "commands": [
               {
                 "type": "wait",
                 "data": {
-                  "waitTime": 5.0
+                  "waitTime": 8.0
                 }
               },
               {
@@ -104,7 +98,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Hybrid Aim and Shoot"
+                  "name": "Aim and Shoot"
                 }
               }
             ]

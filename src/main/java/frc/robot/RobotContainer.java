@@ -12,7 +12,6 @@ import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.net.WebServer;
@@ -573,9 +572,7 @@ public class RobotContainer {
         // "Auto Chooser" matches the topic key the Elastic dashboard subscribes to.
         autoChooser =
                 new LoggedDashboardChooser<>(
-                        "Auto Chooser", AutoBuilder.buildAutoChooser("Left Bum Rush (No SOTF)"));
-        autoChooser.addOption(
-                "Left Bum Rush (No SOTF)", new PathPlannerAuto("Left Bum Rush (No SOTF)"));
+                        "Auto Chooser", AutoBuilder.buildAutoChooser("20 - Left Bum Rush (SOTF)"));
     }
 
     // endregion

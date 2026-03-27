@@ -155,11 +155,30 @@ public final class ShooterConstants {
     public static final class ShooterModel {
         private ShooterModel() {}
 
+        /** Hub-shot RPM anchors (existing two-point linear model). */
         public static final Distance dMin = Inches.of(61);
+
         public static final Distance dMax = Inches.of(291.5);
 
         public static final AngularVelocity kRpmAtMin = RPM.of(2500.0);
         public static final AngularVelocity kRpmAtMax = RPM.of(4300.0);
+    }
+
+    /**
+     * Pass-shot RPM model constants. Higher RPMs than the hub model so the ball arcs high enough to
+     * clear the hub structure (~1.83 m) on its way to the pass target landing zone.
+     *
+     * <p>Uses the same two-point linear interpolation as the hub model but with anchors shifted up.
+     * The distance range covers mid-field passes (3.5 m – 10 m).
+     */
+    public static final class PassModel {
+        private PassModel() {}
+
+        public static final Distance dMin = Meters.of(3.5);
+        public static final Distance dMax = Meters.of(10.0);
+
+        public static final AngularVelocity kRpmAtMin = RPM.of(4000.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(4800.0);
     }
 
     // -------------------------------------------------------------------------

@@ -280,7 +280,7 @@ public class ShooterSystem {
 
         var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
+        var flywheelCmd = flywheel.setVelocity(() -> applyPassFudge(solution));
         var feedCmd = makeFeedSequenceUngated();
         var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
 
@@ -457,7 +457,7 @@ public class ShooterSystem {
                         });
 
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
+        var flywheelCmd = flywheel.setVelocity(() -> applyPassFudge(solution));
         var feedCmd = makeFeedSequenceUngated();
         var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
 
@@ -624,12 +624,24 @@ public class ShooterSystem {
     }
 
     /**
-     * Apply the RPM fudge factor to the model speed for the given solution. Returns the final
+     * Apply the RPM fudge factor to the hub model speed for the given solution. Returns the final
      * flywheel target: {@code modelRPM + fudge}.
      */
     private static AngularVelocity applyFudge(
             Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         var modelSpeed = ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
+        double fudge = kRPMFudgeRPM.get();
+        return RPM.of(modelSpeed.in(RPM) + fudge);
+    }
+
+    /**
+     * Apply the RPM fudge factor to the <em>pass</em> model speed. Uses the higher-RPM pass model so
+     * the ball arcs over the hub.
+     */
+    private static AngularVelocity applyPassFudge(
+            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        var modelSpeed =
+                ShooterModel.passFlywheelSpeedForDistance(solutionSupplier.get().leadDistance());
         double fudge = kRPMFudgeRPM.get();
         return RPM.of(modelSpeed.in(RPM) + fudge);
     }

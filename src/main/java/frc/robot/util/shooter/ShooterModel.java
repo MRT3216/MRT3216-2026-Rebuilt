@@ -11,19 +11,24 @@ import frc.robot.subsystems.shooter.ShooterConstants;
 public final class ShooterModel {
     private ShooterModel() {}
 
+    /** Hub-shot RPM model (default). */
     public static AngularVelocity flywheelSpeedForDistance(Distance distance) {
-        double d = distance.in(Meters);
-        double dMin = ShooterConstants.ShooterModel.dMin.in(Meters);
-        double dMax = ShooterConstants.ShooterModel.dMax.in(Meters);
-        double rpmAtMin = ShooterConstants.ShooterModel.kRpmAtMin.in(RPM);
-        double rpmAtMax = ShooterConstants.ShooterModel.kRpmAtMax.in(RPM);
+        return interpolate(
+                distance,
+                ShooterConstants.ShooterModel.dMin,
+                ShooterConstants.ShooterModel.dMax,
+                ShooterConstants.ShooterModel.kRpmAtMin,
+                ShooterConstants.ShooterModel.kRpmAtMax);
+    }
 
-        if (d <= dMin) return RPM.of(rpmAtMin);
-        if (d >= dMax) return RPM.of(rpmAtMax);
-
-        double t = (d - dMin) / (dMax - dMin);
-        double interpRpm = rpmAtMin + (rpmAtMax - rpmAtMin) * t;
-        return RPM.of(interpRpm);
+    /** Pass-shot RPM model — higher RPMs for a high-arc lob over the hub. */
+    public static AngularVelocity passFlywheelSpeedForDistance(Distance distance) {
+        return interpolate(
+                distance,
+                ShooterConstants.PassModel.dMin,
+                ShooterConstants.PassModel.dMax,
+                ShooterConstants.PassModel.kRpmAtMin,
+                ShooterConstants.PassModel.kRpmAtMax);
     }
 
     /**
@@ -35,5 +40,26 @@ public final class ShooterModel {
      */
     public static double flywheelRPMForDistance(Distance distance) {
         return flywheelSpeedForDistance(distance).in(RPM);
+    }
+
+    /** Two-point linear interpolation with clamping at the endpoints. */
+    private static AngularVelocity interpolate(
+            Distance distance,
+            Distance dMinMeasure,
+            Distance dMaxMeasure,
+            AngularVelocity rpmAtMinMeasure,
+            AngularVelocity rpmAtMaxMeasure) {
+        double d = distance.in(Meters);
+        double dMin = dMinMeasure.in(Meters);
+        double dMax = dMaxMeasure.in(Meters);
+        double rpmAtMin = rpmAtMinMeasure.in(RPM);
+        double rpmAtMax = rpmAtMaxMeasure.in(RPM);
+
+        if (d <= dMin) return RPM.of(rpmAtMin);
+        if (d >= dMax) return RPM.of(rpmAtMax);
+
+        double t = (d - dMin) / (dMax - dMin);
+        double interpRpm = rpmAtMin + (rpmAtMax - rpmAtMin) * t;
+        return RPM.of(interpRpm);
     }
 }

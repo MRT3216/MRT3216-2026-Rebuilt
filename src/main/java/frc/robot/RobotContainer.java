@@ -208,9 +208,12 @@ public class RobotContainer {
                         3,
                         ShootingLookupTable.Mode.HUB,
                         () -> currentShootMode));
+        // Autos use the non-hybrid aimAndShoot so the drivetrain is free for
+        // PathPlanner path-following.  "Hybrid Aim and Shoot" is kept as an
+        // alias that points to the same turret-only command.
         NamedCommands.registerCommand(
                 "Hybrid Aim and Shoot",
-                shooterSystem.hybridAimAndShoot(
+                shooterSystem.aimAndShoot(
                         () -> drive.getPose(),
                         () -> drive.getChassisSpeeds(),
                         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
@@ -381,12 +384,15 @@ public class RobotContainer {
         // On release, only resume intaking if the operator is still holding the
         // right trigger — otherwise the rollers would run indefinitely because
         // dutyCycleIntake() is a RunCommand with no natural end condition.
+        // Note: we restart with just rollers (not full dutyCycleIntake) because
+        // the arm is already deployed — re-running dutyCycleDeploy would push
+        // the arm down before the intake resumes.
         operatorController
                 .a()
                 .whileTrue(intakeSystem.dutyCycleAgitate())
                 .onFalse(
                         Commands.either(
-                                intakeSystem.dutyCycleIntake(),
+                                intakeSystem.intakeRollers.intakeBalls(),
                                 Commands.none(),
                                 () -> operatorController.getRightTriggerAxis() > 0.5));
 

@@ -1,7 +1,5 @@
 package frc.robot.systems;
 
-import static edu.wpi.first.units.Units.Volts;
-
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.intake.IntakeConstants;
@@ -168,15 +166,16 @@ public class IntakeSystem {
     }
 
     /**
-     * Agitate the intake by oscillating the pivot with timed duty-cycle pulses while running the
-     * rollers. No pivot PID/FF gains are required.
+     * Agitate the intake by pulsing the pivot upward while running the rollers. No pivot PID/FF gains
+     * are required.
      *
-     * <p>Uses fixed-voltage control rather than duty-cycle so that agitation strength is consistent
-     * regardless of battery state. At 12 V nominal the pull-in pulse is ~1.5 V (≈ 12.5 % duty) and
-     * the push-out pulse is ~0.7 V (≈ 5.8 % duty). When the command ends (button released), the
-     * logical state is reset to {@link IntakeStates#Stowed} so that the follow-up deploy command
-     * (typically wired to {@code onFalse}) actually fires — agitation drifts the arm inward and it
-     * needs a fresh deploy pulse afterward.
+     * <p>Designed to be used when the arm is already deployed — the operator holds RT to intake, then
+     * taps A to dislodge stuck balls. The pivot pulses upward at 25 % for 0.15 s, then pushes back
+     * down at −6 % for 0.20 s. The lower soft limit is set to −5 ° (see {@code
+     * IntakeConstants.Pivot.kSoftLimitMin}) so the SparkFlex firmware does not clamp the push-down
+     * pulse at the 0 ° deployed position. Voltage compensation (12 V) and a 0.1 s open-loop ramp rate
+     * smooth out the pulses. When the command ends (button released), the logical state is reset to
+     * {@link IntakeStates#Stowed} so that the follow-up deploy command actually fires if needed.
      *
      * @return a repeating agitation command
      */
@@ -186,9 +185,9 @@ public class IntakeSystem {
                 .alongWith(
                         Commands.repeatingSequence(
                                 intakePivot
-                                        .setVoltage(Volts.of(1.5))
-                                        .withTimeout(0.30)
-                                        .andThen(intakePivot.setVoltage(Volts.of(-0.7)).withTimeout(0.25))))
+                                        .set(0.25)
+                                        .withTimeout(0.15)
+                                        .andThen(intakePivot.set(-0.06).withTimeout(0.20))))
                 .finallyDo(() -> currentState = IntakeStates.Stowed)
                 .withName("Intake.DutyCycleAgitate");
     }

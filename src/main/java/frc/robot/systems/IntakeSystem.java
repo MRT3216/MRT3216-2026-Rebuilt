@@ -94,9 +94,9 @@ public class IntakeSystem {
                 .alongWith(
                         Commands.repeatingSequence(
                                 intakePivot
-                                        .set(0.15)
-                                        .withTimeout(0.2)
-                                        .andThen(intakePivot.set(-0.15).withTimeout(0.17))));
+                                        .set(0.12)
+                                        .withTimeout(0.25)
+                                        .andThen(intakePivot.set(-0.10).withTimeout(0.20))));
     }
 
     /**
@@ -185,9 +185,9 @@ public class IntakeSystem {
                 .alongWith(
                         Commands.repeatingSequence(
                                 intakePivot
-                                        .set(0.15)
+                                        .set(0.10)
                                         .withTimeout(0.10)
-                                        .andThen(intakePivot.set(-0.06).withTimeout(0.15))))
+                                        .andThen(intakePivot.set(-0.06).withTimeout(0.10))))
                 .finallyDo(() -> currentState = IntakeStates.Stowed)
                 .withName("Intake.DutyCycleAgitate");
     }

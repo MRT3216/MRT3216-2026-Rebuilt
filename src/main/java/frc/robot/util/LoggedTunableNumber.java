@@ -62,29 +62,43 @@ public class LoggedTunableNumber implements DoubleSupplier {
     /**
      * Get the current value, from dashboard if available and in tuning mode.
      *
+     * <p>When tuning mode is active this returns the greater of the dashboard-published value and the
+     * local mirror kept by {@link #set}, so that programmatic updates are visible immediately within
+     * the same loop cycle (before {@code LoggedNetworkNumber.periodic()} refreshes its NT cache).
+     *
      * @return The current value
      */
     public double get() {
         if (!hasDefault) {
             return 0.0;
-        } else {
-            return tuningMode ? dashboardNumber.get() : defaultValue;
         }
+        if (!tuningMode) {
+            return defaultValue;
+        }
+        // In tuning mode: if the dashboard has diverged from our local mirror (i.e. the
+        // operator moved the slider), prefer the dashboard value and sync the mirror.
+        double dashValue = dashboardNumber.get();
+        if (dashValue != defaultValue) {
+            defaultValue = dashValue;
+        }
+        return defaultValue;
     }
 
     /**
      * Programmatically set the value. When tuning mode is active this writes through to the
      * underlying {@link org.littletonrobotics.junction.networktables.LoggedNetworkNumber}, so
-     * dashboard widgets (e.g. Number Slider) will update on the next cycle. When tuning mode is
-     * inactive the default value is overwritten directly.
+     * dashboard widgets will update on the next cycle. Also updates the local default so that
+     * back-to-back {@link #get()} calls within the same loop cycle see the new value immediately
+     * (before {@code LoggedNetworkNumber.periodic()} has had a chance to refresh its cache).
      *
      * @param value The new value
      */
     public void set(double value) {
+        // Always keep defaultValue in sync so get() returns the new value immediately,
+        // even before the NT cache is refreshed on the next periodic() call.
+        defaultValue = value;
         if (tuningMode && dashboardNumber != null) {
             dashboardNumber.set(value);
-        } else {
-            defaultValue = value;
         }
     }
 

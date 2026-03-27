@@ -592,18 +592,18 @@ public class ShooterSystem {
     }
 
     private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
-        // Feed only while the shifted shift is active AND the solution is within LUT
-        // range. If the robot is too far / too close the feed stops, preventing wasted
-        // game pieces on shots that won't score.
-        return Commands.sequence(
-                        clearKicker(),
-                        spindexer
-                                .feedShooter()
-                                .alongWith(kicker.feedShooter())
-                                .onlyWhile(
-                                        () ->
-                                                HubShiftUtil.getShiftedShiftInfo().active()
-                                                        && solutionSupplier.get().isValid()))
+        // clearKicker() runs immediately on trigger pull so the kicker is ready
+        // before the shift window opens.  After the clear finishes, we wait for
+        // the shifted window to become active (and the solution to be valid),
+        // then feed until the window closes or the solution goes out of range.
+        // .repeatedly() re-enters the waitUntil→feed loop for subsequent shifts.
+        Supplier<Boolean> canFeed =
+                () -> HubShiftUtil.getShiftedShiftInfo().active() && solutionSupplier.get().isValid();
+
+        return clearKicker()
+                .andThen(Commands.waitUntil(canFeed::get))
+                .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()).onlyWhile(canFeed::get))
+                .repeatedly()
                 .withName("FeedSequence");
     }
 

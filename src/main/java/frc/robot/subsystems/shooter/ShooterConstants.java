@@ -134,7 +134,8 @@ public final class ShooterConstants {
         // Targets / tunables
         public static final AngularVelocity kFlywheelDefaultVelocity = RPM.of(3000);
         public static final AngularVelocity kVelocityTolerance = RPM.of(30);
-        public static final Time kClearDuration = Seconds.of(0.25);
+        /** Duration the kicker runs in reverse before feeding to clear any jammed ball. */
+        public static final Time kClearDuration = Seconds.of(0.5);
 
         public static final LoggedTunableNumber kTunableFlywheelRPM =
                 new LoggedTunableNumber(
@@ -271,7 +272,8 @@ public final class ShooterConstants {
 
         // Targets / tunables
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2500.0);
-        public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
+        /** Reverse speed used by the pre-feed clear routine to push a ball away from the kicker. */
+        public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-500.0);
 
         public static final LoggedTunableNumber kTunableKickerRPM =
                 new LoggedTunableNumber(

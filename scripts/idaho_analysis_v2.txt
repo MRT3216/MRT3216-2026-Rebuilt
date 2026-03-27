@@ -1,0 +1,196 @@
+Parsing C:\Users\danla\Desktop\Logs2\$Idaho\akit_26-03-27_01-50-13_idbo.wpilog...
+  Parsed 207 numeric, 100 boolean, 28 string, 9 string[] signals
+================================================================================
+  MRT3216 IDAHO LOG ANALYSIS v2
+  File: akit_26-03-27_01-50-13_idbo.wpilog
+  Size: 59.3 MB
+  Total log duration: 469.3s
+  Match #: 999
+  Match type: None
+  FMS attached: Yes
+  Alliance station: Blue2
+
+  AUTO:   305.8s – 314.1s  (8.3s)
+  TELEOP: 330.8s – 470.9s  (140.1s)
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+  CRT ENCODER STATUS
+────────────────────────────────────────────────────────────────────────────────
+  t=1.64s  Status=OK
+  Error: 0.003302 rot
+  Resolved: -0.05 deg
+  Attempts: 4
+
+────────────────────────────────────────────────────────────────────────────────
+  BATTERY / POWER (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  Voltage:  avg=10.83V  min=6.90V  p5=8.55V  max=13.75V
+  Current:  avg=0.6A  p95=1.0A  max=1.4A
+  No brownouts during teleop
+  *** 75 samples below 8V — worst: 6.90V at t=443.5s ***
+  *** 1729 samples below 10V ***
+  Voltage distribution:
+     6-7V:     1 
+     7-8V:    74 
+     8-9V:   717 ███████
+     9-10V:   937 █████████
+    10-11V:   823 ████████
+    11-12V:  2562 █████████████████████████
+    12-13V:   946 █████████
+    13-14V:    15 
+  Energy (teleop): 66182 J  (18.4 Wh)
+  CPU temp: avg=48.3°C  max=49.8°C
+  CAN off count: 0
+
+────────────────────────────────────────────────────────────────────────────────
+  LOOP TIMING (enabled)
+────────────────────────────────────────────────────────────────────────────────
+  Full cycle:  avg=19.90ms  p95=31.57ms  p99=44.52ms  max=86.79ms
+  Overruns:  >20ms=2221 (33.8%)  >25ms=704  >40ms=116
+  User code:   avg=17.37ms  p95=28.05ms  p99=40.35ms  max=84.16ms
+  10 worst loop cycles:
+    t=333.8s (tele)  86.8ms
+    t=423.6s (tele)  83.3ms
+    t=330.8s (tele)  83.0ms
+    t=462.8s (tele)  77.7ms
+    t=361.2s (tele)  68.5ms
+    t=442.1s (tele)  67.4ms
+    t=422.1s (tele)  61.8ms
+    t=349.8s (tele)  57.7ms
+    t=333.9s (tele)  56.9ms
+    t=457.5s (tele)  56.4ms
+  Logger queue: avg=0.6  max=2
+
+────────────────────────────────────────────────────────────────────────────────
+  DRIVE (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  Mod0 Drive: avg=20.3A  p95=93.8A  max=158.1A
+  Mod0 Turn:  avg=4.2A  p95=24.4A  max=60.9A
+  Mod1 Drive: avg=31.0A  p95=113.1A  max=150.3A
+  Mod1 Turn:  avg=4.3A  p95=23.2A  max=58.5A
+  Mod2 Drive: avg=31.4A  p95=113.0A  max=147.0A
+  Mod2 Turn:  avg=4.6A  p95=28.3A  max=63.3A
+  Mod3 Drive: avg=25.4A  p95=106.4A  max=149.0A
+  Mod3 Turn:  avg=4.8A  p95=29.0A  max=63.4A
+
+────────────────────────────────────────────────────────────────────────────────
+  SHOOTER PIPELINE (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  ── Flywheel ──
+  Total samples: 3646  Commanded: 1825  Idle: 0
+  Reference (when active): avg=3166  min=2510  max=4300 RPM
+  Current: avg=20.9A  p95=75.0A  max=91.0A
+  Spun-up duty cycle: 4.6% of teleop
+
+  ── Hood ──
+  Position: avg=4.8°  min=-0.4°  max=11.0°
+  Reference: avg=5.0°  min=0.0°  max=10.8°
+  Current: avg=2.0A  p95=8.2A  max=18.2A
+
+  ── Kicker ──
+  Current: avg=12.8A  p95=31.8A  max=149.5A
+  Active time: ~55.9s / 99.7s
+
+  ── Spindexer ──
+  Current: avg=15.5A  p95=42.9A  max=50.4A
+  Active time: ~39.3s / 44.1s
+
+────────────────────────────────────────────────────────────────────────────────
+  TURRET (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  Position: avg=39.3°  min=-88.6°  max=129.2°
+  Current: avg=2.3A  p95=19.0A  max=89.2A
+  Near limits: 26 samples near -90° min, 37 samples near +130° max
+
+────────────────────────────────────────────────────────────────────────────────
+  HYBRID AIMING (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  Aim enabled: 40.8% of teleop
+  Raw azimuth: min=-264.8°  avg=65.1°  max=164.3°
+  Clamped azimuth: min=-90.0°  avg=68.5°  max=130.0°
+  Turret clamped: 14.5% of teleop
+  Outside travel window: 13.7% of teleop
+  Ramp factor: avg=0.35  max=1.00
+
+────────────────────────────────────────────────────────────────────────────────
+  HUB SHIFT (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  Active (unshifted): 64.3% of teleop
+  Shifted-active: 65.3% of teleop
+  Shift transitions:
+    T+0s (t=330.8s) → TRANSITION
+    T+10s (t=340.8s) → SHIFT1
+    T+35s (t=365.8s) → SHIFT2
+    T+60s (t=390.8s) → SHIFT3
+    T+85s (t=415.8s) → SHIFT4
+    T+110s (t=440.8s) → ENDGAME
+    T+140s (t=470.9s) → DISABLED
+  Remaining time range: -0.1s – 34.8s
+
+────────────────────────────────────────────────────────────────────────────────
+  SHOOTER TELEMETRY (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  Solution valid: 83.9% of teleop
+  Hub distance: avg=3.73m  min=2.78m  max=4.91m
+  Model RPM: avg=3166  min=2510  max=4300
+  Fudged RPM: avg=3166  min=2510  max=4300
+  LUT hood angle: avg=5.9°  min=0.1°  max=12.7°
+  LUT time-of-flight: avg=1.500s  min=0.834s  max=1.969s
+
+────────────────────────────────────────────────────────────────────────────────
+  INTAKE (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  Pivot velocity: avg=-0.0  max=1.1
+  Rollers active time: ~103.3s / 111.8s
+
+────────────────────────────────────────────────────────────────────────────────
+  COMMAND ACTIVITY (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  SequentialCommandGroup                        140.1s  (100.0%)
+  FlywheelStopHold                               78.2s  ( 55.8%)
+  Hood_DefaultStow                               78.2s  ( 55.8%)
+  KickerStopHold                                 78.2s  ( 55.8%)
+  SpindexerStopHold                              78.2s  ( 55.8%)
+  Turret_DefaultStow                             78.2s  ( 55.8%)
+  Intake.DutyCycleIntake                         73.5s  ( 52.5%)
+  HybridAimAndShoot                              57.1s  ( 40.8%)
+  IntakePivotSubsystem SetDutyCycle              33.6s  ( 24.0%)
+  IntakeRollersStopHold                          33.6s  ( 24.0%)
+  Intake.DutyCycleAgitate                        32.0s  ( 22.9%)
+  ParallelRaceGroup                               6.6s  (  4.7%)
+  HybridPassShoot                                 4.8s  (  3.4%)
+  Intake.DutyCycleEject                           0.9s  (  0.7%)
+
+────────────────────────────────────────────────────────────────────────────────
+  VISION (teleop)
+────────────────────────────────────────────────────────────────────────────────
+  Camera 0: no data
+  Camera 1: no data
+  Camera 2: no data
+  Camera 3: no data
+  ALERT: Vision camera 0 is disconnected.
+  ALERT: Vision camera 1 is disconnected.
+  ALERT: Vision camera 2 is disconnected.
+  ALERT: Vision camera 3 is disconnected.
+
+────────────────────────────────────────────────────────────────────────────────
+  ALERTS
+────────────────────────────────────────────────────────────────────────────────
+  ⚠️  WARNING: Battery voltage is very low, turn off the robot or replace the battery to avoid damage.
+  ⚠️  WARNING: Vision camera 0 is disconnected.
+  ⚠️  WARNING: Vision camera 1 is disconnected.
+  ⚠️  WARNING: Vision camera 2 is disconnected.
+  ⚠️  WARNING: Vision camera 3 is disconnected.
+
+================================================================================
+  KEY FINDINGS
+================================================================================
+  1. CRITICAL: Battery sagged to 6.90V during teleop — risk of brownout/motor damage
+  2. CRITICAL: Loop timing p95=31.6ms (>20ms) — 34% overruns. Code is too slow for 50Hz.
+  3. WARNING: Worst loop cycle 86.8ms — severe spike that could cause CAN timeouts
+  4. WARNING: Vision cameras reported disconnected — check USB/coprocessor
+
+================================================================================
+  Analysis saved to: C:\Users\danla\Documents\GitHub\MRT3216-2026-Rebuilt\scripts\idaho_analysis_v2.txt
+================================================================================

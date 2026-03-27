@@ -1,5 +1,7 @@
 package frc.robot.systems;
 
+import static edu.wpi.first.units.Units.Volts;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.intake.IntakeConstants;
@@ -169,7 +171,9 @@ public class IntakeSystem {
      * Agitate the intake by oscillating the pivot with timed duty-cycle pulses while running the
      * rollers. No pivot PID/FF gains are required.
      *
-     * <p>Uses ±0.05 duty-cycle at 0.25 s per direction. When the command ends (button released), the
+     * <p>Uses fixed-voltage control rather than duty-cycle so that agitation strength is consistent
+     * regardless of battery state. At 12 V nominal the pull-in pulse is ~1.5 V (≈ 12.5 % duty) and
+     * the push-out pulse is ~0.7 V (≈ 5.8 % duty). When the command ends (button released), the
      * logical state is reset to {@link IntakeStates#Stowed} so that the follow-up deploy command
      * (typically wired to {@code onFalse}) actually fires — agitation drifts the arm inward and it
      * needs a fresh deploy pulse afterward.
@@ -182,9 +186,9 @@ public class IntakeSystem {
                 .alongWith(
                         Commands.repeatingSequence(
                                 intakePivot
-                                        .set(0.08)
-                                        .withTimeout(0.3)
-                                        .andThen(intakePivot.set(-0.05).withTimeout(0.25))))
+                                        .setVoltage(Volts.of(1.5))
+                                        .withTimeout(0.30)
+                                        .andThen(intakePivot.setVoltage(Volts.of(-0.7)).withTimeout(0.25))))
                 .finallyDo(() -> currentState = IntakeStates.Stowed)
                 .withName("Intake.DutyCycleAgitate");
     }

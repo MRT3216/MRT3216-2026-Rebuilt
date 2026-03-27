@@ -21,21 +21,19 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 /**
- * LED subsystem — drives addressable LEDs based on robot state and hub shift
- * timing.
+ * LED subsystem — drives addressable LEDs based on robot state and hub shift timing.
  *
- * <p>
- * Pattern priority (highest first):
+ * <p>Pattern priority (highest first):
  *
  * <ol>
- * <li>Disabled — slow teal/orange team wave
- * <li>Autonomous — fast orange/cyan wave
- * <li>Defence mode — red/blue strobe
- * <li>Intaking — purple strobe
- * <li>Aim lock — solid green
- * <li>Shift ending (≤5 s remaining) — fast orange strobe warning
- * <li>Shift active — green/black wave ("go score!")
- * <li>Shift inactive — dim alliance color
+ *   <li>Disabled — slow teal/orange team wave
+ *   <li>Autonomous — fast orange/cyan wave
+ *   <li>Defence mode — red/blue strobe
+ *   <li>Intaking — purple strobe
+ *   <li>Aim lock — solid green
+ *   <li>Shift ending (≤5 s remaining) — fast orange strobe warning
+ *   <li>Shift active — green/black wave ("go score!")
+ *   <li>Shift inactive — dim alliance color
  * </ol>
  */
 public class LEDSubsystem extends SubsystemBase {
@@ -53,9 +51,7 @@ public class LEDSubsystem extends SubsystemBase {
 
     private Color allianceColor = Color.kCyan;
 
-    /**
-     * Flags set by external commands to override the default shift-based pattern.
-     */
+    /** Flags set by external commands to override the default shift-based pattern. */
     private boolean intaking = false;
 
     private boolean aimLock = false;
@@ -98,7 +94,8 @@ public class LEDSubsystem extends SubsystemBase {
         LoggedMechanismRoot2d root = ledSim.getRoot("LEDs", 0, 0.5);
         ledLigaments = new LoggedMechanismLigament2d[LEDsConstants.kNumLEDs];
         for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
-            ledLigaments[i] = new LoggedMechanismLigament2d("LED " + i, 1, 0, 20, new Color8Bit(Color.kBlack));
+            ledLigaments[i] =
+                    new LoggedMechanismLigament2d("LED " + i, 1, 0, 20, new Color8Bit(Color.kBlack));
             if (i == 0) {
                 root.append(ledLigaments[i]);
             } else {
@@ -126,9 +123,10 @@ public class LEDSubsystem extends SubsystemBase {
 
         // Keep alliance color up to date when connected to FMS.
         if (DriverStation.isFMSAttached()) {
-            allianceColor = DriverStation.getAlliance()
-                    .map(a -> a == Alliance.Blue ? Color.kBlue : Color.kRed)
-                    .orElse(Color.kCyan);
+            allianceColor =
+                    DriverStation.getAlliance()
+                            .map(a -> a == Alliance.Blue ? Color.kBlue : Color.kRed)
+                            .orElse(Color.kCyan);
         }
 
         if (DriverStation.isDisabled()) {
@@ -162,8 +160,7 @@ public class LEDSubsystem extends SubsystemBase {
     }
 
     private void updateSim() {
-        if (ledSim == null || ledLigaments == null)
-            return;
+        if (ledSim == null || ledLigaments == null) return;
         for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
             ledLigaments[i].setColor(ledBuffer.getLED8Bit(i));
         }
@@ -209,10 +206,9 @@ public class LEDSubsystem extends SubsystemBase {
      * Hub-shift-aware teleop pattern.
      *
      * <ul>
-     * <li>Shift ending (≤5 s) — fast orange strobe so the driver prepares for the
-     * transition
-     * <li>Shift active — green wave = "go score!"
-     * <li>Shift inactive — dim alliance color = "hold / pass"
+     *   <li>Shift ending (≤5 s) — fast orange strobe so the driver prepares for the transition
+     *   <li>Shift active — green wave = "go score!"
+     *   <li>Shift inactive — dim alliance color = "hold / pass"
      * </ul>
      */
     private void applyShiftPattern() {

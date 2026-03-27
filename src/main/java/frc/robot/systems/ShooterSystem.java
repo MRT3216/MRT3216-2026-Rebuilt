@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
@@ -652,31 +653,33 @@ public class ShooterSystem {
         return Commands.run(
                         () -> {
                             var sol = solutionSupplier.get();
-                            var mode = shootMode.get();
 
-                            // Active mode and fudge
-                            Logger.recordOutput("ShooterTelemetry/shootMode", mode.name());
+                            // Always publish: fudge RPM (operator dashboard) and validity.
                             Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", kRPMFudgeRPM.get());
-
-                            // Lead distance (includes motion-predicted lead in FULL mode,
-                            // raw hub distance in STATIC modes)
-                            Logger.recordOutput(
-                                    "ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
-
-                            // Distance from turret origin to alliance hub center
-                            var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                            var turretXY = turretOrigin(robotPose.get());
-                            double hubDx = hub.toTranslation2d().getX() - turretXY.getX();
-                            double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
-                            Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
-
-                            double modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance()).in(RPM);
-                            double fudgedRpm = modelRpm + kRPMFudgeRPM.get();
-                            Logger.recordOutput("ShooterTelemetry/modelRPM", modelRpm);
-                            Logger.recordOutput("ShooterTelemetry/fudgedRPM", fudgedRpm);
-                            Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
-                            Logger.recordOutput("ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());
+
+                            // Detailed telemetry only in tuning mode — unnecessary CPU
+                            // and NT bandwidth during competition.
+                            if (Constants.tuningMode) {
+                                var mode = shootMode.get();
+                                Logger.recordOutput("ShooterTelemetry/shootMode", mode.name());
+                                Logger.recordOutput(
+                                        "ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
+
+                                var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                                var turretXY = turretOrigin(robotPose.get());
+                                double hubDx = hub.toTranslation2d().getX() - turretXY.getX();
+                                double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
+                                Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
+
+                                double modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance()).in(RPM);
+                                double fudgedRpm = modelRpm + kRPMFudgeRPM.get();
+                                Logger.recordOutput("ShooterTelemetry/modelRPM", modelRpm);
+                                Logger.recordOutput("ShooterTelemetry/fudgedRPM", fudgedRpm);
+                                Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
+                                Logger.recordOutput(
+                                        "ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
+                            }
 
                             if (!sol.isValid()) {
                                 double now = Timer.getFPGATimestamp();

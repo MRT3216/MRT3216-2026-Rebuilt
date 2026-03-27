@@ -54,7 +54,6 @@ import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
-import frc.robot.util.TuningDashboard;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -223,12 +222,6 @@ public class RobotContainer {
         setupAutoChooser();
         configureDefaultCommands();
         configureButtonBindings();
-
-        // Initialize the tuning Shuffleboard tab only when tuning mode is active.
-        // The tab never appears on the Elastic dashboard during competition.
-        if (Constants.tuningMode) {
-            TuningDashboard.initialize(drive, turretSubsystem, hoodSubsystem, flywheelSubsystem);
-        }
     }
 
     // endregion
@@ -377,11 +370,17 @@ public class RobotContainer {
         // ── Operator: secondary ball-handling & overrides ───────────────
 
         // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
-        // On release, reset state and redeploy so intake resumes immediately.
+        // On release, only resume intaking if the operator is still holding the
+        // right trigger — otherwise the rollers would run indefinitely because
+        // dutyCycleIntake() is a RunCommand with no natural end condition.
         operatorController
                 .a()
                 .whileTrue(intakeSystem.dutyCycleAgitate())
-                .onFalse(intakeSystem.dutyCycleIntake());
+                .onFalse(
+                        Commands.either(
+                                intakeSystem.dutyCycleIntake(),
+                                Commands.none(),
+                                () -> operatorController.getRightTriggerAxis() > 0.5));
 
         // B button: clear / unjam shooter system while held.
         operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
@@ -446,8 +445,14 @@ public class RobotContainer {
                     .and(RobotModeTriggers.teleop())
                     .onTrue(
                             Commands.runEnd(
-                                            () -> operatorController.setRumble(RumbleType.kRightRumble, 1.0),
-                                            () -> operatorController.setRumble(RumbleType.kRightRumble, 0.0))
+                                            () -> {
+                                                driverController.setRumble(RumbleType.kRightRumble, 1.0);
+                                                operatorController.setRumble(RumbleType.kRightRumble, 1.0);
+                                            },
+                                            () -> {
+                                                driverController.setRumble(RumbleType.kRightRumble, 0.0);
+                                                operatorController.setRumble(RumbleType.kRightRumble, 0.0);
+                                            })
                                     .withTimeout(0.25));
         }
     }

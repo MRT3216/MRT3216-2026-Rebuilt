@@ -1,0 +1,599 @@
+MRT3216 — Loop Overrun Deep Dive Analysis
+Generated: 2026-03-27 00:04:05
+
+Found 60 log files to analyze
+
+  Parsing: akit_26-03-25_00-02-14.wpilog (60.7 MB, PIT/TEST, 03-25 00:19)
+    Loops: 42,636  mean=24.2ms  p95=33.0ms  p99=46.5ms  max=38069.8ms
+    Overruns: >20ms=32210 (75.5%)  >30ms=3221  >50ms=297
+
+  Parsing: akit_26-03-25_00-20-34.wpilog (29.8 MB, PIT/TEST, 03-25 00:28)
+    Loops: 20,514  mean=25.2ms  p95=34.2ms  p99=49.2ms  max=36720.4ms
+    Overruns: >20ms=15042 (73.3%)  >30ms=1676  >50ms=191
+
+  Parsing: akit_26-03-25_00-29-48.wpilog (10.2 MB, PIT/TEST, 03-25 00:32)
+    Loops: 6,519  mean=32.5ms  p95=46.0ms  p99=68.8ms  max=38206.5ms
+    Overruns: >20ms=5381 (82.5%)  >30ms=1147  >50ms=220
+
+  Parsing: akit_26-03-25_00-33-36.wpilog (7.8 MB, PIT/TEST, 03-25 00:35)
+    Loops: 5,009  mean=34.7ms  p95=45.7ms  p99=70.3ms  max=38017.6ms
+    Overruns: >20ms=4395 (87.7%)  >30ms=919  >50ms=179
+
+  Parsing: akit_26-03-25_00-36-44.wpilog (5.6 MB, PIT/TEST, 03-25 00:38)
+    Loops: 3,508  mean=39.0ms  p95=48.8ms  p99=78.5ms  max=37229.7ms
+    Overruns: >20ms=3212 (91.6%)  >30ms=756  >50ms=161
+
+  Parsing: akit_26-03-25_00-39-14.wpilog (5.9 MB, PIT/TEST, 03-25 00:41)
+    Loops: 3,716  mean=38.7ms  p95=50.3ms  p99=76.6ms  max=37503.8ms
+    Overruns: >20ms=3251 (87.5%)  >30ms=876  >50ms=189
+
+  Parsing: akit_26-03-25_00-41-50.wpilog (5.7 MB, PIT/TEST, 03-25 00:43)
+    Loops: 3,428  mean=40.0ms  p95=52.2ms  p99=80.6ms  max=37052.4ms
+    Overruns: >20ms=3042 (88.7%)  >30ms=871  >50ms=195
+
+  Parsing: akit_26-03-25_00-44-21.wpilog (13.7 MB, PIT/TEST, 03-25 00:48)
+    Loops: 9,083  mean=29.8ms  p95=40.9ms  p99=63.9ms  max=38001.0ms
+    Overruns: >20ms=7483 (82.4%)  >30ms=1255  >50ms=223
+
+  Parsing: akit_26-03-25_00-49-11.wpilog (2.1 MB, PIT/TEST, 03-25 00:49)
+    Loops: 1,277  mean=63.7ms  p95=67.0ms  p99=143.2ms  max=37718.5ms
+    Overruns: >20ms=1230 (96.3%)  >30ms=470  >50ms=142
+
+  Parsing: akit_26-03-25_00-50-43.wpilog (5.7 MB, PIT/TEST, 03-25 00:52)
+    Loops: 3,180  mean=42.6ms  p95=55.0ms  p99=91.5ms  max=37840.2ms
+    Overruns: >20ms=2996 (94.2%)  >30ms=934  >50ms=230
+
+  Parsing: akit_26-03-25_00-53-10.wpilog (37.0 MB, PIT/TEST, 03-25 01:02)
+    Loops: 23,684  mean=25.1ms  p95=33.9ms  p99=49.5ms  max=37098.7ms
+    Overruns: >20ms=17734 (74.9%)  >30ms=1954  >50ms=227
+
+  Parsing: akit_26-03-25_01-03-44.wpilog (37.8 MB, PIT/TEST, 03-25 01:12)
+    Loops: 20,498  mean=26.2ms  p95=36.7ms  p99=52.8ms  max=38387.0ms
+    Overruns: >20ms=15948 (77.8%)  >30ms=2343  >50ms=263
+
+  Parsing: akit_26-03-25_01-13-14.wpilog (15.9 MB, PIT/TEST, 03-25 01:17)
+    Loops: 8,527  mean=30.1ms  p95=41.0ms  p99=60.9ms  max=37072.0ms
+    Overruns: >20ms=7018 (82.3%)  >30ms=1367  >50ms=192
+
+  Parsing: akit_26-03-25_01-17-51.wpilog (14.7 MB, PIT/TEST, 03-25 01:21)
+    Loops: 8,700  mean=28.5ms  p95=38.5ms  p99=60.7ms  max=37746.1ms
+    Overruns: >20ms=5966 (68.6%)  >30ms=935  >50ms=179
+
+  Parsing: akit_26-03-25_01-22-18.wpilog (18.8 MB, PIT/TEST, 03-25 01:26)
+    Loops: 11,386  mean=27.0ms  p95=35.7ms  p99=58.0ms  max=37646.3ms
+    Overruns: >20ms=7922 (69.6%)  >30ms=1026  >50ms=187
+
+  Parsing: akit_26-03-25_01-27-49.wpilog (2.5 MB, PIT/TEST, 03-25 01:28)
+    Loops: 1,538  mean=56.5ms  p95=60.7ms  p99=113.8ms  max=36829.2ms
+    Overruns: >20ms=1496 (97.3%)  >30ms=481  >50ms=128
+
+  Parsing: akit_26-03-25_16-21-10.wpilog (56.2 MB, PIT/TEST, 03-25 16:30)
+    Loops: 34,950  mean=23.6ms  p95=30.8ms  p99=44.8ms  max=40736.4ms
+    Overruns: >20ms=23183 (66.3%)  >30ms=1950  >50ms=213
+
+  Parsing: akit_26-03-25_16-38-51.wpilog (21.2 MB, PIT/TEST, 03-25 16:43)
+    Loops: 11,292  mean=28.2ms  p95=39.5ms  p99=69.1ms  max=41954.7ms
+    Overruns: >20ms=7984 (70.7%)  >30ms=1241  >50ms=300
+
+  Parsing: akit_26-03-25_16-44-36.wpilog (55.8 MB, PIT/TEST, 03-25 16:57)
+    Loops: 28,062  mean=27.3ms  p95=37.5ms  p99=55.1ms  max=37941.2ms
+    Overruns: >20ms=23276 (82.9%)  >30ms=3531  >50ms=422
+
+  Parsing: akit_26-03-25_16-58-08.wpilog (37.8 MB, PIT/TEST, 03-25 17:06)
+    Loops: 20,191  mean=26.6ms  p95=36.8ms  p99=52.6ms  max=37365.3ms
+    Overruns: >20ms=17012 (84.3%)  >30ms=2404  >50ms=252
+
+  Parsing: akit_26-03-25_17-07-41.wpilog (43.5 MB, PIT/TEST, 03-25 17:17)
+    Loops: 23,467  mean=26.1ms  p95=35.9ms  p99=53.4ms  max=37574.8ms
+    Overruns: >20ms=19290 (82.2%)  >30ms=2551  >50ms=290
+
+  Parsing: akit_26-03-25_17-18-34.wpilog (7.9 MB, PIT/TEST, 03-25 17:20)
+    Loops: 3,834  mean=39.9ms  p95=53.5ms  p99=83.0ms  max=37265.1ms
+    Overruns: >20ms=3508 (91.5%)  >30ms=1161  >50ms=240
+
+  Parsing: akit_26-03-25_17-21-22.wpilog (8.2 MB, PIT/TEST, 03-25 17:23)
+    Loops: 4,216  mean=37.2ms  p95=49.0ms  p99=78.9ms  max=38382.7ms
+    Overruns: >20ms=3729 (88.4%)  >30ms=879  >50ms=195
+
+  Parsing: akit_26-03-25_17-24-13.wpilog (6.9 MB, PIT/TEST, 03-25 17:25)
+    Loops: 3,244  mean=42.0ms  p95=56.1ms  p99=85.8ms  max=38278.2ms
+    Overruns: >20ms=2980 (91.9%)  >30ms=903  >50ms=233
+
+  Parsing: akit_26-03-25_17-27-21.wpilog (7.0 MB, PIT/TEST, 03-25 17:29)
+    Loops: 3,219  mean=45.8ms  p95=59.3ms  p99=94.4ms  max=43277.0ms
+    Overruns: >20ms=3118 (96.9%)  >30ms=1164  >50ms=278
+
+  Parsing: akit_26-03-25_17-29-54.wpilog (1.7 MB, PIT/TEST, 03-25 17:30)
+    Loops: 593  mean=112.7ms  p95=83.3ms  p99=281.6ms  max=39165.7ms
+    Overruns: >20ms=593 (100.0%)  >30ms=421  >50ms=145
+
+  Parsing: akit_26-03-25_17-31-58.wpilog (2.7 MB, PIT/TEST, 03-25 17:32)
+    Loops: 1,330  mean=66.1ms  p95=62.7ms  p99=107.1ms  max=42571.6ms
+    Overruns: >20ms=1290 (97.0%)  >30ms=464  >50ms=131
+
+  Parsing: akit_26-03-25_17-34-20.wpilog (16.1 MB, PIT/TEST, 03-25 17:38)
+    Loops: 8,461  mean=30.6ms  p95=41.5ms  p99=64.7ms  max=42421.7ms
+    Overruns: >20ms=6883 (81.3%)  >30ms=1197  >50ms=227
+
+  Parsing: akit_26-03-25_17-38-53.wpilog (4.2 MB, PIT/TEST, 03-25 17:39)
+    Loops: 1,893  mean=53.3ms  p95=62.6ms  p99=101.9ms  max=37705.1ms
+    Overruns: >20ms=1830 (96.7%)  >30ms=677  >50ms=185
+
+  Parsing: akit_26-03-25_17-41-16.wpilog (5.8 MB, PIT/TEST, 03-25 17:42)
+    Loops: 2,962  mean=43.7ms  p95=53.6ms  p99=96.2ms  max=42639.0ms
+    Overruns: >20ms=2644 (89.3%)  >30ms=668  >50ms=185
+
+  Parsing: akit_26-03-25_17-43-32.wpilog (39.1 MB, PIT/TEST, 03-25 17:52)
+    Loops: 20,745  mean=26.7ms  p95=37.3ms  p99=55.7ms  max=38059.8ms
+    Overruns: >20ms=17207 (82.9%)  >30ms=2516  >50ms=325
+
+  Parsing: akit_26-03-25_17-53-23.wpilog (5.2 MB, PIT/TEST, 03-25 17:54)
+    Loops: 2,298  mean=49.9ms  p95=61.3ms  p99=109.0ms  max=37328.0ms
+    Overruns: >20ms=2249 (97.9%)  >30ms=879  >50ms=223
+
+  Parsing: akit_26-03-25_17-55-31.wpilog (3.4 MB, PIT/TEST, 03-25 17:56)
+    Loops: 1,437  mean=64.2ms  p95=72.6ms  p99=137.8ms  max=38343.8ms
+    Overruns: >20ms=1411 (98.2%)  >30ms=672  >50ms=222
+
+  Parsing: akit_26-03-25_17-57-14.wpilog (1.6 MB, PIT/TEST, 03-25 17:57)
+    Loops: 612  mean=111.5ms  p95=100.9ms  p99=225.3ms  max=38412.0ms
+    Overruns: >20ms=612 (100.0%)  >30ms=412  >50ms=175
+
+  Parsing: akit_26-03-25_17-58-31.wpilog (9.9 MB, PIT/TEST, 03-25 18:01)
+    Loops: 4,681  mean=49.7ms  p95=55.6ms  p99=90.1ms  max=37598.3ms
+    Overruns: >20ms=4318 (92.2%)  >30ms=1271  >50ms=313
+
+  Parsing: akit_26-03-25_18-03-11.wpilog (138.9 MB, PIT/TEST, 03-25 18:35)
+    Loops: 77,634  mean=24.6ms  p95=34.5ms  p99=46.9ms  max=39646.7ms
+    Overruns: >20ms=64500 (83.1%)  >30ms=7562  >50ms=527
+
+  Parsing: akit_26-03-25_19-48-42.wpilog (123.3 MB, PIT/TEST, 03-25 20:18)
+    Loops: 72,999  mean=24.1ms  p95=32.8ms  p99=44.3ms  max=42807.3ms
+    Overruns: >20ms=57745 (79.1%)  >30ms=5790  >50ms=367
+
+  Parsing: akit_26-03-25_21-18-24.wpilog (46.4 MB, PIT/TEST, 03-25 21:29)
+    Loops: 26,317  mean=25.5ms  p95=34.2ms  p99=49.1ms  max=41749.5ms
+    Overruns: >20ms=21524 (81.8%)  >30ms=2314  >50ms=241
+
+  Parsing: akit_26-03-26_01-16-13.wpilog (212.6 MB, PIT/TEST, 03-26 02:32)
+    Loops: 220,628  mean=18.9ms  p95=21.9ms  p99=29.9ms  max=58358.4ms
+    Overruns: >20ms=32380 (14.7%)  >30ms=2164  >50ms=80
+
+  Parsing: akit_26-03-26_02-51-20.wpilog (94.8 MB, PIT/TEST, 03-26 03:21)
+    Loops: 89,231  mean=18.7ms  p95=21.2ms  p99=29.8ms  max=61416.7ms
+    Overruns: >20ms=8076 (9.1%)  >30ms=874  >50ms=63
+
+  Parsing: akit_26-03-26_03-26-58.wpilog (15.9 MB, PIT/TEST, 03-26 03:32)
+    Loops: 16,048  mean=20.1ms  p95=21.7ms  p99=37.0ms  max=44366.6ms
+    Overruns: >20ms=1242 (7.7%)  >30ms=263  >50ms=50
+
+  Parsing: akit_26-03-26_03-36-53.wpilog (28.6 MB, PIT/TEST, 03-26 03:42)
+    Loops: 17,708  mean=22.6ms  p95=28.1ms  p99=52.9ms  max=21415.8ms
+    Overruns: >20ms=8352 (47.2%)  >30ms=637  >50ms=201
+
+  Parsing: akit_26-03-26_03-44-11.wpilog (1.4 MB, PIT/TEST, 03-26 03:44)
+    Loops: 616  mean=88.1ms  p95=121.5ms  p99=315.8ms  max=23402.5ms
+    Overruns: >20ms=616 (100.0%)  >30ms=355  >50ms=179
+
+  Parsing: akit_26-03-26_03-45-05.wpilog (25.0 MB, PIT/TEST, 03-26 03:51)
+    Loops: 15,032  mean=23.6ms  p95=33.9ms  p99=56.1ms  max=21368.7ms
+    Overruns: >20ms=7760 (51.6%)  >30ms=1057  >50ms=227
+
+  Parsing: akit_26-03-26_03-51-34.wpilog (6.7 MB, PIT/TEST, 03-26 03:53)
+    Loops: 4,131  mean=24.3ms  p95=38.7ms  p99=64.4ms  max=20831.6ms
+    Overruns: >20ms=853 (20.6%)  >30ms=334  >50ms=102
+
+  Parsing: akit_26-03-26_03-53-39.wpilog (15.1 MB, PIT/TEST, 03-26 03:56)
+    Loops: 7,821  mean=21.4ms  p95=33.9ms  p99=59.5ms  max=20379.0ms
+    Overruns: >20ms=1621 (20.7%)  >30ms=492  >50ms=141
+
+  Parsing: akit_26-03-26_23-54-33.wpilog (12.6 MB, PIT/TEST, 03-26 23:54)
+    Loops: 9,090  mean=18.6ms  p95=22.6ms  p99=47.0ms  max=24028.3ms
+    Overruns: >20ms=663 (7.3%)  >30ms=238  >50ms=82
+
+  Parsing: akit_26-03-26_23-55-24.wpilog (28.0 MB, PIT/TEST, 03-27 00:02)
+    Loops: 18,318  mean=23.1ms  p95=31.0ms  p99=51.0ms  max=21066.2ms
+    Overruns: >20ms=10034 (54.8%)  >30ms=996  >50ms=197
+
+  Parsing: akit_26-03-27_00-03-03.wpilog (1.4 MB, PIT/TEST, 03-27 00:03)
+    Loops: 721  mean=69.9ms  p95=90.7ms  p99=195.0ms  max=20888.1ms
+    Overruns: >20ms=703 (97.5%)  >30ms=341  >50ms=146
+
+  Parsing: akit_26-03-27_00-04-02.wpilog (11.2 MB, PIT/TEST, 03-27 00:06)
+    Loops: 7,009  mean=25.8ms  p95=37.0ms  p99=64.5ms  max=20252.0ms
+    Overruns: >20ms=3711 (52.9%)  >30ms=577  >50ms=157
+
+  Parsing: akit_26-03-27_00-25-29.wpilog (5.6 MB, PIT/TEST, 03-27 00:26)
+    Loops: 3,745  mean=31.2ms  p95=42.1ms  p99=100.2ms  max=23787.1ms
+    Overruns: >20ms=2147 (57.3%)  >30ms=391  >50ms=136
+
+  Parsing: akit_26-03-27_00-27-31.wpilog (22.1 MB, PIT/TEST, 03-27 00:32)
+    Loops: 14,658  mean=19.9ms  p95=26.1ms  p99=47.4ms  max=21448.7ms
+    Overruns: >20ms=2867 (19.6%)  >30ms=503  >50ms=114
+
+  Parsing: akit_26-03-27_00-33-20.wpilog (22.1 MB, PIT/TEST, 03-27 00:38)
+    Loops: 13,423  mean=22.0ms  p95=30.6ms  p99=51.8ms  max=21621.3ms
+    Overruns: >20ms=4632 (34.5%)  >30ms=702  >50ms=154
+
+  Parsing: akit_26-03-27_00-38-53.wpilog (17.4 MB, PIT/TEST, 03-27 00:42)
+    Loops: 11,691  mean=18.1ms  p95=24.1ms  p99=48.4ms  max=20046.5ms
+    Overruns: >20ms=1247 (10.7%)  >30ms=355  >50ms=108
+
+  Parsing: akit_26-03-27_00-43-33.wpilog (15.6 MB, PIT/TEST, 03-27 00:47)
+    Loops: 10,761  mean=18.1ms  p95=23.7ms  p99=48.9ms  max=20347.5ms
+    Overruns: >20ms=1024 (9.5%)  >30ms=329  >50ms=102
+
+  Parsing: akit_26-03-27_00-47-52.wpilog (21.2 MB, PIT/TEST, 03-27 00:53)
+    Loops: 14,900  mean=17.1ms  p95=22.4ms  p99=46.2ms  max=20204.8ms
+    Overruns: >20ms=1137 (7.6%)  >30ms=400  >50ms=124
+
+  Parsing: akit_26-03-27_00-53-36.wpilog (26.8 MB, PIT/TEST, 03-27 01:00)
+    Loops: 19,514  mean=15.4ms  p95=19.0ms  p99=37.5ms  max=19689.7ms
+    Overruns: >20ms=768 (3.9%)  >30ms=286  >50ms=93
+
+  Parsing: akit_26-03-27_01-03-32.wpilog (33.0 MB, PIT/TEST, 03-27 01:08)
+    Loops: 15,051  mean=20.9ms  p95=29.9ms  p99=51.0ms  max=25898.4ms
+    Overruns: >20ms=3569 (23.7%)  >30ms=746  >50ms=162
+
+  Parsing: akit_26-03-27_01-12-49.wpilog (30.5 MB, PIT/TEST, 03-27 01:16)
+    Loops: 16,167  mean=18.3ms  p95=23.8ms  p99=44.6ms  max=24099.4ms
+    Overruns: >20ms=2002 (12.4%)  >30ms=425  >50ms=113
+
+  Parsing: akit_26-03-27_01-50-13_idbo.wpilog (56.6 MB, MATCH, 03-27 01:57)
+    Loops: 27,032  mean=17.5ms  p95=24.4ms  p99=40.4ms  max=23528.2ms
+    Overruns: >20ms=3552 (13.1%)  >30ms=732  >50ms=109
+
+================================================================================
+  COMPARATIVE LOOP TIMING SUMMARY
+================================================================================
+
+  File                                            Type    Loops    Mean     p95     p99      Max    >20ms   >30ms   >50ms
+  ---------------------------------------------    ---      ---     ---     ---     ---      ---      ---     ---     ---
+  akit_26-03-25_00-02-14.wpilog                  PIT/TEST   42,636   24.2ms   33.0ms   46.5ms  38069.8ms      76%    3221     297
+  akit_26-03-25_00-20-34.wpilog                  PIT/TEST   20,514   25.2ms   34.2ms   49.2ms  36720.4ms      73%    1676     191
+  akit_26-03-25_00-29-48.wpilog                  PIT/TEST    6,519   32.5ms   46.0ms   68.8ms  38206.5ms      83%    1147     220
+  akit_26-03-25_00-33-36.wpilog                  PIT/TEST    5,009   34.7ms   45.7ms   70.3ms  38017.6ms      88%     919     179
+  akit_26-03-25_00-36-44.wpilog                  PIT/TEST    3,508   39.0ms   48.8ms   78.5ms  37229.7ms      92%     756     161
+  akit_26-03-25_00-39-14.wpilog                  PIT/TEST    3,716   38.7ms   50.3ms   76.6ms  37503.8ms      87%     876     189
+  akit_26-03-25_00-41-50.wpilog                  PIT/TEST    3,428   40.0ms   52.2ms   80.6ms  37052.4ms      89%     871     195
+  akit_26-03-25_00-44-21.wpilog                  PIT/TEST    9,083   29.8ms   40.9ms   63.9ms  38001.0ms      82%    1255     223
+  akit_26-03-25_00-49-11.wpilog                  PIT/TEST    1,277   63.7ms   67.0ms  143.2ms  37718.5ms      96%     470     142
+  akit_26-03-25_00-50-43.wpilog                  PIT/TEST    3,180   42.6ms   55.0ms   91.5ms  37840.2ms      94%     934     230
+  akit_26-03-25_00-53-10.wpilog                  PIT/TEST   23,684   25.1ms   33.9ms   49.5ms  37098.7ms      75%    1954     227
+  akit_26-03-25_01-03-44.wpilog                  PIT/TEST   20,498   26.2ms   36.7ms   52.8ms  38387.0ms      78%    2343     263
+  akit_26-03-25_01-13-14.wpilog                  PIT/TEST    8,527   30.1ms   41.0ms   60.9ms  37072.0ms      82%    1367     192
+  akit_26-03-25_01-17-51.wpilog                  PIT/TEST    8,700   28.5ms   38.5ms   60.7ms  37746.1ms      69%     935     179
+  akit_26-03-25_01-22-18.wpilog                  PIT/TEST   11,386   27.0ms   35.7ms   58.0ms  37646.3ms      70%    1026     187
+  akit_26-03-25_01-27-49.wpilog                  PIT/TEST    1,538   56.5ms   60.7ms  113.8ms  36829.2ms      97%     481     128
+  akit_26-03-25_16-21-10.wpilog                  PIT/TEST   34,950   23.6ms   30.8ms   44.8ms  40736.4ms      66%    1950     213
+  akit_26-03-25_16-38-51.wpilog                  PIT/TEST   11,292   28.2ms   39.5ms   69.1ms  41954.7ms      71%    1241     300
+  akit_26-03-25_16-44-36.wpilog                  PIT/TEST   28,062   27.3ms   37.5ms   55.1ms  37941.2ms      83%    3531     422
+  akit_26-03-25_16-58-08.wpilog                  PIT/TEST   20,191   26.6ms   36.8ms   52.6ms  37365.3ms      84%    2404     252
+  akit_26-03-25_17-07-41.wpilog                  PIT/TEST   23,467   26.1ms   35.9ms   53.4ms  37574.8ms      82%    2551     290
+  akit_26-03-25_17-18-34.wpilog                  PIT/TEST    3,834   39.9ms   53.5ms   83.0ms  37265.1ms      91%    1161     240
+  akit_26-03-25_17-21-22.wpilog                  PIT/TEST    4,216   37.2ms   49.0ms   78.9ms  38382.7ms      88%     879     195
+  akit_26-03-25_17-24-13.wpilog                  PIT/TEST    3,244   42.0ms   56.1ms   85.8ms  38278.2ms      92%     903     233
+  akit_26-03-25_17-27-21.wpilog                  PIT/TEST    3,219   45.8ms   59.3ms   94.4ms  43277.0ms      97%    1164     278
+  akit_26-03-25_17-29-54.wpilog                  PIT/TEST      593  112.7ms   83.3ms  281.6ms  39165.7ms     100%     421     145
+  akit_26-03-25_17-31-58.wpilog                  PIT/TEST    1,330   66.1ms   62.7ms  107.1ms  42571.6ms      97%     464     131
+  akit_26-03-25_17-34-20.wpilog                  PIT/TEST    8,461   30.6ms   41.5ms   64.7ms  42421.7ms      81%    1197     227
+  akit_26-03-25_17-38-53.wpilog                  PIT/TEST    1,893   53.3ms   62.6ms  101.9ms  37705.1ms      97%     677     185
+  akit_26-03-25_17-41-16.wpilog                  PIT/TEST    2,962   43.7ms   53.6ms   96.2ms  42639.0ms      89%     668     185
+  akit_26-03-25_17-43-32.wpilog                  PIT/TEST   20,745   26.7ms   37.3ms   55.7ms  38059.8ms      83%    2516     325
+  akit_26-03-25_17-53-23.wpilog                  PIT/TEST    2,298   49.9ms   61.3ms  109.0ms  37328.0ms      98%     879     223
+  akit_26-03-25_17-55-31.wpilog                  PIT/TEST    1,437   64.2ms   72.6ms  137.8ms  38343.8ms      98%     672     222
+  akit_26-03-25_17-57-14.wpilog                  PIT/TEST      612  111.5ms  100.9ms  225.3ms  38412.0ms     100%     412     175
+  akit_26-03-25_17-58-31.wpilog                  PIT/TEST    4,681   49.7ms   55.6ms   90.1ms  37598.3ms      92%    1271     313
+  akit_26-03-25_18-03-11.wpilog                  PIT/TEST   77,634   24.6ms   34.5ms   46.9ms  39646.7ms      83%    7562     527
+  akit_26-03-25_19-48-42.wpilog                  PIT/TEST   72,999   24.1ms   32.8ms   44.3ms  42807.3ms      79%    5790     367
+  akit_26-03-25_21-18-24.wpilog                  PIT/TEST   26,317   25.5ms   34.2ms   49.1ms  41749.5ms      82%    2314     241
+  akit_26-03-26_01-16-13.wpilog                  PIT/TEST  220,628   18.9ms   21.9ms   29.9ms  58358.4ms      15%    2164      80
+  akit_26-03-26_02-51-20.wpilog                  PIT/TEST   89,231   18.7ms   21.2ms   29.8ms  61416.7ms       9%     874      63
+  akit_26-03-26_03-26-58.wpilog                  PIT/TEST   16,048   20.1ms   21.7ms   37.0ms  44366.6ms       8%     263      50
+  akit_26-03-26_03-36-53.wpilog                  PIT/TEST   17,708   22.6ms   28.1ms   52.9ms  21415.8ms      47%     637     201
+  akit_26-03-26_03-44-11.wpilog                  PIT/TEST      616   88.1ms  121.5ms  315.8ms  23402.5ms     100%     355     179
+  akit_26-03-26_03-45-05.wpilog                  PIT/TEST   15,032   23.6ms   33.9ms   56.1ms  21368.7ms      52%    1057     227
+  akit_26-03-26_03-51-34.wpilog                  PIT/TEST    4,131   24.3ms   38.7ms   64.4ms  20831.6ms      21%     334     102
+  akit_26-03-26_03-53-39.wpilog                  PIT/TEST    7,821   21.4ms   33.9ms   59.5ms  20379.0ms      21%     492     141
+  akit_26-03-26_23-54-33.wpilog                  PIT/TEST    9,090   18.6ms   22.6ms   47.0ms  24028.3ms       7%     238      82
+  akit_26-03-26_23-55-24.wpilog                  PIT/TEST   18,318   23.1ms   31.0ms   51.0ms  21066.2ms      55%     996     197
+  akit_26-03-27_00-03-03.wpilog                  PIT/TEST      721   69.9ms   90.7ms  195.0ms  20888.1ms      98%     341     146
+  akit_26-03-27_00-04-02.wpilog                  PIT/TEST    7,009   25.8ms   37.0ms   64.5ms  20252.0ms      53%     577     157
+  akit_26-03-27_00-25-29.wpilog                  PIT/TEST    3,745   31.2ms   42.1ms  100.2ms  23787.1ms      57%     391     136
+  akit_26-03-27_00-27-31.wpilog                  PIT/TEST   14,658   19.9ms   26.1ms   47.4ms  21448.7ms      20%     503     114
+  akit_26-03-27_00-33-20.wpilog                  PIT/TEST   13,423   22.0ms   30.6ms   51.8ms  21621.3ms      35%     702     154
+  akit_26-03-27_00-38-53.wpilog                  PIT/TEST   11,691   18.1ms   24.1ms   48.4ms  20046.5ms      11%     355     108
+  akit_26-03-27_00-43-33.wpilog                  PIT/TEST   10,761   18.1ms   23.7ms   48.9ms  20347.5ms      10%     329     102
+  akit_26-03-27_00-47-52.wpilog                  PIT/TEST   14,900   17.1ms   22.4ms   46.2ms  20204.8ms       8%     400     124
+  akit_26-03-27_00-53-36.wpilog                  PIT/TEST   19,514   15.4ms   19.0ms   37.5ms  19689.7ms       4%     286      93
+  akit_26-03-27_01-03-32.wpilog                  PIT/TEST   15,051   20.9ms   29.9ms   51.0ms  25898.4ms      24%     746     162
+  akit_26-03-27_01-12-49.wpilog                  PIT/TEST   16,167   18.3ms   23.8ms   44.6ms  24099.4ms      12%     425     113
+  akit_26-03-27_01-50-13_idbo.wpilog             MATCH   27,032   17.5ms   24.4ms   40.4ms  23528.2ms      13%     732     109
+
+================================================================================
+  DETAILED ANALYSIS — TOP 5 WORST LOGS BY OVERRUN RATE
+================================================================================
+
+  ──────────────────────────────────────────────────────────────────────
+  #1: akit_26-03-25_17-29-54.wpilog (PIT/TEST)
+  ──────────────────────────────────────────────────────────────────────
+    Loop cycles: 593
+    mean=112.69ms  median=35.63ms  σ=1607.81ms
+    p95=83.31ms  p99=281.63ms  max=39165.73ms
+    >20ms: 593 (100.0%)
+    >30ms: 421 (71.0%)
+    >50ms: 145 (24.5%)
+
+    Distribution:
+        20-  25ms:     41 (  6.9%) ████
+        25-  30ms:    131 ( 22.1%) █████████████
+        30-  40ms:    179 ( 30.2%) ██████████████████
+        40-  50ms:     97 ( 16.4%) █████████
+        50-  75ms:    105 ( 17.7%) ██████████
+        75- 100ms:     20 (  3.4%) ██
+       100- 200ms:     13 (  2.2%) █
+       200- 500ms:      4 (  0.7%) 
+       500+   ms:      3 (  0.5%)
+
+    Battery: min=12.25V  mean=12.27V  max=12.30V
+    Odometry samples/cycle: mean=10.0  max=20  min=4
+
+    Overrun bursts (≥3 consecutive >20ms):
+      t=1.5s → 68.3s (66.9s, 593 cycles)
+
+    10 worst individual loops:
+      t=    1.45s  39165.73ms  [DIS]  batt=12.3V
+      t=   39.58s  1438.00ms  [DIS]
+      t=   41.03s   512.92ms  [DIS]  batt=12.3V
+      t=   42.13s   350.78ms  [DIS]  batt=12.3V
+      t=   44.69s   293.39ms  [DIS]  batt=12.3V
+      t=   44.98s   281.63ms  [DIS]
+      t=   41.55s   229.52ms  [DIS]  batt=12.3V
+      t=   42.49s   181.38ms  [DIS]  batt=12.3V
+      t=   41.94s   174.91ms  [DIS]  batt=12.3V
+      t=   41.78s   144.76ms  [DIS]  batt=12.3V
+
+  ──────────────────────────────────────────────────────────────────────
+  #2: akit_26-03-25_17-57-14.wpilog (PIT/TEST)
+  ──────────────────────────────────────────────────────────────────────
+    Loop cycles: 612
+    mean=111.50ms  median=35.88ms  σ=1552.22ms
+    p95=100.93ms  p99=225.29ms  max=38411.98ms
+    >20ms: 612 (100.0%)
+    >30ms: 412 (67.3%)
+    >50ms: 175 (28.6%)
+
+    Distribution:
+        20-  25ms:     62 ( 10.1%) ██████
+        25-  30ms:    138 ( 22.5%) █████████████
+        30-  40ms:    152 ( 24.8%) ██████████████
+        40-  50ms:     85 ( 13.9%) ████████
+        50-  75ms:    115 ( 18.8%) ███████████
+        75- 100ms:     29 (  4.7%) ██
+       100- 200ms:     23 (  3.8%) ██
+       200- 500ms:      6 (  1.0%) 
+       500+   ms:      2 (  0.3%)
+    Disabled:    43 loops, mean=1032.1ms, p95=369.7ms, >20ms=43 (100.0%)
+
+    Battery: min=11.79V  mean=12.11V  max=12.25V
+    Odometry samples/cycle: mean=10.1  max=20  min=4
+
+    Overrun bursts (≥3 consecutive >20ms):
+      t=1.5s → 69.9s (68.5s, 612 cycles)
+
+    10 worst individual loops:
+      t=    1.47s  38411.98ms  [DIS]  batt=12.1V
+      t=   38.79s  1476.06ms  [DIS]  batt=12.1V
+      t=   40.27s   369.72ms  [DIS]  batt=12.1V
+      t=   40.67s   355.10ms  [DIS]  batt=12.1V
+      t=   44.01s   331.06ms  [DIS]  batt=12.1V
+      t=   67.09s   298.23ms  [DIS]  batt=12.1V
+      t=   41.04s   225.29ms  [DIS]
+      t=   41.91s   202.40ms  [DIS]
+      t=   41.62s   186.56ms  [DIS]  batt=12.1V
+      t=   41.45s   173.74ms  [DIS]  batt=12.1V
+
+  ──────────────────────────────────────────────────────────────────────
+  #3: akit_26-03-26_03-44-11.wpilog (PIT/TEST)
+  ──────────────────────────────────────────────────────────────────────
+    Loop cycles: 616
+    mean=88.10ms  median=33.23ms  σ=942.84ms
+    p95=121.47ms  p99=315.80ms  max=23402.53ms
+    >20ms: 616 (100.0%)
+    >30ms: 355 (57.6%)
+    >50ms: 179 (29.1%)
+
+    Distribution:
+        20-  25ms:     95 ( 15.4%) █████████
+        25-  30ms:    166 ( 26.9%) ████████████████
+        30-  40ms:    107 ( 17.4%) ██████████
+        40-  50ms:     69 ( 11.2%) ██████
+        50-  75ms:     97 ( 15.7%) █████████
+        75- 100ms:     40 (  6.5%) ███
+       100- 200ms:     32 (  5.2%) ███
+       200- 500ms:      7 (  1.1%) 
+       500+   ms:      3 (  0.5%)
+
+    Battery: min=12.03V  mean=12.05V  max=12.07V
+    Odometry samples/cycle: mean=10.3  max=20  min=4
+
+    Overrun bursts (≥3 consecutive >20ms):
+      t=1.7s → 56.2s (54.6s, 616 cycles)
+
+    10 worst individual loops:
+      t=    1.66s  23402.53ms  [DIS]  batt=12.1V
+      t=   28.77s   864.25ms  [DIS]  batt=12.1V
+      t=   23.77s   848.61ms  [DIS]  batt=12.0V
+      t=   29.64s   367.72ms  [DIS]  batt=12.1V
+      t=   51.90s   363.21ms  [DIS]  batt=12.1V
+      t=   33.06s   343.16ms  [DIS]
+      t=   24.63s   315.80ms  [DIS]  batt=12.0V
+      t=   43.73s   281.87ms  [DIS]  batt=12.0V
+      t=   50.79s   212.03ms  [DIS]
+      t=   24.97s   210.39ms  [DIS]  batt=12.1V
+
+  ──────────────────────────────────────────────────────────────────────
+  #4: akit_26-03-25_17-55-31.wpilog (PIT/TEST)
+  ──────────────────────────────────────────────────────────────────────
+    Loop cycles: 1,437
+    mean=64.25ms  median=29.10ms  σ=1011.32ms
+    p95=72.62ms  p99=137.75ms  max=38343.85ms
+    >20ms: 1411 (98.2%)
+    >30ms: 672 (46.8%)
+    >50ms: 222 (15.4%)
+
+    Distribution:
+        15-  20ms:     26 (  1.8%) █
+        20-  25ms:    356 ( 24.8%) ██████████████
+        25-  30ms:    383 ( 26.7%) ███████████████
+        30-  40ms:    318 ( 22.1%) █████████████
+        40-  50ms:    132 (  9.2%) █████
+        50-  75ms:    158 ( 11.0%) ██████
+        75- 100ms:     31 (  2.2%) █
+       100- 200ms:     27 (  1.9%) █
+       200- 500ms:      4 (  0.3%) 
+       500+   ms:      2 (  0.1%)
+    Disabled:    40 loops, mean=1090.5ms, p95=1270.6ms, >20ms=40 (100.0%)
+
+    Battery: min=11.71V  mean=12.09V  max=12.26V
+    Odometry samples/cycle: mean=8.6  max=20  min=3
+
+    Overrun bursts (≥3 consecutive >20ms):
+      t=1.4s → 77.3s (75.9s, 866 cycles)
+      t=77.3s → 83.1s (5.8s, 192 cycles)
+      t=83.2s → 83.3s (0.1s, 5 cycles)
+      t=83.4s → 84.0s (0.7s, 24 cycles)
+      t=84.1s → 84.5s (0.5s, 17 cycles)
+      t=84.5s → 85.0s (0.4s, 14 cycles)
+      t=85.0s → 88.6s (3.6s, 134 cycles)
+      t=88.7s → 88.9s (0.2s, 9 cycles)
+      t=88.9s → 89.0s (0.1s, 3 cycles)
+      t=89.0s → 89.6s (0.6s, 19 cycles)
+      ... 20 total bursts
+
+    10 worst individual loops:
+      t=    1.37s  38343.85ms  [DIS]  batt=12.1V
+      t=   38.78s  1270.58ms  [DIS]  batt=12.1V
+      t=   92.14s   348.94ms  [DIS]  batt=12.1V
+      t=   40.33s   264.43ms  [DIS]
+      t=   92.50s   264.25ms  [DIS]  batt=12.1V
+      t=   40.06s   261.55ms  [DIS]  batt=12.1V
+      t=   40.61s   194.78ms  [DIS]  batt=12.1V
+      t=   44.18s   192.01ms  [DIS]  batt=12.1V
+      t=   43.99s   183.44ms  [DIS]  batt=12.1V
+      t=   43.81s   178.04ms  [DIS]
+
+  ──────────────────────────────────────────────────────────────────────
+  #5: akit_26-03-25_17-53-23.wpilog (PIT/TEST)
+  ──────────────────────────────────────────────────────────────────────
+    Loop cycles: 2,298
+    mean=49.89ms  median=27.60ms  σ=778.67ms
+    p95=61.25ms  p99=109.00ms  max=37328.02ms
+    >20ms: 2249 (97.9%)
+    >30ms: 879 (38.3%)
+    >50ms: 223 (9.7%)
+
+    Distribution:
+        15-  20ms:     49 (  2.1%) █
+        20-  25ms:    633 ( 27.5%) ████████████████
+        25-  30ms:    737 ( 32.1%) ███████████████████
+        30-  40ms:    467 ( 20.3%) ████████████
+        40-  50ms:    189 (  8.2%) ████
+        50-  75ms:    170 (  7.4%) ████
+        75- 100ms:     26 (  1.1%) 
+       100- 200ms:     23 (  1.0%) 
+       200- 500ms:      2 (  0.1%) 
+       500+   ms:      2 (  0.1%)
+    Disabled:    441 loops, mean=132.6ms, p95=84.3ms, >20ms=441 (100.0%)
+
+    Battery: min=11.41V  mean=12.12V  max=12.25V
+    Odometry samples/cycle: mean=7.9  max=20  min=2
+
+    Overrun bursts (≥3 consecutive >20ms):
+      t=1.5s → 70.3s (68.8s, 723 cycles)
+      t=70.3s → 77.9s (7.6s, 234 cycles)
+      t=77.9s → 85.2s (7.3s, 224 cycles)
+      t=85.2s → 91.4s (6.2s, 206 cycles)
+      t=91.5s → 91.6s (0.1s, 3 cycles)
+      t=91.6s → 94.3s (2.7s, 85 cycles)
+      t=94.3s → 95.3s (1.0s, 35 cycles)
+      t=95.3s → 95.5s (0.2s, 7 cycles)
+      t=95.5s → 96.0s (0.5s, 15 cycles)
+      t=96.0s → 96.2s (0.2s, 7 cycles)
+      ... 37 total bursts
+
+    10 worst individual loops:
+      t=    1.46s  37328.02ms  [DIS]  batt=12.2V
+      t=   37.73s  1346.56ms  [DIS]  batt=12.2V
+      t=   39.08s   346.44ms  [DIS]  batt=12.2V
+      t=   42.70s   219.76ms  [DIS]  batt=12.1V
+      t=  116.00s   193.74ms  [DIS]  batt=12.2V
+      t=  116.39s   189.62ms  [DIS]  batt=12.1V
+      t=   39.43s   187.78ms  [DIS]
+      t=   40.08s   181.70ms  [DIS]  batt=12.2V
+      t=  116.20s   180.94ms  [DIS]  batt=12.1V
+      t=   39.76s   153.35ms  [DIS]  batt=12.1V
+
+================================================================================
+  PATTERN ANALYSIS
+================================================================================
+
+  PIT/TEST logs (59):
+    Mean loop time: 15.4 – 112.7ms (avg 35.6ms)
+    p95 loop time:  19.0 – 121.5ms (avg 44.0ms)
+    Overrun rate:   3.9% – 100.0% (avg 66.6%)
+
+  MATCH logs (1):
+    Mean loop time: 17.5 – 17.5ms (avg 17.5ms)
+    p95 loop time:  24.4 – 24.4ms (avg 24.4ms)
+    Overrun rate:   13.1% – 13.1% (avg 13.1%)
+
+  ΔMatch vs Pit: -18.0ms mean loop time
+    → Match and pit loops are similar — overrun cause is intrinsic to code
+
+================================================================================
+  AVAILABLE TIMING KEYS
+================================================================================
+  (Keys containing 'MS', 'Time', 'Cycle', 'Period' found across all logs)
+    [boolean] /DriverStation/FMSAttached
+    [boolean] /RealOutputs/CommandsAll/IntakePivotSubsystem SetDutyCycle
+    [boolean] /RealOutputs/CommandsUnique/IntakePivotSubsystem SetDutyCycle_bb2297
+    [boolean] /SystemStats/SystemTimeValid
+    [double[]] /Drive/Gyro/OdometryYawTimestamps
+    [double[]] /Drive/Module0/OdometryDrivePositionsRad
+    [double[]] /Drive/Module0/OdometryTimestamps
+    [double[]] /Drive/Module1/OdometryDrivePositionsRad
+    [double[]] /Drive/Module1/OdometryTimestamps
+    [double[]] /Drive/Module2/OdometryDrivePositionsRad
+    [double[]] /Drive/Module2/OdometryTimestamps
+    [double[]] /Drive/Module3/OdometryDrivePositionsRad
+    [double[]] /Drive/Module3/OdometryTimestamps
+    [double] /DriverStation/MatchTime
+    [double] /RealOutputs/HubShift/ElapsedTime
+    [double] /RealOutputs/HubShift/RemainingTime
+    [double] /RealOutputs/HubShift/ShiftedRemainingTime
+    [double] /RealOutputs/LoggedRobot/FullCycleMS
+    [double] /RealOutputs/LoggedRobot/GCTimeMS
+    [double] /RealOutputs/LoggedRobot/LogPeriodicMS
+    [double] /RealOutputs/LoggedRobot/UserCodeMS
+    [double] /RealOutputs/Logger/AlertLogMS
+    [double] /RealOutputs/Logger/AutoLogMS
+    [double] /RealOutputs/Logger/ConduitCaptureMS
+    [double] /RealOutputs/Logger/ConduitSaveMS
+    [double] /RealOutputs/Logger/ConsoleMS
+    [double] /RealOutputs/Logger/DashboardInputsMS
+    [double] /RealOutputs/Logger/DriverStationMS
+    [double] /RealOutputs/Logger/EntryUpdateMS
+    [double] /RealOutputs/Logger/RadioLogMS
+    [double] /RealOutputs/MatchTime
+    [int64] /RealOutputs/Logger/QueuedCycles
+    [int64] /SystemStats/EpochTimeMicros
+    [int64] /Timestamp
+    [struct:Pose2d] /RealOutputs/Odometry/Robot
+    [struct:Rotation2d[]] /Drive/Gyro/OdometryYawPositions
+    [struct:Rotation2d[]] /Drive/Module0/OdometryTurnPositions
+    [struct:Rotation2d[]] /Drive/Module1/OdometryTurnPositions
+    [struct:Rotation2d[]] /Drive/Module2/OdometryTurnPositions
+    [struct:Rotation2d[]] /Drive/Module3/OdometryTurnPositions
+
+  Output written to: C:\Users\danla\Documents\GitHub\MRT3216-2026-Rebuilt\scripts\loop_overrun_analysis.txt

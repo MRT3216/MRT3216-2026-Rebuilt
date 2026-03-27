@@ -1,0 +1,238 @@
+MRT3216 — REV Hardware Client Log Analysis (v2)
+Log file: REV_20241218_140212.revlog
+File size: 10,633,216 bytes (10.14 MB)
+Total records (assuming 16-byte fixed): 664,575
+File date (from filename): 2024-12-18 14:02:12
+
+========================================================================
+  PARSING
+========================================================================
+  REV motor frames: 48,745
+  Non-REV frames: 615,830
+
+  Top 20 10s-buckets by frame count:
+    t=           0s (0.0h): 9270 frames
+    t=   1,157,620s (321.6h): 8743 frames
+    t=     838,920s (233.0h): 4324 frames
+    t=         520s (0.1h): 578 frames
+    t=         560s (0.2h): 573 frames
+    t=         420s (0.1h): 559 frames
+    t=         320s (0.1h): 546 frames
+    t=         230s (0.1h): 544 frames
+    t=         360s (0.1h): 532 frames
+    t=         280s (0.1h): 522 frames
+    t=          70s (0.0h): 521 frames
+    t=          50s (0.0h): 518 frames
+    t=         210s (0.1h): 508 frames
+    t=         540s (0.1h): 507 frames
+    t=         100s (0.0h): 501 frames
+    t=         350s (0.1h): 500 frames
+    t=         580s (0.2h): 499 frames
+    t=         300s (0.1h): 496 frames
+    t=         190s (0.1h): 484 frames
+    t=         140s (0.0h): 481 frames
+
+========================================================================
+  SESSION DETECTION
+========================================================================
+
+  Device 0 (Unknown #0): 12 frames, 6 session(s)
+    Session 1:      1 frames, t=[     132,536 →      132,536] ms, dur=    0.0s (0.0min), rate=1000.0 Hz
+    Session 2:      2 frames, t=[1,612,447,750 → 1,612,447,750] ms, dur=    0.0s (0.0min), rate=2000.0 Hz
+    Session 3:      3 frames, t=[1,612,578,822 → 1,612,578,822] ms, dur=    0.0s (0.0min), rate=3000.0 Hz
+    Session 4:      3 frames, t=[1,947,992,070 → 1,947,992,070] ms, dur=    0.0s (0.0min), rate=3000.0 Hz
+    Session 5:      1 frames, t=[2,685,927,430 → 2,685,927,430] ms, dur=    0.0s (0.0min), rate=1000.0 Hz
+    Session 6:      2 frames, t=[2,954,362,886 → 2,954,362,886] ms, dur=    0.0s (0.0min), rate=2000.0 Hz
+
+  Device 1 (Unknown #1): 1 frames (too few)
+
+  Device 2 (Unknown #2): 1 frames (too few)
+
+  Device 5 (Unknown #5): 1 frames (too few)
+
+  Device 7 (Unknown #7): 1 frames (too few)
+
+  Device 9 (Unknown #9): 1 frames (too few)
+
+  Device 48 (Unknown #48): 2 frames (too few)
+
+  Device 52 (Flywheel Right (Kraken)): 1 frames (too few)
+
+  Device 54 (Turret (SparkMax NEO)): 10055 frames, 1 session(s)
+    Session 1: 10,055 frames, t=[       1,024 →      600,796] ms, dur=  599.8s (10.0min), rate=16.8 Hz
+
+  Device 55 (Spindexer (SparkMax)): 8288 frames, 2 session(s)
+    Session 1:  3,920 frames, t=[       5,615 →      600,796] ms, dur=  595.2s (9.9min), rate=6.6 Hz
+    Session 2:  4,368 frames, t=[1,157,628,928 → 1,157,628,928] ms, dur=    0.0s (0.0min), rate=4368000.0 Hz
+
+  Device 56 (Kicker (SparkMax)): 10093 frames, 2 session(s)
+    Session 1:  5,769 frames, t=[       5,615 →      600,798] ms, dur=  595.2s (9.9min), rate=9.7 Hz
+    Session 2:  4,324 frames, t=[ 838,926,336 →  838,926,525] ms, dur=    0.2s (0.0min), rate=22878.3 Hz
+
+  Device 57 (Unknown #57): 3 frames (too few)
+
+  Device 61 (Intake Pivot Left (SparkFlex)): 11990 frames, 2 session(s)
+    Session 1:  7,615 frames, t=[       5,615 →      600,798] ms, dur=  595.2s (9.9min), rate=12.8 Hz
+    Session 2:  4,375 frames, t=[1,157,628,928 → 1,157,628,928] ms, dur=    0.0s (0.0min), rate=4375000.0 Hz
+
+  Device 62 (Intake Pivot Right (SparkFlex)): 8295 frames, 4 session(s)
+    Session 1:  8,290 frames, t=[       1,024 →      600,796] ms, dur=  599.8s (10.0min), rate=13.8 Hz
+    Session 2:      2 frames, t=[3,183,196,160 → 3,183,196,160] ms, dur=    0.0s (0.0min), rate=2000.0 Hz
+    Session 3:      1 frames, t=[3,185,899,067 → 3,185,899,067] ms, dur=    0.0s (0.0min), rate=1000.0 Hz
+    Session 4:      2 frames, t=[3,435,973,760 → 3,435,973,760] ms, dur=    0.0s (0.0min), rate=2000.0 Hz
+
+  Device 63 (Unknown #63): 1 frames (too few)
+
+========================================================================
+  PRIMARY SESSION ANALYSIS
+========================================================================
+
+  Device 54 (Turret (SparkMax NEO))
+    Frames in primary session: 10055
+    Duration: 599.8s (10.0 min)
+    API classes: {11: 5747, 2: 4308}
+    Inter-frame timing: min=1ms, median=139ms, mean=217.2ms, max=4591ms
+    Gaps >1s: 49 (max 4.6s)
+
+    API class 2 (4308 frames):
+      Constant payload: 1a0100040045
+      As u16s: [282, 1024, 17664]
+
+    API class 11 (5747 frames):
+      i16[0:2]: min= -32768  max=  32754  mean=   324.5  σ= 12043.3
+      i16[2:4]: min= -31695  max=  30388  mean=  1924.2  σ= 11185.5
+      i16[4:6]: min= -32717  max=  32602  mean=   472.3  σ= 11741.2
+
+  Device 55 (Spindexer (SparkMax))
+    Frames in primary session: 4368
+    Duration: 0.0s (0.0 min)
+    API classes: {2: 4368}
+
+    API class 2 (4368 frames):
+      Constant payload: 1a0100040045
+      As u16s: [282, 1024, 17664]
+
+  Device 56 (Kicker (SparkMax))
+    Frames in primary session: 5769
+    Duration: 595.2s (9.9 min)
+    API classes: {11: 5769}
+    Inter-frame timing: min=1ms, median=8ms, mean=105.9ms, max=2028ms
+    Gaps >1s: 45 (max 2.0s)
+
+    API class 11 (5769 frames):
+      i16[0:2]: min= -32768  max=  32684  mean=   869.0  σ=  6053.3
+      i16[2:4]: min= -31621  max=  30408  mean= -1031.7  σ=  9926.8
+      i16[4:6]: min= -32475  max=  32475  mean=  8010.9  σ=  8326.6
+
+  Device 61 (Intake Pivot Left (SparkFlex))
+    Frames in primary session: 7615
+    Duration: 595.2s (9.9 min)
+    API classes: {11: 7615}
+    Inter-frame timing: min=1ms, median=7ms, mean=85.6ms, max=2030ms
+    Gaps >1s: 45 (max 2.0s)
+
+    API class 11 (7615 frames):
+      i16[0:2]: min= -32767  max=  32767  mean=   237.8  σ= 10355.7
+      i16[2:4]: min= -31791  max=  30382  mean=  2398.1  σ= 10048.5
+      i16[4:6]: min= -32416  max=  32672  mean=  -620.1  σ= 14224.0
+
+  Device 62 (Intake Pivot Right (SparkFlex))
+    Frames in primary session: 8290
+    Duration: 599.8s (10.0 min)
+    API classes: {2: 4350, 11: 3940}
+    Inter-frame timing: min=1ms, median=11ms, mean=157.4ms, max=4592ms
+    Gaps >1s: 47 (max 4.6s)
+
+    API class 2 (4350 frames):
+      Constant payload: 1a0100040000
+      As u16s: [282, 1024, 0]
+
+    API class 11 (3940 frames):
+      i16[0:2]: min=  -9260  max=   2250  mean=  -214.4  σ=   840.8
+      i16[2:4]: min= -32050  max=  30407  mean=  1520.6  σ=  6311.4
+      i16[4:6]: min=   7424  max=  16896  mean=  8509.6  σ=  1691.1
+      byte[5] (possible temp): min=29 max=66 mean=33.2
+
+========================================================================
+  DEVICE SUMMARY
+========================================================================
+  REV Hardware Client logs only capture REV motor controllers (SparkMax/SparkFlex).
+  CTRE/Phoenix motors (TalonFX/Kraken) are NOT captured — use .wpilog for those.
+
+  CAN  Subsystem                             Bus  Status                  Frames
+  ---  ---                                   ---  ---                        ---
+    0  Unknown #0                            REV  ~ Sparse                    12
+    1  Unknown #1                            REV  ~ Sparse                     1
+    2  Unknown #2                            REV  ~ Sparse                     1
+    5  Unknown #5                            REV  ~ Sparse                     1
+    7  Unknown #7                            REV  ~ Sparse                     1
+    9  Unknown #9                            REV  ~ Sparse                     1
+   48  Unknown #48                           REV  ~ Sparse                     2
+   51  Flywheel Left (Kraken)               CTRE  — N/A (CTRE)                 0
+   52  Flywheel Right (Kraken)              CTRE  ~ Sparse                     1
+   53  Hood (Kraken)                        CTRE  — N/A (CTRE)                 0
+   54  Turret (SparkMax NEO)                 REV  ✓ Logged                10,055
+   55  Spindexer (SparkMax)                  REV  ✓ Logged                 4,368
+   56  Kicker (SparkMax)                     REV  ✓ Logged                 5,769
+   57  Unknown #57                           REV  ~ Sparse                     3
+   60  Intake Rollers (Kraken)              CTRE  — N/A (CTRE)                 0
+   61  Intake Pivot Left (SparkFlex)         REV  ✓ Logged                 7,615
+   62  Intake Pivot Right (SparkFlex)        REV  ✓ Logged                 8,290
+   63  Unknown #63                           REV  ~ Sparse                     1
+
+  Unknown devices with >2 frames: [0, 57]
+    #0: 12 frames — possibly from bench test or different robot config
+    #57: 3 frames — possibly from bench test or different robot config
+
+========================================================================
+  NON-REV FRAME SAMPLING
+========================================================================
+  Sampling first 20 non-REV frames to understand other record types:
+
+  rec    493: 600000010a382605021a010004000000 | ts= 940,179,712 CAN=1a020526 devType=26 mfg=2 dev=38 api=0.20
+  rec    494: 010a382605021a010004000000010a38 | ts=  33,891,896 CAN=0400011a devType=4 mfg=0 dev=26 api=0.4
+  rec    495: 2605021a01000400000002e0e41a0000 | ts=      72,194 CAN=00000004 devType=0 mfg=0 dev=4 api=0.0
+  rec    496: 36b805020000f5060018a000e51a0000 | ts=         517 CAN=180006f5 devType=24 mfg=0 dev=53 api=0.27
+  rec    497: 37b805020000f4060018b000e71a0000 | ts=         517 CAN=180006f4 devType=24 mfg=0 dev=52 api=0.27
+  rec    498: 3db805020000d906001c7400e71a0000 | ts=         517 CAN=1c0006d9 devType=28 mfg=0 dev=25 api=0.27
+  rec    499: 3eb805020000e106001e6000f01a0000 | ts=         517 CAN=1e0006e1 devType=30 mfg=0 dev=33 api=0.27
+  rec    500: 3db805020000da06001c7400f11a0000 | ts=         517 CAN=1c0006da devType=28 mfg=0 dev=26 api=0.27
+  rec    501: 3eb805020000e006001e6000f81a0000 | ts=         517 CAN=1e0006e0 devType=30 mfg=0 dev=32 api=0.27
+  rec    502: 36b805020000f4060018a000f81a0000 | ts=         517 CAN=180006f4 devType=24 mfg=0 dev=52 api=0.27
+  rec    503: 37b805020000f3060018b000f91a0000 | ts=         517 CAN=180006f3 devType=24 mfg=0 dev=51 api=0.27
+  rec    504: 38b805020000dc06001c6000f91a0000 | ts=         517 CAN=1c0006dc devType=28 mfg=0 dev=28 api=0.27
+  rec    505: 78b805020000000000400000f91a0000 | ts=         517 CAN=40000000 devType=0 mfg=0 dev=0 api=0.0
+  rec    506: b8b8050200000000254912b9fb1a0000 | ts=         517 CAN=49250000 devType=9 mfg=37 dev=0 api=0.0
+  rec    507: 3db805020000da06001c7400fc1a0000 | ts=         517 CAN=1c0006da devType=28 mfg=0 dev=26 api=0.27
+  rec    508: 3eb805020000e006001e6000011b0000 | ts=         517 CAN=1e0006e0 devType=30 mfg=0 dev=32 api=0.27
+  rec    509: 38b805020000dc06001c600000010a38 | ts=         517 CAN=1c0006dc devType=28 mfg=0 dev=28 api=0.27
+  rec    510: 2605021a010004000000010a38260502 | ts=      72,194 CAN=00000004 devType=0 mfg=0 dev=4 api=0.0
+  rec    511: 1a0100040000000114382605021a0100 | ts=       1,024 CAN=38140100 devType=24 mfg=20 dev=0 api=0.4
+  rec    512: 040000362605021a01000400450002c0 | ts=  86,390,272 CAN=00011a02 devType=0 mfg=1 dev=2 api=1.40
+
+========================================================================
+  CONCLUSIONS
+========================================================================
+  1. This is a REV Hardware Client log from 2024-12-18 (pre-season / bench test).
+
+  2. 5 robot REV motor controllers were actively communicating:
+     • CAN 54: Turret (SparkMax NEO) — 10055 frames over 600s
+     • CAN 55: Spindexer (SparkMax) — 4368 frames over 0s
+     • CAN 56: Kicker (SparkMax) — 5769 frames over 595s
+     • CAN 61: Intake Pivot Left (SparkFlex) — 7615 frames over 595s
+     • CAN 62: Intake Pivot Right (SparkFlex) — 8290 frames over 600s
+
+
+  4. ~92% of the raw 16-byte records did NOT match the REV CAN frame pattern,
+     suggesting the .revlog format contains multiple record types (heartbeats,
+     device config, firmware data, etc.) intermixed with CAN traffic data.
+     Without the official REV format spec, these remain opaque.
+
+  5. The sessions appear short (~10 minutes each), consistent with bench testing
+     or REV Hardware Client connection for firmware updates/configuration.
+
+  6. API class 2 payloads are constant per device — likely device identity or
+     firmware version frames. API class 11 (0xB) contains variable data —
+     likely periodic status telemetry (velocity, temperature, voltage, current).
+
+  Output written to: C:\Users\danla\Documents\GitHub\MRT3216-2026-Rebuilt\scripts\revlog_analysis_v2.txt

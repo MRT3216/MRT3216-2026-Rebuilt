@@ -1,0 +1,326 @@
+================================================================================
+  TIMING BREAKDOWN ANALYSIS -- Where is the loop time going?
+  Generated: 2026-03-27 00:19:59
+================================================================================
+
+  --------------------------------------------------------------------------
+  akit_26-03-25_00-53-10.wpilog -- Early-3/25 (BAD, 75% overrun)
+  --------------------------------------------------------------------------
+    --- Main Timing (ms) ---
+    FullCycleMS                     mean=  23.48  median= 21.96  p95=  33.93  p99=  49.12  max=    538.9  (n=23679)
+    UserCodeMS                      mean=  20.75  median= 19.29  p95=  30.77  p99=  44.46  max=    519.3  (n=23664)
+    GCTimeMS                        mean=   4.36  median=  0.00  p95=  12.00  p99=  17.00  max=     19.0  (n=499)
+    LogPeriodicMS                   mean=   2.72  median=  2.36  p95=   5.03  p99=   7.64  max=     23.1  (n=23591)
+    GCCounts                        mean=   0.50  max=      1.0
+
+    --- Logger Sub-Components (ms) ---
+    AutoLogMS                       mean=   0.24  median=  0.15  p95=   0.56  p99=   1.30  max=     14.5  (n=20691)
+    ConduitCaptureMS                mean=   0.25  median=  0.15  p95=   0.63  p99=   1.56  max=      6.0  (n=20465)
+    ConduitSaveMS                   mean=   0.83  median=  0.69  p95=   1.54  p99=   3.19  max=     18.6  (n=23153)
+    EntryUpdateMS                   mean=   0.02  median=  0.02  p95=   0.02  p99=   0.15  max=      2.6  (n=3553)
+    DashboardInputsMS               mean=   0.29  median=  0.11  p95=   1.08  p99=   3.34  max=     20.1  (n=19805)
+    DriverStationMS                 mean=   0.68  median=  0.56  p95=   1.28  p99=   2.80  max=     14.1  (n=22652)
+    ConsoleMS                       mean=   0.03  median=  0.02  p95=   0.11  p99=   0.32  max=      9.4  (n=16560)
+    AlertLogMS                      mean=   0.44  median=  0.26  p95=   1.22  p99=   3.02  max=     15.0  (n=22051)
+    RadioLogMS                      mean=   0.03  median=  0.02  p95=   0.11  p99=   0.30  max=      2.9  (n=14830)
+    QueuedCycles                    mean=    0.0  max=0
+
+    --- Time Budget (% of FullCycle, skipping first 5 cycles) ---
+      UserCode:     88.9%  (36.79 ms/cycle avg)
+      GC:           10.5%  (4.36 ms/cycle avg)
+      LogPeriodic:  11.0%  (4.57 ms/cycle avg)
+      Other/Sched: -10.5%  (-4.35 ms/cycle avg)
+      TOTAL:       100.0%  (41.37 ms/cycle avg)
+
+    --- LogPeriodic Sub-Budget (% of LogPeriodicMS) ---
+      AutoLogMS                    8.8%  (0.275 ms/cycle avg)
+      ConduitCaptureMS             8.0%  (0.249 ms/cycle avg)
+      ConduitSaveMS               30.9%  (0.962 ms/cycle avg)
+      EntryUpdateMS                0.6%  (0.017 ms/cycle avg)
+      DashboardInputsMS            9.7%  (0.300 ms/cycle avg)
+      DriverStationMS             24.9%  (0.775 ms/cycle avg)
+      ConsoleMS                    2.1%  (0.067 ms/cycle avg)
+      AlertLogMS                  15.4%  (0.478 ms/cycle avg)
+      RadioLogMS                   1.2%  (0.039 ms/cycle avg)
+
+    --- Overrun Breakdown (FullCycle>25ms, n=433/499) ---
+      FullCycleMS:   mean=44.0  p95=74.0
+      UserCodeMS:    mean=39.1  p95=67.9
+      GCTimeMS:      mean=4.4  p95=13.0
+      LogPeriodicMS: mean=4.7  p95=8.9
+      Unaccounted:   mean=-4.2  p95=2.4
+
+    --- GC Spikes (>2ms): 249 occurrences ---
+      mean=8.7ms  max=19.0ms
+      FullCycle during GC spikes: mean=41.3ms  max=207.4ms
+
+  --------------------------------------------------------------------------
+  akit_26-03-25_17-43-32.wpilog -- Late-3/25 (BAD, 83% overrun)
+  --------------------------------------------------------------------------
+    --- Main Timing (ms) ---
+    FullCycleMS                     mean=  24.77  median= 22.95  p95=  37.27  p99=  55.47  max=    193.5  (n=20740)
+    UserCodeMS                      mean=  22.03  median= 20.31  p95=  33.82  p99=  50.77  max=    181.7  (n=20730)
+    GCTimeMS                        mean=   4.79  median=  0.00  p95=  13.00  p99=  25.00  max=     29.0  (n=449)
+    LogPeriodicMS                   mean=   2.74  median=  2.32  p95=   5.32  p99=   8.14  max=     53.7  (n=20665)
+    GCCounts                        mean=   0.50  max=      1.0
+
+    --- Logger Sub-Components (ms) ---
+    AutoLogMS                       mean=   0.24  median=  0.15  p95=   0.58  p99=   1.35  max=      9.7  (n=18247)
+    ConduitCaptureMS                mean=   0.26  median=  0.15  p95=   0.65  p99=   1.61  max=      9.0  (n=18086)
+    ConduitSaveMS                   mean=   0.85  median=  0.69  p95=   1.65  p99=   3.32  max=     32.2  (n=20297)
+    EntryUpdateMS                   mean=   0.02  median=  0.02  p95=   0.02  p99=   0.20  max=      4.5  (n=3196)
+    DashboardInputsMS               mean=   0.34  median=  0.11  p95=   1.67  p99=   4.01  max=     14.4  (n=17396)
+    DriverStationMS                 mean=   0.69  median=  0.56  p95=   1.43  p99=   2.89  max=     32.9  (n=19890)
+    ConsoleMS                       mean=   0.03  median=  0.02  p95=   0.11  p99=   0.37  max=      3.4  (n=14376)
+    AlertLogMS                      mean=   0.37  median=  0.18  p95=   1.09  p99=   3.06  max=     26.8  (n=18945)
+    RadioLogMS                      mean=   0.04  median=  0.02  p95=   0.11  p99=   0.33  max=     24.2  (n=13025)
+    QueuedCycles                    mean=    0.0  max=0
+
+    --- Time Budget (% of FullCycle, skipping first 5 cycles) ---
+      UserCode:     89.6%  (40.46 ms/cycle avg)
+      GC:           10.6%  (4.79 ms/cycle avg)
+      LogPeriodic:  10.4%  (4.69 ms/cycle avg)
+      Other/Sched: -10.6%  (-4.79 ms/cycle avg)
+      TOTAL:       100.0%  (45.15 ms/cycle avg)
+
+    --- LogPeriodic Sub-Budget (% of LogPeriodicMS) ---
+      AutoLogMS                    8.5%  (0.280 ms/cycle avg)
+      ConduitCaptureMS             8.3%  (0.272 ms/cycle avg)
+      ConduitSaveMS               31.5%  (1.034 ms/cycle avg)
+      EntryUpdateMS                0.6%  (0.020 ms/cycle avg)
+      DashboardInputsMS           11.1%  (0.363 ms/cycle avg)
+      DriverStationMS             25.3%  (0.830 ms/cycle avg)
+      ConsoleMS                    2.2%  (0.071 ms/cycle avg)
+      AlertLogMS                  12.6%  (0.413 ms/cycle avg)
+      RadioLogMS                   1.5%  (0.048 ms/cycle avg)
+
+    --- Overrun Breakdown (FullCycle>25ms, n=434/449) ---
+      FullCycleMS:   mean=45.9  p95=81.9
+      UserCodeMS:    mean=41.1  p95=75.7
+      GCTimeMS:      mean=4.9  p95=14.0
+      LogPeriodicMS: mean=4.7  p95=9.1
+      Unaccounted:   mean=-4.8  p95=0.2
+
+    --- GC Spikes (>2ms): 224 occurrences ---
+      mean=9.6ms  max=29.0ms
+      FullCycle during GC spikes: mean=45.6ms  max=193.5ms
+
+  --------------------------------------------------------------------------
+  akit_26-03-26_02-51-20.wpilog -- 3/26-morning (GOOD, 9% overrun)
+  --------------------------------------------------------------------------
+    --- Main Timing (ms) ---
+    FullCycleMS                     mean=  18.01  median= 17.53  p95=  21.22  p99=  29.79  max=    123.6  (n=89226)
+    UserCodeMS                      mean=  16.20  median= 15.77  p95=  19.16  p99=  27.03  max=    117.2  (n=89149)
+    GCTimeMS                        mean=   5.14  median=  0.00  p95=  12.00  p99=  14.00  max=     24.0  (n=1849)
+    LogPeriodicMS                   mean=   1.81  median=  1.67  p95=   2.54  p99=   3.56  max=     22.7  (n=88443)
+    GCCounts                        mean=   0.50  max=      1.0
+
+    --- Logger Sub-Components (ms) ---
+    AutoLogMS                       mean=   0.16  median=  0.13  p95=   0.28  p99=   0.48  max=     13.9  (n=72835)
+    ConduitCaptureMS                mean=   0.19  median=  0.15  p95=   0.35  p99=   0.76  max=     11.0  (n=71330)
+    ConduitSaveMS                   mean=   0.51  median=  0.46  p95=   0.78  p99=   1.13  max=     21.4  (n=83917)
+    EntryUpdateMS                   mean=   0.01  median=  0.02  p95=   0.02  p99=   0.09  max=     10.2  (n=15167)
+    DashboardInputsMS               mean=   0.17  median=  0.11  p95=   0.43  p99=   1.04  max=     14.5  (n=73412)
+    DriverStationMS                 mean=   0.48  median=  0.45  p95=   0.70  p99=   1.08  max=     16.6  (n=81175)
+    ConsoleMS                       mean=   0.02  median=  0.02  p95=   0.02  p99=   0.11  max=      2.3  (n=56408)
+    AlertLogMS                      mean=   0.30  median=  0.22  p95=   0.59  p99=   1.13  max=     15.3  (n=75828)
+    RadioLogMS                      mean=   0.02  median=  0.02  p95=   0.04  p99=   0.11  max=      2.7  (n=58185)
+    QueuedCycles                    mean=    0.0  max=0
+
+    --- Time Budget (% of FullCycle, skipping first 5 cycles) ---
+      UserCode:     89.2%  (20.79 ms/cycle avg)
+      GC:           22.1%  (5.14 ms/cycle avg)
+      LogPeriodic:  10.8%  (2.51 ms/cycle avg)
+      Other/Sched: -22.1%  (-5.14 ms/cycle avg)
+      TOTAL:       100.0%  (23.29 ms/cycle avg)
+
+    --- LogPeriodic Sub-Budget (% of LogPeriodicMS) ---
+      AutoLogMS                    8.9%  (0.171 ms/cycle avg)
+      ConduitCaptureMS             9.7%  (0.187 ms/cycle avg)
+      ConduitSaveMS               29.1%  (0.560 ms/cycle avg)
+      EntryUpdateMS                0.7%  (0.013 ms/cycle avg)
+      DashboardInputsMS            8.7%  (0.166 ms/cycle avg)
+      DriverStationMS             26.5%  (0.509 ms/cycle avg)
+      ConsoleMS                    1.0%  (0.020 ms/cycle avg)
+      AlertLogMS                  16.0%  (0.308 ms/cycle avg)
+      RadioLogMS                   1.0%  (0.020 ms/cycle avg)
+
+    --- Overrun Breakdown (FullCycle>25ms, n=381/1849) ---
+      FullCycleMS:   mean=36.5  p95=60.5
+      UserCodeMS:    mean=31.5  p95=54.2
+      GCTimeMS:      mean=5.4  p95=12.0
+      LogPeriodicMS: mean=3.3  p95=5.5
+      Unaccounted:   mean=-3.8  p95=8.8
+
+    --- GC Spikes (>2ms): 924 occurrences ---
+      mean=10.3ms  max=24.0ms
+      FullCycle during GC spikes: mean=23.3ms  max=123.6ms
+
+  --------------------------------------------------------------------------
+  akit_26-03-27_00-53-36.wpilog -- 3/27-early (BEST, 4% overrun)
+  --------------------------------------------------------------------------
+    --- Main Timing (ms) ---
+    FullCycleMS                     mean=  14.38  median= 13.36  p95=  19.01  p99=  37.10  max=    373.9  (n=19509)
+    UserCodeMS                      mean=  12.23  median= 11.35  p95=  16.25  p99=  32.50  max=    362.1  (n=19493)
+    GCTimeMS                        mean=   3.91  median=  0.00  p95=  11.00  p99=  17.00  max=     21.0  (n=349)
+    LogPeriodicMS                   mean=   2.15  median=  1.93  p95=   3.56  p99=   5.71  max=     32.1  (n=19413)
+    GCCounts                        mean=   0.50  max=      1.0
+
+    --- Logger Sub-Components (ms) ---
+    AutoLogMS                       mean=   0.21  median=  0.15  p95=   0.48  p99=   0.96  max=      9.9  (n=16693)
+    ConduitCaptureMS                mean=   0.31  median=  0.18  p95=   0.78  p99=   1.71  max=     15.1  (n=15624)
+    ConduitSaveMS                   mean=   0.61  median=  0.52  p95=   1.13  p99=   1.99  max=     11.7  (n=18831)
+    EntryUpdateMS                   mean=   0.02  median=  0.02  p95=   0.02  p99=   0.18  max=      1.7  (n=4139)
+    DashboardInputsMS               mean=   0.15  median=  0.07  p95=   0.45  p99=   1.39  max=      7.2  (n=15619)
+    DriverStationMS                 mean=   0.62  median=  0.52  p95=   1.13  p99=   2.04  max=     26.2  (n=18600)
+    ConsoleMS                       mean=   0.03  median=  0.02  p95=   0.09  p99=   0.28  max=      5.7  (n=12990)
+    AlertLogMS                      mean=   0.24  median=  0.15  p95=   0.54  p99=   1.06  max=      7.1  (n=17021)
+    RadioLogMS                      mean=   0.03  median=  0.02  p95=   0.07  p99=   0.24  max=      3.2  (n=12823)
+    QueuedCycles                    mean=    0.0  max=0
+
+    --- Time Budget (% of FullCycle, skipping first 5 cycles) ---
+      UserCode:     86.8%  (30.73 ms/cycle avg)
+      GC:           11.1%  (3.91 ms/cycle avg)
+      LogPeriodic:  13.1%  (4.64 ms/cycle avg)
+      Other/Sched: -11.0%  (-3.90 ms/cycle avg)
+      TOTAL:       100.0%  (35.39 ms/cycle avg)
+
+    --- LogPeriodic Sub-Budget (% of LogPeriodicMS) ---
+      AutoLogMS                   10.1%  (0.255 ms/cycle avg)
+      ConduitCaptureMS            12.5%  (0.316 ms/cycle avg)
+      ConduitSaveMS               28.9%  (0.733 ms/cycle avg)
+      EntryUpdateMS                0.6%  (0.016 ms/cycle avg)
+      DashboardInputsMS            6.9%  (0.176 ms/cycle avg)
+      DriverStationMS             28.4%  (0.719 ms/cycle avg)
+      ConsoleMS                    2.1%  (0.052 ms/cycle avg)
+      AlertLogMS                  10.6%  (0.269 ms/cycle avg)
+      RadioLogMS                   1.2%  (0.030 ms/cycle avg)
+
+    --- Overrun Breakdown (FullCycle>25ms, n=203/349) ---
+      FullCycleMS:   mean=46.0  p95=75.4
+      UserCodeMS:    mean=40.4  p95=67.9
+      GCTimeMS:      mean=4.3  p95=14.0
+      LogPeriodicMS: mean=5.6  p95=9.5
+      Unaccounted:   mean=-4.3  p95=0.0
+
+    --- GC Spikes (>2ms): 174 occurrences ---
+      mean=7.8ms  max=21.0ms
+      FullCycle during GC spikes: mean=35.8ms  max=373.9ms
+
+  --------------------------------------------------------------------------
+  akit_26-03-27_01-12-49.wpilog -- 3/27-pre-match (12% overrun)
+  --------------------------------------------------------------------------
+    --- Main Timing (ms) ---
+    FullCycleMS                     mean=  16.78  median= 15.49  p95=  23.73  p99=  44.04  max=    643.3  (n=16162)
+    UserCodeMS                      mean=  14.50  median= 13.28  p95=  20.91  p99=  39.47  max=    632.2  (n=16134)
+    GCTimeMS                        mean=   4.44  median=  0.00  p95=  13.00  p99=  16.00  max=     19.0  (n=307)
+    LogPeriodicMS                   mean=   2.28  median=  2.02  p95=   3.86  p99=   6.61  max=     28.7  (n=16079)
+    GCCounts                        mean=   0.50  max=      1.0
+
+    --- Logger Sub-Components (ms) ---
+    AutoLogMS                       mean=   0.22  median=  0.15  p95=   0.52  p99=   1.04  max=     16.8  (n=13840)
+    ConduitCaptureMS                mean=   0.32  median=  0.19  p95=   0.83  p99=   1.84  max=     18.0  (n=13126)
+    ConduitSaveMS                   mean=   0.65  median=  0.54  p95=   1.26  p99=   2.23  max=     15.3  (n=15599)
+    EntryUpdateMS                   mean=   0.02  median=  0.02  p95=   0.04  p99=   0.17  max=      3.1  (n=3127)
+    DashboardInputsMS               mean=   0.17  median=  0.07  p95=   0.50  p99=   1.43  max=     13.7  (n=13524)
+    DriverStationMS                 mean=   0.65  median=  0.54  p95=   1.24  p99=   2.32  max=     15.8  (n=15350)
+    ConsoleMS                       mean=   0.03  median=  0.02  p95=   0.09  p99=   0.30  max=     13.1  (n=10803)
+    AlertLogMS                      mean=   0.27  median=  0.17  p95=   0.65  p99=   1.45  max=     12.1  (n=14069)
+    RadioLogMS                      mean=   0.03  median=  0.02  p95=   0.07  p99=   0.28  max=      9.0  (n=10631)
+    QueuedCycles                    mean=    0.0  max=0
+
+    --- Time Budget (% of FullCycle, skipping first 5 cycles) ---
+      UserCode:     88.0%  (33.16 ms/cycle avg)
+      GC:           11.8%  (4.44 ms/cycle avg)
+      LogPeriodic:  11.9%  (4.50 ms/cycle avg)
+      Other/Sched: -11.8%  (-4.43 ms/cycle avg)
+      TOTAL:       100.0%  (37.67 ms/cycle avg)
+
+    --- LogPeriodic Sub-Budget (% of LogPeriodicMS) ---
+      AutoLogMS                   10.0%  (0.254 ms/cycle avg)
+      ConduitCaptureMS            12.0%  (0.305 ms/cycle avg)
+      ConduitSaveMS               28.9%  (0.732 ms/cycle avg)
+      EntryUpdateMS                0.7%  (0.018 ms/cycle avg)
+      DashboardInputsMS            6.1%  (0.154 ms/cycle avg)
+      DriverStationMS             28.6%  (0.725 ms/cycle avg)
+      ConsoleMS                    2.5%  (0.064 ms/cycle avg)
+      AlertLogMS                  10.5%  (0.266 ms/cycle avg)
+      RadioLogMS                   1.4%  (0.035 ms/cycle avg)
+
+    --- Overrun Breakdown (FullCycle>25ms, n=170/307) ---
+      FullCycleMS:   mean=51.7  p95=96.9
+      UserCodeMS:    mean=46.1  p95=86.9
+      GCTimeMS:      mean=4.8  p95=14.0
+      LogPeriodicMS: mean=5.4  p95=11.5
+      Unaccounted:   mean=-4.6  p95=2.1
+
+    --- GC Spikes (>2ms): 153 occurrences ---
+      mean=8.9ms  max=19.0ms
+      FullCycle during GC spikes: mean=39.4ms  max=643.3ms
+
+  --------------------------------------------------------------------------
+  akit_26-03-27_01-50-13_idbo.wpilog -- IDAHO MATCH (13% overrun)
+  --------------------------------------------------------------------------
+    --- Main Timing (ms) ---
+    FullCycleMS                     mean=  16.63  median= 15.30  p95=  24.36  p99=  40.10  max=    704.1  (n=27027)
+    UserCodeMS                      mean=  14.33  median= 13.10  p95=  21.41  p99=  35.88  max=    686.4  (n=26998)
+    GCTimeMS                        mean=   4.44  median=  0.00  p95=  12.00  p99=  14.00  max=     16.0  (n=523)
+    LogPeriodicMS                   mean=   2.29  median=  2.04  p95=   3.88  p99=   6.34  max=     30.8  (n=26900)
+    GCCounts                        mean=   0.50  max=      1.0
+
+    --- Logger Sub-Components (ms) ---
+    AutoLogMS                       mean=   0.21  median=  0.15  p95=   0.50  p99=   1.00  max=      6.7  (n=23284)
+    ConduitCaptureMS                mean=   0.31  median=  0.18  p95=   0.82  p99=   1.78  max=     11.4  (n=22558)
+    ConduitSaveMS                   mean=   0.67  median=  0.56  p95=   1.26  p99=   2.28  max=     17.3  (n=26118)
+    EntryUpdateMS                   mean=   0.02  median=  0.02  p95=   0.02  p99=   0.17  max=      2.9  (n=4831)
+    DashboardInputsMS               mean=   0.17  median=  0.07  p95=   0.52  p99=   1.67  max=     15.8  (n=22235)
+    DriverStationMS                 mean=   0.65  median=  0.54  p95=   1.22  p99=   2.36  max=     17.3  (n=25795)
+    ConsoleMS                       mean=   0.03  median=  0.02  p95=   0.09  p99=   0.26  max=     13.7  (n=18063)
+    AlertLogMS                      mean=   0.28  median=  0.18  p95=   0.67  p99=   1.35  max=     17.9  (n=23695)
+    RadioLogMS                      mean=   0.03  median=  0.02  p95=   0.07  p99=   0.26  max=      2.4  (n=17755)
+    QueuedCycles                    mean=    0.0  max=0
+
+    --- Time Budget (% of FullCycle, skipping first 5 cycles) ---
+      UserCode:     88.3%  (29.90 ms/cycle avg)
+      GC:           13.1%  (4.44 ms/cycle avg)
+      LogPeriodic:  11.6%  (3.92 ms/cycle avg)
+      Other/Sched: -13.0%  (-4.40 ms/cycle avg)
+      TOTAL:       100.0%  (33.87 ms/cycle avg)
+
+    --- LogPeriodic Sub-Budget (% of LogPeriodicMS) ---
+      AutoLogMS                    9.7%  (0.230 ms/cycle avg)
+      ConduitCaptureMS            12.6%  (0.298 ms/cycle avg)
+      ConduitSaveMS               29.1%  (0.687 ms/cycle avg)
+      EntryUpdateMS                0.7%  (0.015 ms/cycle avg)
+      DashboardInputsMS            6.8%  (0.160 ms/cycle avg)
+      DriverStationMS             28.2%  (0.666 ms/cycle avg)
+      ConsoleMS                    1.9%  (0.045 ms/cycle avg)
+      AlertLogMS                  10.8%  (0.256 ms/cycle avg)
+      RadioLogMS                   1.3%  (0.030 ms/cycle avg)
+
+    --- Overrun Breakdown (FullCycle>25ms, n=275/523) ---
+      FullCycleMS:   mean=45.6  p95=88.8
+      UserCodeMS:    mean=39.9  p95=75.7
+      GCTimeMS:      mean=4.8  p95=13.0
+      LogPeriodicMS: mean=4.6  p95=8.7
+      Unaccounted:   mean=-3.7  p95=6.3
+
+    --- GC Spikes (>2ms): 261 occurrences ---
+      mean=8.9ms  max=16.0ms
+      FullCycle during GC spikes: mean=35.2ms  max=704.1ms
+
+================================================================================
+  COMPARATIVE SUMMARY
+================================================================================
+  Label                                            Full    User      GC     Log   Other
+  --------------------------------------------- ------- ------- ------- ------- -------
+  Early-3/25 (BAD, 75% overrun)                   23.5     0.0     0.0     0.0    23.5
+  Late-3/25 (BAD, 83% overrun)                    24.8     0.0     0.0     0.0    24.8
+  3/26-morning (GOOD, 9% overrun)                 18.0     0.0     0.0     0.0    18.0
+  3/27-early (BEST, 4% overrun)                   14.4     0.0     0.0     0.0    14.4
+  3/27-pre-match (12% overrun)                    16.8     0.0     0.0     0.0    16.8
+  IDAHO MATCH (13% overrun)                       16.6     0.0     0.0     0.0    16.6
+
+================================================================================
+  ROOT CAUSE ANALYSIS
+================================================================================

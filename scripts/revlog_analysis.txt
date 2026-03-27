@@ -1,0 +1,351 @@
+MRT3216 — REV Hardware Client Log Analysis
+Log file: C:\Users\danla/Desktop/Logs2/$Idaho\REV_20241218_140212.revlog
+File size: 10,633,216 bytes
+Total records: 664,575
+
+========================================================================
+  HEADER
+========================================================================
+  Raw: 00 01 0a 38 26 05 02 1a 01 00 04 00 00 04 02
+  Version: 256
+  First timestamp: 33891896 ms (33891.9s)
+  File date (from name): 2024-12-18 14:02:12
+
+========================================================================
+  PARSING RECORDS
+========================================================================
+  REV motor controller frames: 48,745
+  Non-REV / unrecognized frames: 615,830
+  Unique devices: [0, 1, 2, 5, 7, 9, 48, 52, 54, 55, 56, 57, 61, 62, 63]
+
+========================================================================
+  DEVICE OVERVIEW
+========================================================================
+
+  Device 0: Unknown Device #0
+    Total frames: 12
+    Time span: 2954230.4s (49237.2min)
+    Avg frame rate: 0.0 frames/s
+    API classes: {13: 6, 14: 6}
+
+  Device 1: Unknown Device #1
+    Total frames: 1
+    Time span: 0.0s (0.0min)
+    Avg frame rate: 1000.0 frames/s
+    API classes: {13: 1}
+
+  Device 2: Unknown Device #2
+    Total frames: 1
+    Time span: 0.0s (0.0min)
+    Avg frame rate: 1000.0 frames/s
+    API classes: {0: 1}
+
+  Device 5: Unknown Device #5
+    Total frames: 1
+    Time span: 0.0s (0.0min)
+    Avg frame rate: 1000.0 frames/s
+    API classes: {0: 1}
+
+  Device 7: Unknown Device #7
+    Total frames: 1
+    Time span: 0.0s (0.0min)
+    Avg frame rate: 1000.0 frames/s
+    API classes: {1: 1}
+
+  Device 9: Unknown Device #9
+    Total frames: 1
+    Time span: 0.0s (0.0min)
+    Avg frame rate: 1000.0 frames/s
+    API classes: {10: 1}
+
+  Device 48: Unknown Device #48
+    Total frames: 2
+    Time span: 403261.0s (6721.0min)
+    Avg frame rate: 0.0 frames/s
+    API classes: {0: 2}
+
+  Device 52: Flywheel Right (Kraken)
+    Total frames: 1
+    Time span: 0.0s (0.0min)
+    Avg frame rate: 1000.0 frames/s
+    API classes: {0: 1}
+
+  Device 54: Turret (SparkMax NEO)
+    Total frames: 10,055
+    Time span: 599.8s (10.0min)
+    Avg frame rate: 16.8 frames/s
+    API classes: {11: 5747, 2: 4308}
+
+  Device 55: Spindexer
+    Total frames: 8,288
+    Time span: 1157623.3s (19293.7min)
+    Avg frame rate: 0.0 frames/s
+    API classes: {2: 4368, 11: 3920}
+
+  Device 56: Kicker
+    Total frames: 10,093
+    Time span: 838920.9s (13982.0min)
+    Avg frame rate: 0.0 frames/s
+    API classes: {11: 5769, 2: 4324}
+
+  Device 57: Unknown Device #57
+    Total frames: 3
+    Time span: 306783.0s (5113.0min)
+    Avg frame rate: 0.0 frames/s
+    API classes: {13: 2, 14: 1}
+
+  Device 61: Intake Pivot Left (SparkFlex)
+    Total frames: 11,990
+    Time span: 1157623.3s (19293.7min)
+    Avg frame rate: 0.0 frames/s
+    API classes: {11: 7615, 2: 4375}
+
+  Device 62: Intake Pivot Right (SparkFlex)
+    Total frames: 8,295
+    Time span: 3435972.7s (57266.2min)
+    Avg frame rate: 0.0 frames/s
+    API classes: {2: 4350, 11: 3940, 13: 3, 14: 2}
+
+  Device 63: Unknown Device #63
+    Total frames: 1
+    Time span: 0.0s (0.0min)
+    Avg frame rate: 1000.0 frames/s
+    API classes: {14: 1}
+
+========================================================================
+  TIMELINE
+========================================================================
+  First record: 517 ms
+  Last record:  4188668421 ms
+  Total span: 4188667.9s = 69811.1min
+
+========================================================================
+  PAYLOAD ANALYSIS (per device, per API class)
+========================================================================
+
+  Device 54 (Turret (SparkMax NEO)), API class 2: 4308 frames
+    bytes[0:2] as i16: min=   282  max=   282  mean=   282.0  stdev=0.0
+    bytes[2:4] as i16: min=  1024  max=  1024  mean=  1024.0  stdev=0.0
+    bytes[4:6] as i16: min= 17664  max= 17664  mean= 17664.0  stdev=0.0
+
+  Device 54 (Turret (SparkMax NEO)), API class 11: 5747 frames
+    bytes[0:2] as i16: min=-32768  max= 32754  mean=   324.5  stdev=12043.3
+    bytes[2:4] as i16: min=-31695  max= 30388  mean=  1924.2  stdev=11185.5
+    bytes[4:6] as i16: min=-32717  max= 32602  mean=   472.3  stdev=11741.2
+    byte[0] as u8:  min=  0  max=255  mean=  62.6  unique=255
+    byte[1] as u8:  min=  0  max=255  mean=  70.5  unique=249
+    byte[2] as u8:  min=  0  max=255  mean= 124.2  unique=255
+    byte[3] as u8:  min=  0  max=245  mean=  53.5  unique=76
+    byte[4] as u8:  min=  0  max=255  mean=  79.1  unique=218
+    byte[5] as u8:  min=  0  max=254  mean= 104.1  unique=214
+
+  Device 55 (Spindexer), API class 2: 4368 frames
+    bytes[0:2] as i16: min=   282  max=   282  mean=   282.0  stdev=0.0
+    bytes[2:4] as i16: min=  1024  max=  1024  mean=  1024.0  stdev=0.0
+    bytes[4:6] as i16: min= 17664  max= 17664  mean= 17664.0  stdev=0.0
+
+  Device 55 (Spindexer), API class 11: 3920 frames
+    bytes[0:2] as i16: min=-32463  max= 32485  mean= -1742.8  stdev=10562.4
+    bytes[2:4] as i16: min=-32768  max= 30246  mean= -5402.0  stdev=17395.7
+    bytes[4:6] as i16: min=-32734  max= 32669  mean= -2474.3  stdev=13761.6
+    byte[0] as u8:  min=  0  max=254  mean=  29.9  unique=195
+    byte[1] as u8:  min=  0  max=253  mean=  35.1  unique=137
+    byte[2] as u8:  min=  0  max=255  mean= 122.7  unique=237
+    byte[3] as u8:  min=  0  max=246  mean=  57.4  unique=58
+    byte[4] as u8:  min=  0  max=255  mean=  71.3  unique=179
+    byte[5] as u8:  min=  1  max=254  mean=  96.6  unique=169
+
+  Device 56 (Kicker), API class 2: 4324 frames
+    bytes[0:2] as i16: min=   282  max=   282  mean=   282.0  stdev=0.0
+    bytes[2:4] as i16: min=  1024  max=  1024  mean=  1024.0  stdev=0.0
+    bytes[4:6] as i16: min=     0  max=     0  mean=     0.0  stdev=0.0
+
+  Device 56 (Kicker), API class 11: 5769 frames
+    bytes[0:2] as i16: min=-32768  max= 32684  mean=   869.0  stdev=6053.3
+    bytes[2:4] as i16: min=-31621  max= 30408  mean= -1031.7  stdev=9926.8
+    bytes[4:6] as i16: min=-32475  max= 32475  mean=  8010.9  stdev=8326.6
+    byte[0] as u8:  min=  0  max=255  mean=  16.7  unique=219
+    byte[1] as u8:  min=  0  max=255  mean=  13.8  unique=175
+    byte[2] as u8:  min=  0  max=255  mean= 124.6  unique=255
+    byte[3] as u8:  min=  0  max=246  mean=  50.7  unique=80
+    byte[4] as u8:  min=  0  max=255  mean=  25.9  unique=188
+    byte[5] as u8:  min=  0  max=255  mean=  60.7  unique=159
+
+  Device 61 (Intake Pivot Left (SparkFlex)), API class 2: 4375 frames
+    bytes[0:2] as i16: min=   282  max=   282  mean=   282.0  stdev=0.0
+    bytes[2:4] as i16: min=  1024  max=  1024  mean=  1024.0  stdev=0.0
+    bytes[4:6] as i16: min=     0  max=     0  mean=     0.0  stdev=0.0
+
+  Device 61 (Intake Pivot Left (SparkFlex)), API class 11: 7615 frames
+    bytes[0:2] as i16: min=-32767  max= 32767  mean=   237.8  stdev=10355.7
+    bytes[2:4] as i16: min=-31791  max= 30382  mean=  2398.1  stdev=10048.5
+    bytes[4:6] as i16: min=-32416  max= 32672  mean=  -620.1  stdev=14224.0
+    byte[0] as u8:  min=  0  max=255  mean=  42.1  unique=255
+    byte[1] as u8:  min=  0  max=255  mean=  48.6  unique=256
+    byte[2] as u8:  min=  0  max=255  mean= 123.0  unique=255
+    byte[3] as u8:  min=  0  max=246  mean=  39.9  unique=87
+    byte[4] as u8:  min=  0  max=255  mean=  79.4  unique=197
+    byte[5] as u8:  min=  0  max=255  mean=  98.5  unique=197
+
+  Device 62 (Intake Pivot Right (SparkFlex)), API class 2: 4350 frames
+    bytes[0:2] as i16: min=   282  max=   282  mean=   282.0  stdev=0.0
+    bytes[2:4] as i16: min=  1024  max=  1024  mean=  1024.0  stdev=0.0
+    bytes[4:6] as i16: min=     0  max=     0  mean=     0.0  stdev=0.0
+
+  Device 62 (Intake Pivot Right (SparkFlex)), API class 11: 3940 frames
+    bytes[0:2] as i16: min= -9260  max=  2250  mean=  -214.4  stdev=840.8
+    bytes[2:4] as i16: min=-32050  max= 30407  mean=  1520.6  stdev=6311.4
+    bytes[4:6] as i16: min=  7424  max= 16896  mean=  8509.6  stdev=1691.1
+    byte[0] as u8:  min=  0  max=255  mean=   9.8  unique=172
+    byte[1] as u8:  min=  0  max=250  mean=  19.7  unique=27
+    byte[2] as u8:  min=  0  max=255  mean= 172.4  unique=249
+    byte[3] as u8:  min=  0  max=246  mean=  19.1  unique=68
+    byte[4] as u8:  min=  0  max=105  mean=   4.8  unique=97
+    byte[5] as u8:  min= 29  max= 66  mean=  33.2  unique=13
+
+========================================================================
+  ACTIVITY TIMELINE (10s buckets)
+========================================================================
+  (Using 60s buckets, 69812 total)
+                                Dev#0 (#0): active 6/69812 buckets (0%), peak=3 frames/bucket
+                                Dev#1 (#1): active 1/69812 buckets (0%), peak=1 frames/bucket
+                                Dev#2 (#2): active 1/69812 buckets (0%), peak=1 frames/bucket
+                                Dev#5 (#5): active 1/69812 buckets (0%), peak=1 frames/bucket
+                                Dev#7 (#7): active 1/69812 buckets (0%), peak=1 frames/bucket
+                                Dev#9 (#9): active 1/69812 buckets (0%), peak=1 frames/bucket
+                               Dev#48 (#48): active 2/69812 buckets (0%), peak=1 frames/bucket
+              Flywheel Right (Kraken) (#52): active 1/69812 buckets (0%), peak=1 frames/bucket
+                Turret (SparkMax NEO) (#54): active 11/69812 buckets (0%), peak=4858 frames/bucket
+                            Spindexer (#55): active 12/69812 buckets (0%), peak=4368 frames/bucket
+                               Kicker (#56): active 12/69812 buckets (0%), peak=4324 frames/bucket
+                               Dev#57 (#57): active 3/69812 buckets (0%), peak=1 frames/bucket
+        Intake Pivot Left (SparkFlex) (#61): active 12/69812 buckets (0%), peak=4375 frames/bucket
+       Intake Pivot Right (SparkFlex) (#62): active 14/69812 buckets (0%), peak=4800 frames/bucket
+                               Dev#63 (#63): active 1/69812 buckets (0%), peak=1 frames/bucket
+
+========================================================================
+  CROSS-REFERENCE WITH ROBOT CAN MAP
+========================================================================
+  CAN ID → Subsystem mapping from RobotMap.java:
+    CAN 51: Flywheel Left (Kraken)                   ✗ NOT IN LOG
+    CAN 52: Flywheel Right (Kraken)                  ✓ FOUND (1 frames)
+    CAN 53: Hood (Kraken)                            ✗ NOT IN LOG
+    CAN 54: Turret (SparkMax NEO)                    ✓ FOUND (10,055 frames)
+    CAN 55: Spindexer                                ✓ FOUND (8,288 frames)
+    CAN 56: Kicker                                   ✓ FOUND (10,093 frames)
+    CAN 60: Intake Rollers (Kraken)                  ✗ NOT IN LOG
+    CAN 61: Intake Pivot Left (SparkFlex)            ✓ FOUND (11,990 frames)
+    CAN 62: Intake Pivot Right (SparkFlex)           ✓ FOUND (8,295 frames)
+
+  Unknown devices in log (not in RobotMap):
+    CAN  0: 12 frames
+    CAN  1: 1 frames
+    CAN  2: 1 frames
+    CAN  5: 1 frames
+    CAN  7: 1 frames
+    CAN  9: 1 frames
+    CAN 48: 2 frames
+    CAN 57: 3 frames
+    CAN 63: 1 frames
+
+========================================================================
+  FRAME TIMING ANALYSIS
+========================================================================
+
+  Device 0 (Unknown #0): 5 intervals
+    Min delta:  131072 ms
+    Max delta:  1612315214 ms
+    Mean delta: 590846070.0 ms
+    Median:     335413248.0 ms
+    Gaps >1s:   5 (max gap: 1612315.2s)
+
+  Device 48 (Unknown #48): 1 intervals
+    Min delta:  403260969 ms
+    Max delta:  403260969 ms
+    Mean delta: 403260969.0 ms
+    Median:     403260969.0 ms
+    Gaps >1s:   1 (max gap: 403261.0s)
+
+  Device 54 (Turret (SparkMax NEO)): 2761 intervals
+    Min delta:       1 ms
+    Max delta:    4591 ms
+    Mean delta:    217.2 ms
+    Median:        139.0 ms
+    p95 delta:     720 ms
+    Gaps >1s:   49 (max gap: 4.6s)
+
+  Device 55 (Spindexer): 2838 intervals
+    Min delta:       1 ms
+    Max delta:  1157028132 ms
+    Mean delta: 407901.1 ms
+    Median:        139.0 ms
+    p95 delta:     719 ms
+    Gaps >1s:   47 (max gap: 1157028.1s)
+
+  Device 56 (Kicker): 5635 intervals
+    Min delta:       1 ms
+    Max delta:  838325538 ms
+    Mean delta: 148876.8 ms
+    Median:          8.0 ms
+    p95 delta:     563 ms
+    Gaps >1s:   46 (max gap: 838325.5s)
+
+  Device 57 (Unknown #57): 2 intervals
+    Min delta:  102737920 ms
+    Max delta:  204045051 ms
+    Mean delta: 153391485.5 ms
+    Median:     153391485.5 ms
+    Gaps >1s:   2 (max gap: 204045.1s)
+
+  Device 61 (Intake Pivot Left (SparkFlex)): 6951 intervals
+    Min delta:       1 ms
+    Max delta:  1157028130 ms
+    Mean delta: 166540.5 ms
+    Median:          7.0 ms
+    p95 delta:     422 ms
+    Gaps >1s:   46 (max gap: 1157028.1s)
+
+  Device 62 (Intake Pivot Right (SparkFlex)): 3814 intervals
+    Min delta:       1 ms
+    Max delta:  3182595364 ms
+    Mean delta: 900884.3 ms
+    Median:         11.0 ms
+    p95 delta:     699 ms
+    Gaps >1s:   50 (max gap: 3182595.4s)
+
+========================================================================
+  SUMMARY
+========================================================================
+  File: REV_20241218_140212.revlog
+  Date: 2024-12-18 (from filename)
+  Total frames: 664,575 (48,745 REV motor, 615,830 other)
+  Duration: 69811.1 minutes
+  Devices found: 15
+    #0: Unknown #0
+    #1: Unknown #1
+    #2: Unknown #2
+    #5: Unknown #5
+    #7: Unknown #7
+    #9: Unknown #9
+    #48: Unknown #48
+    #52: Flywheel Right (Kraken)
+    #54: Turret (SparkMax NEO)
+    #55: Spindexer
+    #56: Kicker
+    #57: Unknown #57
+    #61: Intake Pivot Left (SparkFlex)
+    #62: Intake Pivot Right (SparkFlex)
+    #63: Unknown #63
+
+  Known robot devices logged: 6/9
+  Missing from log: [51, 53, 60]
+    CAN 51: Flywheel Left (Kraken)
+    CAN 53: Hood (Kraken)
+    CAN 60: Intake Rollers (Kraken)
+
+  NOTE: This is a REV Hardware Client log. It only captures SparkMax/SparkFlex
+  devices. TalonFX/Kraken motors (Flywheel, Hood, Kicker, Intake Rollers) use
+  Phoenix 6 / CTRE and will NOT appear in REV logs. They appear in the .wpilog
+  via AdvantageKit.
+
+  Output written to: C:\Users\danla\Documents\GitHub\MRT3216-2026-Rebuilt\scripts\revlog_analysis.txt

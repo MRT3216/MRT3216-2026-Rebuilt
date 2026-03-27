@@ -160,8 +160,8 @@ public final class ShooterConstants {
 
         public static final Distance dMax = Inches.of(291.5);
 
-        public static final AngularVelocity kRpmAtMin = RPM.of(2500.0);
-        public static final AngularVelocity kRpmAtMax = RPM.of(4300.0);
+        public static final AngularVelocity kRpmAtMin = RPM.of(2550.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(4350.0);
     }
 
     /**
@@ -425,11 +425,11 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(135);
+        public static final Angle kHardLimitMax = Degrees.of(160);
         public static final Angle kHardLimitMin = Degrees.of(-95);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(130);
+        public static final Angle kSoftLimitMax = Degrees.of(155);
         public static final Angle kSoftLimitMin = Degrees.of(-90);
 
         // Presets / tunables
@@ -543,15 +543,15 @@ public final class ShooterConstants {
          * window the turret is allowed to sweep before the drivetrain heading controller takes over.
          *
          * <p>{@code kTurretMinDeg} is the most-negative (clockwise) limit and {@code kTurretMaxDeg} is
-         * the most-positive (counter-clockwise) limit. For example, {@code -90} / {@code +130} gives
-         * 90° of clockwise travel and 130° of counter-clockwise travel from the home angle.
+         * the most-positive (counter-clockwise) limit. For example, {@code -90} / {@code +155} gives
+         * 90° of clockwise travel and 155° of counter-clockwise travel from the home angle.
          *
          * <p>The drivetrain ramp zone (see {@link #kThresholdMarginDeg}) applies independently on each
          * side — the ramp starts at {@code limit ± margin} and reaches full correction at the limit.
          */
         public static final double kTurretMinDeg = -90.0;
 
-        public static final double kTurretMaxDeg = 130.0;
+        public static final double kTurretMaxDeg = 155.0;
 
         /**
          * Margin (in degrees) before the turret reaches each travel limit where the drivetrain begins
@@ -568,8 +568,8 @@ public final class ShooterConstants {
          *   <li><b>&gt; limit°:</b> Full correction — same as before.
          * </ul>
          *
-         * <p>With min=-90°, max=+130° and margin=15°: the drivetrain starts helping at -75° / +115° and
-         * reaches full strength at -90° / +130°. Inspired by 254/1323/4481's 2022 graduated
+         * <p>With min=-90°, max=+155° and margin=15°: the drivetrain starts helping at -75° / +140° and
+         * reaches full strength at -90° / +155°. Inspired by 254/1323/4481's 2022 graduated
          * turret-wrap-prevention systems.
          *
          * <p>Set to 0.0 to disable the ramp and revert to hard on/off behavior.

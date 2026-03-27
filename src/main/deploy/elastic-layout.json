@@ -134,10 +134,12 @@
             "y": 0.0,
             "width": 384.0,
             "height": 320.0,
-            "type": "Number Display",
+            "type": "Match Time",
             "properties": {
               "topic": "/AdvantageKit/RealOutputs/HubShift/ShiftedRemainingTime",
-              "period": 0.06
+              "period": 0.06,
+              "time_display_mode": "Seconds Only",
+              "red_start_time": 5
             }
           },
           {
@@ -162,7 +164,7 @@
             "y": 320.0,
             "width": 384.0,
             "height": 192.0,
-            "type": "Number Display",
+            "type": "Text Display",
             "properties": {
               "topic": "/AdvantageKit/RealOutputs/ShooterTelemetry/rpmFudgeRPM",
               "period": 0.1
@@ -247,7 +249,7 @@
                 "y": 0.0,
                 "width": 192.0,
                 "height": 128.0,
-                "type": "Number Display",
+                "type": "Text Display",
                 "properties": {
                   "topic": "/AdvantageKit/RealOutputs/MatchTime",
                   "period": 0.1

@@ -41,6 +41,7 @@ import frc.robot.subsystems.lights.*;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
+import frc.robot.subsystems.shooter.ShooterConstants.HybridAimingConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.ShootMode;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
@@ -231,7 +232,9 @@ public class RobotContainer {
     private void configureDefaultCommands() {
         // Hybrid drive default: drivetrain auto-rotates toward the hub when
         // the driver holds right trigger (aimEnabled). Full manual control
-        // otherwise. See docs/HybridAiming.md.
+        // otherwise. Speed is reduced to kShootingSpeedScalar while the
+        // feeder is actively running (RT held + shift active).
+        // See docs/HybridAiming.md.
         drive.setDefaultCommand(
                 DriveCommands.joystickDriveAimAtTarget(
                         drive,
@@ -240,7 +243,12 @@ public class RobotContainer {
                         () -> -driverController.getRightX(),
                         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint).toTranslation2d(),
                         () -> drive.getPose(),
-                        () -> driverController.getRightTriggerAxis() > 0.5));
+                        () -> driverController.getRightTriggerAxis() > 0.5,
+                        () ->
+                                (driverController.getRightTriggerAxis() > 0.5
+                                                && HubShiftUtil.getShiftedShiftInfo().active())
+                                        ? HybridAimingConstants.kShootingSpeedScalar
+                                        : 1.0));
 
         // Kicker should stop (do not coast) when idle — use persistent stopHold()
         // so the subsystem remains at zero output when no one owns it.

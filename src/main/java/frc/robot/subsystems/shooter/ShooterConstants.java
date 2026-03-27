@@ -582,5 +582,15 @@ public final class ShooterConstants {
         public static final double kHeadingMaxVelocity = 4.0; // rad/s
 
         public static final double kHeadingMaxAcceleration = 8.0; // rad/s²
+
+        /**
+         * Drive speed scalar applied while the shoot command is active (driver holding RT). Both
+         * translation and driver-rotation inputs are multiplied by this factor to reduce chassis
+         * movement while balls are feeding, improving shot accuracy.
+         *
+         * <p>1.0 = full speed, 0.3 = 30% speed. The heading-assist omega from the hybrid PID is NOT
+         * scaled — only the driver's joystick inputs.
+         */
+        public static final double kShootingSpeedScalar = 0.3;
     }
 }

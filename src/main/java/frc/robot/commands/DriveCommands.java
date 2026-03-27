@@ -344,6 +344,9 @@ public class DriveCommands {
      * @param aimEnabled supplier that gates whether the heading controller is active. When false
      *     (e.g. driver not holding shoot trigger), this behaves exactly like {@link
      *     #joystickDrive(Drive, DoubleSupplier, DoubleSupplier, DoubleSupplier)}.
+     * @param speedScalar supplier that scales both translation and driver-rotation inputs. Use to
+     *     reduce drive speed while shooting (e.g. 0.3 = 30%). The heading-assist omega is NOT scaled
+     *     — only the driver's joystick inputs.
      * @return a command that drives with optional heading aim assist
      */
     public static Command joystickDriveAimAtTarget(
@@ -353,7 +356,8 @@ public class DriveCommands {
             DoubleSupplier omegaSupplier,
             Supplier<Translation2d> targetSupplier,
             Supplier<Pose2d> robotPoseSupplier,
-            Supplier<Boolean> aimEnabled) {
+            Supplier<Boolean> aimEnabled,
+            DoubleSupplier speedScalar) {
 
         // Heading PID — only active when the target is outside the turret travel window.
         ProfiledPIDController headingController =
@@ -382,6 +386,12 @@ public class DriveCommands {
                             // --- Rotation: driver + optional heading assist ---
                             double driverOmega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
                             driverOmega = Math.copySign(driverOmega * driverOmega, driverOmega);
+
+                            // Apply speed scalar (e.g. 30% while shooting) to driver
+                            // inputs only — heading-assist omega is NOT scaled.
+                            double scalar = speedScalar.getAsDouble();
+                            linearVelocity = linearVelocity.times(scalar);
+                            driverOmega *= scalar;
 
                             double headingOmega = 0.0;
                             boolean isAiming = aimEnabled.get();

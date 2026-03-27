@@ -11,7 +11,7 @@ owns intake, shoot-mode selection, and secondary overrides.
 |--------|--------|
 | Left Stick | Field-relative drive (translation) |
 | Right Stick | Field-relative drive (rotation) — auto-rotates toward hub when RT > 50 % |
-| Right Trigger (hold) | **Hub shot** — hybrid aim + shoot (turret clamped ±30 °, drivetrain heading assist, shift-gated feed) |
+| Right Trigger (hold) | **Hub shot** — hybrid aim + shoot (turret clamped −90 ° / +130 °, drivetrain heading assist, shift-gated feed) |
 | Left Trigger (hold) | **Pass shot** — hybrid aim + shoot at nearest pass target (turret clamped, ungated feed) |
 | Start | Reset gyro heading to 0° |
 
@@ -44,6 +44,11 @@ No operator controller is required.
 | Right Trigger (hold) | **Aim only** — hybrid aim at hub (turret + hood, no flywheel or feed) |
 | Left Trigger (hold) | Intake (deploy arm + run rollers) |
 | D-pad Down (hold) | Eject (reverse intake rollers) |
+| D-pad Up (hold) | Turret snap → 0° (home) |
+| D-pad Left (hold) | Turret snap → 90° |
+| D-pad Right (hold) | Turret snap → −90° |
+| D-pad Up-Left (hold) | Turret snap → 45° |
+| D-pad Up-Right (hold) | Turret snap → −45° |
 | A (hold) | Agitate |
 | B (hold) | Clear / unjam shooter system |
 | X (hold) | **Test shoot** — turret at 0 °, spin flywheel + feed (fires without vision) |
@@ -144,6 +149,11 @@ TUNING — DRIVER ONLY (port 0):
   Right Trigger (hold)  →  aim only (turret + hood, no feed / flywheel)
   Left Trigger  (hold)  →  intake
   D-pad Down (hold)     →  eject
+  D-pad Up (hold)       →  turret snap 0°
+  D-pad Left (hold)     →  turret snap 90°
+  D-pad Right (hold)    →  turret snap −90°
+  D-pad Up-Left (hold)  →  turret snap 45°
+  D-pad Up-Right (hold) →  turret snap −45°
   A (hold)              →  agitate
   B (hold)              →  clear / unjam shooter
   X (hold)              →  test shoot (turret 0°, flywheel + feed, no vision)

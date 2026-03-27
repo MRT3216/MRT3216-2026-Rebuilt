@@ -1,18 +1,18 @@
-# Hybrid Aiming — Switching Between Control Schemes
+# Hybrid Aiming — Control Scheme Reference
 
-This document explains how to switch between the two turret aiming modes:
+This document describes the two turret aiming modes and how to switch between them:
 
-1. **Turret-Only (current default)** — The turret handles all aiming. The
-   drivetrain is fully controlled by the driver.
-2. **Hybrid (drivetrain coarse + turret fine)** — The drivetrain auto-rotates
-   the robot so the turret stays within a comfort zone (±90° by default). The
-   turret corrects the residual error. Protects wiring from large turret swings.
+1. **Turret-Only** — The turret handles all aiming. The drivetrain is fully
+   controlled by the driver.
+2. **Hybrid (current default)** — The drivetrain auto-rotates the robot so the
+   turret stays within its travel window (−90° to +130° by default). The turret
+   corrects the residual error. Protects wiring from large turret swings.
 
 ---
 
 ## Quick Reference
 
-| What to change | Turret-Only (current) | Hybrid |
+| What to change | Turret-Only | Hybrid (current) |
 |---|---|---|
 | **Drive default command** | `DriveCommands.joystickDrive(...)` | `DriveCommands.joystickDriveAimAtTarget(...)` |
 | **Shoot command** | `shooterSystem.aimAndShoot(...)` | `shooterSystem.hybridAimAndShoot(...)` |
@@ -21,9 +21,11 @@ This document explains how to switch between the two turret aiming modes:
 
 ---
 
-## Step-by-Step: Switch to Hybrid Aiming
+## Step-by-Step: How to Switch Between Modes
 
 All changes are in **`RobotContainer.java`**. No other files need editing.
+Hybrid mode is **currently active**. The instructions below show how to switch
+back to turret-only if needed, or serve as a reference for how it was wired.
 
 ### 1. Replace the drive default command
 
@@ -84,7 +86,7 @@ operatorController
 Replace it with:
 
 ```java
-// HYBRID — turret clamped to ±comfort zone, drivetrain handles the rest
+// HYBRID — turret clamped to travel window, drivetrain handles the rest
 operatorController
         .rightTrigger()
         .whileTrue(
@@ -153,8 +155,9 @@ All constants are in `ShooterConstants.HybridAimingConstants`:
 | Constant | Default | What it does |
 |---|---|---|
 | `kTurretHomeAngleDeg` | `0.0` | Turret resting direction. `0` = forward, `180` = rear-facing. |
-| `kTurretDeadbandDeg` | `75.0` | Half-width of the comfort zone. Turret handles ±this many degrees on its own before the drivetrain is at full correction. |
-| `kThresholdMarginDeg` | `15.0` | Width of the ramp zone (in degrees) before the deadband edge. Drivetrain correction fades in linearly over this margin. Set to `0.0` to disable the ramp and revert to hard on/off behavior. |
+| `kTurretMinDeg` | `-90.0` | Minimum turret travel (negative = left of home). Turret is clamped to `home + min`. |
+| `kTurretMaxDeg` | `130.0` | Maximum turret travel (positive = right of home). Turret is clamped to `home + max`. |
+| `kThresholdMarginDeg` | `15.0` | Width of the ramp zone (in degrees) on each side before the travel limit. Drivetrain correction fades in linearly over this margin. Set to `0.0` to disable the ramp and revert to hard on/off behavior. |
 | `kHeadingKP` | `3.0` | How aggressively the drivetrain rotates toward the target. Increase if too sluggish. |
 | `kHeadingKD` | `0.2` | Damping on the heading correction. Increase if the robot overshoots the target heading. |
 | `kHeadingMaxVelocity` | `4.0 rad/s` | Speed limit on drivetrain rotation. Lower = smoother for the driver. |
@@ -162,28 +165,33 @@ All constants are in `ShooterConstants.HybridAimingConstants`:
 
 ### Graduated Drivetrain Assist (Ramp Zone)
 
-Instead of a hard on/off boundary at the deadband edge, the drivetrain heading
-correction ramps in gradually. This prevents a jarring snap when the turret
-nears its clamp limit and gives the chassis a head start on rotating.
+Instead of a hard on/off boundary at the travel limit, the drivetrain heading
+correction ramps in gradually on each side. This prevents a jarring snap when
+the turret nears its clamp limit and gives the chassis a head start on rotating.
 
-**Three zones** (measured as the robot-relative angle from turret home):
+The travel window is **asymmetric** — the turret can swing further in one
+direction than the other (e.g. −90° to +130° by default).
+
+**Three zones** on each side (measured as the robot-relative angle from turret home):
 
 ```
- 0°                   60°            75°
- ├──── Turret only ───┤── Ramp zone ─┤── Full correction ──►
-      (0% assist)       (0% → 100%)     (100% assist)
+ −90°           −75°                        +115°          +130°
+  ├── Full corr ─┤──── Ramp zone ────────────┤── Ramp zone ─┤── Full corr ──►
+    (100% assist)  (100% → 0%)  Turret only  (0% → 100%)    (100% assist)
+                                (0% assist)
 ```
 
-With the default constants (`kTurretDeadbandDeg=75`, `kThresholdMarginDeg=15`):
-- **0° – 60°** — Inner zone: turret handles aiming alone, heading PID is reset.
-- **60° – 75°** — Ramp zone: drivetrain PID output is multiplied by a linear
-  factor from 0.0 → 1.0. The chassis starts gently rotating before the turret
-  hits its hard limit.
-- **> 75°** — Outer zone: full PID correction, same as before.
+With the default constants (`kTurretMinDeg=-90`, `kTurretMaxDeg=130`, `kThresholdMarginDeg=15`):
+- **−75° to +115°** — Inner zone: turret handles aiming alone, heading PID is reset.
+- **−90° to −75°** (min side) — Ramp zone: drivetrain PID output is multiplied by
+  a linear factor from 0.0 → 1.0 as the angle approaches −90°.
+- **+115° to +130°** (max side) — Ramp zone: same, factor ramps 0.0 → 1.0 as
+  the angle approaches +130°.
+- **< −90° or > +130°** — Outer zone: full PID correction.
 
-The turret's nominal physical travel is ±90°, so with a 75° deadband the
-drivetrain reaches full correction 15° before the turret's mechanical limit —
-plenty of margin for the chassis to catch up.
+The 15° ramp margin on each side means the drivetrain reaches full correction
+before the turret hits its mechanical limit — plenty of time for the chassis to
+catch up.
 
 ### Telemetry keys (AdvantageScope / NetworkTables)
 
@@ -191,7 +199,7 @@ plenty of margin for the chassis to catch up.
 |---|---|---|
 | `HybridAiming/aimEnabled` | boolean | Is the heading controller active? |
 | `HybridAiming/robotRelativeAngleDeg` | double | Angle from turret home direction to target. |
-| `HybridAiming/outsideDeadband` | boolean | Is the target outside the turret comfort zone? |
+| `HybridAiming/outsideTravelWindow` | boolean | Is the target outside the turret travel window? |
 | `HybridAiming/rampFactor` | double | Drivetrain assist strength: 0.0 = turret only, 1.0 = full correction. |
 | `HybridAiming/headingOmega` | double | Heading correction output (rad/s), after ramp scaling. |
 | `HybridAiming/rawTurretAzimuthDeg` | double | Unclamped turret angle from the shot solver. |
@@ -206,8 +214,9 @@ plenty of margin for the chassis to catch up.
 4. If the drivetrain correction feels too aggressive, lower `kHeadingKP` or
    `kHeadingMaxVelocity`.
 5. If the drivetrain overshoots the heading, increase `kHeadingKD`.
-6. If the turret is still hitting its limits, decrease `kTurretDeadbandDeg`
-   (e.g. 25° or 20°) to make the drivetrain intervene sooner.
+6. If the turret is still hitting its limits, tighten the travel window
+   (decrease `kTurretMaxDeg` or increase `kTurretMinDeg` toward 0) to make
+   the drivetrain intervene sooner.
 7. If `HybridAiming/turretClamped` is frequently `true`, the drivetrain isn't
    correcting fast enough — increase `kHeadingKP` or decrease the deadband.
 8. Watch `HybridAiming/rampFactor` — it should transition smoothly from 0 → 1
@@ -229,11 +238,11 @@ The hybrid system is two independent commands that work together:
 │  • Driver controls translation (left stick)             │
 │  • Driver controls rotation (right stick)               │
 │  • When aimEnabled:                                     │
-│    → Inner zone (< deadband−margin from home):          │
+│    → Inner zone (min+margin to max−margin):             │
 │      PID outputs zero, turret handles it                │
-│    → Ramp zone (deadband−margin to deadband):           │
+│    → Ramp zone (approaching min or max limit):          │
 │      PID output scaled linearly 0% → 100%              │
-│    → Outer zone (> deadband from home):                 │
+│    → Outer zone (past min or max limit):                │
 │      Full PID heading correction toward target          │
 └─────────────────────────────────────────────────────────┘
 
@@ -242,7 +251,7 @@ The hybrid system is two independent commands that work together:
 │  (runs while operator holds right trigger)              │
 │                                                         │
 │  • Identical to aimAndShoot except:                     │
-│    → Turret azimuth is CLAMPED to ±deadband around home │
+│    → Turret azimuth CLAMPED to [home+min, home+max]     │
 │    → FULL_STATIC mode locks turret at home angle        │
 │  • Hood, flywheel, spindexer, kicker all unchanged      │
 └─────────────────────────────────────────────────────────┘

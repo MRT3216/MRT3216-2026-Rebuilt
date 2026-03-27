@@ -317,22 +317,23 @@ public class ShooterSystem {
     //
     // The methods below implement hybrid aiming where the DRIVETRAIN handles
     // coarse heading correction and the TURRET handles only the residual.
-    // This keeps the turret within a small comfort zone, protecting wiring.
+    // This keeps the turret within its travel window, protecting wiring.
     //
-    // ** NOT CURRENTLY WIRED ** — all existing turret-only code is unchanged.
-    // To activate, see the swap-in instructions in HybridAimingConstants javadoc.
+    // Currently wired in RobotContainer for both competition and tuning modes.
+    // See HybridAimingConstants for all tunable limits.
 
     /**
      * Hybrid aim-and-shoot: the turret tracks the <em>residual</em> angle that the drivetrain hasn't
      * corrected, rather than the full robot-relative angle to the target.
      *
      * <p>This is a drop-in replacement for {@link #aimAndShoot}. The turret command is identical
-     * except its azimuth is clamped to ±{@link HybridAimingConstants#kTurretDeadbandDeg} around the
-     * home angle so the turret never swings far from center. The drivetrain's {@code
+     * except its azimuth is clamped to the asymmetric travel window [{@link
+     * HybridAimingConstants#kTurretMinDeg}, {@link HybridAimingConstants#kTurretMaxDeg}] around the
+     * home angle so the turret never swings past its physical limits. The drivetrain's {@code
      * joystickDriveAimAtTarget} command (in {@link frc.robot.commands.DriveCommands}) handles the
      * coarse heading correction.
      *
-     * <p>All tuning constants (clamp width, home angle) are read directly from {@link
+     * <p>All tuning constants (travel limits, home angle) are read directly from {@link
      * HybridAimingConstants} — matching the pattern used by {@link #aimAndShoot}.
      *
      * <p><b>How to wire (example):</b>
@@ -370,19 +371,18 @@ public class ShooterSystem {
             Supplier<ShootMode> shootMode) {
         var table = new ShootingLookupTable(tableMode);
 
-        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretMinDeg = HybridAimingConstants.kTurretMinDeg;
+        double turretMaxDeg = HybridAimingConstants.kTurretMaxDeg;
         double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
 
         var solution =
                 makeModeAwareSolutionSupplier(
                         robotPose, fieldSpeeds, targetSupplier, refinementIterations, table, shootMode);
 
-        // Turret: tracks computed azimuth but CLAMPED to ±turretClampDeg around
-        // the home angle. For a forward-facing shooter (home=0°) this clamps to
-        // e.g. [-30°, +30°]. For a rear-facing shooter (home=180°) this clamps
-        // to e.g. [150°, 210°]. The drivetrain heading controller is responsible
-        // for keeping the full angle small enough that this clamp rarely
-        // activates — it's a safety net, not the primary control path.
+        // Turret: tracks computed azimuth but CLAMPED to the asymmetric travel
+        // window [home + min, home + max]. The drivetrain heading controller is
+        // responsible for keeping the angle within this window — the clamp is a
+        // safety net, not the primary control path.
         var turretCmd =
                 turret.setAngle(
                         () -> {
@@ -392,15 +392,14 @@ public class ShooterSystem {
                             double rawDeg = solution.get().turretAzimuth().in(Degrees);
                             double clampedDeg =
                                     edu.wpi.first.math.MathUtil.clamp(
-                                            rawDeg,
-                                            turretHomeAngleDeg - turretClampDeg,
-                                            turretHomeAngleDeg + turretClampDeg);
+                                            rawDeg, turretHomeAngleDeg + turretMinDeg, turretHomeAngleDeg + turretMaxDeg);
 
                             Logger.recordOutput("HybridAiming/rawTurretAzimuthDeg", rawDeg);
                             Logger.recordOutput("HybridAiming/clampedTurretAzimuthDeg", clampedDeg);
                             Logger.recordOutput(
                                     "HybridAiming/turretClamped",
-                                    Math.abs(rawDeg - turretHomeAngleDeg) > turretClampDeg);
+                                    rawDeg < turretHomeAngleDeg + turretMinDeg
+                                            || rawDeg > turretHomeAngleDeg + turretMaxDeg);
 
                             return Degrees.of(clampedDeg);
                         });
@@ -429,7 +428,8 @@ public class ShooterSystem {
             Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, int refinementIterations) {
         var table = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
 
-        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretMinDeg = HybridAimingConstants.kTurretMinDeg;
+        double turretMaxDeg = HybridAimingConstants.kTurretMaxDeg;
         double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
 
         // Select the nearest pass target landing zone by robot Y position each loop.
@@ -444,16 +444,14 @@ public class ShooterSystem {
         var solution =
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
-        // Turret: clamped to ±turretClampDeg around home angle, same as hybridAimAndShoot.
+        // Turret: clamped to asymmetric travel [home + min, home + max], same as hybridAimAndShoot.
         var turretCmd =
                 turret.setAngle(
                         () -> {
                             double rawDeg = solution.get().turretAzimuth().in(Degrees);
                             double clampedDeg =
                                     edu.wpi.first.math.MathUtil.clamp(
-                                            rawDeg,
-                                            turretHomeAngleDeg - turretClampDeg,
-                                            turretHomeAngleDeg + turretClampDeg);
+                                            rawDeg, turretHomeAngleDeg + turretMinDeg, turretHomeAngleDeg + turretMaxDeg);
                             return Degrees.of(clampedDeg);
                         });
 
@@ -467,9 +465,9 @@ public class ShooterSystem {
     }
 
     /**
-     * Hybrid aim only — turret and hood track the target (turret clamped to ±deadband), but the
-     * flywheel does NOT spin and the feed path does NOT run. Useful for testing hybrid aiming
-     * alignment in tuning mode without accidentally firing balls.
+     * Hybrid aim only — turret and hood track the target (turret clamped to asymmetric travel
+     * limits), but the flywheel does NOT spin and the feed path does NOT run. Useful for testing
+     * hybrid aiming alignment in tuning mode without accidentally firing balls.
      *
      * <p>Pair with {@link frc.robot.commands.DriveCommands#joystickDriveAimAtTarget} as the drive
      * default command to get the full hybrid aiming experience.
@@ -491,7 +489,8 @@ public class ShooterSystem {
             ShootingLookupTable.Mode tableMode,
             Supplier<ShootMode> shootMode) {
         var table = new ShootingLookupTable(tableMode);
-        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretMinDeg = HybridAimingConstants.kTurretMinDeg;
+        double turretMaxDeg = HybridAimingConstants.kTurretMaxDeg;
         double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
         var solution =
                 makeModeAwareSolutionSupplier(
@@ -505,14 +504,13 @@ public class ShooterSystem {
                             double rawDeg = solution.get().turretAzimuth().in(Degrees);
                             double clampedDeg =
                                     edu.wpi.first.math.MathUtil.clamp(
-                                            rawDeg,
-                                            turretHomeAngleDeg - turretClampDeg,
-                                            turretHomeAngleDeg + turretClampDeg);
+                                            rawDeg, turretHomeAngleDeg + turretMinDeg, turretHomeAngleDeg + turretMaxDeg);
                             Logger.recordOutput("HybridAiming/rawTurretAzimuthDeg", rawDeg);
                             Logger.recordOutput("HybridAiming/clampedTurretAzimuthDeg", clampedDeg);
                             Logger.recordOutput(
                                     "HybridAiming/turretClamped",
-                                    Math.abs(rawDeg - turretHomeAngleDeg) > turretClampDeg);
+                                    rawDeg < turretHomeAngleDeg + turretMinDeg
+                                            || rawDeg > turretHomeAngleDeg + turretMaxDeg);
                             return Degrees.of(clampedDeg);
                         });
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());

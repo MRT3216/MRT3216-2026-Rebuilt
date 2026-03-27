@@ -208,6 +208,15 @@ public class RobotContainer {
                         3,
                         ShootingLookupTable.Mode.HUB,
                         () -> currentShootMode));
+        NamedCommands.registerCommand(
+                "Hybrid Aim and Shoot", shooterSystem.hybridAimAndShoot(
+                        () -> drive.getPose(),
+                        () -> drive.getChassisSpeeds(),
+                        () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                        3,
+                        ShootingLookupTable.Mode.HUB,
+                        () -> currentShootMode));
+                ));
         NamedCommands.registerCommand("Agitate", intakeSystem.dutyCycleAgitate());
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooting());
 

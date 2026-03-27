@@ -185,23 +185,23 @@ public class IntakeSystem {
                 .alongWith(
                         Commands.repeatingSequence(
                                 intakePivot
-                                        .set(0.25)
-                                        .withTimeout(0.15)
-                                        .andThen(intakePivot.set(-0.06).withTimeout(0.20))))
+                                        .set(0.15)
+                                        .withTimeout(0.10)
+                                        .andThen(intakePivot.set(-0.06).withTimeout(0.15))))
                 .finallyDo(() -> currentState = IntakeStates.Stowed)
                 .withName("Intake.DutyCycleAgitate");
     }
 
     /**
      * Deploy the intake arm using a timed duty-cycle pulse and update the logical state. Runs the
-     * pivot at −20 % for 0.3 s, which was the proven deploy method before PID/FF tuning.
+     * pivot at −20 % for 0.4 s (accounts for the 0.1 s open-loop ramp rate on the SparkFlex).
      *
      * @return a command that deploys the intake via duty-cycle
      */
     public Command dutyCycleDeploy() {
         return intakePivot
                 .set(-0.20)
-                .withTimeout(0.3)
+                .withTimeout(0.4)
                 .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
                 .withName("Intake.DutyCycleDeploy");
     }

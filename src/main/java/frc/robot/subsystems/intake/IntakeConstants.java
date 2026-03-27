@@ -128,14 +128,14 @@ public final class IntakeConstants {
 
         // Hard limits
         public static final Angle kHardLimitMax = Degrees.of(134);
-        public static final Angle kHardLimitMin = Degrees.of(0);
+        public static final Angle kHardLimitMin = Degrees.of(-20);
 
         // Soft limits — lower limit is slightly below the deployed position
         // (0°) so the agitate command can oscillate the arm a few degrees
         // past the deploy hard-stop without the SparkFlex firmware clamping
         // the open-loop duty-cycle output.
         public static final Angle kSoftLimitMax = Degrees.of(130);
-        public static final Angle kSoftLimitMin = Degrees.of(-5);
+        public static final Angle kSoftLimitMin = Degrees.of(-15);
 
         // Presets / tunables
         public static final Angle kStowedAngle = Degrees.of(125);

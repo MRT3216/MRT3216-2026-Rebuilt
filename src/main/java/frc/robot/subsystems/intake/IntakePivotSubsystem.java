@@ -8,10 +8,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD_sim;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kEncoderZeroOffset;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kGearing;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMax;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMin;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kI;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kI_sim;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kLength;
@@ -21,8 +18,6 @@ import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMaxVelocity;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMotorInverted;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kP;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kP_sim;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kSoftLimitMax;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kSoftLimitMin;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kStatorCurrentLimit;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kTolerance;
 
@@ -128,11 +123,11 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withIdleMode(MotorMode.BRAKE)
                         .withStatorCurrentLimit(kStatorCurrentLimit)
                         .withVoltageCompensation(Volts.of(12))
-                        .withOpenLoopRampRate(Seconds.of(0.1))
-                        .withExternalEncoder(leftPivotMotor.getAbsoluteEncoder())
-                        .withExternalEncoderInverted(false)
-                        .withUseExternalFeedbackEncoder(true)
-                        .withExternalEncoderZeroOffset(kEncoderZeroOffset)
+                        .withOpenLoopRampRate(Seconds.of(0.25))
+                        // .withExternalEncoder(leftPivotMotor.getAbsoluteEncoder())
+                        // .withExternalEncoderInverted(false)
+                        // .withUseExternalFeedbackEncoder(true)
+                        // .withExternalEncoderZeroOffset(kEncoderZeroOffset)
                         .withExternalEncoderGearing(new MechanismGearing(GearBox.fromStages("1:1")))
                         .withFollowers(Pair.of(rightPivotMotor, true));
 
@@ -142,9 +137,9 @@ public class IntakePivotSubsystem extends SubsystemBase {
                 new ArmConfig(smartMotor)
                         .withMass(kMass)
                         .withLength(kLength)
-                        .withTelemetry(kIntakeArmMechTelemetry, Constants.telemetryVerbosity())
-                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
-                        .withHardLimit(kHardLimitMin, kHardLimitMax);
+                        .withTelemetry(kIntakeArmMechTelemetry, Constants.telemetryVerbosity());
+        // .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
+        // .withHardLimit(kHardLimitMin, kHardLimitMax);
 
         intakePivot = new Arm(intakePivotConfig);
     }

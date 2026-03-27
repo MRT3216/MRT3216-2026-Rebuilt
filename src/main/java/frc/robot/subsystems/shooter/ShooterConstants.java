@@ -177,8 +177,8 @@ public final class ShooterConstants {
         public static final Distance dMin = Meters.of(3.5);
         public static final Distance dMax = Meters.of(10.0);
 
-        public static final AngularVelocity kRpmAtMin = RPM.of(4000.0);
-        public static final AngularVelocity kRpmAtMax = RPM.of(4800.0);
+        public static final AngularVelocity kRpmAtMin = RPM.of(3600.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(4300.0);
     }
 
     // -------------------------------------------------------------------------

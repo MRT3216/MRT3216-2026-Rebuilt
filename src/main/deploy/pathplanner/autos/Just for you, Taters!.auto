@@ -5,9 +5,22 @@
     "data": {
       "commands": [
         {
-          "type": "path",
+          "type": "deadline",
           "data": {
-            "pathName": "Right-Mid Human Enter (Turret)"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Right-Mid Human Enter (Turret)"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Run Intake"
+                }
+              }
+            ]
           }
         },
         {

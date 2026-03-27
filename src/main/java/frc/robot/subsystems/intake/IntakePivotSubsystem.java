@@ -215,6 +215,17 @@ public class IntakePivotSubsystem extends SubsystemBase {
         return intakePivot.set(dutyCycle);
     }
 
+    /**
+     * Sets a fixed voltage on the intake arm. Unlike duty-cycle control, this delivers the same
+     * torque regardless of battery voltage, making behaviour consistent across matches.
+     *
+     * @param volts The voltage to apply (positive = pull in / retract, negative = push out / deploy).
+     * @return A command to run the intake arm at the specified voltage.
+     */
+    public Command setVoltage(Voltage volts) {
+        return intakePivot.setVoltage(volts);
+    }
+
     /** Run a YAMS SysId routine for feedforward characterization. */
     public Command sysId() {
         return intakePivot.sysId(Volts.of(7), Volts.of(2).per(Second), Seconds.of(4));

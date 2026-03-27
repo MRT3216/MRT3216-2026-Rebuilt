@@ -2,7 +2,6 @@ package frc.robot.util.shooter;
 
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.Seconds;
 import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kRobotToTurretTransform;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -62,7 +61,7 @@ public final class HybridTurretUtil {
         double dx = targetX - turretX;
         double dy = targetY - turretY;
         double leadDistM = Math.hypot(dx, dy);
-        double tofS = table.getTimeOfFlight(Meters.of(leadDistM)).in(Seconds);
+        double tofS = table.getTimeOfFlightSeconds(leadDistM);
 
         // --- Iterative lead-compensation loop -----------------------------------
         // The ball inherits the robot's field-velocity at launch.  To compensate,
@@ -83,7 +82,7 @@ public final class HybridTurretUtil {
             dx = predictedX - turretX;
             dy = predictedY - turretY;
             leadDistM = Math.hypot(dx, dy);
-            tofS = table.getTimeOfFlight(Meters.of(leadDistM)).in(Seconds);
+            tofS = table.getTimeOfFlightSeconds(leadDistM);
 
             if (Math.abs(leadDistM - prevLeadDistM) < epsilonM) {
                 break;

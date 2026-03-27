@@ -1,0 +1,149 @@
+Parsing C:\Users\danla\Desktop\Logs2\$Idaho\akit_26-03-27_01-50-13_idbo.wpilog...
+================================================================================
+  MRT3216 IDAHO LOG ANALYSIS
+  File: akit_26-03-27_01-50-13_idbo.wpilog
+  Size: 59.3 MB
+  Log duration: 469.3s
+  Auto: 305.8s - 305.8s (0.0s)
+  Teleop: 330.8s - 330.8s (0.0s)
+================================================================================
+
+Match Number: 999
+Match Type: None
+
+================================================================================
+  CRT ENCODER STATUS
+================================================================================
+  t=1.64s  Status=OK
+  Error (rot): 0.003302
+  Resolved angle: -0.05 deg
+  Attempts used: 4
+
+================================================================================
+  BATTERY / POWER
+================================================================================
+  Voltage (teleop): avg=10.83V  min=6.90V  max=13.75V
+  Current (teleop): avg=0.6A  max=1.4A
+  No brownouts detected
+  *** 75 samples below 8V! Worst: 6.90V at t=443.5s ***
+  10 lowest voltage readings:
+    t=443.5s  6.901V
+    t=470.5s  7.058V
+    t=443.6s  7.064V
+    t=449.3s  7.108V
+    t=443.5s  7.133V
+    t=391.8s  7.146V
+    t=439.4s  7.177V
+    t=439.4s  7.183V
+    t=439.3s  7.215V
+    t=439.3s  7.265V
+  Total energy consumed: 83312 J (23.1 Wh)
+  CPU temp (teleop): avg=48.3C  max=49.8C
+  CAN off count: 0
+
+================================================================================
+  LOOP TIMING
+================================================================================
+  Full cycle (enabled): avg=19.90ms  max=86.79ms
+  Loop overruns (>20ms): 2220 (33.8%)
+  User code (enabled): avg=17.37ms  max=84.16ms
+  Logger queued cycles: avg=0.6  max=2
+
+================================================================================
+  DRIVE CURRENTS (teleop)
+================================================================================
+  Module 0 Drive: avg=20.3A  max=158.1A
+  Module 0 Turn:  avg=4.2A  max=60.9A
+  Module 1 Drive: avg=31.0A  max=150.3A
+  Module 1 Turn:  avg=4.3A  max=58.5A
+  Module 2 Drive: avg=31.4A  max=147.0A
+  Module 2 Turn:  avg=4.6A  max=63.3A
+  Module 3 Drive: avg=25.4A  max=149.0A
+  Module 3 Turn:  avg=4.8A  max=63.4A
+  Total drive avg: 27.0A  max: 158.1A
+
+================================================================================
+  SHOOTER PIPELINE
+================================================================================
+  Flywheel:
+    Velocity: avg=2599 RPM  max=4395 RPM
+    Reference: avg=3165 RPM  max=4300 RPM
+    Current: avg=20.9A  max=91.0A
+    Spun up: 230/460 samples (50.0%)
+    RPM error (when active): avg=881  max=4300
+  Hood:
+    Position: avg=4.8deg  max=11.0deg
+    Reference: avg=5.0deg  max=10.8deg
+    Current: avg=2.0A  max=18.2A
+  Kicker:
+    Current: avg=12.8A  max=149.5A
+    Active samples: 2917/4985
+  Spindexer:
+    Current: avg=15.5A  max=50.4A
+    Active samples: 2139/2204
+
+================================================================================
+  TURRET
+================================================================================
+  Position: avg=39.2deg  min=-88.6deg  max=129.2deg
+  Current: avg=2.3A  max=89.2A
+
+================================================================================
+  HYBRID AIMING
+================================================================================
+  Aim enabled: 22/44 samples (50.0%)
+  Raw azimuth: min=-264.8deg  max=164.3deg
+  Clamped azimuth: min=-90.0deg  max=130.0deg
+  Turret clamped: 8/16 (50.0%)
+  Outside travel window: 5/10 (50.0%)
+  Heading ramp factor: avg=0.35  max=1.00
+
+================================================================================
+  HUB SHIFT
+================================================================================
+  Shifted-active: 3/5 (60.0%)
+  Shift transitions:
+    t=330.8s  -> TRANSITION
+    t=340.8s  -> SHIFT1
+    t=365.8s  -> SHIFT2
+    t=390.8s  -> SHIFT3
+    t=415.8s  -> SHIFT4
+    t=440.8s  -> ENDGAME
+
+================================================================================
+  SHOOTER TELEMETRY (during aim-and-shoot)
+================================================================================
+  Hub distance: avg=3.73m  min=2.78m  max=4.91m
+  Model RPM: avg=3166  min=2510  max=4300
+  Fudged RPM: avg=3166  min=2510  max=4300
+  LUT hood angle: avg=nandeg  min=0.1deg  max=12.7deg
+  Solution valid: 4/8 (50.0%)
+
+================================================================================
+  COMMAND ACTIVITY (teleop)
+================================================================================
+  HybridAimAndShoot         active: 0.4s / 0.9s (51.2%)
+  HybridPassShoot           active: 0.0s / 0.1s (50.0%)
+  Intake                    active: 1.5s / 3.0s (50.3%)
+  Eject                     active: 0.2s / 0.4s (50.0%)
+  Agitate                   active: 1.1s / 2.1s (50.0%)
+  Auto: BumRush             active: 0.0s / 0.0s (100.0%)
+
+================================================================================
+  VISION
+================================================================================
+  Has target: 996/1992 (50.0%)
+  Tag count: avg=1.6  max=7
+
+================================================================================
+  ALERTS
+================================================================================
+  WARNING: Vision camera 0 is disconnected.
+  WARNING: Vision camera 1 is disconnected.
+  WARNING: Vision camera 2 is disconnected.
+  WARNING: Vision camera 3 is disconnected.
+  WARNING: Battery voltage is very low, turn off the robot or replace the battery to avoid damage.
+
+================================================================================
+  Analysis complete. Output saved to: C:\Users\danla\Documents\GitHub\MRT3216-2026-Rebuilt\scripts\idaho_analysis.txt
+================================================================================

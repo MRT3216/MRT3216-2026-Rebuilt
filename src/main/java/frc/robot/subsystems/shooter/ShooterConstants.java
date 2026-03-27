@@ -134,7 +134,8 @@ public final class ShooterConstants {
         // Targets / tunables
         public static final AngularVelocity kFlywheelDefaultVelocity = RPM.of(3000);
         public static final AngularVelocity kVelocityTolerance = RPM.of(30);
-        public static final Time kClearDuration = Seconds.of(0.25);
+        /** Duration the kicker runs in reverse before feeding to clear any jammed ball. */
+        public static final Time kClearDuration = Seconds.of(0.5);
 
         public static final LoggedTunableNumber kTunableFlywheelRPM =
                 new LoggedTunableNumber(
@@ -154,11 +155,30 @@ public final class ShooterConstants {
     public static final class ShooterModel {
         private ShooterModel() {}
 
+        /** Hub-shot RPM anchors (existing two-point linear model). */
         public static final Distance dMin = Inches.of(61);
+
         public static final Distance dMax = Inches.of(291.5);
 
         public static final AngularVelocity kRpmAtMin = RPM.of(2500.0);
         public static final AngularVelocity kRpmAtMax = RPM.of(4300.0);
+    }
+
+    /**
+     * Pass-shot RPM model constants. Higher RPMs than the hub model so the ball arcs high enough to
+     * clear the hub structure (~1.83 m) on its way to the pass target landing zone.
+     *
+     * <p>Uses the same two-point linear interpolation as the hub model but with anchors shifted up.
+     * The distance range covers mid-field passes (3.5 m – 10 m).
+     */
+    public static final class PassModel {
+        private PassModel() {}
+
+        public static final Distance dMin = Meters.of(3.5);
+        public static final Distance dMax = Meters.of(10.0);
+
+        public static final AngularVelocity kRpmAtMin = RPM.of(4000.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(4800.0);
     }
 
     // -------------------------------------------------------------------------
@@ -271,7 +291,8 @@ public final class ShooterConstants {
 
         // Targets / tunables
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2500.0);
-        public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
+        /** Reverse speed used by the pre-feed clear routine to push a ball away from the kicker. */
+        public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-500.0);
 
         public static final LoggedTunableNumber kTunableKickerRPM =
                 new LoggedTunableNumber(
@@ -404,12 +425,12 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(100);
-        public static final Angle kHardLimitMin = Degrees.of(-100);
+        public static final Angle kHardLimitMax = Degrees.of(135);
+        public static final Angle kHardLimitMin = Degrees.of(-95);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(95);
-        public static final Angle kSoftLimitMin = Degrees.of(-95);
+        public static final Angle kSoftLimitMax = Degrees.of(130);
+        public static final Angle kSoftLimitMin = Degrees.of(-90);
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);
@@ -580,5 +601,15 @@ public final class ShooterConstants {
         public static final double kHeadingMaxVelocity = 4.0; // rad/s
 
         public static final double kHeadingMaxAcceleration = 8.0; // rad/s²
+
+        /**
+         * Drive speed scalar applied while the shoot command is active (driver holding RT). Both
+         * translation and driver-rotation inputs are multiplied by this factor to reduce chassis
+         * movement while balls are feeding, improving shot accuracy.
+         *
+         * <p>1.0 = full speed, 0.3 = 30% speed. The heading-assist omega from the hybrid PID is NOT
+         * scaled — only the driver's joystick inputs.
+         */
+        public static final double kShootingSpeedScalar = 0.3;
     }
 }

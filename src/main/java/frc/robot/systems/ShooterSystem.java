@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
@@ -279,7 +280,7 @@ public class ShooterSystem {
 
         var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
+        var flywheelCmd = flywheel.setVelocity(() -> applyPassFudge(solution));
         var feedCmd = makeFeedSequenceUngated();
         var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
 
@@ -456,7 +457,7 @@ public class ShooterSystem {
                         });
 
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
+        var flywheelCmd = flywheel.setVelocity(() -> applyPassFudge(solution));
         var feedCmd = makeFeedSequenceUngated();
         var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
 
@@ -591,18 +592,18 @@ public class ShooterSystem {
     }
 
     private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
-        // Feed only while the shifted shift is active AND the solution is within LUT
-        // range. If the robot is too far / too close the feed stops, preventing wasted
-        // game pieces on shots that won't score.
-        return Commands.sequence(
-                        clearKicker(),
-                        spindexer
-                                .feedShooter()
-                                .alongWith(kicker.feedShooter())
-                                .onlyWhile(
-                                        () ->
-                                                HubShiftUtil.getShiftedShiftInfo().active()
-                                                        && solutionSupplier.get().isValid()))
+        // clearKicker() runs immediately on trigger pull so the kicker is ready
+        // before the shift window opens.  After the clear finishes, we wait for
+        // the shifted window to become active (and the solution to be valid),
+        // then feed until the window closes or the solution goes out of range.
+        // .repeatedly() re-enters the waitUntil→feed loop for subsequent shifts.
+        Supplier<Boolean> canFeed =
+                () -> HubShiftUtil.getShiftedShiftInfo().active() && solutionSupplier.get().isValid();
+
+        return clearKicker()
+                .andThen(Commands.waitUntil(canFeed::get))
+                .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()).onlyWhile(canFeed::get))
+                .repeatedly()
                 .withName("FeedSequence");
     }
 
@@ -623,12 +624,24 @@ public class ShooterSystem {
     }
 
     /**
-     * Apply the RPM fudge factor to the model speed for the given solution. Returns the final
+     * Apply the RPM fudge factor to the hub model speed for the given solution. Returns the final
      * flywheel target: {@code modelRPM + fudge}.
      */
     private static AngularVelocity applyFudge(
             Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         var modelSpeed = ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
+        double fudge = kRPMFudgeRPM.get();
+        return RPM.of(modelSpeed.in(RPM) + fudge);
+    }
+
+    /**
+     * Apply the RPM fudge factor to the <em>pass</em> model speed. Uses the higher-RPM pass model so
+     * the ball arcs over the hub.
+     */
+    private static AngularVelocity applyPassFudge(
+            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        var modelSpeed =
+                ShooterModel.passFlywheelSpeedForDistance(solutionSupplier.get().leadDistance());
         double fudge = kRPMFudgeRPM.get();
         return RPM.of(modelSpeed.in(RPM) + fudge);
     }
@@ -652,31 +665,33 @@ public class ShooterSystem {
         return Commands.run(
                         () -> {
                             var sol = solutionSupplier.get();
-                            var mode = shootMode.get();
 
-                            // Active mode and fudge
-                            Logger.recordOutput("ShooterTelemetry/shootMode", mode.name());
+                            // Always publish: fudge RPM (operator dashboard) and validity.
                             Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", kRPMFudgeRPM.get());
-
-                            // Lead distance (includes motion-predicted lead in FULL mode,
-                            // raw hub distance in STATIC modes)
-                            Logger.recordOutput(
-                                    "ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
-
-                            // Distance from turret origin to alliance hub center
-                            var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                            var turretXY = turretOrigin(robotPose.get());
-                            double hubDx = hub.toTranslation2d().getX() - turretXY.getX();
-                            double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
-                            Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
-
-                            double modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance()).in(RPM);
-                            double fudgedRpm = modelRpm + kRPMFudgeRPM.get();
-                            Logger.recordOutput("ShooterTelemetry/modelRPM", modelRpm);
-                            Logger.recordOutput("ShooterTelemetry/fudgedRPM", fudgedRpm);
-                            Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
-                            Logger.recordOutput("ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());
+
+                            // Detailed telemetry only in tuning mode — unnecessary CPU
+                            // and NT bandwidth during competition.
+                            if (Constants.tuningMode) {
+                                var mode = shootMode.get();
+                                Logger.recordOutput("ShooterTelemetry/shootMode", mode.name());
+                                Logger.recordOutput(
+                                        "ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
+
+                                var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                                var turretXY = turretOrigin(robotPose.get());
+                                double hubDx = hub.toTranslation2d().getX() - turretXY.getX();
+                                double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
+                                Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
+
+                                double modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance()).in(RPM);
+                                double fudgedRpm = modelRpm + kRPMFudgeRPM.get();
+                                Logger.recordOutput("ShooterTelemetry/modelRPM", modelRpm);
+                                Logger.recordOutput("ShooterTelemetry/fudgedRPM", fudgedRpm);
+                                Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
+                                Logger.recordOutput(
+                                        "ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
+                            }
 
                             if (!sol.isValid()) {
                                 double now = Timer.getFPGATimestamp();

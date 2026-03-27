@@ -34,8 +34,11 @@ public final class ShooterLookupTables {
             {7.4041, 12.8, 2.14}
         };
         double[][] passDefault = {
-            {1.0, 54.0, 0.35},
-            {5.5, 45.0, 1.25}
+            {3.5, 0.0, 1.3},
+            {5.0, 1.0, 1.6},
+            {6.5, 2.0, 1.9},
+            {8.0, 3.0, 2.2},
+            {10.0, 4.0, 2.5}
         };
 
         // Convert raw double arrays into typed lookup rows to expose unit-aware values.

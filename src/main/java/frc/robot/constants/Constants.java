@@ -82,8 +82,12 @@ public final class Constants {
      * </ul>
      */
     public static TelemetryVerbosity telemetryVerbosity() {
+        // HIGH publishes every tunable gain (kP/kI/kD/kS/kV/kA/kG) each cycle,
+        // which blows the 20ms loop budget on a roboRIO. MID provides voltage,
+        // current, position, and velocity — sufficient for tuning. Gains can
+        // still be read/written via the dashboard live-tuning commands.
         if (tuningMode) {
-            return TelemetryVerbosity.HIGH;
+            return TelemetryVerbosity.MID;
         }
         // Competition: MID gives voltage + current data for post-match analysis
         // without the overhead of publishing every tunable gain each cycle.

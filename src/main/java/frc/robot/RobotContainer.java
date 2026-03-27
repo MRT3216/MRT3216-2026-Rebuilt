@@ -383,17 +383,13 @@ public class RobotContainer {
         // On release, only resume intaking if the operator is still holding the
         // right trigger — otherwise the rollers would run indefinitely because
         // dutyCycleIntake() is a RunCommand with no natural end condition.
-        // Note: we restart with just rollers (not full dutyCycleIntake) because
-        // the arm is already deployed — re-running dutyCycleDeploy would push
-        // the arm down before the intake resumes.
+        // Note: dutyCycleAgitate() resets state to Stowed via finallyDo(), so
+        // the onFalse always re-deploys the arm. Rollers are NOT restarted —
+        // the operator uses RT to resume intaking after agitation.
         operatorController
                 .a()
                 .whileTrue(intakeSystem.dutyCycleAgitate())
-                .onFalse(
-                        Commands.either(
-                                intakeSystem.intakeRollers.intakeBalls(),
-                                Commands.none(),
-                                () -> operatorController.getRightTriggerAxis() > 0.5));
+                .onFalse(intakeSystem.dutyCycleDeploy());
 
         // B button: clear / unjam shooter system while held.
         operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
@@ -521,7 +517,7 @@ public class RobotContainer {
         driverController
                 .a()
                 .whileTrue(intakeSystem.dutyCycleAgitate())
-                .onFalse(intakeSystem.dutyCycleIntake());
+                .onFalse(intakeSystem.dutyCycleDeploy());
 
         // B button: clear / unjam shooter system while held.
         driverController.b().whileTrue(shooterSystem.clearShooterSystem());

@@ -248,7 +248,7 @@ public class Robot extends LoggedRobot {
         // Wrap in .repeatedly() so the auto restarts as soon as it finishes.
         // teleopInit() will cancel this when teleop begins.
         if (autonomousCommand != null) {
-            CommandScheduler.getInstance().schedule(autonomousCommand.repeatedly());
+            CommandScheduler.getInstance().schedule(autonomousCommand);
         }
     }
 

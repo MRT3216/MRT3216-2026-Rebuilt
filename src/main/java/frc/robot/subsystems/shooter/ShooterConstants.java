@@ -160,8 +160,8 @@ public final class ShooterConstants {
 
         public static final Distance dMax = Inches.of(291.5);
 
-        public static final AngularVelocity kRpmAtMin = RPM.of(2550.0);
-        public static final AngularVelocity kRpmAtMax = RPM.of(4350.0);
+        public static final AngularVelocity kRpmAtMin = RPM.of(2500.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(4300.0);
     }
 
     /**
@@ -234,7 +234,7 @@ public final class ShooterConstants {
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
         // Targets / tunables
-        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(500.0);
+        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(550.0);
 
         public static final LoggedTunableNumber kTunableIndexerRPM =
                 new LoggedTunableNumber(

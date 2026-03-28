@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Fast Left Enter"
+                  "pathName": "Left Enter"
                 }
               },
               {
@@ -26,7 +26,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Fast Left Leave (SOTF)"
+            "pathName": "Left Leave"
           }
         },
         {
@@ -67,7 +67,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2nd Fast Left Enter"
+                  "pathName": "2nd Left Enter"
                 }
               },
               {
@@ -82,7 +82,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2nd Fast Left Leave (SOTF)"
+            "pathName": "2nd Left Leave"
           }
         }
       ]

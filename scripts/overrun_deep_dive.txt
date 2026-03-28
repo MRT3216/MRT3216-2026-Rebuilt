@@ -67,7 +67,7 @@ Files found:   8
   ds                            0.619      0.885     +0.265
   alert_log                     0.261      0.414     +0.152
   console                       0.021      0.046     +0.025
-  can_util                      0.000      0.000     +0.000
+  can_util                      0.409      0.427     +0.018
   battery                      12.210     11.406     -0.804
   tag_count                     1.264      1.694     +0.429
 
@@ -80,16 +80,16 @@ Files found:   8
   ── Teleop Overrun Heatmap (5-second windows) ──
   Top 10 worst windows:
    T+sec Overrun%  UserAvg  FullAvg   CAN%  Tags Cycles
-      20s    67.2%   21.07ms   23.74ms   0.0%   2.2    195
-       0s    66.3%   21.49ms   24.15ms   0.0%   2.0    193
-      25s    60.9%   20.65ms   23.39ms   0.0%   1.7    197
-      15s    58.9%   20.36ms   22.93ms   0.0%   2.2    202
-      40s    57.1%   19.86ms   22.66ms   0.0%   1.9    203
-      10s    54.3%   20.19ms   22.88ms   0.0%   1.7    199
-      45s    51.2%   19.29ms   21.98ms   0.0%   2.0    207
+      20s    67.2%   21.07ms   23.74ms   0.4%   2.2    195
+       0s    66.3%   21.49ms   24.15ms   0.4%   2.0    193
+      25s    60.9%   20.65ms   23.39ms   0.4%   1.7    197
+      15s    58.9%   20.36ms   22.93ms   0.4%   2.2    202
+      40s    57.1%   19.86ms   22.66ms   0.5%   1.9    203
+      10s    54.3%   20.19ms   22.88ms   0.4%   1.7    199
+      45s    51.2%   19.29ms   21.98ms   0.5%   2.0    207
      140s    50.0%   17.12ms   19.40ms   0.0%   2.0      8
-      60s    49.5%   18.95ms   21.29ms   0.0%   1.4    214
-      30s    48.1%   19.37ms   21.98ms   0.0%   1.0    206
+      60s    49.5%   18.95ms   21.29ms   0.4%   1.4    214
+      30s    48.1%   19.37ms   21.98ms   0.4%   1.0    206
 
   Overrun rate distribution across windows:
     0- 10%:   0 
@@ -108,6 +108,7 @@ Files found:   8
   UserCodeMS              : r = +0.9999 (strong)
   LogPeriodicMS           : r = +0.7231 (strong)
   GCTimeMS                : r = +0.0875 (weak)
+  CAN Bus Utilization     : r = -0.0023 (weak)
   Battery Voltage         : r = -0.0046 (weak)
   Vision Tag Count        : r = -0.0042 (weak)
   AutoLogMS               : r = +0.3181 (moderate)
@@ -117,26 +118,26 @@ Files found:   8
   ── Active Commands During Worst Overruns ──
   20 worst cycles:
         Time   FullMS   UserMS    LogMS   GCMS   CAN%  Batt Tags
-    -238.63s 23645.55 23464.33   181.22 205.00   0.0%  12.9    0
-    -211.07s  1211.72  1192.78    18.94 553.00   0.0%  12.8    0
-    -216.26s   882.22   853.95    28.27 205.00   0.0%  12.8    0
-    -215.36s   171.81   155.17    16.64   0.00   0.0%  12.8    0
-    -209.86s   155.38   152.48     2.89   0.00   0.0%  12.8    0
-    -211.22s   150.16   133.32    16.84 553.00   0.0%  12.8    0
-    -211.56s   140.01   132.35     7.66 553.00   0.0%  12.8    0
-    -215.19s   131.41   115.96    15.45   0.00   0.0%  12.8    0
-    -211.67s   111.41    98.15    13.26 553.00   0.0%  12.8    0
-    -211.78s   103.82    96.35     7.47 553.00   0.0%  12.8    0
-    -213.43s   103.05    96.55     6.49   0.00   0.0%  12.8    0
-    -211.32s   100.65    79.21    21.44 553.00   0.0%  12.8    0
-    -207.15s    95.57    77.61    17.96   9.00   0.0%  12.8    0
-    -212.99s    93.64    89.24     4.40 553.00   0.0%  12.8    0
-    -206.96s    92.62    80.54    12.08   9.00   0.0%  12.8    0
-    -207.34s    92.45    82.92     9.54   9.00   0.0%  12.8    0
-    -211.41s    90.82    77.80    13.02 553.00   0.0%  12.8    0
-    -208.25s    89.89    75.02    14.88   0.00   0.0%  12.8    0
-    -213.85s    83.59    78.50     5.08   0.00   0.0%  12.8    0
-    -213.07s    83.42    79.47     3.95 553.00   0.0%  12.8    0
+    -238.63s 23645.55 23464.33   181.22 205.00   0.3%  12.9    0
+    -211.07s  1211.72  1192.78    18.94 553.00   0.4%  12.8    0
+    -216.26s   882.22   853.95    28.27 205.00   0.3%  12.8    0
+    -215.36s   171.81   155.17    16.64   0.00   0.3%  12.8    0
+    -209.86s   155.38   152.48     2.89   0.00   0.5%  12.8    0
+    -211.22s   150.16   133.32    16.84 553.00   0.4%  12.8    0
+    -211.56s   140.01   132.35     7.66 553.00   0.4%  12.8    0
+    -215.19s   131.41   115.96    15.45   0.00   0.3%  12.8    0
+    -211.67s   111.41    98.15    13.26 553.00   0.4%  12.8    0
+    -211.78s   103.82    96.35     7.47 553.00   0.4%  12.8    0
+    -213.43s   103.05    96.55     6.49   0.00   0.6%  12.8    0
+    -211.32s   100.65    79.21    21.44 553.00   0.4%  12.8    0
+    -207.15s    95.57    77.61    17.96   9.00   0.3%  12.8    0
+    -212.99s    93.64    89.24     4.40 553.00   0.6%  12.8    0
+    -206.96s    92.62    80.54    12.08   9.00   0.3%  12.8    0
+    -207.34s    92.45    82.92     9.54   9.00   0.3%  12.8    0
+    -211.41s    90.82    77.80    13.02 553.00   0.4%  12.8    0
+    -208.25s    89.89    75.02    14.88   0.00   0.4%  12.8    0
+    -213.85s    83.59    78.50     5.08   0.00   0.3%  12.8    0
+    -213.07s    83.42    79.47     3.95 553.00   0.6%  12.8    0
 
   Commands active during worst 20 cycles (by frequency):
 
@@ -162,7 +163,7 @@ Files found:   8
   conduit_save                  0.676      0.878     +0.202
   entry_update                  0.015      0.014     -0.000
   dash_inputs                   0.166      0.178     +0.012
-  can_util                      0.000      0.000     +0.000
+  can_util                      0.409      0.428     +0.020
   tag_count                     1.265      1.747     +0.482
   gc_time                       4.914      9.026     +4.112
 
@@ -207,167 +208,5 @@ Files found:   8
 
   ── Receiver Queue Depth ──
   Mean: 0.6  Max: 2  P99: 2
-
-  ── Overrun vs Normal Cycle Comparison ──
-  Metric                       Normal    Overrun      Delta
-  ──────────────────────── ────────── ────────── ──────────
-  user                         13.752     29.313    +15.561
-  log_periodic                  2.185      3.265     +1.080
-  gc_time                       4.755      7.252     +2.497
-  conduit_cap                   0.295      0.404     +0.109
-  conduit_save                  0.639      0.929     +0.290
-  auto_log                      0.207      0.303     +0.096
-  entry_update                  0.021      0.015     -0.005
-  dash_inputs                   0.162      0.222     +0.060
-  ds                            0.597      0.900     +0.303
-  alert_log                     0.254      0.395     +0.141
-  console                       0.021      0.048     +0.027
-  can_util                      0.000      0.000     +0.000
-  battery                      11.803     10.837     -0.966
-  tag_count                     1.390      1.808     +0.417
-
-  ── Phase-Based Overrun Rates ──
-  Pre-Auto            :  7461 cycles,   992 overruns ( 13.3%), user avg=18.43ms, full avg=20.93ms
-  Auto                :   837 cycles,   448 overruns ( 53.5%), user avg=19.85ms, full avg=22.48ms
-  Teleop              :  6023 cycles,  2775 overruns ( 46.1%), user avg=18.73ms, full avg=21.32ms
-  Auto→Teleop gap     :   197 cycles,    34 overruns ( 17.3%), user avg=15.37ms, full avg=17.76ms
-
-  ── Teleop Overrun Heatmap (5-second windows) ──
-  Top 10 worst windows:
-   T+sec Overrun%  UserAvg  FullAvg   CAN%  Tags Cycles
-       5s    67.3%   21.36ms   24.09ms   0.0%   2.3    196
-       0s    58.2%   20.69ms   23.28ms   0.0%   1.0    196
-      25s    57.4%   20.10ms   22.75ms   0.0%   4.4    202
-      50s    56.0%   20.91ms   23.67ms   0.0%   2.4    191
-     135s    55.8%   19.24ms   22.13ms   0.0%   2.2    206
-      20s    54.1%   19.25ms   21.80ms   0.0%   1.2    209
-     130s    53.8%   18.86ms   21.35ms   0.0%   2.0    208
-     140s    53.3%   19.35ms   21.79ms   0.0%   2.1    120
-     105s    51.7%   19.83ms   22.45ms   0.0%   0.5    203
-     120s    51.0%   19.46ms   21.98ms   0.0%   1.5    210
-
-  Overrun rate distribution across windows:
-    0- 10%:   0 
-   10- 20%:   0 
-   20- 30%:   1 █
-   30- 40%:   7 ███████
-   40- 50%:  11 ███████████
-   50- 60%:   9 █████████
-   60- 70%:   1 █
-   70- 80%:   0 
-   80- 90%:   0 
-   90-100%:   0 
-  100-100%:   0 
-
-  ── Correlation Analysis (FullCycleMS vs key metrics) ──
-  UserCodeMS              : r = +0.9999 (strong)
-  LogPeriodicMS           : r = +0.6555 (strong)
-  GCTimeMS                : r = +0.1315 (weak)
-  Battery Voltage         : r = -0.0015 (weak)
-  Vision Tag Count        : r = -0.0037 (weak)
-  AutoLogMS               : r = +0.1778 (weak)
-  ConduitSaveMS           : r = +0.2593 (weak)
-  EntryUpdateMS           : r = -0.0009 (weak)
-
-  ── Active Commands During Worst Overruns ──
-  20 worst cycles:
-        Time   FullMS   UserMS    LogMS   GCMS   CAN%  Batt Tags
-    -212.58s 24177.66 24029.83   147.82 197.00   0.0%  12.9    0
-    -189.59s   845.15   809.19    35.97 197.00   0.0%  12.8    0
-    -184.87s   780.27   757.08    23.19 325.00   0.0%  12.8    1
-    -184.07s   551.85   533.61    18.23   0.00   0.0%  12.8    3
-    -183.50s   314.05   300.16    13.89   0.00   0.0%  12.8    3
-    -185.92s   185.71   175.06    10.65 325.00   0.0%  12.8    1
-    -188.63s   145.80   114.81    31.00   0.00   0.0%  12.8    0
-    -185.71s   137.33   132.37     4.95 325.00   0.0%  12.8    1
-    -181.19s   135.01   130.50     4.51  12.00   0.0%  12.8    2
-      53.46s   132.34   114.90    17.44   0.00   0.0%  12.0    4
-    -185.56s   121.59   117.96     3.63 325.00   0.0%  12.8    1
-    -186.90s   119.16   113.58     5.58   0.00   0.0%  12.8    1
-    -183.17s   114.97   111.78     3.19   0.00   0.0%  12.8    2
-    -188.49s   109.02   101.99     7.03   0.00   0.0%  12.8    0
-    -155.90s   107.72    92.01    15.71  17.00   0.0%  12.7    3
-    -187.47s   106.05    99.43     6.62   0.00   0.0%  12.8    0
-    -182.26s   105.01   100.95     4.06   0.00   0.0%  12.8    2
-    -188.74s   103.29    95.03     8.25   0.00   0.0%  12.8    0
-    -186.02s    97.02    91.80     5.21 325.00   0.0%  12.8    1
-    -181.30s    96.72    82.16    14.56  12.00   0.0%  12.8    2
-
-  Commands active during worst 20 cycles (by frequency):
-    SequentialCommandGroup                  : active in 2/20 worst cycles
-    FlywheelStopHold                        : active in 2/20 worst cycles
-    SpindexerStopHold                       : active in 2/20 worst cycles
-    KickerStopHold                          : active in 2/20 worst cycles
-    Turret_DefaultStow                      : active in 2/20 worst cycles
-    Hood_DefaultStow                        : active in 2/20 worst cycles
-    Intake.DutyCycleIntake                  : active in 2/20 worst cycles
-
-  ── Consecutive Overrun Streaks ──
-  Total streaks: 2118
-  Longest streak: 210 consecutive cycles at t=1.66s
-  Top 5 streaks:
-     210 cycles starting at T+-212.6s
-      26 cycles starting at T+-174.5s
-      20 cycles starting at T+-175.6s
-      19 cycles starting at T+-170.5s
-      17 cycles starting at T+-171.7s
-  Streak length distribution: mean=2.2, median=1, max=210
-
-  ── UserCodeMS Spike Analysis ──
-  Cycles with UserCodeMS > 18.0ms: 4091 (21.6%)
-
-  Logger overhead comparison (spiky user code vs normal):
-  Component                    Normal      Spiky      Delta
-  ──────────────────────── ────────── ────────── ──────────
-  auto_log                      0.213      0.295     +0.082
-  conduit_cap                   0.308      0.374     +0.066
-  conduit_save                  0.666      0.871     +0.205
-  entry_update                  0.020      0.015     -0.006
-  dash_inputs                   0.174      0.187     +0.013
-  can_util                      0.000      0.000     +0.000
-  tag_count                     1.401      1.827     +0.427
-  gc_time                       4.804      7.415     +2.611
-
-================================================================================
-  DEEP OVERRUN ANALYSIS: IDBO Q17
-  File: akit_26-03-27_20-16-34_idbo_q17.wpilog
-================================================================================
-
-  ── Overall Timing ──
-  Total cycles:      19973
-  Overrun cycles:    4795 (24.0%)
-  FullCycleMS         : mean=19.94  median=16.97  p95=29.54  p99=48.45  max=23949.58
-  UserCodeMS          : mean=17.44  median=14.64  p95=26.19  p99=43.36  max=23789.71
-  LogPeriodicMS       : mean=2.50  median=2.17  p95=4.56  p99=7.53  max=159.86
-
-  ── Cycle Budget Breakdown (averages) ──
-  FullCycleMS avg:       19.94 ms
-    ├─ UserCodeMS:       17.44 ms (87.5% of total)
-    ├─ LogPeriodicMS:    2.50 ms (12.6% of total)
-    └─ Residual/overlap: -0.00 ms
-  Budget remaining:      0.06 ms (target: >0.0)
-
-  ── Logger Component Breakdown (ms) ──
-  Component                   Mean  Median     P95     P99     Max
-  ──────────────────────── ─────── ─────── ─────── ─────── ───────
-  EntryUpdateMS              0.020   0.018   0.021   0.242   4.118
-  DashboardInputsMS          0.187   0.074   0.612   2.022  14.729
-  ConduitCaptureMS           0.343   0.186   0.965   2.171  13.448
-  ConduitSaveMS              0.742   0.612   1.429   2.906  26.693
-  AutoLogMS                  0.238   0.149   0.557   1.132  14.061
-  AlertLogMS                 0.301   0.185   0.742   1.714  14.581
-  RadioLogMS                 0.040   0.019   0.093   0.334  84.068
-  ConsoleMS                  0.033   0.018   0.112   0.334   4.397
-  DriverStationMS            0.683   0.538   1.354   2.822  27.677
-  ────────────────────────
-  Logger Total (sum)         2.586
-
-  ── Garbage Collection ──
-  Cycles with GC:       203 / 405 (50.1%)
-  GC time when active:  mean=12.19  max=191.00 ms
-  Total GC collections: 204
-
-  ── Receiver Queue Depth ──
-  Mean: 0.7  Max: 8  P99: 6
 
   ── Overrun vs Normal Cycle Comparison ──

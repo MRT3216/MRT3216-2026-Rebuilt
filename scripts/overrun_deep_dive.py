@@ -69,8 +69,10 @@ def parse_wpilog(path):
         t = record.getTimestamp() / 1e6
         typ = type_map[eid]
         try:
-            if typ in ("double", "float"):
+            if typ == "double":
                 numeric[name].append((t, record.getDouble()))
+            elif typ == "float":
+                numeric[name].append((t, record.getFloat()))
             elif typ == "int64":
                 numeric[name].append((t, float(record.getInteger())))
             elif typ == "boolean":

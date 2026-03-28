@@ -601,7 +601,7 @@ public class RobotContainer {
         // "Auto Chooser" matches the topic key the Elastic dashboard subscribes to.
         autoChooser =
                 new LoggedDashboardChooser<>(
-                        "Auto Chooser", AutoBuilder.buildAutoChooser("20 - Left Bum Rush (SOTF)"));
+                        "Auto Chooser", AutoBuilder.buildAutoChooser("98 - Left Curved Bum Rush"));
     }
 
     // endregion

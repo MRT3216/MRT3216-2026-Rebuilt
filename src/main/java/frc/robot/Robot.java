@@ -9,6 +9,8 @@ package frc.robot;
 
 import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
 
+import com.pathplanner.lib.commands.FollowPathCommand;
+import com.pathplanner.lib.commands.PathfindingCommand;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -146,6 +148,17 @@ public class Robot extends LoggedRobot {
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
         robotContainer = new RobotContainer();
+
+        // ── PathPlanner Java warmup ──────────────────────────────────────────
+        // The first execution of FollowPathCommand / PathfindingCommand is slow
+        // because the JVM must class-load and JIT-compile all the trajectory
+        // generation code.  Running the official warmup commands during disabled
+        // pre-pays that cost so autonomous doesn't see a loop overrun on the first
+        // path segment.  Both commands already call .ignoringDisable(true).
+        CommandScheduler.getInstance()
+                .schedule(
+                        FollowPathCommand.warmupCommand(), // .ignoringDisable(true) built-in
+                        PathfindingCommand.warmupCommand()); // .ignoringDisable(true) built-in
     }
 
     /** This function is called periodically during all modes. */
@@ -232,17 +245,16 @@ public class Robot extends LoggedRobot {
         Elastic.selectTab("Auto");
         autonomousCommand = robotContainer.getAutonomousCommand();
 
-        // schedule the autonomous command (example)
+        // Wrap in .repeatedly() so the auto restarts as soon as it finishes.
+        // teleopInit() will cancel this when teleop begins.
         if (autonomousCommand != null) {
-            CommandScheduler.getInstance().schedule(autonomousCommand);
+            CommandScheduler.getInstance().schedule(autonomousCommand.repeatedly());
         }
     }
 
     /** This function is called periodically during autonomous. */
     @Override
-    public void autonomousPeriodic() {
-        CommandScheduler.getInstance().schedule(autonomousCommand);
-    }
+    public void autonomousPeriodic() {}
 
     /** This function is called once when teleop is enabled. */
     @Override

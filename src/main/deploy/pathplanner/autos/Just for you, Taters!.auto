@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Right-Mid Human Enter (Turret)"
+                  "pathName": "Right-Mid Human Enter"
                 }
               },
               {
@@ -32,7 +32,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Right-Mid Human Exit (Turret)"
+            "pathName": "Right-Mid Human Exit"
           }
         },
         {

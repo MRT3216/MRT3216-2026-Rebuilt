@@ -5,7 +5,7 @@ Purpose
 This file is the **primary context document** for AI assistants working on this FRC robot codebase.
 
 **Project**: FRC Team 3216's 2026 robot code — Java, WPILib 2026, YAMS motor framework, AdvantageKit logging, Phoenix Pro (TalonFX/Kraken), REV SparkMax (NEO).
-**Branch**: `Claude` (all assistant work happens here)
+**Branch**: `Pre-Boise` (current active branch; Claude branch was merged to main)
 **Build**: `.\gradlew compileJava` from project root
 
 Quick reference — jump to section:
@@ -138,10 +138,11 @@ Why these conventions
 Key files & where to look (quick map)
 --------------------------------------
 - Shooter high-level: `src/main/java/frc/robot/systems/ShooterSystem.java`
+- Drive commands (incl. hybrid heading assist): `src/main/java/frc/robot/commands/DriveCommands.java`
 - Flywheel: `src/main/java/frc/robot/subsystems/shooter/FlywheelSubsystem.java`
 - Kicker/Spindexer: `src/main/java/frc/robot/subsystems/shooter/KickerSubsystem.java` and `SpindexerSubsystem.java`
 - Turret & Hood: `src/main/java/frc/robot/subsystems/shooter/TurretSubsystem.java` and `HoodSubsystem.java`
-- Shooter constants: `src/main/java/frc/robot/subsystems/shooter/ShooterConstants.java` (FlywheelConstants, SpindexerConstants, KickerConstants, HoodConstants, TurretConstants, ShooterModel)
+- Shooter constants: `src/main/java/frc/robot/subsystems/shooter/ShooterConstants.java` (FlywheelConstants, SpindexerConstants, KickerConstants, HoodConstants, TurretConstants, ShooterModel, **HybridAimingConstants**)
 - Shooter lookup table: `src/main/java/frc/robot/subsystems/shooter/ShooterLookupTables.java`
 - Intake subsystems: `src/main/java/frc/robot/subsystems/intake/IntakeRollersSubsystem.java` and `IntakePivotSubsystem.java`
 - Intake constants: `src/main/java/frc/robot/subsystems/intake/IntakeConstants.java` (Rollers, Pivot)
@@ -149,6 +150,8 @@ Key files & where to look (quick map)
 - Field geometry: `src/main/java/frc/robot/constants/FieldConstants.java`
 - Hardware CAN IDs: `src/main/java/frc/robot/constants/RobotMap.java`
 - Controller wiring: `src/main/java/frc/robot/RobotContainer.java`
+- Hybrid aiming docs: `docs/HybridAiming.md`
+- Controller guide: `docs/ControllerGuide.md`
 
 Practical code examples
 -----------------------
@@ -1229,13 +1232,34 @@ Competition Status & Pre-Boise Priorities (updated 2026-03-21)
 - ✅ **PID/FF audit**: reviewed all gains. Identified intake pivot as having zero closed-loop control (intentional — team used duty-cycle at first comp, retune planned Monday). Kicker runs pure feedforward (kP=0.0), acceptable for its role.
 - ✅ **Documentation consolidated**: legacy `docs/guides/` folder removed, content merged into `docs/TechnicalReference.md`, `docs/OperatorGuide.md`, `docs/TestModeTuning.md`.
 
-### Key Programming Context for This Week
-- **Lookup table**: `src/main/resources/shooter_lookup.json` — will need to be rebuilt after new shooter wheels are installed and tested. Distance-to-RPM mapping. Lookup table code in `subsystems/shooter/ShooterLookupTables.java`.
-- **Current limiting**: add `withStatorCurrentLimit` and `withSupplyCurrentLimit` to YAMS `SmartMotorControllerConfig` for all TalonFX and SparkMAX/Flex motors. Review AdvantageKit logs first to set appropriate limits. Note: `kStatorCurrentLimit` constants already exist in each subsystem's constants class — wire them into the YAMS configs.
-- **Turret tracking**: code "nearly complete" — likely needs to be wired up to vision pose data and tested on real robot with the new cable chain.
-- **PhotonVision**: lower resolution setting in PhotonVision web UI (not in robot code). Camera mount reprint may shift extrinsics — re-run camera calibration if angles change.
-- **Intake pivot PID**: zero closed-loop gains (kP=0, kV=0). Only gravity comp (kG=0.21, kS=0.11). Retune Monday using YAMS tuning order: kG → kV → kA → kP → kD. All sim overrides also zeroed.
-- **Constants organization**: subsystem constants live next to their subsystems (`subsystems/shooter/ShooterConstants.java`, `subsystems/intake/IntakeConstants.java`). Each inner class follows a canonical section order — new gains from retuning should be placed in the matching section.
+### Completed (2026-03-25 / 2026-03-26 — Pre-Boise sessions)
+- ✅ **CRT validated** and calibrated on real robot (tolerance tightened to 0.02)
+- ✅ **Hybrid aiming wired** in both competition and tuning modes (was previously "swap-in ready")
+- ✅ **Asymmetric turret travel limits**: `kTurretMinDeg`/`kTurretMaxDeg` replace symmetric `kTurretDeadbandDeg`
+- ✅ **Single-controller tuning mode**: all bindings on driver controller only
+- ✅ **D-pad turret snap angles**: 0°, ±45°, ±90° for quick positioning
+- ✅ **ControllerGuide.md** fully rewritten (competition + tuning mode layouts)
+- ✅ **HybridAiming.md** fully overhauled (asymmetric, "currently active" framing)
+- ✅ **Driver/operator swap** (driver=intake, operator=shooting in competition mode)
+- ✅ **Shoot mode simplified** to FULL and FULL_STATIC only
+- ✅ **RPM fudge** on both controllers via LoggedTunableNumber.set()
+
+### Current Architecture (as of 2026-03-26)
+- **Aiming mode**: Hybrid (drivetrain coarse + turret fine) — active in competition and tuning
+- **Turret travel window**: −90° to +130° (asymmetric), configurable via 2 constants in `HybridAimingConstants`
+- **Shoot modes**: FULL (moving shot, turret tracks) and FULL_STATIC (turret locked at home)
+- **Tuning mode**: Single driver controller with D-pad snap angles, aim-only RT, testShoot on X
+- **Constants organization**: subsystem constants in subsystem packages; `HybridAimingConstants` in `ShooterConstants.java`
+
+### Remaining Priorities for Boise
+1. **Commit uncommitted Pre-Boise changes** (D-pad snaps, asymmetric limits)
+2. **Turret gain tuning** on real robot (kP/kD/kV still need fine-tuning)
+3. **Hood and flywheel tuning** on real robot
+4. **LUT calibration** — see `docs/TestModeTuning.md` for 12-row plan
+5. **Test hybrid aiming** — verify drivetrain heading assist + turret clamping works on field
+6. **Current limiting** — stator + supply limits on all motors
+7. **Autonomous routines** — real-robot validation
+8. **PadCrafter controller diagrams** — visual reference for drivers
 
 Backup & transcript policy
 -------------------------
@@ -1255,4 +1279,4 @@ If you change important conventions (e.g., switch to gating feeding only when at
 
 ---
 
-*Last edited: 2026-03-24 — added SparkMax PID/FF unit system gotcha (mechanism rotations, not degrees); turret kP=100, kV=3.4 with unit explanation; CRT calibration complete; TuningDashboard created.*
+*Last edited: 2026-03-26 — updated branch to Pre-Boise; added DriveCommands + HybridAimingConstants + docs to key files map; asymmetric turret limits (kTurretMinDeg/kTurretMaxDeg replace kTurretDeadbandDeg); hybrid aiming now active (not "swap-in"); single-controller tuning mode with D-pad turret snap angles.*

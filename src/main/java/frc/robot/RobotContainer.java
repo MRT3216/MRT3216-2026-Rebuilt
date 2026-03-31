@@ -8,17 +8,12 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static frc.robot.subsystems.intake.IntakeConstants.Rollers.kTargetAngularVelocity;
-import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMax;
-import static frc.robot.subsystems.shooter.ShooterConstants.TurretConstants.kSoftLimitMin;
-import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
+import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.commands.PathPlannerAuto;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -41,11 +36,11 @@ import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
-import frc.robot.subsystems.lights.LEDSubsystem;
+import frc.robot.subsystems.lights.*;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
-import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.HybridAimingConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.ShootMode;
 import frc.robot.subsystems.shooter.SpindexerSubsystem;
 import frc.robot.subsystems.shooter.TurretSubsystem;
@@ -59,8 +54,6 @@ import frc.robot.systems.ShooterSystem;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.HubShiftUtil;
 import frc.robot.util.RobotMapValidator;
-import frc.robot.util.TuningDashboard;
-import frc.robot.util.shooter.HybridTurretUtil;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -86,10 +79,6 @@ public class RobotContainer {
     private final HoodSubsystem hoodSubsystem = new HoodSubsystem();
     private final IntakePivotSubsystem intakePivotSubsystem = new IntakePivotSubsystem();
     private final IntakeRollersSubsystem intakeRollersSubsystem = new IntakeRollersSubsystem();
-
-    // TODO: Uncomment when LEDs are physically wired to the roboRIO PWM port.
-    // Verify RobotMap.LEDs.kPort and Constants.LEDsConstants.kNumLEDs match the
-    // actual hardware before enabling.
     private final LEDSubsystem ledSubsystem = new LEDSubsystem();
 
     // Aggregated shooter system
@@ -105,9 +94,10 @@ public class RobotContainer {
     private final CommandXboxController operatorController = new CommandXboxController(1);
 
     /**
-     * Current shoot mode — toggled by operator stick presses during teleop. Starts at {@link
-     * ShootMode#FULL} (full SOTF). Read by {@code aimAndShoot} each loop cycle so changes take effect
-     * immediately, even mid-shot.
+     * Current shoot mode — toggled by the Y button during teleop. Starts at {@link ShootMode#FULL}
+     * (full SOTF). Pressing Y toggles to {@link ShootMode#FULL_STATIC} (turret locked at 0°, no lead
+     * compensation) and back. Read by {@code aimAndShoot} each loop cycle so changes take effect
+     * immediately, even mid-shot. take effect immediately, even mid-shot.
      */
     private ShootMode currentShootMode = ShootMode.FULL;
 
@@ -165,20 +155,16 @@ public class RobotContainer {
                                     new ModuleIOSim(TunerConstants.BackLeft),
                                     new ModuleIOSim(TunerConstants.BackRight));
 
+                    // Use only front + back cameras in sim to keep the loop under
+                    // 20ms. PhotonVision's VisionSystemSim is CPU-heavy (~8-10ms per
+                    // camera); 4 cameras blow the budget. Two cameras still give full
+                    // 360° pose-estimation coverage for testing.
                     vision =
                             new Vision(
                                     drive::addVisionMeasurement,
                                     new VisionIOPhotonVisionSim(
                                             VisionConstants.cameraFrontName,
                                             VisionConstants.robotToCameraFront,
-                                            drive::getPose),
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraLeftName,
-                                            VisionConstants.robotToCameraLeft,
-                                            drive::getPose),
-                                    new VisionIOPhotonVisionSim(
-                                            VisionConstants.cameraRightName,
-                                            VisionConstants.robotToCameraRight,
                                             drive::getPose),
                                     new VisionIOPhotonVisionSim(
                                             VisionConstants.cameraBackName,
@@ -211,11 +197,21 @@ public class RobotContainer {
         }
 
         // Register auto commands
-        // Use duty-cycle intake for auto until pivot PID/FF gains are tuned.
-        // Switch to intakeSystem.intake() / intakeSystem.agitate() once tuned.
         NamedCommands.registerCommand("Run Intake", intakeSystem.dutyCycleIntake());
         NamedCommands.registerCommand(
                 "Aim and Shoot",
+                shooterSystem.aimAndShoot(
+                        () -> drive.getPose(),
+                        () -> drive.getChassisSpeeds(),
+                        () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                        3,
+                        ShootingLookupTable.Mode.HUB,
+                        () -> currentShootMode));
+        // Autos use the non-hybrid aimAndShoot so the drivetrain is free for
+        // PathPlanner path-following.  "Hybrid Aim and Shoot" is kept as an
+        // alias that points to the same turret-only command.
+        NamedCommands.registerCommand(
+                "Hybrid Aim and Shoot",
                 shooterSystem.aimAndShoot(
                         () -> drive.getPose(),
                         () -> drive.getChassisSpeeds(),
@@ -227,15 +223,8 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stop Shooter", shooterSystem.stopShooting());
 
         setupAutoChooser();
-        // setupSysid();
         configureDefaultCommands();
         configureButtonBindings();
-
-        // Initialize the tuning Shuffleboard tab only when tuning mode is active.
-        // The tab never appears on the Elastic dashboard during competition.
-        if (Constants.tuningMode) {
-            TuningDashboard.initialize(drive, turretSubsystem, hoodSubsystem, flywheelSubsystem);
-        }
     }
 
     // endregion
@@ -243,138 +232,45 @@ public class RobotContainer {
     // region Default commands
 
     private void configureDefaultCommands() {
-        // Default command, normal field-relative drive
+        // Hybrid drive default: drivetrain auto-rotates toward the hub when
+        // the driver holds right trigger (aimEnabled). Full manual control
+        // otherwise. Speed is reduced to kShootingSpeedScalar while the
+        // feeder is actively running (RT held + shift active).
+        // See docs/HybridAiming.md.
         drive.setDefaultCommand(
-                DriveCommands.joystickDrive(
+                DriveCommands.joystickDriveAimAtTarget(
                         drive,
                         () -> -driverController.getLeftY(),
                         () -> -driverController.getLeftX(),
-                        () -> -driverController.getRightX()));
+                        () -> -driverController.getRightX(),
+                        () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint).toTranslation2d(),
+                        () -> drive.getPose(),
+                        () -> driverController.getRightTriggerAxis() > 0.5,
+                        () ->
+                                (driverController.getRightTriggerAxis() > 0.5
+                                                && HubShiftUtil.getShiftedShiftInfo().active())
+                                        ? HybridAimingConstants.kShootingSpeedScalar
+                                        : 1.0));
 
         // Kicker should stop (do not coast) when idle — use persistent stopHold()
         // so the subsystem remains at zero output when no one owns it.
         kickerSubsystem.setDefaultCommand(kickerSubsystem.stopHold());
-        if (Constants.tuningMode) {
-            // Hybrid drive default: drivetrain auto-rotates toward the hub when
-            // the driver holds right trigger (aimEnabled). Full manual control
-            // otherwise. Overrides the unconditional joystickDrive set above.
-            drive.setDefaultCommand(
-                    DriveCommands.joystickDriveAimAtTarget(
-                            drive,
-                            () -> -driverController.getLeftY(),
-                            () -> -driverController.getLeftX(),
-                            () -> -driverController.getRightX(),
-                            () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint).toTranslation2d(),
-                            () -> drive.getPose(),
-                            () -> driverController.getRightTriggerAxis() > 0.5));
 
-            // D-pad turret rotation for tuning mode.
-            // Hold D-pad RIGHT to rotate clockwise, D-pad LEFT to rotate
-            // counter-clockwise. Uses the POV hat so it does NOT conflict with
-            // LB/RB intake bindings in configureTestButtonBindings().
-            // Rate is in degrees per 20 ms loop (~180°/s at full speed).
-            final double kRotateRateDegPerLoop = 3.6; // 180 deg/s ÷ 50 Hz
-            final double kSoftMin = kSoftLimitMin.in(Degrees);
-            final double kSoftMax = kSoftLimitMax.in(Degrees);
-            // Re-seeded to the turret's current position each time the command initializes
-            // (i.e., on every enable) so the turret doesn't snap to a stale setpoint.
-            final double[] turretAccumulator = {turretSubsystem.getTarget().in(Degrees)};
+        // Turret holds at home (0°) when not actively shooting. The hybrid
+        // aim-and-shoot commands (RT / LT) take over while the driver holds a
+        // trigger — subsystem requirement preempts this default automatically.
+        turretSubsystem.setDefaultCommand(
+                turretSubsystem.setAngle(Degrees.of(0)).withName("Turret_DefaultStow"));
 
-            turretSubsystem.setDefaultCommand(
-                    Commands.sequence(
-                                    Commands.runOnce(
-                                            () -> turretAccumulator[0] = turretSubsystem.getPosition().in(Degrees)),
-                                    turretSubsystem.setAngle(
-                                            () -> {
-                                                int pov = driverController.getHID().getPOV();
-                                                boolean cw = (pov == 90); // D-pad RIGHT
-                                                boolean ccw = (pov == 270); // D-pad LEFT
-                                                if (cw && !ccw) {
-                                                    turretAccumulator[0] -= kRotateRateDegPerLoop;
-                                                } else if (ccw && !cw) {
-                                                    turretAccumulator[0] += kRotateRateDegPerLoop;
-                                                }
-                                                // Clamp to soft limits
-                                                turretAccumulator[0] =
-                                                        Math.max(kSoftMin, Math.min(kSoftMax, turretAccumulator[0]));
-                                                return Degrees.of(turretAccumulator[0]);
-                                            }))
-                            .withName("Turret_TuningDpadControl"));
+        // Hood returns to 0° when not actively shooting — prevents decapitation
+        // under the trench. Hood tracking only happens inside aimAndShoot /
+        // aimAndShootPass while the driver holds a trigger.
+        hoodSubsystem.setDefaultCommand(
+                hoodSubsystem.setAngle(Degrees.of(0)).withName("Hood_DefaultStow"));
 
-            // In tuning mode the flywheel should stay idle — no hub-shift pre-spin.
-            // HubShiftUtil returns unpredictable state in sim (no FMS data), which
-            // would cause the flywheel to spin at seemingly random times.
-            flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
-        } else {
-            // Shift-aware turret tracking default command.
-            //
-            // When the hub shift is active the turret continuously tracks the alliance
-            // hub center (HUB table). When the shift is inactive it tracks the nearest
-            // pass target landing zone (PASS table). Motion-compensated via
-            // HybridTurretUtil.computeMovingShot() each periodic loop.
-            //
-            // This default is preempted by aimAndShoot / aimAndShootPass when the
-            // driver holds a trigger — the subsystem requirement ensures the trigger
-            // command takes priority, and tracking resumes automatically on release.
-
-            // Build the two lookup tables once — reused every loop by the turret default.
-            var hubTable = new ShootingLookupTable(ShootingLookupTable.Mode.HUB);
-            var passTable = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
-
-            turretSubsystem.setDefaultCommand(
-                    turretSubsystem
-                            .setAngle(
-                                    () -> {
-                                        var shift = HubShiftUtil.getShiftedShiftInfo();
-                                        var pose = drive.getPose();
-                                        var speeds = drive.getChassisSpeeds();
-
-                                        Translation3d target;
-                                        ShootingLookupTable table;
-                                        if (shift.active()) {
-                                            target = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                                            table = hubTable;
-                                        } else {
-                                            // Flip targets to current alliance BEFORE comparing Y
-                                            // so the nearest-target pick works correctly on both
-                                            // alliances.
-                                            var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
-                                            var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
-                                            double robotY = pose.getY();
-                                            target =
-                                                    Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY())
-                                                            ? left
-                                                            : right;
-                                            table = passTable;
-                                        }
-                                        return HybridTurretUtil.computeMovingShot(
-                                                        pose, speeds, target, 3, kRefinementConvergenceEpsilon, table)
-                                                .turretAzimuth();
-                                    })
-                            .withName("Turret_DefaultTracking"));
-
-            // Hood returns to 0° when not actively shooting — prevents decapitation
-            // under the trench. Hood tracking only happens inside aimAndShoot /
-            // aimAndShootPass while the driver holds a trigger.
-            hoodSubsystem.setDefaultCommand(
-                    hoodSubsystem.setAngle(Degrees.of(0)).withName("Hood_DefaultStow"));
-
-            // Flywheel pre-spins automatically when the shifted shift is active or
-            // within 5 seconds of becoming active — no button required. When the
-            // operator holds the right trigger, aimAndShoot preempts this default
-            // and tracks the exact speed from the lookup table.
-            flywheelSubsystem.setDefaultCommand(
-                    flywheelSubsystem
-                            .setVelocity(
-                                    () -> {
-                                        var shift = HubShiftUtil.getShiftedShiftInfo();
-                                        if (shift.active() || shift.remainingTime() < 5.0) {
-                                            return FlywheelConstants.kFlywheelDefaultVelocity;
-                                        }
-                                        return edu.wpi.first.units.Units.RPM.of(0);
-                                    })
-                            .withName("Flywheel_DefaultPreSpin"));
-        }
+        // Flywheel stays idle by default — it only spins when the driver
+        // holds right trigger (hybridAimAndShoot commands exact LUT speed).
+        flywheelSubsystem.setDefaultCommand(flywheelSubsystem.stopHold());
 
         // Let spindexer coast by default. Use the persistent stopHold() default
         // which disables closed-loop control and keeps the duty/voltage at zero
@@ -387,9 +283,7 @@ public class RobotContainer {
 
         // Ensure intake pivot holds its commanded setpoint when no one owns it so
         // live tuning and dashboard writes persist.
-        intakePivotSubsystem.setDefaultCommand(
-                // intakePivotSubsystem.setAngle(() -> intakePivotSubsystem.getPosition()));
-                intakePivotSubsystem.set(0));
+        intakePivotSubsystem.setDefaultCommand(intakePivotSubsystem.set(0));
     }
 
     // endregion
@@ -435,95 +329,83 @@ public class RobotContainer {
     /**
      * Configure bindings used on the REAL robot for competition-style operation.
      *
-     * <p><b>Driver</b> owns driving and intake. <b>Operator</b> owns shooting, shoot-mode selection,
-     * and secondary ball-handling overrides. Longer-lived or tuning helpers belong in {@link
-     * #configureTestButtonBindings()} and should be enabled only in tuning mode.
+     * <p><b>Driver</b> owns driving and shooting (hub + pass). <b>Operator</b> owns intake,
+     * shoot-mode selection, and secondary ball-handling overrides. Longer-lived or tuning helpers
+     * belong in {@link #configureTestButtonBindings()} and should be enabled only in tuning mode.
      */
     private void configureRealButtonBindings() {
-        // ── Driver: intake ──────────────────────────────────────────────
+        // ── Driver: shooting ─────────────────────────────────────────
 
-        // Right trigger: duty-cycle intake (deploy arm via timed pulse, then run
-        // rollers). Switch to intakeSystem.intake() once pivot PID/FF gains are tuned.
-        driverController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
-        // TODO: Wire intaking LED when intake is running:
-        // driverController
-        //         .rightTrigger()
-        //         .onTrue(ledSubsystem.setIntakingLEDCommand(() -> true))
-        //         .onFalse(ledSubsystem.setIntakingLEDCommand(() -> false));
-
-        // Left trigger immediately stops rollers.
-        driverController.leftTrigger().onTrue(intakeSystem.stopRollers());
-
-        // Right bumper: duty-cycle agitate while held, then deploy on release.
-        // Switch to intakeSystem.agitate() / intakeSystem.deploy() once tuned.
+        // Right trigger: hybrid aim and shoot — turret clamped to asymmetric
+        // travel limits (see HybridAimingConstants), drivetrain heading assist
+        // (via drive default command), full feed. See docs/HybridAiming.md.
         driverController
-                .rightBumper()
-                .whileTrue(intakeSystem.dutyCycleAgitate())
-                .onFalse(intakeSystem.dutyCycleDeploy());
-
-        // Left bumper: eject balls from intake rollers while held.
-        driverController.leftBumper().whileTrue(intakeRollersSubsystem.ejectBalls());
-
-        // ── Operator: shooting ──────────────────────────────────────────
-
-        // Right trigger: hold to aim + feed a hub shot (shift-gated).
-        operatorController
                 .rightTrigger()
                 .whileTrue(
-                        shooterSystem.aimAndShoot(
+                        shooterSystem.hybridAimAndShoot(
                                 () -> drive.getPose(),
                                 () -> drive.getChassisSpeeds(),
                                 () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
                                 3,
                                 ShootingLookupTable.Mode.HUB,
                                 () -> currentShootMode));
-        // TODO: Wire aim-lock LED when shooting is active:
-        // operatorController
-        //         .rightTrigger()
-        //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-        //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+        // Aim-lock LED while hub shooting is active.
+        driverController
+                .rightTrigger()
+                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
-        // Left trigger: hold to aim + feed a pass shot. Not shift-gated —
-        // feeds freely while held regardless of hub shift state. Turret and hood
-        // track the nearest pass target landing zone for the duration.
-        operatorController
+        // Left trigger: hybrid pass shot — aims at nearest pass target landing
+        // zone with turret clamped to travel limits, drivetrain heading assist.
+        // Uses PASS lookup table. Feed is ungated (fires freely).
+        driverController
                 .leftTrigger()
                 .whileTrue(
-                        shooterSystem.aimAndShootPass(
+                        shooterSystem.hybridAimAndShootPass(
                                 () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
-        // TODO: Wire aim-lock LED when pass shooting is active:
-        // operatorController
-        //         .leftTrigger()
-        //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-        //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+        // Aim-lock LED while pass shooting is active.
+        driverController
+                .leftTrigger()
+                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+
+        // ── Operator: intake ───────────────────────────────────────────
+
+        // Right trigger: hold to intake (deploy arm + run rollers).
+        operatorController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
+
+        // Left trigger: hold to reverse intake (eject balls).
+        operatorController.leftTrigger().whileTrue(intakeSystem.dutyCycleEject());
 
         // ── Operator: secondary ball-handling & overrides ───────────────
 
-        // Right bumper: manually run intake rollers inward (override).
-        operatorController.rightBumper().whileTrue(intakeRollersSubsystem.intakeBalls());
-
-        // Left bumper: clear / unjam shooter system while held.
-        operatorController.leftBumper().whileTrue(shooterSystem.clearShooterSystem());
-
-        // ── Operator: shoot-mode toggles ────────────────────────────────
-
-        // Left stick press: toggle STATIC_DISTANCE mode
+        // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
+        // On release, only resume intaking if the operator is still holding the
+        // right trigger — otherwise the rollers would run indefinitely because
+        // dutyCycleIntake() is a RunCommand with no natural end condition.
+        // Note: dutyCycleAgitate() resets state to Stowed via finallyDo(), so
+        // the onFalse always re-deploys the arm. Rollers are NOT restarted —
+        // the operator uses RT to resume intaking after agitation.
         operatorController
-                .leftStick()
-                .onTrue(
-                        Commands.runOnce(
-                                () -> {
-                                    if (currentShootMode == ShootMode.STATIC_DISTANCE) {
-                                        currentShootMode = ShootMode.FULL;
-                                    } else {
-                                        currentShootMode = ShootMode.STATIC_DISTANCE;
-                                    }
-                                    Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
-                                }));
+                .a()
+                .whileTrue(intakeSystem.dutyCycleAgitate())
+                .onFalse(intakeSystem.dutyCycleDeploy());
 
-        // Right stick press: toggle FULL_STATIC mode (battle-tested comp fallback)
+        // B button: clear / unjam shooter system while held.
+        operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
+
+        // X button: defence mode (red/blue strobe LEDs while held).
         operatorController
-                .rightStick()
+                .x()
+                .onTrue(ledSubsystem.setDefenceModeLEDCommand(() -> true))
+                .onFalse(ledSubsystem.setDefenceModeLEDCommand(() -> false));
+
+        // ── Operator: shoot-mode toggle ─────────────────────────────────
+
+        // Y button: toggle between FULL (auto-aim + SOTF) and FULL_STATIC
+        // (turret locked at 0°, no lead compensation — manual aim fallback).
+        operatorController
+                .y()
                 .onTrue(
                         Commands.runOnce(
                                 () -> {
@@ -535,10 +417,37 @@ public class RobotContainer {
                                     Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
                                 }));
 
+        // ── Operator: RPM fudge adjustment ──────────────────────────────
+        // RB/LB adjust the RPM fudge factor in ±50 RPM increments.
+        // Writes through to the LoggedTunableNumber so the dashboard
+        // Number Slider updates in real time. Clamped to ±200 RPM.
+
+        operatorController
+                .rightBumper()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    double next = Math.min(kRPMFudgeRPM.get() + 50, 200);
+                                    kRPMFudgeRPM.set(next);
+                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
+                                }));
+
+        operatorController
+                .leftBumper()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    double next = Math.max(kRPMFudgeRPM.get() - 50, -200);
+                                    kRPMFudgeRPM.set(next);
+                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
+                                }));
+
         // ── Shift-end rumble ────────────────────────────────────────────
-        // Pulse rumble once per second in the last 5s of an active shift —
-        // mirrors 6328's end-of-shift warning. Both controllers rumble so both
-        // driver and operator have situational awareness of shift boundaries.
+        // Pulse rumble once per second in the last 5s of each hub shift —
+        // mirrors 6328's end-of-shift warning. remainingTime() counts down
+        // within the current shift window (25-30s each), so each pulse fires
+        // once per shift boundary. Both controllers rumble so driver and
+        // operator have situational awareness of shift transitions.
         for (int i = 1; i <= 5; i++) {
             final double seconds = i;
             new Trigger(() -> HubShiftUtil.getShiftedShiftInfo().remainingTime() < seconds)
@@ -558,46 +467,19 @@ public class RobotContainer {
     }
 
     /**
-     * Enable test/tuning-specific bindings. These are small helpers intended for development and
-     * should not be active during normal competition operation. This method should be idempotent in
-     * higher-level flows (constructor only currently). Add more bindings here as needed when
-     * experimenting.
+     * Tuning-mode bindings use <b>only the driver controller</b> so a single person can test in the
+     * pit. Triggers use <b>aim only</b> (no flywheel/feed) so balls aren't accidentally fired.
+     *
+     * <p><b>Driver:</b> RT = hybrid aim hub (no feed), LT = intake, D-pad Down = turret snap to max
+     * travel (130°), D-pad Up/Left/Right/diagonals = turret snap angles, A = agitate, B = clear
+     * shooter, X = test shoot, Y = toggle shoot mode, RB = +50 RPM fudge, LB = −50 RPM fudge. LED
+     * bindings are disabled in tuning mode to save loop time.
      */
     private void configureTestButtonBindings() {
-        // A button: test shoot (turret 0°, flywheel + feed).
-        driverController.a().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
+        // ── Driver: aiming ──────────────────────────────────────────────
 
-        // Previous A binding — turret-only aim (no hybrid clamp):
-        // driverController
-        //         .a()
-        //         .whileTrue(
-        //                 shooterSystem.aim(
-        //                         () -> drive.getPose(),
-        //                         () -> drive.getChassisSpeeds(),
-        //                         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-        //                         3,
-        //                         ShootingLookupTable.Mode.HUB));
-
-        driverController.b().whileTrue(intakeRollersSubsystem.setVelocity(kTargetAngularVelocity));
-        driverController.x().whileTrue(spindexerSubsystem.feedShooter());
-        driverController.y().whileTrue(kickerSubsystem.feedShooter());
-
-        // Duty-cycle intake: deploy arm via timed pulse, then run rollers while held.
-        // Switch to intakeSystem.intake() once pivot PID/FF gains are tuned.
-        driverController.rightBumper().whileTrue(intakeSystem.dutyCycleIntake());
-
-        // Left bumper immediately stops rollers.
-        driverController.leftBumper().onTrue(intakeSystem.stopRollers());
-
-        // Left trigger: duty-cycle agitate while held, re-deploy on release.
-        // Switch to intakeSystem.agitate() once pivot PID/FF gains are tuned.
-        driverController
-                .leftTrigger()
-                .whileTrue(intakeSystem.dutyCycleAgitate())
-                .onFalse(intakeSystem.dutyCycleDeploy());
-
-        // Right trigger: hybrid aim (turret clamped ±30°, drivetrain heading assist,
-        // no flywheel/feed). See docs/HybridAiming.md.
+        // Right trigger: hybrid aim at hub (turret clamped to asymmetric
+        // travel limits, drivetrain heading assist). Aim only — no flywheel or feed.
         driverController
                 .rightTrigger()
                 .whileTrue(
@@ -608,6 +490,87 @@ public class RobotContainer {
                                 3,
                                 ShootingLookupTable.Mode.HUB,
                                 () -> currentShootMode));
+        // LED bindings are skipped in tuning mode to save loop time.
+
+        // ── Driver: intake ──────────────────────────────────────────────
+
+        // Left trigger: hold to intake (deploy arm + run rollers).
+        driverController.leftTrigger().whileTrue(intakeSystem.dutyCycleIntake());
+
+        // D-pad down: snap turret to max travel limit (130°) for verifying
+        // asymmetric range. Releases fall back to Turret_DefaultStow (0°).
+        driverController.povDown().whileTrue(turretSubsystem.setAngle(Degrees.of(130)));
+
+        // ── Driver: turret snap angles ──────────────────────────────────
+        // D-pad directions snap the turret to fixed angles while held.
+        // Releases fall back to the Turret_DefaultStow (0°) default command.
+        driverController.povUp().whileTrue(turretSubsystem.setAngle(Degrees.of(0)));
+        driverController.povLeft().whileTrue(turretSubsystem.setAngle(Degrees.of(90)));
+        driverController.povRight().whileTrue(turretSubsystem.setAngle(Degrees.of(-90)));
+        driverController.povUpLeft().whileTrue(turretSubsystem.setAngle(Degrees.of(45)));
+        driverController.povUpRight().whileTrue(turretSubsystem.setAngle(Degrees.of(-45)));
+
+        // ── Driver: ball-handling & shooter overrides ────────────────────
+
+        // A button: agitate (re-deploy arm + jog rollers) to dislodge stuck balls.
+        // On release, reset state and redeploy so intake resumes immediately.
+        driverController
+                .a()
+                .whileTrue(intakeSystem.dutyCycleAgitate())
+                .onFalse(intakeSystem.dutyCycleDeploy());
+
+        // B button: clear / unjam shooter system while held.
+        driverController.b().whileTrue(shooterSystem.clearShooterSystem());
+
+        // X button: test shoot (turret at 0°, spin flywheel + feed) while held.
+        // Fires without vision — verifies shooter mechanism in the pit.
+        driverController.x().whileTrue(shooterSystem.testShoot(() -> drive.getPose()));
+
+        // ── Operator: intake ───────────────────────────────────────────
+
+        // Right trigger: hold to intake (deploy arm + run rollers).
+        operatorController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
+
+        // Left trigger: hold to reverse intake (eject balls).
+        operatorController.leftTrigger().whileTrue(intakeSystem.dutyCycleEject());
+
+        // ── Driver: shoot-mode toggle ───────────────────────────────────
+
+        // Y button: toggle between FULL and FULL_STATIC.
+        driverController
+                .y()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    if (currentShootMode == ShootMode.FULL_STATIC) {
+                                        currentShootMode = ShootMode.FULL;
+                                    } else {
+                                        currentShootMode = ShootMode.FULL_STATIC;
+                                    }
+                                    Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
+                                }));
+
+        // ── Driver: RPM fudge adjustment ────────────────────────────────
+
+        driverController
+                .rightBumper()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    double next = Math.min(kRPMFudgeRPM.get() + 50, 200);
+                                    kRPMFudgeRPM.set(next);
+                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
+                                }));
+
+        driverController
+                .leftBumper()
+                .onTrue(
+                        Commands.runOnce(
+                                () -> {
+                                    double next = Math.max(kRPMFudgeRPM.get() - 50, -200);
+                                    kRPMFudgeRPM.set(next);
+                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
+                                }));
     }
 
     // endregion
@@ -631,36 +594,6 @@ public class RobotContainer {
     }
 
     /**
-     * SysId helper: registers SysId routines on the dashboard.
-     *
-     * <p>Disabled by default. To enable SysId options, call {@code setupSysid()} from the constructor
-     * and uncomment the implementation inside this method.
-     */
-    @SuppressWarnings("unused")
-    private void setupSysid() {
-        // Set up SysId routines
-        autoChooser = new LoggedDashboardChooser<>("Tuning", AutoBuilder.buildAutoChooser());
-        autoChooser.addOption(
-                "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
-        autoChooser.addOption(
-                "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
-        autoChooser.addOption(
-                "Drive SysId (Quasistatic Forward)",
-                drive.sysIdQuasistatic(
-                        edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward));
-        autoChooser.addOption(
-                "Drive SysId (Quasistatic Reverse)",
-                drive.sysIdQuasistatic(
-                        edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse));
-        autoChooser.addOption(
-                "Drive SysId (Dynamic Forward)",
-                drive.sysIdDynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kForward));
-        autoChooser.addOption(
-                "Drive SysId (Dynamic Reverse)",
-                drive.sysIdDynamic(edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction.kReverse));
-    }
-
-    /**
      * AutoChooser helper: creates the dashboard auto chooser and populates it with available
      * autonomous routines.
      */
@@ -668,9 +601,7 @@ public class RobotContainer {
         // "Auto Chooser" matches the topic key the Elastic dashboard subscribes to.
         autoChooser =
                 new LoggedDashboardChooser<>(
-                        "Auto Chooser", AutoBuilder.buildAutoChooser("Left Bum Rush (No SOTF)"));
-        autoChooser.addOption(
-                "Left Bum Rush (No SOTF)", new PathPlannerAuto("Left Bum Rush (No SOTF)"));
+                        "Auto Chooser", AutoBuilder.buildAutoChooser("11 - Left Curved Bum Rush"));
     }
 
     // endregion

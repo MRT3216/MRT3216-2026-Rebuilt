@@ -94,9 +94,9 @@ public class IntakeSystem {
                 .alongWith(
                         Commands.repeatingSequence(
                                 intakePivot
-                                        .set(0.15)
-                                        .withTimeout(0.2)
-                                        .andThen(intakePivot.set(-0.15).withTimeout(0.17))));
+                                        .set(0.12)
+                                        .withTimeout(0.25)
+                                        .andThen(intakePivot.set(-0.10).withTimeout(0.20))));
     }
 
     /**
@@ -152,13 +152,30 @@ public class IntakeSystem {
     }
 
     /**
-     * Agitate the intake by oscillating the pivot with timed duty-cycle pulses while running the
-     * rollers. No pivot PID/FF gains are required.
+     * Eject (reverse) the intake using duty-cycle deploy: deploy if needed and run rollers in
+     * reverse. No pivot PID/FF gains are required.
      *
-     * <p>Uses ±0.05 duty-cycle at 0.25 s per direction. When the command ends (button released), the
-     * logical state is reset to {@link IntakeStates#Stowed} so that the follow-up deploy command
-     * (typically wired to {@code onFalse}) actually fires — agitation drifts the arm inward and it
-     * needs a fresh deploy pulse afterward.
+     * @return a command to deploy via duty-cycle and run rollers in reverse
+     */
+    public Command dutyCycleEject() {
+        return Commands.either(
+                        intakeRollers.ejectBalls(),
+                        dutyCycleDeploy().andThen(intakeRollers.ejectBalls()),
+                        () -> currentState == IntakeStates.Deployed)
+                .withName("Intake.DutyCycleEject");
+    }
+
+    /**
+     * Agitate the intake by pulsing the pivot upward while running the rollers. No pivot PID/FF gains
+     * are required.
+     *
+     * <p>Designed to be used when the arm is already deployed — the operator holds RT to intake, then
+     * taps A to dislodge stuck balls. The pivot pulses upward at 25 % for 0.15 s, then pushes back
+     * down at −6 % for 0.20 s. The lower soft limit is set to −5 ° (see {@code
+     * IntakeConstants.Pivot.kSoftLimitMin}) so the SparkFlex firmware does not clamp the push-down
+     * pulse at the 0 ° deployed position. Voltage compensation (12 V) and a 0.1 s open-loop ramp rate
+     * smooth out the pulses. When the command ends (button released), the logical state is reset to
+     * {@link IntakeStates#Stowed} so that the follow-up deploy command actually fires if needed.
      *
      * @return a repeating agitation command
      */
@@ -168,23 +185,23 @@ public class IntakeSystem {
                 .alongWith(
                         Commands.repeatingSequence(
                                 intakePivot
-                                        .set(0.08)
-                                        .withTimeout(0.3)
-                                        .andThen(intakePivot.set(-0.05).withTimeout(0.25))))
+                                        .set(0.10)
+                                        .withTimeout(0.10)
+                                        .andThen(intakePivot.set(-0.06).withTimeout(0.10))))
                 .finallyDo(() -> currentState = IntakeStates.Stowed)
                 .withName("Intake.DutyCycleAgitate");
     }
 
     /**
      * Deploy the intake arm using a timed duty-cycle pulse and update the logical state. Runs the
-     * pivot at −20 % for 0.3 s, which was the proven deploy method before PID/FF tuning.
+     * pivot at −20 % for 0.4 s (accounts for the 0.1 s open-loop ramp rate on the SparkFlex).
      *
      * @return a command that deploys the intake via duty-cycle
      */
     public Command dutyCycleDeploy() {
         return intakePivot
                 .set(-0.20)
-                .withTimeout(0.3)
+                .withTimeout(0.4)
                 .andThen(Commands.runOnce(() -> currentState = IntakeStates.Deployed))
                 .withName("Intake.DutyCycleDeploy");
     }

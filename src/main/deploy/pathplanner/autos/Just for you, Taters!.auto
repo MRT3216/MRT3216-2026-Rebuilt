@@ -11,7 +11,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "Right Curved Enter"
+                  "pathName": "Right-Mid Human Enter"
                 }
               },
               {
@@ -24,56 +24,31 @@
           }
         },
         {
-          "type": "path",
+          "type": "wait",
           "data": {
-            "pathName": "Right Curved Leave (No SOTF)"
+            "waitTime": 7.0
           }
         },
         {
-          "type": "race",
+          "type": "path",
+          "data": {
+            "pathName": "Right-Mid Human Exit"
+          }
+        },
+        {
+          "type": "parallel",
           "data": {
             "commands": [
               {
-                "type": "wait",
+                "type": "named",
                 "data": {
-                  "waitTime": 5.0
+                  "name": "Aim and Shoot"
                 }
               },
               {
                 "type": "named",
                 "data": {
                   "name": "Agitate"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Aim and Shoot"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stop Shooter"
-          }
-        },
-        {
-          "type": "deadline",
-          "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "Right Reposition (No SOTF)"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Run Intake"
                 }
               }
             ]

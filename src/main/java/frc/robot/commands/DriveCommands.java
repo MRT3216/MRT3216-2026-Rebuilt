@@ -48,7 +48,9 @@ public class DriveCommands {
 
     // Hybrid aiming constants
     private static final double HYBRID_HOME_ANGLE_DEG = HybridAimingConstants.kTurretHomeAngleDeg;
-    private static final double HYBRID_DEADBAND_DEG = HybridAimingConstants.kTurretDeadbandDeg;
+    private static final double HYBRID_MIN_DEG = HybridAimingConstants.kTurretMinDeg;
+    private static final double HYBRID_MAX_DEG = HybridAimingConstants.kTurretMaxDeg;
+    private static final double HYBRID_MARGIN_DEG = HybridAimingConstants.kThresholdMarginDeg;
     private static final double HYBRID_HEADING_KP = HybridAimingConstants.kHeadingKP;
     private static final double HYBRID_HEADING_KD = HybridAimingConstants.kHeadingKD;
     private static final double HYBRID_HEADING_MAX_VEL = HybridAimingConstants.kHeadingMaxVelocity;
@@ -317,21 +319,21 @@ public class DriveCommands {
      *
      * <p><b>This is the drivetrain half of the hybrid aiming system.</b> The driver retains full
      * translational control (left stick) and rotational control (right stick). When the
-     * robot-relative angle to the target exceeds the configured deadband, a profiled PID heading
-     * controller blends additional rotational velocity to steer the chassis toward the target. Inside
-     * the deadband the controller outputs zero — the turret handles the residual.
+     * robot-relative angle to the target grows large enough, a profiled PID heading controller blends
+     * additional rotational velocity to steer the chassis toward the target.
      *
-     * <p>The deadband creates a "comfort zone" where the turret operates alone. Once the target
-     * drifts outside that zone, the drivetrain smoothly rotates to re-center it, keeping the turret
-     * near its home angle and minimizing wiring stress.
+     * <p>Three zones control the heading correction strength (measured from turret home):
      *
-     * <p>All tuning constants (PID gains, deadband, home angle) are read directly from {@link
-     * HybridAimingConstants} — matching the pattern used by {@link #joystickDriveAtAngle}.
+     * <ul>
+     *   <li><b>Inner zone</b> (0° – inner threshold): turret handles aiming alone, heading PID is
+     *       reset.
+     *   <li><b>Ramp zone</b> (inner threshold – deadband): heading PID output scales linearly from 0%
+     *       → 100%, giving the chassis a smooth head start.
+     *   <li><b>Outer zone</b> (&gt; deadband): full heading PID correction.
+     * </ul>
      *
-     * <p><b>Not currently wired.</b> To activate hybrid aiming, use this command as the drive default
-     * (or as a {@code whileTrue} alongside the shoot trigger) instead of {@link #joystickDrive(Drive,
-     * DoubleSupplier, DoubleSupplier, DoubleSupplier)}. See {@link HybridAimingConstants} for tuning
-     * knobs and swap-in instructions.
+     * <p>All tuning constants (PID gains, deadband, margin, home angle) are read from {@link
+     * HybridAimingConstants}.
      *
      * @param drive the swerve drive subsystem
      * @param xSupplier left stick Y axis (forward/back) — negated by caller
@@ -342,6 +344,9 @@ public class DriveCommands {
      * @param aimEnabled supplier that gates whether the heading controller is active. When false
      *     (e.g. driver not holding shoot trigger), this behaves exactly like {@link
      *     #joystickDrive(Drive, DoubleSupplier, DoubleSupplier, DoubleSupplier)}.
+     * @param speedScalar supplier that scales both translation and driver-rotation inputs. Use to
+     *     reduce drive speed while shooting (e.g. 0.3 = 30%). The heading-assist omega is NOT scaled
+     *     — only the driver's joystick inputs.
      * @return a command that drives with optional heading aim assist
      */
     public static Command joystickDriveAimAtTarget(
@@ -351,9 +356,10 @@ public class DriveCommands {
             DoubleSupplier omegaSupplier,
             Supplier<Translation2d> targetSupplier,
             Supplier<Pose2d> robotPoseSupplier,
-            Supplier<Boolean> aimEnabled) {
+            Supplier<Boolean> aimEnabled,
+            DoubleSupplier speedScalar) {
 
-        // Heading PID — only active when the target is outside the turret deadband.
+        // Heading PID — only active when the target is outside the turret travel window.
         ProfiledPIDController headingController =
                 new ProfiledPIDController(
                         HYBRID_HEADING_KP,
@@ -362,8 +368,14 @@ public class DriveCommands {
                         new TrapezoidProfile.Constraints(HYBRID_HEADING_MAX_VEL, HYBRID_HEADING_MAX_ACCEL));
         headingController.enableContinuousInput(-Math.PI, Math.PI);
 
-        double deadbandRad = Math.toRadians(HYBRID_DEADBAND_DEG);
+        double minRad = Math.toRadians(HYBRID_MIN_DEG);
+        double maxRad = Math.toRadians(HYBRID_MAX_DEG);
         double homeAngleRad = Math.toRadians(HYBRID_HOME_ANGLE_DEG);
+        double marginRad = Math.toRadians(HYBRID_MARGIN_DEG);
+        // Inner thresholds: the edges of the ramp zone closest to center.
+        // Within [innerMinRad, innerMaxRad] the turret handles aiming alone.
+        double innerMinRad = minRad + marginRad; // e.g. -90 + 15 = -75°
+        double innerMaxRad = maxRad - marginRad; // e.g. 130 - 15 = 115°
 
         return Commands.run(
                         () -> {
@@ -374,6 +386,12 @@ public class DriveCommands {
                             // --- Rotation: driver + optional heading assist ---
                             double driverOmega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
                             driverOmega = Math.copySign(driverOmega * driverOmega, driverOmega);
+
+                            // Apply speed scalar (e.g. 30% while shooting) to driver
+                            // inputs only — heading-assist omega is NOT scaled.
+                            double scalar = speedScalar.getAsDouble();
+                            linearVelocity = linearVelocity.times(scalar);
+                            driverOmega *= scalar;
 
                             double headingOmega = 0.0;
                             boolean isAiming = aimEnabled.get();
@@ -396,21 +414,37 @@ public class DriveCommands {
                                 Logger.recordOutput(
                                         "HybridAiming/robotRelativeAngleDeg", Math.toDegrees(robotRelativeAngle));
                                 Logger.recordOutput(
-                                        "HybridAiming/outsideDeadband", Math.abs(robotRelativeAngle) > deadbandRad);
+                                        "HybridAiming/outsideTravelWindow",
+                                        robotRelativeAngle < minRad || robotRelativeAngle > maxRad);
 
-                                if (Math.abs(robotRelativeAngle) > deadbandRad) {
-                                    // Target is outside turret comfort zone — drivetrain corrects.
+                                double rampFactor; // 0.0 = turret only, 1.0 = full drivetrain assist
+
+                                if (robotRelativeAngle >= innerMinRad && robotRelativeAngle <= innerMaxRad) {
+                                    // === Inner zone: turret handles it alone ===
+                                    rampFactor = 0.0;
+                                    headingController.reset(pose.getRotation().getRadians());
+                                } else if (robotRelativeAngle <= minRad || robotRelativeAngle >= maxRad) {
+                                    // === Outer zone: full drivetrain correction ===
+                                    rampFactor = 1.0;
+                                } else if (robotRelativeAngle < innerMinRad) {
+                                    // === Min-side ramp zone: linear ramp from inner to min limit ===
+                                    rampFactor = (innerMinRad - robotRelativeAngle) / marginRad;
+                                } else {
+                                    // === Max-side ramp zone: linear ramp from inner to max limit ===
+                                    rampFactor = (robotRelativeAngle - innerMaxRad) / marginRad;
+                                }
+
+                                if (rampFactor > 0.0) {
                                     // Setpoint = field angle to target minus the home offset, so the
                                     // turret-home face of the robot points at the target.
                                     double desiredHeading = MathUtil.angleModulus(fieldAngleToTarget - homeAngleRad);
                                     headingOmega =
-                                            headingController.calculate(pose.getRotation().getRadians(), desiredHeading);
-                                } else {
-                                    // Inside deadband — turret handles it, reset heading controller
-                                    // so it doesn't wind up.
-                                    headingController.reset(pose.getRotation().getRadians());
+                                            rampFactor
+                                                    * headingController.calculate(
+                                                            pose.getRotation().getRadians(), desiredHeading);
                                 }
 
+                                Logger.recordOutput("HybridAiming/rampFactor", rampFactor);
                                 Logger.recordOutput("HybridAiming/headingOmega", headingOmega);
                             } else {
                                 // Aiming disabled — reset controller to avoid stale state.

@@ -8,10 +8,7 @@ import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kD_sim;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kEncoderZeroOffset;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kGearing;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMax;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kHardLimitMin;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kI;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kI_sim;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kLength;
@@ -21,8 +18,6 @@ import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMaxVelocity;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kMotorInverted;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kP;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kP_sim;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kSoftLimitMax;
-import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kSoftLimitMin;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kStatorCurrentLimit;
 import static frc.robot.subsystems.intake.IntakeConstants.Pivot.kTolerance;
 
@@ -126,12 +121,13 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withGearing(kGearing)
                         .withMotorInverted(kMotorInverted)
                         .withIdleMode(MotorMode.BRAKE)
-                        // .withVoltageCompensation(Volts.of(12))
                         .withStatorCurrentLimit(kStatorCurrentLimit)
-                        .withExternalEncoder(leftPivotMotor.getAbsoluteEncoder())
-                        .withExternalEncoderInverted(false)
-                        .withUseExternalFeedbackEncoder(true)
-                        .withExternalEncoderZeroOffset(kEncoderZeroOffset)
+                        .withVoltageCompensation(Volts.of(12))
+                        .withOpenLoopRampRate(Seconds.of(0.25))
+                        // .withExternalEncoder(leftPivotMotor.getAbsoluteEncoder())
+                        // .withExternalEncoderInverted(false)
+                        // .withUseExternalFeedbackEncoder(true)
+                        // .withExternalEncoderZeroOffset(kEncoderZeroOffset)
                         .withExternalEncoderGearing(new MechanismGearing(GearBox.fromStages("1:1")))
                         .withFollowers(Pair.of(rightPivotMotor, true));
 
@@ -142,9 +138,9 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         .withMass(kMass)
                         .withLength(kLength)
                         .withTelemetry(kIntakeArmMechTelemetry, Constants.telemetryVerbosity())
-                        .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
-                        .withHardLimit(kHardLimitMin, kHardLimitMax);
-
+                        // .withSoftLimits(kSoftLimitMin, kSoftLimitMax)
+                        .withStartingPosition(Degrees.of(90))
+                        .withHardLimit(Degrees.of(0), Degrees.of(90));
         intakePivot = new Arm(intakePivotConfig);
     }
 
@@ -213,6 +209,17 @@ public class IntakePivotSubsystem extends SubsystemBase {
      */
     public Command set(double dutyCycle) {
         return intakePivot.set(dutyCycle);
+    }
+
+    /**
+     * Sets a fixed voltage on the intake arm. Unlike duty-cycle control, this delivers the same
+     * torque regardless of battery voltage, making behaviour consistent across matches.
+     *
+     * @param volts The voltage to apply (positive = pull in / retract, negative = push out / deploy).
+     * @return A command to run the intake arm at the specified voltage.
+     */
+    public Command setVoltage(Voltage volts) {
+        return intakePivot.setVoltage(volts);
     }
 
     /** Run a YAMS SysId routine for feedforward characterization. */

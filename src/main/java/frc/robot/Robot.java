@@ -7,6 +7,10 @@
 
 package frc.robot;
 
+import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
+
+import com.pathplanner.lib.commands.FollowPathCommand;
+import com.pathplanner.lib.commands.PathfindingCommand;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -26,7 +30,6 @@ import frc.robot.util.Elastic;
 import frc.robot.util.Elastic.Notification;
 import frc.robot.util.Elastic.NotificationLevel;
 import frc.robot.util.HubShiftUtil;
-import frc.robot.util.TuningDashboard;
 import frc.robot.util.TuningModeSync;
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -145,6 +148,17 @@ public class Robot extends LoggedRobot {
         // Instantiate our RobotContainer. This will perform all our button bindings,
         // and put our autonomous chooser on the dashboard.
         robotContainer = new RobotContainer();
+
+        // ── PathPlanner Java warmup ──────────────────────────────────────────
+        // The first execution of FollowPathCommand / PathfindingCommand is slow
+        // because the JVM must class-load and JIT-compile all the trajectory
+        // generation code.  Running the official warmup commands during disabled
+        // pre-pays that cost so autonomous doesn't see a loop overrun on the first
+        // path segment.  Both commands already call .ignoringDisable(true).
+        CommandScheduler.getInstance()
+                .schedule(
+                        FollowPathCommand.warmupCommand(), // .ignoringDisable(true) built-in
+                        PathfindingCommand.warmupCommand()); // .ignoringDisable(true) built-in
     }
 
     /** This function is called periodically during all modes. */
@@ -169,9 +183,6 @@ public class Robot extends LoggedRobot {
         // This must be called from the robot's periodic block in order for anything in
         // the Command-based framework to work.
         CommandScheduler.getInstance().run();
-
-        // Update tuning dashboard Mechanism2d visualization (no-ops if not initialized)
-        TuningDashboard.periodic();
 
         // ── BatteryLogger (post-scheduler) ────────────────────────────────────
         // Subsystems have now reported their current draws via reportCurrentUsage().
@@ -198,6 +209,10 @@ public class Robot extends LoggedRobot {
                 HubShiftUtil.getFirstActiveAlliance()
                         == DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue));
         Logger.recordOutput("MatchTime", DriverStation.getMatchTime());
+
+        // RPM fudge — logged every cycle so the dashboard display is always current
+        // even when no shoot command is active.
+        Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", kRPMFudgeRPM.get());
 
         // Battery voltage — published every loop for Elastic dashboard widgets.
         // RobotController.getBatteryVoltage() is already cached by the HAL each loop.
@@ -230,7 +245,8 @@ public class Robot extends LoggedRobot {
         Elastic.selectTab("Auto");
         autonomousCommand = robotContainer.getAutonomousCommand();
 
-        // schedule the autonomous command (example)
+        // Wrap in .repeatedly() so the auto restarts as soon as it finishes.
+        // teleopInit() will cancel this when teleop begins.
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
         }

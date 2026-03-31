@@ -31,6 +31,11 @@ public class BatteryLogger {
     private final Map<String, Double> subsystemPowers = new HashMap<>();
     private final Map<String, Double> subsystemEnergies = new HashMap<>();
 
+    // Throttle: only publish the 42 EnergyLogger signals every Nth loop.
+    // Energy accumulation still happens every cycle — only Logger.recordOutput is skipped.
+    private static final int LOG_EVERY_N_CYCLES = 5; // 100 ms at 50 Hz
+    private int logCycleCounter = 0;
+
     // Set by Robot.java each loop before periodicAfterScheduler() is called.
     private double batteryVoltage = 12.0;
     private double rioCurrent = 0.0;
@@ -97,20 +102,28 @@ public class BatteryLogger {
         reportCurrentUsage("FixedDevices/CANivore", 0.03);
         reportCurrentUsage("FixedDevices/Radio", 0.5);
 
-        // ── Log totals ────────────────────────────────────────────────────────
-        Logger.recordOutput("EnergyLogger/TotalCurrentAmps", totalCurrent);
-        Logger.recordOutput("EnergyLogger/TotalPowerWatts", totalPower);
-        Logger.recordOutput("EnergyLogger/TotalEnergyJoules", totalEnergy);
+        // ── Throttled logging ─────────────────────────────────────────────────
+        // Energy/power accumulation happens every cycle (above), but the 42+
+        // Logger.recordOutput calls only run every Nth cycle to save loop time.
+        logCycleCounter++;
+        if (logCycleCounter >= LOG_EVERY_N_CYCLES) {
+            logCycleCounter = 0;
 
-        // ── Log per-subsystem breakdowns ──────────────────────────────────────
-        for (var entry : subsystemCurrents.entrySet()) {
-            Logger.recordOutput("EnergyLogger/" + entry.getKey() + "/CurrentAmps", entry.getValue());
-        }
-        for (var entry : subsystemPowers.entrySet()) {
-            Logger.recordOutput("EnergyLogger/" + entry.getKey() + "/PowerWatts", entry.getValue());
-        }
-        for (var entry : subsystemEnergies.entrySet()) {
-            Logger.recordOutput("EnergyLogger/" + entry.getKey() + "/EnergyJoules", entry.getValue());
+            // ── Log totals ────────────────────────────────────────────────────
+            Logger.recordOutput("EnergyLogger/TotalCurrentAmps", totalCurrent);
+            Logger.recordOutput("EnergyLogger/TotalPowerWatts", totalPower);
+            Logger.recordOutput("EnergyLogger/TotalEnergyJoules", totalEnergy);
+
+            // ── Log per-subsystem breakdowns ──────────────────────────────────
+            for (var entry : subsystemCurrents.entrySet()) {
+                Logger.recordOutput("EnergyLogger/" + entry.getKey() + "/CurrentAmps", entry.getValue());
+            }
+            for (var entry : subsystemPowers.entrySet()) {
+                Logger.recordOutput("EnergyLogger/" + entry.getKey() + "/PowerWatts", entry.getValue());
+            }
+            for (var entry : subsystemEnergies.entrySet()) {
+                Logger.recordOutput("EnergyLogger/" + entry.getKey() + "/EnergyJoules", entry.getValue());
+            }
         }
 
         // Reset per-loop accumulators (energy is cumulative, so it persists in the maps).

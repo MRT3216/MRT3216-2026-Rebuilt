@@ -22,8 +22,16 @@ public class ShootingLookupTable {
     private final TreeMap<Distance, ShootingParameters> lookupTable =
             new TreeMap<>(Comparator.comparingDouble(d -> d.in(Meters)));
 
+    // Cached bounds — computed once after loading, avoids per-cycle Optional allocation.
+    private Distance cachedMinDistance = null;
+    private Distance cachedMaxDistance = null;
+
     public ShootingLookupTable(Mode mode) {
         loadFromConstants(mode);
+        if (!lookupTable.isEmpty()) {
+            cachedMinDistance = lookupTable.firstKey();
+            cachedMaxDistance = lookupTable.lastKey();
+        }
     }
 
     private void loadFromConstants(Mode mode) {
@@ -76,6 +84,27 @@ public class ShootingLookupTable {
         return new ShootingParameters(Degrees.of(interpDeg), Seconds.of(interpTof));
     }
 
+    /**
+     * Primitive-only time-of-flight lookup for use in the hot solver loop. Avoids all unit-measure
+     * allocations. Returns seconds.
+     */
+    public double getTimeOfFlightSeconds(double distanceMeters) {
+        var distKey = Meters.of(distanceMeters);
+        Distance lowerKey = lookupTable.floorKey(distKey);
+        Distance upperKey = lookupTable.ceilingKey(distKey);
+
+        if (lowerKey == null && upperKey == null) return Double.NaN;
+        if (lowerKey == null) return lookupTable.get(upperKey).timeOfFlight().in(Seconds);
+        if (upperKey == null) return lookupTable.get(lowerKey).timeOfFlight().in(Seconds);
+
+        double lo = lowerKey.in(Meters);
+        double hi = upperKey.in(Meters);
+        double ratio = (distanceMeters - lo) / (hi - lo);
+        ShootingParameters lower = lookupTable.get(lowerKey);
+        ShootingParameters upper = lookupTable.get(upperKey);
+        return lerp(lower.timeOfFlight().in(Seconds), upper.timeOfFlight().in(Seconds), ratio);
+    }
+
     public Time getTimeOfFlight(Distance distance) {
         return getParameters(distance).timeOfFlight();
     }
@@ -89,11 +118,11 @@ public class ShootingLookupTable {
     }
 
     public Optional<Distance> getMinDistance() {
-        return lookupTable.isEmpty() ? Optional.empty() : Optional.of(lookupTable.firstKey());
+        return cachedMinDistance == null ? Optional.empty() : Optional.of(cachedMinDistance);
     }
 
     public Optional<Distance> getMaxDistance() {
-        return lookupTable.isEmpty() ? Optional.empty() : Optional.of(lookupTable.lastKey());
+        return cachedMaxDistance == null ? Optional.empty() : Optional.of(cachedMaxDistance);
     }
 
     /**

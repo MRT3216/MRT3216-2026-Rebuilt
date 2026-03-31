@@ -9,7 +9,7 @@ import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kF
 import static frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants.kTunableFlywheelRPM;
 import static frc.robot.subsystems.shooter.ShooterConstants.HoodConstants.kTunableHoodAngleDeg;
 import static frc.robot.subsystems.shooter.ShooterConstants.KickerConstants.kKickerClearAngularVelocity;
-import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgePercent;
+import static frc.robot.subsystems.shooter.ShooterConstants.kRPMFudgeRPM;
 import static frc.robot.subsystems.shooter.ShooterConstants.kRefinementConvergenceEpsilon;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.constants.Constants;
 import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
@@ -174,14 +175,12 @@ public class ShooterSystem {
      *
      * <ul>
      *   <li>{@link ShootMode#FULL} — full shoot-on-the-fly with lead compensation.
-     *   <li>{@link ShootMode#STATIC_DISTANCE} — raw hub distance (no lead), turret still tracks
-     *       azimuth.
-     *   <li>{@link ShootMode#FULL_STATIC} — raw hub distance, turret locked at 0°. Battle-tested comp
+     *   <li>{@link ShootMode#FULL_STATIC} — raw hub distance, turret locked at 0°. Manual aim
      *       fallback.
      * </ul>
      *
-     * <p>The RPM fudge factor ({@code Shooter/RPMFudgePercent}) is always applied on top of the model
-     * RPM regardless of mode.
+     * <p>The RPM fudge factor ({@code Shooter/RPMFudge}) is always applied on top of the model RPM
+     * regardless of mode.
      *
      * @param robotPose supplier of the robot pose
      * @param fieldSpeeds supplier of chassis speeds (for lead compensation in FULL mode)
@@ -206,8 +205,8 @@ public class ShooterSystem {
                 makeModeAwareSolutionSupplier(
                         robotPose, fieldSpeeds, targetSupplier, refinementIterations, table, shootMode);
 
-        // Turret: tracks computed azimuth in FULL and STATIC_DISTANCE modes, locks
-        // at 0° in FULL_STATIC (the proven comp fallback).
+        // Turret: tracks computed azimuth in FULL mode, locks at 0° in
+        // FULL_STATIC (the manual aim fallback).
         var turretCmd =
                 turret.setAngle(
                         () -> {
@@ -281,7 +280,7 @@ public class ShooterSystem {
 
         var turretCmd = turret.setAngle(() -> solution.get().turretAzimuth());
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
-        var flywheelCmd = flywheel.setVelocity(() -> applyFudge(solution));
+        var flywheelCmd = flywheel.setVelocity(() -> applyPassFudge(solution));
         var feedCmd = makeFeedSequenceUngated();
         var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
 
@@ -319,22 +318,23 @@ public class ShooterSystem {
     //
     // The methods below implement hybrid aiming where the DRIVETRAIN handles
     // coarse heading correction and the TURRET handles only the residual.
-    // This keeps the turret within a small comfort zone, protecting wiring.
+    // This keeps the turret within its travel window, protecting wiring.
     //
-    // ** NOT CURRENTLY WIRED ** — all existing turret-only code is unchanged.
-    // To activate, see the swap-in instructions in HybridAimingConstants javadoc.
+    // Currently wired in RobotContainer for both competition and tuning modes.
+    // See HybridAimingConstants for all tunable limits.
 
     /**
      * Hybrid aim-and-shoot: the turret tracks the <em>residual</em> angle that the drivetrain hasn't
      * corrected, rather than the full robot-relative angle to the target.
      *
      * <p>This is a drop-in replacement for {@link #aimAndShoot}. The turret command is identical
-     * except its azimuth is clamped to ±{@link HybridAimingConstants#kTurretDeadbandDeg} around the
-     * home angle so the turret never swings far from center. The drivetrain's {@code
+     * except its azimuth is clamped to the asymmetric travel window [{@link
+     * HybridAimingConstants#kTurretMinDeg}, {@link HybridAimingConstants#kTurretMaxDeg}] around the
+     * home angle so the turret never swings past its physical limits. The drivetrain's {@code
      * joystickDriveAimAtTarget} command (in {@link frc.robot.commands.DriveCommands}) handles the
      * coarse heading correction.
      *
-     * <p>All tuning constants (clamp width, home angle) are read directly from {@link
+     * <p>All tuning constants (travel limits, home angle) are read directly from {@link
      * HybridAimingConstants} — matching the pattern used by {@link #aimAndShoot}.
      *
      * <p><b>How to wire (example):</b>
@@ -372,19 +372,18 @@ public class ShooterSystem {
             Supplier<ShootMode> shootMode) {
         var table = new ShootingLookupTable(tableMode);
 
-        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretMinDeg = HybridAimingConstants.kTurretMinDeg;
+        double turretMaxDeg = HybridAimingConstants.kTurretMaxDeg;
         double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
 
         var solution =
                 makeModeAwareSolutionSupplier(
                         robotPose, fieldSpeeds, targetSupplier, refinementIterations, table, shootMode);
 
-        // Turret: tracks computed azimuth but CLAMPED to ±turretClampDeg around
-        // the home angle. For a forward-facing shooter (home=0°) this clamps to
-        // e.g. [-30°, +30°]. For a rear-facing shooter (home=180°) this clamps
-        // to e.g. [150°, 210°]. The drivetrain heading controller is responsible
-        // for keeping the full angle small enough that this clamp rarely
-        // activates — it's a safety net, not the primary control path.
+        // Turret: tracks computed azimuth but CLAMPED to the asymmetric travel
+        // window [home + min, home + max]. The drivetrain heading controller is
+        // responsible for keeping the angle within this window — the clamp is a
+        // safety net, not the primary control path.
         var turretCmd =
                 turret.setAngle(
                         () -> {
@@ -394,15 +393,14 @@ public class ShooterSystem {
                             double rawDeg = solution.get().turretAzimuth().in(Degrees);
                             double clampedDeg =
                                     edu.wpi.first.math.MathUtil.clamp(
-                                            rawDeg,
-                                            turretHomeAngleDeg - turretClampDeg,
-                                            turretHomeAngleDeg + turretClampDeg);
+                                            rawDeg, turretHomeAngleDeg + turretMinDeg, turretHomeAngleDeg + turretMaxDeg);
 
                             Logger.recordOutput("HybridAiming/rawTurretAzimuthDeg", rawDeg);
                             Logger.recordOutput("HybridAiming/clampedTurretAzimuthDeg", clampedDeg);
                             Logger.recordOutput(
                                     "HybridAiming/turretClamped",
-                                    Math.abs(rawDeg - turretHomeAngleDeg) > turretClampDeg);
+                                    rawDeg < turretHomeAngleDeg + turretMinDeg
+                                            || rawDeg > turretHomeAngleDeg + turretMaxDeg);
 
                             return Degrees.of(clampedDeg);
                         });
@@ -417,9 +415,60 @@ public class ShooterSystem {
     }
 
     /**
-     * Hybrid aim only — turret and hood track the target (turret clamped to ±deadband), but the
-     * flywheel does NOT spin and the feed path does NOT run. Useful for testing hybrid aiming
-     * alignment in tuning mode without accidentally firing balls.
+     * Hybrid aim-and-shoot for <b>pass shots</b>: the turret tracks the nearest pass target landing
+     * zone with the same clamped-turret hybrid approach as {@link #hybridAimAndShoot}. Feeding is
+     * <em>not</em> shift-gated — fires freely while the trigger is held regardless of hub shift
+     * state.
+     *
+     * @param robotPose supplier of the robot pose
+     * @param fieldSpeeds supplier of chassis speeds (for lead compensation)
+     * @param refinementIterations number of solver refinement iterations
+     * @return a command that aims (clamped turret) and feeds a pass shot while scheduled
+     */
+    public Command hybridAimAndShootPass(
+            Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, int refinementIterations) {
+        var table = new ShootingLookupTable(ShootingLookupTable.Mode.PASS);
+
+        double turretMinDeg = HybridAimingConstants.kTurretMinDeg;
+        double turretMaxDeg = HybridAimingConstants.kTurretMaxDeg;
+        double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
+
+        // Select the nearest pass target landing zone by robot Y position each loop.
+        Supplier<Translation3d> targetSupplier =
+                () -> {
+                    var left = AllianceFlipUtil.apply(FieldConstants.PassTarget.left);
+                    var right = AllianceFlipUtil.apply(FieldConstants.PassTarget.right);
+                    double robotY = robotPose.get().getY();
+                    return Math.abs(robotY - left.getY()) < Math.abs(robotY - right.getY()) ? left : right;
+                };
+
+        var solution =
+                makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
+
+        // Turret: clamped to asymmetric travel [home + min, home + max], same as hybridAimAndShoot.
+        var turretCmd =
+                turret.setAngle(
+                        () -> {
+                            double rawDeg = solution.get().turretAzimuth().in(Degrees);
+                            double clampedDeg =
+                                    edu.wpi.first.math.MathUtil.clamp(
+                                            rawDeg, turretHomeAngleDeg + turretMinDeg, turretHomeAngleDeg + turretMaxDeg);
+                            return Degrees.of(clampedDeg);
+                        });
+
+        var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
+        var flywheelCmd = flywheel.setVelocity(() -> applyPassFudge(solution));
+        var feedCmd = makeFeedSequenceUngated();
+        var telemetryCmd = makeTelemetryCmd(robotPose, solution, () -> ShootMode.FULL);
+
+        return Commands.parallel(turretCmd.alongWith(hoodCmd), flywheelCmd, feedCmd, telemetryCmd)
+                .withName("HybridPassShoot");
+    }
+
+    /**
+     * Hybrid aim only — turret and hood track the target (turret clamped to asymmetric travel
+     * limits), but the flywheel does NOT spin and the feed path does NOT run. Useful for testing
+     * hybrid aiming alignment in tuning mode without accidentally firing balls.
      *
      * <p>Pair with {@link frc.robot.commands.DriveCommands#joystickDriveAimAtTarget} as the drive
      * default command to get the full hybrid aiming experience.
@@ -441,7 +490,8 @@ public class ShooterSystem {
             ShootingLookupTable.Mode tableMode,
             Supplier<ShootMode> shootMode) {
         var table = new ShootingLookupTable(tableMode);
-        double turretClampDeg = HybridAimingConstants.kTurretDeadbandDeg;
+        double turretMinDeg = HybridAimingConstants.kTurretMinDeg;
+        double turretMaxDeg = HybridAimingConstants.kTurretMaxDeg;
         double turretHomeAngleDeg = HybridAimingConstants.kTurretHomeAngleDeg;
         var solution =
                 makeModeAwareSolutionSupplier(
@@ -455,14 +505,13 @@ public class ShooterSystem {
                             double rawDeg = solution.get().turretAzimuth().in(Degrees);
                             double clampedDeg =
                                     edu.wpi.first.math.MathUtil.clamp(
-                                            rawDeg,
-                                            turretHomeAngleDeg - turretClampDeg,
-                                            turretHomeAngleDeg + turretClampDeg);
+                                            rawDeg, turretHomeAngleDeg + turretMinDeg, turretHomeAngleDeg + turretMaxDeg);
                             Logger.recordOutput("HybridAiming/rawTurretAzimuthDeg", rawDeg);
                             Logger.recordOutput("HybridAiming/clampedTurretAzimuthDeg", clampedDeg);
                             Logger.recordOutput(
                                     "HybridAiming/turretClamped",
-                                    Math.abs(rawDeg - turretHomeAngleDeg) > turretClampDeg);
+                                    rawDeg < turretHomeAngleDeg + turretMinDeg
+                                            || rawDeg > turretHomeAngleDeg + turretMaxDeg);
                             return Degrees.of(clampedDeg);
                         });
         var hoodCmd = hood.setAngle(() -> solution.get().hoodAngle());
@@ -502,7 +551,7 @@ public class ShooterSystem {
                                     kRefinementConvergenceEpsilon,
                                     table);
                 } else {
-                    // STATIC_DISTANCE and FULL_STATIC both use raw distance
+                    // FULL_STATIC uses raw distance (no lead compensation)
                     cache[0] =
                             HybridTurretUtil.computeStaticShot(robotPose.get(), targetSupplier.get(), table);
                 }
@@ -543,18 +592,18 @@ public class ShooterSystem {
     }
 
     private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
-        // Feed only while the shifted shift is active AND the solution is within LUT
-        // range. If the robot is too far / too close the feed stops, preventing wasted
-        // game pieces on shots that won't score.
-        return Commands.sequence(
-                        clearKicker(),
-                        spindexer
-                                .feedShooter()
-                                .alongWith(kicker.feedShooter())
-                                .onlyWhile(
-                                        () ->
-                                                HubShiftUtil.getShiftedShiftInfo().active()
-                                                        && solutionSupplier.get().isValid()))
+        // clearKicker() runs immediately on trigger pull so the kicker is ready
+        // before the shift window opens.  After the clear finishes, we wait for
+        // the shifted window to become active (and the solution to be valid),
+        // then feed until the window closes or the solution goes out of range.
+        // .repeatedly() re-enters the waitUntil→feed loop for subsequent shifts.
+        Supplier<Boolean> canFeed =
+                () -> HubShiftUtil.getShiftedShiftInfo().active() && solutionSupplier.get().isValid();
+
+        return clearKicker()
+                .andThen(Commands.waitUntil(canFeed::get))
+                .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()).onlyWhile(canFeed::get))
+                .repeatedly()
                 .withName("FeedSequence");
     }
 
@@ -575,14 +624,26 @@ public class ShooterSystem {
     }
 
     /**
-     * Apply the RPM fudge factor to the model speed for the given solution. Returns the final
-     * flywheel target: {@code modelRPM × (1 + fudge/100)}.
+     * Apply the RPM fudge factor to the hub model speed for the given solution. Returns the final
+     * flywheel target: {@code modelRPM + fudge}.
      */
     private static AngularVelocity applyFudge(
             Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         var modelSpeed = ShooterModel.flywheelSpeedForDistance(solutionSupplier.get().leadDistance());
-        double fudge = kRPMFudgePercent.get();
-        return RPM.of(modelSpeed.in(RPM) * (1.0 + fudge / 100.0));
+        double fudge = kRPMFudgeRPM.get();
+        return RPM.of(modelSpeed.in(RPM) + fudge);
+    }
+
+    /**
+     * Apply the RPM fudge factor to the <em>pass</em> model speed. Uses the higher-RPM pass model so
+     * the ball arcs over the hub.
+     */
+    private static AngularVelocity applyPassFudge(
+            Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
+        var modelSpeed =
+                ShooterModel.passFlywheelSpeedForDistance(solutionSupplier.get().leadDistance());
+        double fudge = kRPMFudgeRPM.get();
+        return RPM.of(modelSpeed.in(RPM) + fudge);
     }
 
     /**
@@ -604,31 +665,33 @@ public class ShooterSystem {
         return Commands.run(
                         () -> {
                             var sol = solutionSupplier.get();
-                            var mode = shootMode.get();
 
-                            // Active mode and fudge
-                            Logger.recordOutput("ShooterTelemetry/shootMode", mode.name());
-                            Logger.recordOutput("ShooterTelemetry/rpmFudgePercent", kRPMFudgePercent.get());
-
-                            // Lead distance (includes motion-predicted lead in FULL mode,
-                            // raw hub distance in STATIC modes)
-                            Logger.recordOutput(
-                                    "ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
-
-                            // Distance from turret origin to alliance hub center
-                            var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
-                            var turretXY = turretOrigin(robotPose.get());
-                            double hubDx = hub.toTranslation2d().getX() - turretXY.getX();
-                            double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
-                            Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
-
-                            double modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance()).in(RPM);
-                            double fudgedRpm = modelRpm * (1.0 + kRPMFudgePercent.get() / 100.0);
-                            Logger.recordOutput("ShooterTelemetry/modelRPM", modelRpm);
-                            Logger.recordOutput("ShooterTelemetry/fudgedRPM", fudgedRpm);
-                            Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
-                            Logger.recordOutput("ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
+                            // Always publish: fudge RPM (operator dashboard) and validity.
+                            Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", kRPMFudgeRPM.get());
                             Logger.recordOutput("ShooterTelemetry/isValid", sol.isValid());
+
+                            // Detailed telemetry only in tuning mode — unnecessary CPU
+                            // and NT bandwidth during competition.
+                            if (Constants.tuningMode) {
+                                var mode = shootMode.get();
+                                Logger.recordOutput("ShooterTelemetry/shootMode", mode.name());
+                                Logger.recordOutput(
+                                        "ShooterTelemetry/leadDistanceMeters", sol.leadDistance().in(Meters));
+
+                                var hub = AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint);
+                                var turretXY = turretOrigin(robotPose.get());
+                                double hubDx = hub.toTranslation2d().getX() - turretXY.getX();
+                                double hubDy = hub.toTranslation2d().getY() - turretXY.getY();
+                                Logger.recordOutput("ShooterTelemetry/hubDistanceMeters", Math.hypot(hubDx, hubDy));
+
+                                double modelRpm = ShooterModel.flywheelSpeedForDistance(sol.leadDistance()).in(RPM);
+                                double fudgedRpm = modelRpm + kRPMFudgeRPM.get();
+                                Logger.recordOutput("ShooterTelemetry/modelRPM", modelRpm);
+                                Logger.recordOutput("ShooterTelemetry/fudgedRPM", fudgedRpm);
+                                Logger.recordOutput("ShooterTelemetry/lutHoodDegrees", sol.hoodAngle().in(Degrees));
+                                Logger.recordOutput(
+                                        "ShooterTelemetry/lutToFSeconds", sol.timeOfFlight().in(Seconds));
+                            }
 
                             if (!sol.isValid()) {
                                 double now = Timer.getFPGATimestamp();

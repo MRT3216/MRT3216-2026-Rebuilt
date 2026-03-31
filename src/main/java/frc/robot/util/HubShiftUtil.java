@@ -86,6 +86,40 @@ public class HubShiftUtil {
     private static final double APPROACHING_FUDGE = -1.0 * (MIN_TOF + MIN_FUEL_COUNT_DELAY);
     private static final double ENDING_FUDGE = SHIFT_END_EXTENSION - (MAX_TOF + MAX_FUEL_COUNT_DELAY);
 
+    // Pre-computed shifted boundary arrays to avoid per-cycle allocation in getShiftedShiftInfo().
+    private static final double[] SHIFTED_ACTIVE_STARTS = {
+        0.0,
+        10.0,
+        35.0 + ENDING_FUDGE,
+        60.0 + APPROACHING_FUDGE,
+        85.0 + ENDING_FUDGE,
+        110.0 + APPROACHING_FUDGE
+    };
+    private static final double[] SHIFTED_ACTIVE_ENDS = {
+        10.0,
+        35.0 + ENDING_FUDGE,
+        60.0 + APPROACHING_FUDGE,
+        85.0 + ENDING_FUDGE,
+        110.0 + APPROACHING_FUDGE,
+        140.0
+    };
+    private static final double[] SHIFTED_INACTIVE_STARTS = {
+        0.0,
+        10.0 + ENDING_FUDGE,
+        35.0 + APPROACHING_FUDGE,
+        60.0 + ENDING_FUDGE,
+        85.0 + APPROACHING_FUDGE,
+        110.0
+    };
+    private static final double[] SHIFTED_INACTIVE_ENDS = {
+        10.0 + ENDING_FUDGE,
+        35.0 + APPROACHING_FUDGE,
+        60.0 + ENDING_FUDGE,
+        85.0 + APPROACHING_FUDGE,
+        110.0,
+        140.0
+    };
+
     private static final Timer shiftTimer = new Timer();
     private static double shiftTimerOffset = 0.0;
     private static final double TIME_RESET_THRESHOLD = 3.0;
@@ -153,43 +187,9 @@ public class HubShiftUtil {
     public static ShiftInfo getShiftedShiftInfo() {
         boolean[] sched = getSchedule();
         if (sched[1]) {
-            // We are in the "starting active" configuration
-            double[] starts = {
-                0.0,
-                10.0,
-                35.0 + ENDING_FUDGE,
-                60.0 + APPROACHING_FUDGE,
-                85.0 + ENDING_FUDGE,
-                110.0 + APPROACHING_FUDGE
-            };
-            double[] ends = {
-                10.0,
-                35.0 + ENDING_FUDGE,
-                60.0 + APPROACHING_FUDGE,
-                85.0 + ENDING_FUDGE,
-                110.0 + APPROACHING_FUDGE,
-                140.0
-            };
-            return computeShiftInfo(sched, starts, ends);
+            return computeShiftInfo(sched, SHIFTED_ACTIVE_STARTS, SHIFTED_ACTIVE_ENDS);
         }
-        // "Starting inactive" configuration
-        double[] starts = {
-            0.0,
-            10.0 + ENDING_FUDGE,
-            35.0 + APPROACHING_FUDGE,
-            60.0 + ENDING_FUDGE,
-            85.0 + APPROACHING_FUDGE,
-            110.0
-        };
-        double[] ends = {
-            10.0 + ENDING_FUDGE,
-            35.0 + APPROACHING_FUDGE,
-            60.0 + ENDING_FUDGE,
-            85.0 + APPROACHING_FUDGE,
-            110.0,
-            140.0
-        };
-        return computeShiftInfo(sched, starts, ends);
+        return computeShiftInfo(sched, SHIFTED_INACTIVE_STARTS, SHIFTED_INACTIVE_ENDS);
     }
 
     // ── Internal helpers ────────────────────────────────────────────────────────

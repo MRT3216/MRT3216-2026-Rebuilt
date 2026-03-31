@@ -4,14 +4,21 @@ import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.LEDsConstants;
 import frc.robot.constants.RobotMap.LEDs;
 import frc.robot.util.HubShiftUtil;
 import java.util.function.BooleanSupplier;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
+import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
+import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 /**
  * LED subsystem — drives addressable LEDs based on robot state and hub shift
@@ -37,6 +44,9 @@ public class LEDSubsystem extends SubsystemBase {
     private final AddressableLED led;
     private final AddressableLEDBuffer ledBuffer;
 
+    private LoggedMechanism2d ledSim;
+    private LoggedMechanismLigament2d[] ledLigaments;
+
     // endregion
 
     // region State
@@ -61,8 +71,8 @@ public class LEDSubsystem extends SubsystemBase {
     private static final double WAVE_FAST_DURATION = 0.25;
     private static final double WAVE_ALLIANCE_CYCLE_LENGTH = 15.0;
     private static final double WAVE_ALLIANCE_DURATION = 2.0;
-    private static final double STROBE_FAST_DURATION = 0.25;
-    private static final double STROBE_DEFENCE_DURATION = 0.35;
+    private static final double STROBE_FAST_DURATION = 0.5;
+    private static final double STROBE_DEFENCE_DURATION = 0.4;
 
     /** Seconds before a shift transition at which the warning strobe begins. */
     private static final double SHIFT_WARNING_SECS = 5.0;
@@ -77,6 +87,26 @@ public class LEDSubsystem extends SubsystemBase {
         led.setLength(ledBuffer.getLength());
         led.setData(ledBuffer);
         led.start();
+
+        if (RobotBase.isSimulation()) {
+            initSim();
+        }
+    }
+
+    private void initSim() {
+        ledSim = new LoggedMechanism2d(LEDsConstants.kNumLEDs, 1);
+        LoggedMechanismRoot2d root = ledSim.getRoot("LEDs", 0, 0.5);
+        ledLigaments = new LoggedMechanismLigament2d[LEDsConstants.kNumLEDs];
+        for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
+            ledLigaments[i] =
+                    new LoggedMechanismLigament2d("LED " + i, 1, 0, 20, new Color8Bit(Color.kBlack));
+            if (i == 0) {
+                root.append(ledLigaments[i]);
+            } else {
+                ledLigaments[i - 1].append(ledLigaments[i]);
+            }
+        }
+        Logger.recordOutput("LED_Sim_Mechanism", ledSim);
     }
 
     // endregion
@@ -85,14 +115,22 @@ public class LEDSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        // In tuning mode, keep LEDs off to avoid distraction in the pit.
+        if (Constants.tuningMode) {
+            setColor(Color.kBlack);
+            led.setData(ledBuffer);
+            return;
+        }
+
         // Default to off — overwritten by whichever pattern wins below.
         setColor(Color.kBlack);
 
         // Keep alliance color up to date when connected to FMS.
         if (DriverStation.isFMSAttached()) {
-            allianceColor = DriverStation.getAlliance()
-                    .map(a -> a == Alliance.Blue ? Color.kBlue : Color.kRed)
-                    .orElse(Color.kCyan);
+            allianceColor =
+                    DriverStation.getAlliance()
+                            .map(a -> a == Alliance.Blue ? Color.kBlue : Color.kRed)
+                            .orElse(Color.kCyan);
         }
 
         if (DriverStation.isDisabled()) {
@@ -110,7 +148,8 @@ public class LEDSubsystem extends SubsystemBase {
             } else if (intaking) {
                 strobe(Color.kPurple, STROBE_FAST_DURATION);
             } else if (aimLock) {
-                setColor(Color.kGreen);
+                applyShiftPattern();
+                applyOverlayAlternate(Color.kGreen, 5);
             } else {
                 applyShiftPattern();
             }
@@ -118,6 +157,18 @@ public class LEDSubsystem extends SubsystemBase {
 
         // Push the buffer to the LED strip.
         led.setData(ledBuffer);
+
+        if (RobotBase.isSimulation()) {
+            updateSim();
+        }
+    }
+
+    private void updateSim() {
+        if (ledSim == null || ledLigaments == null) return;
+        for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
+            ledLigaments[i].setColor(ledBuffer.getLED8Bit(i));
+        }
+        Logger.recordOutput("LED_Sim_Mechanism", ledSim);
     }
 
     // endregion
@@ -197,6 +248,15 @@ public class LEDSubsystem extends SubsystemBase {
         }
     }
 
+    /** Overlays a solid color onto alternating segments of the given length. */
+    private void applyOverlayAlternate(Color overlayColor, int segmentLength) {
+        for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
+            if ((i / segmentLength) % 2 == 0) {
+                ledBuffer.setLED(i, overlayColor);
+            }
+        }
+    }
+
     private void wave(Color c1, Color c2, double cycleLength, double duration) {
         double x = (1 - ((Timer.getFPGATimestamp() % duration) / duration)) * 2.0 * Math.PI;
         double xDiffPerLed = (2.0 * Math.PI) / cycleLength;
@@ -209,10 +269,11 @@ public class LEDSubsystem extends SubsystemBase {
             if (Double.isNaN(ratio)) {
                 ratio = 0.5;
             }
-            double red = (c1.red * (1 - ratio)) + (c2.red * ratio);
-            double green = (c1.green * (1 - ratio)) + (c2.green * ratio);
-            double blue = (c1.blue * (1 - ratio)) + (c2.blue * ratio);
-            ledBuffer.setLED(i, new Color(red, green, blue));
+            // Use setRGB to avoid allocating a Color object per LED per cycle.
+            int red = (int) Math.round(((c1.red * (1 - ratio)) + (c2.red * ratio)) * 255);
+            int green = (int) Math.round(((c1.green * (1 - ratio)) + (c2.green * ratio)) * 255);
+            int blue = (int) Math.round(((c1.blue * (1 - ratio)) + (c2.blue * ratio)) * 255);
+            ledBuffer.setRGB(i, red, green, blue);
         }
     }
 

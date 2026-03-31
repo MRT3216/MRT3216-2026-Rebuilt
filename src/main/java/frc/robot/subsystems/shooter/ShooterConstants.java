@@ -36,22 +36,19 @@ public final class ShooterConstants {
     // -------------------------------------------------------------------------
 
     /**
-     * Competition shoot modes, toggled by operator stick presses.
+     * Competition shoot modes, toggled by operator Y button.
      *
      * <ul>
      *   <li>{@link #FULL} — full SOTF: lead-compensated distance for RPM/hood, turret tracks azimuth
      *       (when azimuth tracking is enabled).
-     *   <li>{@link #STATIC_DISTANCE} — SOTF disabled: uses raw turret-to-hub distance for RPM/hood,
-     *       but turret still tracks azimuth (future-proofing for when azimuth is enabled).
-     *   <li>{@link #FULL_STATIC} — proven comp mode: raw distance AND turret locked at 0°.
+     *   <li>{@link #FULL_STATIC} — manual aim fallback: raw distance AND turret locked at 0°. The
+     *       driver must face the hub manually.
      * </ul>
      */
     public enum ShootMode {
         /** Full shoot-on-the-fly with lead compensation. */
         FULL,
-        /** Raw hub distance (no lead), turret still tracks azimuth. */
-        STATIC_DISTANCE,
-        /** Raw hub distance, turret locked at 0°. Battle-tested comp fallback. */
+        /** Raw hub distance, turret locked at 0°. Manual aim fallback. */
         FULL_STATIC
     }
 
@@ -59,15 +56,29 @@ public final class ShooterConstants {
     public static final Distance kRefinementConvergenceEpsilon = Meters.of(0.01);
 
     /**
-     * Mid-match RPM fudge factor (percentage). Applied as a multiplier to the flywheel RPM computed
-     * by the two-point model: {@code finalRPM = modelRPM × (1 + fudge/100)}.
+     * Mid-match RPM fudge factor (absolute RPM offset). Added directly to the flywheel RPM computed
+     * by the shooting model: {@code finalRPM = modelRPM + fudge}.
      *
-     * <p>Positive values increase RPM (shots landing short), negative values decrease RPM (shots
-     * overshooting). Always active regardless of {@link ShootMode}. Published to NetworkTables
-     * unconditionally so the operator can adjust mid-match from the dashboard.
+     * <p>Adjusted in 50 RPM increments by the operator via RB (+50) / LB (−50), clamped to ±200 RPM.
+     * Also accessible via the Elastic dashboard Number Slider. Positive values increase RPM (shots
+     * landing short), negative values decrease RPM (shots overshooting). Always active regardless of
+     * {@link ShootMode}. Published to NetworkTables unconditionally so the operator can see the
+     * current value on the dashboard.
      */
-    public static final LoggedTunableNumber kRPMFudgePercent =
-            new LoggedTunableNumber("Shooter/RPMFudgePercent", 0.0, true);
+    public static final LoggedTunableNumber kRPMFudgeRPM =
+            new LoggedTunableNumber("Shooter/RPMFudge", 0.0, true);
+
+    /**
+     * Mid-match distance fudge factor (meters). Added to the lead distance before the shooting model
+     * lookup: {@code effectiveDistance = leadDistance + fudge}.
+     *
+     * <p>Positive values pretend the hub is farther away (more RPM, steeper hood — use when shots
+     * land short). Negative values pretend the hub is closer (less RPM, flatter hood — use when shots
+     * overshoot). Always active regardless of {@link ShootMode}. Published to NetworkTables
+     * unconditionally so the operator can adjust mid-match via the dashboard slider.
+     */
+    public static final LoggedTunableNumber kDistanceFudgeMeters =
+            new LoggedTunableNumber("Shooter/DistanceFudgeMeters", 0.0, true);
 
     // -------------------------------------------------------------------------
     // Flywheel (velocity)
@@ -123,7 +134,8 @@ public final class ShooterConstants {
         // Targets / tunables
         public static final AngularVelocity kFlywheelDefaultVelocity = RPM.of(3000);
         public static final AngularVelocity kVelocityTolerance = RPM.of(30);
-        public static final Time kClearDuration = Seconds.of(0.25);
+        /** Duration the kicker runs in reverse before feeding to clear any jammed ball. */
+        public static final Time kClearDuration = Seconds.of(0.5);
 
         public static final LoggedTunableNumber kTunableFlywheelRPM =
                 new LoggedTunableNumber(
@@ -143,10 +155,29 @@ public final class ShooterConstants {
     public static final class ShooterModel {
         private ShooterModel() {}
 
+        /** Hub-shot RPM anchors (existing two-point linear model). */
         public static final Distance dMin = Inches.of(61);
+
         public static final Distance dMax = Inches.of(291.5);
 
         public static final AngularVelocity kRpmAtMin = RPM.of(2500.0);
+        public static final AngularVelocity kRpmAtMax = RPM.of(4300.0);
+    }
+
+    /**
+     * Pass-shot RPM model constants. Higher RPMs than the hub model so the ball arcs high enough to
+     * clear the hub structure (~1.83 m) on its way to the pass target landing zone.
+     *
+     * <p>Uses the same two-point linear interpolation as the hub model but with anchors shifted up.
+     * The distance range covers mid-field passes (3.5 m – 10 m).
+     */
+    public static final class PassModel {
+        private PassModel() {}
+
+        public static final Distance dMin = Meters.of(3.5);
+        public static final Distance dMax = Meters.of(10.0);
+
+        public static final AngularVelocity kRpmAtMin = RPM.of(3600.0);
         public static final AngularVelocity kRpmAtMax = RPM.of(4300.0);
     }
 
@@ -203,7 +234,7 @@ public final class ShooterConstants {
         public static final AngularVelocity kSoftLimitMin = RPM.of(0.0);
 
         // Targets / tunables
-        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(500.0);
+        public static final AngularVelocity kSpindexerTargetAngularVelocity = RPM.of(550.0);
 
         public static final LoggedTunableNumber kTunableIndexerRPM =
                 new LoggedTunableNumber(
@@ -226,9 +257,7 @@ public final class ShooterConstants {
         public static final Current kStatorCurrentLimit = Amps.of(40);
 
         // PID — intentionally zero: kicker runs feedforward-only on the real robot.
-        // FF-only kicker is common: BroncBotz 3481 also uses kP=0 with kS/kV only.
-        // 6328 uses kP=3.0 on their kicker — add PID if ours stalls on ball contact.
-        // TODO: Re-tune PID for all mechanisms during Monday bring-up.
+        // Add PID if the kicker stalls on ball contact (6328 uses kP=3.0).
         public static final double kP = 0.0;
         public static final double kI = 0.0;
         public static final double kD = 0.0;
@@ -262,7 +291,8 @@ public final class ShooterConstants {
 
         // Targets / tunables
         public static final AngularVelocity kKickerTargetAngularVelocity = RPM.of(2500.0);
-        public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-100.0);
+        /** Reverse speed used by the pre-feed clear routine to push a ball away from the kicker. */
+        public static final AngularVelocity kKickerClearAngularVelocity = RPM.of(-500.0);
 
         public static final LoggedTunableNumber kTunableKickerRPM =
                 new LoggedTunableNumber(
@@ -362,21 +392,7 @@ public final class ShooterConstants {
         // Because YAMS sets positionConversionFactor = 1/gearing, the SparkMax's
         // internal PID sees position in mechanism rotations.
         //
-        // All PID + FF runs on SparkMax hardware (MAXMotion trapezoidal).
-        // kV=3.4 (theoretical) caused massive overshoot — too much energy in cruise.
-        // kV=0 caused no movement — SparkMax needs FF to drive MAXMotion.
-        // kV=2.0 + kP=12 + kD=0.1 was our best result: smooth, ~10° overshoot.
-        // Bumping kD to 0.3 to actively brake during decel and reduce that overshoot.
-        // PID — units are Volts per mechanism ROTATION of error (not degrees).
-        //
-        // DISABLING MAXMotion — using plain position PID instead.
-        // Old competition code used kP=3, kV=1.0, kA=0.05 with plain position
-        // PID and it worked (just too fast). MAXMotion caused persistent
-        // overshoot because the profile reference runs ahead and FF carries
-        // energy that kP can't brake.
-        //
         // Plain position PID (no MAXMotion). kP for accuracy, kD for damping.
-        // MAXMotion was tried but couldn't achieve both speed and accuracy.
         public static final double kP = 3.0;
         public static final double kI = 0.0;
         public static final double kD = 0.3;
@@ -409,12 +425,12 @@ public final class ShooterConstants {
                         new Rotation3d());
 
         // Hard limits (physical stops — sim only)
-        public static final Angle kHardLimitMax = Degrees.of(190);
-        public static final Angle kHardLimitMin = Degrees.of(-190);
+        public static final Angle kHardLimitMax = Degrees.of(160);
+        public static final Angle kHardLimitMin = Degrees.of(-95);
 
         // Soft limits (closed-loop clamp)
-        public static final Angle kSoftLimitMax = Degrees.of(180);
-        public static final Angle kSoftLimitMin = Degrees.of(-180);
+        public static final Angle kSoftLimitMax = Degrees.of(155);
+        public static final Angle kSoftLimitMin = Degrees.of(-90);
 
         // Presets / tunables
         public static final Angle kStartingPosition = Degrees.of(0);
@@ -470,17 +486,19 @@ public final class ShooterConstants {
      * correction and the <em>turret</em> handles only the residual fine adjustment.
      *
      * <p><b>Why hybrid?</b> A full-rotation turret stresses the wiring loom every time it swings
-     * across large angles. In hybrid mode the turret stays within a small comfort zone (±{@link
-     * #kTurretDeadbandDeg}°), dramatically reducing cable wear. The drivetrain rotates the whole
-     * robot to keep the target roughly in front, and the turret corrects the last few degrees.
+     * across large angles. In hybrid mode the turret stays within an asymmetric comfort zone ({@link
+     * #kTurretMinDeg}° to {@link #kTurretMaxDeg}°), dramatically reducing cable wear. The drivetrain
+     * rotates the whole robot to keep the target roughly in front, and the turret corrects the last
+     * few degrees.
      *
      * <p><b>How it works:</b>
      *
      * <ol>
      *   <li>Each loop, compute the <em>full</em> robot-relative angle to the target (same math as the
      *       existing {@code HybridTurretUtil}).
-     *   <li>If that angle is within ±{@code kTurretDeadbandDeg}, the drivetrain does nothing and the
-     *       turret tracks normally — the driver retains full rotational control.
+     *   <li>If that angle is within the turret travel window ({@code kTurretMinDeg} to {@code
+     *       kTurretMaxDeg}), the drivetrain does nothing and the turret tracks normally — the driver
+     *       retains full rotational control.
      *   <li>If the angle exceeds the deadband, the drivetrain heading controller kicks in and rotates
      *       the robot toward the target, bleeding off error until the turret can handle the
      *       remainder.
@@ -488,13 +506,12 @@ public final class ShooterConstants {
      *       the drivetrain has already corrected), so it never needs to travel far.
      * </ol>
      *
-     * <p><b>Swapping in:</b> This is a drop-in alternative to the current turret-only aiming. See
-     * {@code ShooterSystem.hybridAimAndShoot()} and {@code DriveCommands.joystickDriveAimAtTarget()}
-     * for the ready-to-wire commands. To activate, replace the {@code aimAndShoot} call in {@code
-     * RobotContainer.configureButtonBindings()} with {@code hybridAimAndShoot} and swap the drive
-     * default command to {@code joystickDriveAimAtTarget} while shooting is active.
+     * <p><b>Currently active.</b> Wired in {@code RobotContainer} for both competition and tuning
+     * modes. The relevant commands are {@code ShooterSystem.hybridAimAndShoot()} (and variants) and
+     * {@code DriveCommands.joystickDriveAimAtTarget()}.
      *
-     * <p>All current turret-only code is unaffected — this is purely additive.
+     * <p>To revert to turret-only aiming, replace {@code hybridAimAndShoot} with {@code aimAndShoot}
+     * and swap the drive default back to {@code DriveCommands.joystickDrive()}.
      */
     public static final class HybridAimingConstants {
         private HybridAimingConstants() {}
@@ -522,19 +539,47 @@ public final class ShooterConstants {
         public static final double kTurretHomeAngleDeg = 0.0;
 
         /**
-         * Turret "comfort zone" half-width in degrees. When the robot-relative angle to the target is
-         * within ±this value <em>of the home angle</em>, the drivetrain does NOT auto-rotate and the
-         * driver has full manual heading control. The turret handles the full angle on its own.
+         * Turret travel limits in degrees, relative to the home angle. These define the asymmetric
+         * window the turret is allowed to sweep before the drivetrain heading controller takes over.
          *
-         * <p>30° is a good starting point — gives the turret a ±30° working window (60° total) which is
-         * well within our ±180° travel but keeps the turret near center.
+         * <p>{@code kTurretMinDeg} is the most-negative (clockwise) limit and {@code kTurretMaxDeg} is
+         * the most-positive (counter-clockwise) limit. For example, {@code -90} / {@code +155} gives
+         * 90° of clockwise travel and 155° of counter-clockwise travel from the home angle.
+         *
+         * <p>The drivetrain ramp zone (see {@link #kThresholdMarginDeg}) applies independently on each
+         * side — the ramp starts at {@code limit ± margin} and reaches full correction at the limit.
          */
-        public static final double kTurretDeadbandDeg = 30.0;
+        public static final double kTurretMinDeg = -90.0;
+
+        public static final double kTurretMaxDeg = 155.0;
+
+        /**
+         * Margin (in degrees) before the turret reaches each travel limit where the drivetrain begins
+         * ramping in heading correction. Instead of a hard on/off at the limit boundary, the drivetrain
+         * assist fades in linearly over this margin — giving it a head start so the chassis is already
+         * rotating by the time the turret reaches its clamp limit.
+         *
+         * <p><b>Zones (measured from turret home, per side):</b>
+         *
+         * <ul>
+         *   <li><b>0° – (limit − margin)°:</b> Turret-only zone. Drivetrain does nothing.
+         *   <li><b>(limit − margin)° – limit°:</b> Ramp zone. Drivetrain correction scales linearly
+         *       from 0% → 100%.
+         *   <li><b>&gt; limit°:</b> Full correction — same as before.
+         * </ul>
+         *
+         * <p>With min=-90°, max=+155° and margin=15°: the drivetrain starts helping at -75° / +140° and
+         * reaches full strength at -90° / +155°. Inspired by 254/1323/4481's 2022 graduated
+         * turret-wrap-prevention systems.
+         *
+         * <p>Set to 0.0 to disable the ramp and revert to hard on/off behavior.
+         */
+        public static final double kThresholdMarginDeg = 15.0;
 
         /**
          * PID gains for the drivetrain heading controller used in hybrid aiming mode. These control how
-         * aggressively the robot chassis rotates toward the target when the turret angle exceeds the
-         * deadband.
+         * aggressively the robot chassis rotates toward the target when the turret angle exceeds its
+         * travel limits.
          *
          * <p>Start conservative — the driver should barely notice the heading correction. Increase kP
          * if the robot is too sluggish snapping to the target; add kD if it overshoots.
@@ -556,5 +601,15 @@ public final class ShooterConstants {
         public static final double kHeadingMaxVelocity = 4.0; // rad/s
 
         public static final double kHeadingMaxAcceleration = 8.0; // rad/s²
+
+        /**
+         * Drive speed scalar applied while the shoot command is active (driver holding RT). Both
+         * translation and driver-rotation inputs are multiplied by this factor to reduce chassis
+         * movement while balls are feeding, improving shot accuracy.
+         *
+         * <p>1.0 = full speed, 0.3 = 30% speed. The heading-assist omega from the hybrid PID is NOT
+         * scaled — only the driver's joystick inputs.
+         */
+        public static final double kShootingSpeedScalar = 0.3;
     }
 }

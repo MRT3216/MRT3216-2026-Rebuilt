@@ -31,7 +31,7 @@ Copy everything below this line into a new chat with the execution model.
 # Execution Plan: [TITLE]
 
 **Created by**: [planner model name] on [date]
-**Branch**: Claude
+**Branch**: [working branch]
 **Repository**: MRT3216/MRT3216-2026-Rebuilt (FRC 2026 robot code — Java, WPILib, YAMS, AdvantageKit)
 
 ## Context
@@ -45,7 +45,7 @@ Copy everything below this line into a new chat with the execution model.
 
 ## Pre-conditions
 
-- [ ] On branch `Claude`
+- [ ] On the correct working branch
 - [ ] `.\gradlew compileJava` passes before starting
 - [ ] [Any other prerequisites]
 
@@ -139,7 +139,7 @@ Add derivative gain (kD) to the turret to reduce overshoot observed during testi
 
 ## Pre-conditions
 
-- [ ] On branch `Claude`
+- [ ] On the correct working branch
 - [ ] `.\gradlew compileJava` passes
 
 ## Steps

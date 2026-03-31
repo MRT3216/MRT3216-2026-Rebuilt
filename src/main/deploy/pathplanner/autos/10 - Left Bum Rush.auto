@@ -5,49 +5,6 @@
     "data": {
       "commands": [
         {
-          "type": "path",
-          "data": {
-            "pathName": "Left Shoot First (No SOTF)"
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "wait",
-                "data": {
-                  "waitTime": 5.0
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Agitate"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Aim and Shoot"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stop Shooter"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "Left Reposition (No SOTF)"
-          }
-        },
-        {
           "type": "deadline",
           "data": {
             "commands": [
@@ -69,7 +26,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Left Leave (No SOTF)"
+            "pathName": "Left Leave"
           }
         },
         {
@@ -91,7 +48,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "Aim and Shoot"
+                  "name": "Hybrid Aim and Shoot"
                 }
               }
             ]
@@ -110,7 +67,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "2nd Left Enter (No SOTF)"
+                  "pathName": "2nd Left Enter"
                 }
               },
               {
@@ -125,7 +82,7 @@
         {
           "type": "path",
           "data": {
-            "pathName": "2nd Left Leave (No SOTF)"
+            "pathName": "2nd Left Leave"
           }
         }
       ]

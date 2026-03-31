@@ -89,9 +89,11 @@ public final class Constants {
         if (tuningMode) {
             return TelemetryVerbosity.MID;
         }
-        // Competition: MID gives voltage + current data for post-match analysis
-        // without the overhead of publishing every tunable gain each cycle.
-        return TelemetryVerbosity.MID;
+        // Competition: LOW publishes only setpoint + measurement pos/vel (~6 fields
+        // per motor vs ~15 at MID). Voltage and current are already captured in
+        // each subsystem's AutoLogged inputs, so nothing is lost in WPILOGs.
+        // This saves ~126 NT publishes per cycle across 7 YAMS motors.
+        return TelemetryVerbosity.LOW;
     }
 
     // ---------------------------------------------------------------------
@@ -174,13 +176,16 @@ public final class Constants {
      *   <tr><td>6328</td><td>8.0 (linear)</td><td>4.0 (theta)</td><td>Uses Choreo, not PP</td></tr>
      * </table>
      *
-     * <p>Our values (5.0/5.0) are on the aggressive end. If autonomous paths overshoot or oscillate,
-     * try reducing to 3.0. See docs/TuningGuide.md "Step 8: PathPlanner Configuration".
+     * <p>Our original value (5.0) caused runaway velocity corrections during auto paths: when the
+     * robot fell behind by ~1 m, kP amplified the error into +5 m/s correction on top of the path
+     * velocity, demanding 8-11 m/s from a 6 m/s robot. Lowered to 2.5 so a 1 m error yields 2.5 m/s
+     * correction, keeping total demand within robot capability. See docs/TuningGuide.md "Step 8:
+     * PathPlanner Configuration".
      */
     public static final class PathPlannerConstants {
         private PathPlannerConstants() {}
 
-        public static final double kTranslationP = 5.0;
+        public static final double kTranslationP = 2.5;
         public static final double kTranslationI = 0.0;
         public static final double kTranslationD = 0.0;
         public static final double kRotationP = 5.0;

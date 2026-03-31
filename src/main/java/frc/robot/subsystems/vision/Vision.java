@@ -32,6 +32,10 @@ public class Vision extends SubsystemBase {
     private final VisionIOInputsAutoLogged[] inputs;
     private final Alert[] disconnectedAlerts;
 
+    // Pre-allocated lists reused each cycle to reduce GC pressure.
+    private final List<Pose3d> allTagPoses = new ArrayList<>();
+    private final List<Pose3d> allRobotPosesAccepted = new ArrayList<>();
+
     public Vision(VisionConsumer consumer, VisionIO... io) {
         this.consumer = consumer;
         this.io = io;
@@ -105,28 +109,20 @@ public class Vision extends SubsystemBase {
             Logger.processInputs("Vision/Camera" + Integer.toString(i), inputs[i]);
         }
 
-        // Initialize logging values
-        List<Pose3d> allTagPoses = new ArrayList<>();
-        List<Pose3d> allRobotPoses = new ArrayList<>();
-        List<Pose3d> allRobotPosesAccepted = new ArrayList<>();
-        List<Pose3d> allRobotPosesRejected = new ArrayList<>();
+        // Reuse pre-allocated lists — clear instead of allocating new ones each cycle.
+        allTagPoses.clear();
+        allRobotPosesAccepted.clear();
 
         // Loop over cameras
         for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
             // Update disconnected alert
             disconnectedAlerts[cameraIndex].set(!inputs[cameraIndex].connected);
 
-            // Initialize logging values
-            List<Pose3d> tagPoses = new ArrayList<>();
-            List<Pose3d> robotPoses = new ArrayList<>();
-            List<Pose3d> robotPosesAccepted = new ArrayList<>();
-            List<Pose3d> robotPosesRejected = new ArrayList<>();
-
             // Add tag poses
             for (int tagId : inputs[cameraIndex].tagIds) {
                 var tagPose = aprilTagLayout.getTagPose(tagId);
                 if (tagPose.isPresent()) {
-                    tagPoses.add(tagPose.get());
+                    allTagPoses.add(tagPose.get());
                 }
             }
 
@@ -146,18 +142,12 @@ public class Vision extends SubsystemBase {
                                 || observation.pose().getY() < 0.0
                                 || observation.pose().getY() > aprilTagLayout.getFieldWidth();
 
-                // Add pose to log
-                robotPoses.add(observation.pose());
-                if (rejectPose) {
-                    robotPosesRejected.add(observation.pose());
-                } else {
-                    robotPosesAccepted.add(observation.pose());
-                }
-
                 // Skip if rejected
                 if (rejectPose) {
                     continue;
                 }
+
+                allRobotPosesAccepted.add(observation.pose());
 
                 // Calculate standard deviations
                 double stdDevFactor =
@@ -179,35 +169,7 @@ public class Vision extends SubsystemBase {
                         observation.timestamp(),
                         VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev));
             }
-
-            // Per-camera Pose3d[] logging commented out to reduce loop time.
-            // Uncomment for vision debugging when not in competition.
-            // Logger.recordOutput(
-            //         "Vision/Camera" + Integer.toString(cameraIndex) + "/TagPoses",
-            //         tagPoses.toArray(new Pose3d[0]));
-            // Logger.recordOutput(
-            //         "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPoses",
-            //         robotPoses.toArray(new Pose3d[0]));
-            // Logger.recordOutput(
-            //         "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPosesAccepted",
-            //         robotPosesAccepted.toArray(new Pose3d[0]));
-            // Logger.recordOutput(
-            //         "Vision/Camera" + Integer.toString(cameraIndex) + "/RobotPosesRejected",
-            //         robotPosesRejected.toArray(new Pose3d[0]));
-            allTagPoses.addAll(tagPoses);
-            allRobotPoses.addAll(robotPoses);
-            allRobotPosesAccepted.addAll(robotPosesAccepted);
-            allRobotPosesRejected.addAll(robotPosesRejected);
         }
-
-        // Summary Pose3d[] logging commented out to reduce loop time.
-        // Uncomment for vision debugging when not in competition.
-        // Logger.recordOutput("Vision/Summary/TagPoses", allTagPoses.toArray(new Pose3d[0]));
-        // Logger.recordOutput("Vision/Summary/RobotPoses", allRobotPoses.toArray(new Pose3d[0]));
-        // Logger.recordOutput(
-        //         "Vision/Summary/RobotPosesAccepted", allRobotPosesAccepted.toArray(new Pose3d[0]));
-        // Logger.recordOutput(
-        //         "Vision/Summary/RobotPosesRejected", allRobotPosesRejected.toArray(new Pose3d[0]));
 
         // Dashboard-friendly summary: true when at least one camera accepted a pose
         // this cycle. Wire to a boolean indicator widget in Elastic for at-a-glance

@@ -70,6 +70,13 @@ public class ShootingLookupTable {
             return new ShootingParameters(lower.trajectoryAngle(), lower.timeOfFlight());
         }
 
+        // Exact match — distance lands precisely on a table key (floorKey == ceilingKey).
+        // Return the entry directly to avoid a 0/0 division in the interpolation ratio.
+        if (lowerKey.equals(upperKey)) {
+            var entry = lookupTable.get(lowerKey);
+            return new ShootingParameters(entry.trajectoryAngle(), entry.timeOfFlight());
+        }
+
         double lowerMeters = lowerKey.in(Meters);
         double upperMeters = upperKey.in(Meters);
         double ratio = (distance.in(Meters) - lowerMeters) / (upperMeters - lowerMeters);
@@ -85,8 +92,12 @@ public class ShootingLookupTable {
     }
 
     /**
-     * Primitive-only time-of-flight lookup for use in the hot solver loop. Avoids all unit-measure
-     * allocations. Returns seconds.
+     * Time-of-flight lookup for use in the hot solver loop. Handles exact table hits (no
+     * interpolation needed) and avoids divide-by-zero when floorKey == ceilingKey. Returns seconds.
+     *
+     * <p>Note: allocates a {@link Distance} key for the {@link TreeMap} lookup. A fully
+     * allocation-free version would require a parallel {@code TreeMap<Double, …>} — not worth the
+     * complexity for the current solver call rate.
      */
     public double getTimeOfFlightSeconds(double distanceMeters) {
         var distKey = Meters.of(distanceMeters);
@@ -96,6 +107,11 @@ public class ShootingLookupTable {
         if (lowerKey == null && upperKey == null) return Double.NaN;
         if (lowerKey == null) return lookupTable.get(upperKey).timeOfFlight().in(Seconds);
         if (upperKey == null) return lookupTable.get(lowerKey).timeOfFlight().in(Seconds);
+
+        // Exact match — distance lands precisely on a table key.
+        if (lowerKey.equals(upperKey)) {
+            return lookupTable.get(lowerKey).timeOfFlight().in(Seconds);
+        }
 
         double lo = lowerKey.in(Meters);
         double hi = upperKey.in(Meters);

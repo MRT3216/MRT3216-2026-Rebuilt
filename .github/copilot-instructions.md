@@ -48,7 +48,7 @@ FRC Team 3216's 2026 robot: Java 17, WPILib 2026, **YAMS** motor framework, **Ad
 - `ShooterModel` — two-point linear RPM interpolation from distance (`ShooterConstants.ShooterModel.dMin`/`dMax`).
 - `ShootingLookupTable` — hood angle + TOF lookup by distance. Modes: `HUB` and `PASS`.
 - `kRPMFudgeRPM` / `kDistanceFudgeMeters` — operator-adjustable mid-match offsets (±50 RPM via RB/LB, clamped ±200).
-- Hybrid aiming: drivetrain handles coarse heading, turret handles residual (clamped to asymmetric travel window `[kTurretMinDeg, kTurretMaxDeg]` = [−90°, +130°]). See `docs/HybridAiming.md`.
+- Hybrid aiming: drivetrain handles coarse heading, turret handles residual (clamped to asymmetric travel window `[kTurretMinDeg, kTurretMaxDeg]` = [−90°, +155°]). See `docs/HybridAiming.md`.
 
 ### HubShiftUtil — Shift-Gated Feeding
 - 2026 game: teleop (140 s) is split into alternating scoring windows (shifts). Only one alliance may score into the hub per shift.

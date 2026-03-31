@@ -592,18 +592,21 @@ public class ShooterSystem {
     }
 
     private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
-        // clearKicker() runs immediately on trigger pull so the kicker is ready
-        // before the shift window opens.  After the clear finishes, we wait for
-        // the shifted window to become active (and the solution to be valid),
-        // then feed until the window closes or the solution goes out of range.
-        // .repeatedly() re-enters the waitUntil→feed loop for subsequent shifts.
+        // clearKicker() runs ONCE on trigger pull so the kicker is ready
+        // before the shift window opens.  After the clear finishes, we loop:
+        // wait for the shifted window to become active (and the solution to be
+        // valid), then feed until the window closes or the solution goes out of
+        // range.  .repeatedly() re-enters the waitUntil→feed loop for
+        // subsequent shifts WITHOUT re-running the clear.
         Supplier<Boolean> canFeed =
                 () -> HubShiftUtil.getShiftedShiftInfo().active() && solutionSupplier.get().isValid();
 
         return clearKicker()
-                .andThen(Commands.waitUntil(canFeed::get))
-                .andThen(spindexer.feedShooter().alongWith(kicker.feedShooter()).onlyWhile(canFeed::get))
-                .repeatedly()
+                .andThen(
+                        Commands.waitUntil(canFeed::get)
+                                .andThen(
+                                        spindexer.feedShooter().alongWith(kicker.feedShooter()).onlyWhile(canFeed::get))
+                                .repeatedly())
                 .withName("FeedSequence");
     }
 

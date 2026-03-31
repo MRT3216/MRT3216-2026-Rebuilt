@@ -245,8 +245,7 @@ public class Robot extends LoggedRobot {
         Elastic.selectTab("Auto");
         autonomousCommand = robotContainer.getAutonomousCommand();
 
-        // Wrap in .repeatedly() so the auto restarts as soon as it finishes.
-        // teleopInit() will cancel this when teleop begins.
+        // Schedule the selected auto command.  teleopInit() will cancel it.
         if (autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(autonomousCommand);
         }

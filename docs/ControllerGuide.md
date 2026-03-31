@@ -11,7 +11,7 @@ owns intake, shoot-mode selection, and secondary overrides.
 |--------|--------|
 | Left Stick | Field-relative drive (translation) |
 | Right Stick | Field-relative drive (rotation) — auto-rotates toward hub when RT > 50 % |
-| Right Trigger (hold) | **Hub shot** — hybrid aim + shoot (turret clamped −90 ° / +130 °, drivetrain heading assist, shift-gated feed) |
+| Right Trigger (hold) | **Hub shot** — hybrid aim + shoot (turret clamped −90 ° / +155 °, drivetrain heading assist, shift-gated feed) |
 | Left Trigger (hold) | **Pass shot** — hybrid aim + shoot at nearest pass target (turret clamped, ungated feed) |
 | Start | Reset gyro heading to 0° |
 
@@ -108,12 +108,12 @@ Mode is logged to `ShooterTelemetry/shootMode`.
 | 6 (lowest) | Shift inactive | Dim alliance colour (25 %) |
 
 **Read the LEDs like a traffic light:**
-- �🔵 Red/blue strobe = defence mode active
+- ��🔵 Red/blue strobe = defence mode active
 - 🟣 Purple strobe = intake is running
 - 🟢 Solid green = aim locked, trigger held
 - 🟠 Orange strobe = shift is about to change, wrap up
-- � Green wave = your shift is live, go score
-- �🔵 Dim cyan/red = not your shift, hold or pass
+- 🟢 Green wave = your shift is live, go score
+- 🔵 Dim cyan/red = not your shift, hold or pass
 
 ---
 

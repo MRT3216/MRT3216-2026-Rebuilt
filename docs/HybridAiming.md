@@ -5,7 +5,7 @@ This document describes the two turret aiming modes and how to switch between th
 1. **Turret-Only** — The turret handles all aiming. The drivetrain is fully
    controlled by the driver.
 2. **Hybrid (current default)** — The drivetrain auto-rotates the robot so the
-   turret stays within its travel window (−90° to +130° by default). The turret
+   turret stays within its travel window (−90° to +155° by default). The turret
    corrects the residual error. Protects wiring from large turret swings.
 
 ---
@@ -156,7 +156,7 @@ All constants are in `ShooterConstants.HybridAimingConstants`:
 |---|---|---|
 | `kTurretHomeAngleDeg` | `0.0` | Turret resting direction. `0` = forward, `180` = rear-facing. |
 | `kTurretMinDeg` | `-90.0` | Minimum turret travel (negative = left of home). Turret is clamped to `home + min`. |
-| `kTurretMaxDeg` | `130.0` | Maximum turret travel (positive = right of home). Turret is clamped to `home + max`. |
+| `kTurretMaxDeg` | `155.0` | Maximum turret travel (positive = right of home). Turret is clamped to `home + max`. |
 | `kThresholdMarginDeg` | `15.0` | Width of the ramp zone (in degrees) on each side before the travel limit. Drivetrain correction fades in linearly over this margin. Set to `0.0` to disable the ramp and revert to hard on/off behavior. |
 | `kHeadingKP` | `3.0` | How aggressively the drivetrain rotates toward the target. Increase if too sluggish. |
 | `kHeadingKD` | `0.2` | Damping on the heading correction. Increase if the robot overshoots the target heading. |
@@ -170,24 +170,24 @@ correction ramps in gradually on each side. This prevents a jarring snap when
 the turret nears its clamp limit and gives the chassis a head start on rotating.
 
 The travel window is **asymmetric** — the turret can swing further in one
-direction than the other (e.g. −90° to +130° by default).
+direction than the other (e.g. −90° to +155° by default).
 
 **Three zones** on each side (measured as the robot-relative angle from turret home):
 
 ```
- −90°           −75°                        +115°          +130°
+ −90°           −75°                        +140°          +155°
   ├── Full corr ─┤──── Ramp zone ────────────┤── Ramp zone ─┤── Full corr ──►
     (100% assist)  (100% → 0%)  Turret only  (0% → 100%)    (100% assist)
                                 (0% assist)
 ```
 
-With the default constants (`kTurretMinDeg=-90`, `kTurretMaxDeg=130`, `kThresholdMarginDeg=15`):
-- **−75° to +115°** — Inner zone: turret handles aiming alone, heading PID is reset.
+With the default constants (`kTurretMinDeg=-90`, `kTurretMaxDeg=155`, `kThresholdMarginDeg=15`):
+- **−75° to +140°** — Inner zone: turret handles aiming alone, heading PID is reset.
 - **−90° to −75°** (min side) — Ramp zone: drivetrain PID output is multiplied by
   a linear factor from 0.0 → 1.0 as the angle approaches −90°.
-- **+115° to +130°** (max side) — Ramp zone: same, factor ramps 0.0 → 1.0 as
-  the angle approaches +130°.
-- **< −90° or > +130°** — Outer zone: full PID correction.
+- **+140° to +155°** (max side) — Ramp zone: same, factor ramps 0.0 → 1.0 as
+  the angle approaches +155°.
+- **< −90° or > +155°** — Outer zone: full PID correction.
 
 The 15° ramp margin on each side means the drivetrain reaches full correction
 before the turret hits its mechanical limit — plenty of time for the chassis to

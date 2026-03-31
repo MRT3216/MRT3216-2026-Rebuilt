@@ -21,21 +21,19 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 /**
- * LED subsystem — drives addressable LEDs based on robot state and hub shift
- * timing.
+ * LED subsystem — drives addressable LEDs based on robot state and hub shift timing.
  *
- * <p>
- * Pattern priority (highest first):
+ * <p>Pattern priority (highest first):
  *
  * <ol>
- * <li>Disabled — slow teal/orange team wave
- * <li>Autonomous — fast orange/cyan wave
- * <li>Defence mode — red/blue strobe
- * <li>Intaking — purple strobe
- * <li>Aim lock — solid green
- * <li>Shift ending (≤5 s remaining) — fast orange strobe warning
- * <li>Shift active — green/black wave ("go score!")
- * <li>Shift inactive — dim alliance color
+ *   <li>Disabled — slow teal/orange team wave
+ *   <li>Autonomous — fast orange/cyan wave
+ *   <li>Defence mode — red/blue strobe
+ *   <li>Intaking — purple strobe
+ *   <li>Aim lock — solid green
+ *   <li>Shift ending (≤5 s remaining) — fast orange strobe warning
+ *   <li>Shift active — green/black wave ("go score!")
+ *   <li>Shift inactive — dim alliance color
  * </ol>
  */
 public class LEDSubsystem extends SubsystemBase {
@@ -53,9 +51,7 @@ public class LEDSubsystem extends SubsystemBase {
 
     private Color allianceColor = Color.kCyan;
 
-    /**
-     * Flags set by external commands to override the default shift-based pattern.
-     */
+    /** Flags set by external commands to override the default shift-based pattern. */
     private boolean intaking = false;
 
     private boolean aimLock = false;
@@ -210,10 +206,9 @@ public class LEDSubsystem extends SubsystemBase {
      * Hub-shift-aware teleop pattern.
      *
      * <ul>
-     * <li>Shift ending (≤5 s) — fast orange strobe so the driver prepares for the
-     * transition
-     * <li>Shift active — green wave = "go score!"
-     * <li>Shift inactive — dim alliance color = "hold / pass"
+     *   <li>Shift ending (≤5 s) — fast orange strobe so the driver prepares for the transition
+     *   <li>Shift active — green wave = "go score!"
+     *   <li>Shift inactive — dim alliance color = "hold / pass"
      * </ul>
      */
     private void applyShiftPattern() {

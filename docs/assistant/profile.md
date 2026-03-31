@@ -1246,7 +1246,7 @@ Competition Status & Pre-Boise Priorities (updated 2026-03-21)
 
 ### Current Architecture (as of 2026-03-26)
 - **Aiming mode**: Hybrid (drivetrain coarse + turret fine) — active in competition and tuning
-- **Turret travel window**: −90° to +130° (asymmetric), configurable via 2 constants in `HybridAimingConstants`
+- **Turret travel window**: −90° to +155° (asymmetric), configurable via 2 constants in `HybridAimingConstants`
 - **Shoot modes**: FULL (moving shot, turret tracks) and FULL_STATIC (turret locked at home)
 - **Tuning mode**: Single driver controller with D-pad snap angles, aim-only RT, testShoot on X
 - **Constants organization**: subsystem constants in subsystem packages; `HybridAimingConstants` in `ShooterConstants.java`

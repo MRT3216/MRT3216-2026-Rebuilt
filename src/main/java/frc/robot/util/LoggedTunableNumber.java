@@ -18,6 +18,7 @@ public class LoggedTunableNumber implements DoubleSupplier {
     private boolean hasDefault = false;
     private double defaultValue;
     private LoggedNetworkNumber dashboardNumber;
+    private double lastSetValue = Double.NaN; // tracks what we last wrote via set()
     private Map<Integer, Double> lastHasChangedValues = new HashMap<>();
     private final boolean tuningMode;
 
@@ -62,9 +63,10 @@ public class LoggedTunableNumber implements DoubleSupplier {
     /**
      * Get the current value, from dashboard if available and in tuning mode.
      *
-     * <p>When tuning mode is active this returns the greater of the dashboard-published value and the
-     * local mirror kept by {@link #set}, so that programmatic updates are visible immediately within
-     * the same loop cycle (before {@code LoggedNetworkNumber.periodic()} refreshes its NT cache).
+     * <p>When tuning mode is active, this prefers the local mirror (updated by {@link #set}) over the
+     * dashboard's NT cache. The dashboard value is only adopted when it differs from what we last
+     * programmatically wrote — i.e. the operator moved the slider on the dashboard. This prevents a
+     * stale NT cache from undoing a same-cycle {@link #set} call.
      *
      * @return The current value
      */
@@ -75,11 +77,14 @@ public class LoggedTunableNumber implements DoubleSupplier {
         if (!tuningMode) {
             return defaultValue;
         }
-        // In tuning mode: if the dashboard has diverged from our local mirror (i.e. the
-        // operator moved the slider), prefer the dashboard value and sync the mirror.
+        // In tuning mode: only adopt the dashboard value when the operator has
+        // externally changed it (dashValue differs from what we last wrote via set()).
+        // This prevents the stale NT cache from reverting a same-cycle set() call.
         double dashValue = dashboardNumber.get();
-        if (dashValue != defaultValue) {
+        if (dashValue != defaultValue && dashValue != lastSetValue) {
+            // Dashboard was changed externally — adopt the new value.
             defaultValue = dashValue;
+            lastSetValue = dashValue;
         }
         return defaultValue;
     }
@@ -97,6 +102,7 @@ public class LoggedTunableNumber implements DoubleSupplier {
         // Always keep defaultValue in sync so get() returns the new value immediately,
         // even before the NT cache is refreshed on the next periodic() call.
         defaultValue = value;
+        lastSetValue = value;
         if (tuningMode && dashboardNumber != null) {
             dashboardNumber.set(value);
         }

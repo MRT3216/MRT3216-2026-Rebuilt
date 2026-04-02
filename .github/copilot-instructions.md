@@ -66,6 +66,124 @@ FRC Team 3216's 2026 robot: Java 17, WPILib 2026, **YAMS** motor framework, **Ad
 - Spotless formatting: `.\gradlew spotlessApply`
 - **Robot reboot required** after SparkMax config changes (flash persistence).
 
+## WPILib Command Composition Quick Reference
+
+| Method | Group Type | Ends When |
+|--------|-----------|-----------|
+| `alongWith()` | `ParallelCommandGroup` | **ALL** commands finish |
+| `raceWith()` | `ParallelRaceGroup` | **ANY** command finishes |
+| `deadlineFor()` | `ParallelDeadlineGroup` | The **deadline** (calling) command finishes; interrupts all others |
+| `andThen()` | `SequentialCommandGroup` | Commands run in order; ends when last finishes |
+
+### Command Lifecycle Types
+
+| Factory / Class | Behavior |
+|----------------|----------|
+| `InstantCommand` / `runOnce()` | Runs once, finishes immediately |
+| `RunCommand` / `run()` | Runs every cycle, **never finishes on its own** |
+| `runEnd()` | Runs every cycle with an end action, **never finishes on its own** |
+| `startEnd()` | Runs a start action on init; runs an end action when interrupted, **never finishes on its own** |
+
+## Common Pitfalls
+- **PathPlanner `NamedCommands` must terminate** — an infinite command (e.g., `run()`) will stall the entire auto sequence. Use `runOnce()`, `withTimeout()`, or `until()` for event markers.
+- **CTRE `StatusSignal` values must be refreshed** before reading; stale signals return old data silently. Always call `PhoenixUtil.refresh()` in IO `updateInputs()`.
+- **SparkMax persists config to flash** — after code changes to YAMS config, a **robot reboot** is required. Stale flash params cause unexpected behavior (wrong speed, inversions, etc.).
+- **`getRotorVelocity()` is buggy on SparkWrapper** — reads position instead of velocity. Derive motor velocity as `mechanismVelocity × gearReduction`.
+- **`Mechanism` object is mandatory** — even if using `SmartMotorController` directly, always create the `Mechanism`. Its constructor re-applies config (soft limits, etc.) to the motor.
+- **Command groups block ALL involved subsystems** for their entire duration — default commands do NOT run during a composition. Use `Trigger` for loose coupling when this is too rigid.
+- **Don't store command instances as fields** — each use must get a fresh instance from a factory method. Reusing a command causes "command already scheduled" errors or silent no-ops.
+- **`Logger.recordOutput` keys must be unique** — duplicate keys silently overwrite each other. Group by subsystem path (e.g., `"Shooter/Flywheel/VelocityRPM"`).
+
+## Naming Conventions
+
+### Classes
+- **Subsystems** — PascalCase with `Subsystem` suffix: `FlywheelSubsystem`, `TurretSubsystem`, `IntakePivotSubsystem`.
+- **IO interfaces** — `<Subsystem>IO` pattern (no `Subsystem` suffix): `VisionIO`, `GyroIO`, `ModuleIO`.
+- **IO implementations** — `<Subsystem>IO<Type>` pattern: `VisionIOPhotonVision`, `VisionIOPhotonVisionSim`, `ModuleIOTalonFX`, `ModuleIOSim`.
+- **Systems** (multi-subsystem coordinators) — PascalCase with `System` suffix: `ShooterSystem`, `IntakeSystem`.
+- **Utility classes** — descriptive purpose: `AllianceFlipUtil`, `HubShiftUtil`, `PhoenixUtil`.
+
+### Enum Values (States)
+- **Present participles** for action states: `INTAKING`, `SHOOTING`, `SPINNING_UP`, `FEEDING`.
+- **Adjectives/nouns** for condition states: `IDLE`, `READY`, `AT_SETPOINT`, `DISABLED`.
+- Always `ALL_CAPS` with underscores. Spell out words fully (no `2` for `TO`, `4` for `FOR`).
+
+### Commands & Methods
+- **Command factory methods** — camelCase, verb-first: `setVelocity()`, `aimAndShoot()`, `feedShooter()`, `stopHold()`.
+- **No `Factory` or `Cmd` in method names** — the return type `Command` is sufficient.
+- Always `.withName("DescriptiveName")` on composed commands for readable scheduler traces.
+
+### Constants
+- `ALL_CAPS` with descriptive names **including units**: `kMaxVelocityRPM`, `kStallCurrentAmps`, `kTimeoutSeconds`.
+- Prefix with `k` per WPILib convention: `kTurretMinDeg`, `kRPMFudgeRPM`.
+
+## Noop IO Requirement
+Every robot configuration in `RobotContainer` **must** initialize **all** subsystems. For hardware not present on a given config (e.g., SIM has no real cameras), use anonymous Noop IO implementations:
+```java
+new VisionIO() {}  // all-zero no-op, no hardware calls
+```
+This eliminates null checks and ensures Systems and bindings work uniformly across all configs (COMPBOT, SIMBOT, etc.). Never leave a subsystem reference as `null`.
+
+## PR Review Guidelines
+
+When reviewing a PR (or when asked to review code), follow these rules:
+
+### Focus
+- **Flag breaking changes, not nitpicks.** Things that could break the robot, change runtime behavior unexpectedly, or affect other robot configs.
+- **Only review lines in the diff.** Do not flag pre-existing issues in touched files.
+- **Evaluate correctness and intent.** Does the code do what the PR says? Does it introduce regressions?
+
+### What Counts as a Breaking Change
+- **Behavioral changes**: command lifecycle changes (`runEnd` → `runOnce`), removed stop actions, changed motor inversions or sensor polarity.
+- **Cross-config impact**: changes to shared code (Systems, RobotContainer bindings) that affect configs other than the one being modified.
+- **CAN ID conflicts**: two constants sharing the same ID on the same bus.
+- **Disabled functionality**: commenting out periodic calculations, safety checks, or sensor reads that other code depends on.
+- **API signature changes**: renamed or removed public methods that may have callers outside the diff.
+
+### What Is NOT Worth Flagging
+- Style, formatting, or naming preferences (Spotless handles formatting).
+- Missing Javadoc or comments.
+- Code organization or method extraction choices.
+- Conventions that don't affect correctness.
+
+## Do / Don't / Ask First
+
+### Do
+- Write clear, commented code with `.withName()` on all composed commands.
+- Log important values with `Logger.recordOutput()` for debugging.
+- Use units consistently (meters, radians, seconds) and include units in constant names.
+- Run `.\gradlew compileJava` after changes to verify they compile.
+- Run `.\gradlew spotlessApply` before finalizing changes.
+
+### Don't
+- **Don't** hand-edit `generated/TunerConstants.java` — it's auto-generated by CTRE Tuner X.
+- **Don't** hardcode CAN IDs or DIO ports — use `RobotMap.java`.
+- **Don't** leave subsystem references as `null` in any robot config — use Noop IOs.
+- **Don't** store command instances as fields or reuse them across bindings.
+- **Don't** put multi-subsystem command logic inside a single subsystem class.
+- **Don't** delete or modify existing tests without explicit instruction.
+- **Don't** use unnamed numeric literals — give values descriptive names with units.
+
+### Ask First
+- Before adding or upgrading vendor dependencies.
+- Before restructuring folder layout or renaming packages.
+- Before changing CAN IDs, motor inversions, or sensor polarity in `RobotMap.java`.
+- Before modifying autonomous routines or PathPlanner paths.
+- Before changing the architecture (e.g., merging subsystems, adding a new System coordinator).
+- Before modifying `Constants.RobotType` or deploy/PR check logic.
+
+## Vendor Dependencies & Javadocs
+
+| Library | Version | Javadoc | User Guide |
+|---------|---------|---------|------------|
+| WPILib | 2026 | [Javadoc](https://github.wpilib.org/allwpilib/docs/release/java/index.html) | [Docs](https://docs.wpilib.org/en/stable/) |
+| CTRE Phoenix 6 | 26.1.3 | [Javadoc](https://api.ctr-electronics.com/phoenix6/stable/java/index.html) | [Docs](https://v6.docs.ctr-electronics.com/en/stable/) |
+| REVLib | 2026 | [Javadoc](https://codedocs.revrobotics.com/java/com/revrobotics/package-summary.html) | [Docs](https://docs.revrobotics.com/revlib) |
+| PathplannerLib | 2026.1.2 | [Javadoc](https://pathplanner.dev/api/java/) | [Docs](https://pathplanner.dev/home.html) |
+| AdvantageKit | 26.0.0 | [Javadoc](https://docs.advantagekit.org/javadoc/) | [Docs](https://docs.advantagekit.org/) |
+| PhotonVision | 2026 | [Javadoc](https://photonvision.github.io/photonvision/javadoc/) | [Docs](https://docs.photonvision.org/) |
+| YAMS | 2026.1.17 | — | [Docs](https://yagsl.gitbook.io/yams) |
+
 ## Key File Map
 | Area | Path |
 |------|------|

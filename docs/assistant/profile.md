@@ -1270,7 +1270,7 @@ Backup & transcript policy
 
 Suggested next improvements (optional)
 - Add small JUnit-style integration tests that validate bump commands are non-requiring and triggers start/stop pipelines correctly.
-- Add a small `scripts/verify-commands.sh` that runs `./gradlew build` and greps for `withName("` uses to ensure command naming coverage.
+- Add a CI step that runs `./gradlew build` and greps for `withName("` uses to ensure command naming coverage.
 - Publish the starter prompt into repository-level VS Code snippets for convenience.
 
 Maintenance

@@ -2,13 +2,26 @@ plugins {
     id "java"
     id "edu.wpi.first.GradleRIO" version "2026.2.1"
     id "com.peterabeles.gversion" version "1.10"
-    id "com.diffplug.spotless" version "6.12.0"
+    id "com.diffplug.spotless" version "6.25.0"
     id "io.freefair.lombok" version "8.4"
 }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'libs/objectvision/src/main/java'
+        }
+    }
+    test {
+        java {
+            srcDir 'libs/objectvision/src/test/java'
+        }
+    }
 }
 
 def ROBOT_MAIN_CLASS = "frc.robot.Main"
@@ -116,7 +129,11 @@ wpi.sim.addDriverstation()
 // in order to make them all available at runtime. Also adding the manifest so WPILib
 // knows where to look for our Robot Class.
 jar {
-    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
     from sourceSets.main.allSource
     manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
     duplicatesStrategy = DuplicatesStrategy.INCLUDE

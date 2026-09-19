@@ -66,12 +66,16 @@ public class IntakePivotSubsystem extends SubsystemBase {
     public static class IntakePivotInputs {
         /** Actual angle of the intake arm. */
         public Angle angle = Degrees.of(0);
+
         /** Actual angular velocity of the intake arm. */
         public AngularVelocity velocity = DegreesPerSecond.of(0);
+
         /** Current target angle requested from the motor controller. */
         public Angle setpoint = Degrees.of(0);
+
         /** Applied voltage across the motor. */
         public Voltage volts = Volts.of(0);
+
         /** Stator current draw of the motor. */
         public Current current = Amps.of(0);
     }

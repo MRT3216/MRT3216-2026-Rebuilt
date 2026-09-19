@@ -61,10 +61,13 @@ public class IntakeRollersSubsystem extends SubsystemBase {
     public static class IntakeRollersInputs {
         /** Actual velocity of the intake rollers mechanism. */
         public AngularVelocity velocity = RPM.of(0);
+
         /** Current target velocity requested from the motor controller. */
         public AngularVelocity setpoint = RPM.of(0);
+
         /** Applied voltage across the master motor. */
         public Voltage volts = Volts.of(0);
+
         /** Stator current draw of the master motor. */
         public Current current = Amps.of(0);
     }

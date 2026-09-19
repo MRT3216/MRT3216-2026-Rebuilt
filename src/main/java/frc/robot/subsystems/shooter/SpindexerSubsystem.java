@@ -58,14 +58,18 @@ public class SpindexerSubsystem extends SubsystemBase {
     public static class SpindexerInputs {
         /** Mechanism velocity (roller, after gear reduction). Logged in native YAMS units (RPS). */
         public AngularVelocity mechanismVelocity = RPM.of(0);
+
         /**
          * Motor rotor velocity (before gear reduction), derived as mechanismVelocity × kGearReduction.
          */
         public AngularVelocity motorVelocity = RPM.of(0);
+
         /** Closed-loop velocity setpoint sent to the motor controller (mechanism RPS). */
         public AngularVelocity setpoint = RPM.of(0);
+
         /** Applied voltage across the motor. */
         public Voltage volts = Volts.of(0);
+
         /** Stator current draw of the motor. */
         public Current current = Amps.of(0);
     }

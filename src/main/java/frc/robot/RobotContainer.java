@@ -38,6 +38,7 @@ import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 import frc.robot.subsystems.lights.*;
 import frc.robot.subsystems.objectvision.ObjectVisionConstants;
+import frc.robot.subsystems.objectvision.ObjectVisionSim;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -62,6 +63,8 @@ import org.mrt3216.objectvision.CameraSpec;
 import org.mrt3216.objectvision.ObjectVision;
 import org.mrt3216.objectvision.ObjectVisionIO;
 import org.mrt3216.objectvision.ObjectVisionIOPhotonVision;
+import org.mrt3216.objectvision.ObjectVisionIOSim;
+import org.mrt3216.objectvision.SimCameraModel;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -185,13 +188,35 @@ public class RobotContainer {
                                             VisionConstants.robotToCameraBack,
                                             drive::getPose));
 
-                    // Noop until Phase 3 adds ObjectVisionIOSim
+                    // Sim object detection: pure-math camera model, no PhotonLib
+                    ObjectVisionSim objectVisionSim = new ObjectVisionSim(drive::getPose);
+                    SimCameraModel simCameraModel =
+                            new SimCameraModel(
+                                    Math.toRadians(70.0), // hFOV (OV9782)
+                                    Math.toRadians(43.0), // vFOV (estimate)
+                                    ObjectVisionConstants.kMaxRangeMeters,
+                                    Math.toRadians(1.0), // yaw noise stddev
+                                    Math.toRadians(1.0), // pitch noise stddev
+                                    0.05, // 5% dropout
+                                    0.05, // 50 ms latency
+                                    30.0); // 30 Hz frame rate
                     objectVision =
                             new ObjectVision(
                                     ObjectVisionConstants.kFuelConfig,
                                     drive::getPose,
                                     new CameraSpec(
-                                            new ObjectVisionIO() {}, ObjectVisionConstants.robotToCameraObject));
+                                            new ObjectVisionIOSim(
+                                                    drive::getPose,
+                                                    objectVisionSim.getBallSupplier(),
+                                                    ObjectVisionConstants.robotToCameraObject,
+                                                    simCameraModel,
+                                                    ObjectVisionConstants.kClassId),
+                                            ObjectVisionConstants.robotToCameraObject));
+
+                    // Update sim scenario and log truth each loop
+                    // (ObjectVisionSim is not a subsystem — call from a periodic command)
+                    edu.wpi.first.wpilibj2.command.CommandScheduler.getInstance()
+                            .schedule(Commands.run(objectVisionSim::update).ignoringDisable(true));
 
                     break;
                 }

@@ -37,6 +37,7 @@ import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.subsystems.intake.IntakePivotSubsystem;
 import frc.robot.subsystems.intake.IntakeRollersSubsystem;
 import frc.robot.subsystems.lights.*;
+import frc.robot.subsystems.objectvision.ObjectVisionConstants;
 import frc.robot.subsystems.shooter.FlywheelSubsystem;
 import frc.robot.subsystems.shooter.HoodSubsystem;
 import frc.robot.subsystems.shooter.KickerSubsystem;
@@ -57,6 +58,10 @@ import frc.robot.util.RobotMapValidator;
 import frc.robot.util.shooter.ShootingLookupTable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import org.mrt3216.objectvision.CameraSpec;
+import org.mrt3216.objectvision.ObjectVision;
+import org.mrt3216.objectvision.ObjectVisionIO;
+import org.mrt3216.objectvision.ObjectVisionIOPhotonVision;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -72,6 +77,7 @@ public class RobotContainer {
     // Subsystems
     private final Drive drive;
     private final Vision vision;
+    private final ObjectVision objectVision;
     private final FlywheelSubsystem flywheelSubsystem = new FlywheelSubsystem();
     private final KickerSubsystem kickerSubsystem = new KickerSubsystem();
     private final TurretSubsystem turretSubsystem = new TurretSubsystem();
@@ -142,6 +148,14 @@ public class RobotContainer {
                                     new VisionIOPhotonVision(
                                             VisionConstants.cameraBackName, VisionConstants.robotToCameraBack));
 
+                    objectVision =
+                            new ObjectVision(
+                                    ObjectVisionConstants.kFuelConfig,
+                                    drive::getPose,
+                                    new CameraSpec(
+                                            new ObjectVisionIOPhotonVision(ObjectVisionConstants.kCameraName),
+                                            ObjectVisionConstants.robotToCameraObject));
+
                     break;
                 }
             case SIM:
@@ -171,6 +185,14 @@ public class RobotContainer {
                                             VisionConstants.robotToCameraBack,
                                             drive::getPose));
 
+                    // Noop until Phase 3 adds ObjectVisionIOSim
+                    objectVision =
+                            new ObjectVision(
+                                    ObjectVisionConstants.kFuelConfig,
+                                    drive::getPose,
+                                    new CameraSpec(
+                                            new ObjectVisionIO() {}, ObjectVisionConstants.robotToCameraObject));
+
                     break;
                 }
 
@@ -192,6 +214,13 @@ public class RobotContainer {
                                     new VisionIO() {},
                                     new VisionIO() {},
                                     new VisionIO() {});
+
+                    objectVision =
+                            new ObjectVision(
+                                    ObjectVisionConstants.kFuelConfig,
+                                    drive::getPose,
+                                    new CameraSpec(
+                                            new ObjectVisionIO() {}, ObjectVisionConstants.robotToCameraObject));
                     break;
                 }
         }

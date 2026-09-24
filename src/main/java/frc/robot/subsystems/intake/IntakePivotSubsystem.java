@@ -35,8 +35,6 @@ import frc.robot.constants.Constants;
 import frc.robot.constants.RobotMap;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.Logger;
-import yams.gearing.GearBox;
-import yams.gearing.MechanismGearing;
 import yams.mechanisms.config.ArmConfig;
 import yams.mechanisms.positional.Arm;
 import yams.motorcontrollers.SmartMotorController;
@@ -128,7 +126,7 @@ public class IntakePivotSubsystem extends SubsystemBase {
                         // .withExternalEncoderInverted(false)
                         // .withUseExternalFeedbackEncoder(true)
                         // .withExternalEncoderZeroOffset(kEncoderZeroOffset)
-                        .withExternalEncoderGearing(new MechanismGearing(GearBox.fromStages("1:1")))
+                        // .withExternalEncoderGearing(new MechanismGearing(GearBox.fromStages("1:1")))
                         .withFollowers(Pair.of(rightPivotMotor, true));
 
         smartMotor = new SparkWrapper(leftPivotMotor, DCMotor.getNeoVortex(2), motorConfig);

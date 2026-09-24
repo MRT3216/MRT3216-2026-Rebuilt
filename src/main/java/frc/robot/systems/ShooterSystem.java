@@ -88,6 +88,16 @@ public class ShooterSystem {
                 .withName("ClearKicker");
     }
 
+    public Command shoot() {
+        var flywheelCmd = flywheel.setVelocity(() -> RPM.of(3000));
+        var hoodCmd = hood.setAngle(() -> Degrees.of(11));
+        var clearKicker = clearKicker();
+        return clearKicker.andThen(
+                flywheelCmd
+                        .alongWith(hoodCmd)
+                        .alongWith(spindexer.feedShooter().alongWith(kicker.feedShooter())));
+    }
+
     /**
      * Test-mode shoot: a stationary calibration routine for building the two-point flywheel model and
      * populating the hood-angle LUT.
@@ -342,17 +352,18 @@ public class ShooterSystem {
      * <pre>{@code
      * // In RobotContainer.configureButtonBindings():
      * operatorController.rightTrigger().whileTrue(
-     *     shooterSystem.hybridAimAndShoot(
-     *         () -> drive.getPose(),
-     *         () -> drive.getChassisSpeeds(),
-     *         () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-     *         3,
-     *         ShootingLookupTable.Mode.HUB,
-     *         () -> currentShootMode));
+     *         shooterSystem.hybridAimAndShoot(
+     *                 () -> drive.getPose(),
+     *                 () -> drive.getChassisSpeeds(),
+     *                 () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+     *                 3,
+     *                 ShootingLookupTable.Mode.HUB,
+     *                 () -> currentShootMode));
      *
      * // Swap the drive default command to the hybrid variant while aiming,
      * // OR make the drive default always be joystickDriveAimAtTarget with
-     * // aimEnabled gated by a BooleanSupplier (e.g. operatorController.rightTrigger()).
+     * // aimEnabled gated by a BooleanSupplier (e.g.
+     * // operatorController.rightTrigger()).
      * }</pre>
      *
      * @param robotPose supplier of the robot pose
@@ -445,7 +456,8 @@ public class ShooterSystem {
         var solution =
                 makeSolutionSupplier(robotPose, fieldSpeeds, targetSupplier, refinementIterations, table);
 
-        // Turret: clamped to asymmetric travel [home + min, home + max], same as hybridAimAndShoot.
+        // Turret: clamped to asymmetric travel [home + min, home + max], same as
+        // hybridAimAndShoot.
         var turretCmd =
                 turret.setAngle(
                         () -> {
@@ -568,7 +580,7 @@ public class ShooterSystem {
             int refinementIterations,
             ShootingLookupTable table) {
         // Memoize the solution: compute once per FPGA timestamp, then return the
-        // cached value for every subsequent call in the same loop cycle.  This avoids
+        // cached value for every subsequent call in the same loop cycle. This avoids
         // re-running the iterative solver for every parallel command (turret, hood,
         // flywheel, feed, telemetry) that reads the solution each tick.
         final HybridTurretUtil.ShotSolution[] cache = new HybridTurretUtil.ShotSolution[1];
@@ -593,10 +605,10 @@ public class ShooterSystem {
 
     private Command makeFeedSequence(Supplier<HybridTurretUtil.ShotSolution> solutionSupplier) {
         // clearKicker() runs ONCE on trigger pull so the kicker is ready
-        // before the shift window opens.  After the clear finishes, we loop:
+        // before the shift window opens. After the clear finishes, we loop:
         // wait for the shifted window to become active (and the solution to be
         // valid), then feed until the window closes or the solution goes out of
-        // range.  .repeatedly() re-enters the waitUntil→feed loop for
+        // range. .repeatedly() re-enters the waitUntil→feed loop for
         // subsequent shifts WITHOUT re-running the clear.
         Supplier<Boolean> canFeed =
                 () -> HubShiftUtil.getShiftedShiftInfo().active() && solutionSupplier.get().isValid();

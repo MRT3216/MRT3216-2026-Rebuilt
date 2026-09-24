@@ -15,10 +15,8 @@ import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.net.WebServer;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -208,7 +206,7 @@ public class RobotContainer {
                         ShootingLookupTable.Mode.HUB,
                         () -> currentShootMode));
         // Autos use the non-hybrid aimAndShoot so the drivetrain is free for
-        // PathPlanner path-following.  "Hybrid Aim and Shoot" is kept as an
+        // PathPlanner path-following. "Hybrid Aim and Shoot" is kept as an
         // alias that points to the same turret-only command.
         NamedCommands.registerCommand(
                 "Hybrid Aim and Shoot",
@@ -302,28 +300,30 @@ public class RobotContainer {
         // Back change the binding to driverController.back().
         driverController.start().onTrue(resetGyroZeroCommand());
 
-        // Warn both controllers with continuous rumble if FMS has not sent game-specific
-        // data (hub winner) within 1 second of teleop start and no manual override is set.
+        // Warn both controllers with continuous rumble if FMS has not sent
+        // game-specific
+        // data (hub winner) within 1 second of teleop start and no manual override is
+        // set.
         // Only active when connected to a real FMS — otherwise bench testing would
         // trigger permanent rumble since the game-specific message is always empty.
         // Mirrors 6328's autoWinnerNotSet alert.
-        Timer teleopElapsedTimer = new Timer();
-        RobotModeTriggers.teleop().onTrue(Commands.runOnce(teleopElapsedTimer::restart));
-        RobotModeTriggers.teleop()
-                .and(DriverStation::isFMSAttached)
-                .and(() -> DriverStation.getGameSpecificMessage().isEmpty())
-                .and(() -> HubShiftUtil.getAllianceWinOverride().isEmpty())
-                .and(() -> teleopElapsedTimer.hasElapsed(1.0))
-                .whileTrue(
-                        Commands.runEnd(
-                                () -> {
-                                    driverController.setRumble(RumbleType.kBothRumble, 1.0);
-                                    operatorController.setRumble(RumbleType.kBothRumble, 1.0);
-                                },
-                                () -> {
-                                    driverController.setRumble(RumbleType.kBothRumble, 0.0);
-                                    operatorController.setRumble(RumbleType.kBothRumble, 0.0);
-                                }));
+        // Timer teleopElapsedTimer = new Timer();
+        // RobotModeTriggers.teleop().onTrue(Commands.runOnce(teleopElapsedTimer::restart));
+        // RobotModeTriggers.teleop()
+        // .and(DriverStation::isFMSAttached)
+        // .and(() -> DriverStation.getGameSpecificMessage().isEmpty())
+        // .and(() -> HubShiftUtil.getAllianceWinOverride().isEmpty())
+        // .and(() -> teleopElapsedTimer.hasElapsed(1.0))
+        // .whileTrue(
+        // Commands.runEnd(
+        // () -> {
+        // driverController.setRumble(RumbleType.kBothRumble, 1.0);
+        // operatorController.setRumble(RumbleType.kBothRumble, 1.0);
+        // },
+        // () -> {
+        // driverController.setRumble(RumbleType.kBothRumble, 0.0);
+        // operatorController.setRumble(RumbleType.kBothRumble, 0.0);
+        // }));
     }
 
     /**
@@ -342,40 +342,46 @@ public class RobotContainer {
         driverController
                 .rightTrigger()
                 .whileTrue(
-                        shooterSystem.hybridAimAndShoot(
-                                () -> drive.getPose(),
-                                () -> drive.getChassisSpeeds(),
-                                () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
-                                3,
-                                ShootingLookupTable.Mode.HUB,
-                                () -> currentShootMode));
+                        shooterSystem.shoot()
+                        // shooterSystem.hybridAimAndShoot(
+                        // () -> drive.getPose(),
+                        // () -> drive.getChassisSpeeds(),
+                        // () -> AllianceFlipUtil.apply(FieldConstants.Hub.innerCenterPoint),
+                        // 3,
+                        // ShootingLookupTable.Mode.HUB,
+                        // () -> currentShootMode)
+
+                        );
         // Aim-lock LED while hub shooting is active.
-        driverController
-                .rightTrigger()
-                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+        // driverController
+        //         .rightTrigger()
+        //         .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+        //         .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
         // Left trigger: hybrid pass shot — aims at nearest pass target landing
         // zone with turret clamped to travel limits, drivetrain heading assist.
         // Uses PASS lookup table. Feed is ungated (fires freely).
-        driverController
-                .leftTrigger()
-                .whileTrue(
-                        shooterSystem.hybridAimAndShootPass(
-                                () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
-        // Aim-lock LED while pass shooting is active.
-        driverController
-                .leftTrigger()
-                .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
-                .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
+        // driverController
+        // .leftTrigger()
+        // .whileTrue(
+        // shooterSystem.hybridAimAndShootPass(
+        // () -> drive.getPose(), () -> drive.getChassisSpeeds(), 3));
+
+        // // Aim-lock LED while pass shooting is active.
+        // driverController
+        // .leftTrigger()
+        // .onTrue(ledSubsystem.setAimLockLEDCommand(() -> true))
+        // .onFalse(ledSubsystem.setAimLockLEDCommand(() -> false));
 
         // ── Operator: intake ───────────────────────────────────────────
 
         // Right trigger: hold to intake (deploy arm + run rollers).
-        operatorController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
+        // operatorController.rightTrigger().whileTrue(intakeSystem.dutyCycleIntake());
+        driverController.leftTrigger().whileTrue(intakeSystem.dutyCycleIntake());
 
         // Left trigger: hold to reverse intake (eject balls).
-        operatorController.leftTrigger().whileTrue(intakeSystem.dutyCycleEject());
+        // operatorController.leftTrigger().whileTrue(intakeSystem.dutyCycleEject());
+        driverController.leftBumper().whileTrue(intakeSystem.dutyCycleEject());
 
         // ── Operator: secondary ball-handling & overrides ───────────────
 
@@ -386,16 +392,26 @@ public class RobotContainer {
         // Note: dutyCycleAgitate() resets state to Stowed via finallyDo(), so
         // the onFalse always re-deploys the arm. Rollers are NOT restarted —
         // the operator uses RT to resume intaking after agitation.
-        operatorController
+        // operatorController
+        // .a()
+        // .whileTrue(intakeSystem.dutyCycleAgitate())
+        // .onFalse(intakeSystem.dutyCycleDeploy());
+        driverController
                 .a()
                 .whileTrue(intakeSystem.dutyCycleAgitate())
                 .onFalse(intakeSystem.dutyCycleDeploy());
 
         // B button: clear / unjam shooter system while held.
-        operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
+        // operatorController.b().whileTrue(shooterSystem.clearShooterSystem());
+        driverController.b().whileTrue(shooterSystem.clearShooterSystem());
 
         // X button: defence mode (red/blue strobe LEDs while held).
-        operatorController
+        // operatorController
+        // .x()
+        // .onTrue(ledSubsystem.setDefenceModeLEDCommand(() -> true))
+        // .onFalse(ledSubsystem.setDefenceModeLEDCommand(() -> false));
+
+        driverController
                 .x()
                 .onTrue(ledSubsystem.setDefenceModeLEDCommand(() -> true))
                 .onFalse(ledSubsystem.setDefenceModeLEDCommand(() -> false));
@@ -404,43 +420,51 @@ public class RobotContainer {
 
         // Y button: toggle between FULL (auto-aim + SOTF) and FULL_STATIC
         // (turret locked at 0°, no lead compensation — manual aim fallback).
-        operatorController
-                .y()
-                .onTrue(
-                        Commands.runOnce(
-                                () -> {
-                                    if (currentShootMode == ShootMode.FULL_STATIC) {
-                                        currentShootMode = ShootMode.FULL;
-                                    } else {
-                                        currentShootMode = ShootMode.FULL_STATIC;
-                                    }
-                                    Logger.recordOutput("ShooterTelemetry/shootMode", currentShootMode.name());
-                                }));
+        // operatorController
+        //         .y()
+        //         .onTrue(
+        //                 Commands.runOnce(
+        //                         () -> {
+        //                             if (currentShootMode == ShootMode.FULL_STATIC) {
+        //                                 currentShootMode = ShootMode.FULL;
+        //                             } else {
+        //                                 currentShootMode = ShootMode.FULL_STATIC;
+        //                             }
+        //                             Logger.recordOutput(
+        //                                     "ShooterTelemetry/shootMode",
+        //                                     currentShootMode.name());
+        //                         }));
 
         // ── Operator: RPM fudge adjustment ──────────────────────────────
         // RB/LB adjust the RPM fudge factor in ±50 RPM increments.
         // Writes through to the LoggedTunableNumber so the dashboard
         // Number Slider updates in real time. Clamped to ±200 RPM.
 
-        operatorController
-                .rightBumper()
-                .onTrue(
-                        Commands.runOnce(
-                                () -> {
-                                    double next = Math.min(kRPMFudgeRPM.get() + 50, 200);
-                                    kRPMFudgeRPM.set(next);
-                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
-                                }));
+        // operatorController
+        //         .rightBumper()
+        //         .onTrue(
+        //                 Commands.runOnce(
+        //                         () -> {
+        //                             double next = Math.min(kRPMFudgeRPM.get() + 50,
+        //                                     200);
+        //                             kRPMFudgeRPM.set(next);
+        //                             Logger.recordOutput(
+        //                                     "ShooterTelemetry/rpmFudgeRPM",
+        //                                     next);
+        //                         }));
 
-        operatorController
-                .leftBumper()
-                .onTrue(
-                        Commands.runOnce(
-                                () -> {
-                                    double next = Math.max(kRPMFudgeRPM.get() - 50, -200);
-                                    kRPMFudgeRPM.set(next);
-                                    Logger.recordOutput("ShooterTelemetry/rpmFudgeRPM", next);
-                                }));
+        // operatorController
+        //         .leftBumper()
+        //         .onTrue(
+        //                 Commands.runOnce(
+        //                         () -> {
+        //                             double next = Math.max(kRPMFudgeRPM.get() - 50,
+        //                                     -200);
+        //                             kRPMFudgeRPM.set(next);
+        //                             Logger.recordOutput(
+        //                                     "ShooterTelemetry/rpmFudgeRPM",
+        //                                     next);
+        //                         }));
 
         // ── Shift-end rumble ────────────────────────────────────────────
         // Pulse rumble once per second in the last 5s of each hub shift —

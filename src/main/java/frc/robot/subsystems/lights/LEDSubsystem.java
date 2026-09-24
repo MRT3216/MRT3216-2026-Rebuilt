@@ -139,16 +139,17 @@ public class LEDSubsystem extends SubsystemBase {
             // ── Teleop ──────────────────────────────────────────────────────
             // Command-driven overrides (defenceMode > intaking > aimLock) take priority,
             // then shift-aware patterns fill the gaps.
-            if (defenceMode) {
-                strobe(Color.kRed, Color.kBlue, STROBE_DEFENCE_DURATION);
-            } else if (intaking) {
-                strobe(Color.kPurple, STROBE_FAST_DURATION);
-            } else if (aimLock) {
-                applyShiftPattern();
-                applyOverlayAlternate(Color.kGreen, 5);
-            } else {
-                applyShiftPattern();
-            }
+            // if (defenceMode) {
+            // strobe(Color.kRed, Color.kBlue, STROBE_DEFENCE_DURATION);
+            // } else if (intaking) {
+            // strobe(Color.kPurple, STROBE_FAST_DURATION);
+            // } else if (aimLock) {
+            // applyShiftPattern();
+            // applyOverlayAlternate(Color.kGreen, 5);
+            // } else {
+            // applyShiftPattern();
+            // }
+            wave(Color.kCyan, Color.kDarkOrange, WAVE_ALLIANCE_CYCLE_LENGTH, WAVE_ALLIANCE_DURATION);
         }
 
         // Push the buffer to the LED strip.
@@ -255,19 +256,28 @@ public class LEDSubsystem extends SubsystemBase {
     private void wave(Color c1, Color c2, double cycleLength, double duration) {
         double x = (1 - ((Timer.getFPGATimestamp() % duration) / duration)) * 2.0 * Math.PI;
         double xDiffPerLed = (2.0 * Math.PI) / cycleLength;
+
         for (int i = 0; i < LEDsConstants.kNumLEDs; i++) {
             x += xDiffPerLed;
             double ratio = (Math.pow(Math.sin(x), WAVE_EXPONENT) + 1.0) / 2.0;
+
             if (Double.isNaN(ratio)) {
                 ratio = (-Math.pow(Math.sin(x + Math.PI), WAVE_EXPONENT) + 1.0) / 2.0;
             }
             if (Double.isNaN(ratio)) {
                 ratio = 0.5;
             }
-            // Use setRGB to avoid allocating a Color object per LED per cycle.
-            int red = (int) Math.round(((c1.red * (1 - ratio)) + (c2.red * ratio)) * 255);
-            int green = (int) Math.round(((c1.green * (1 - ratio)) + (c2.green * ratio)) * 255);
-            int blue = (int) Math.round(((c1.blue * (1 - ratio)) + (c2.blue * ratio)) * 255);
+
+            // 1. Linearly mix the raw 0.0-1.0 channel values
+            double rMix = (c1.red * (1 - ratio)) + (c2.red * ratio);
+            double gMix = (c1.green * (1 - ratio)) + (c2.green * ratio);
+            double bMix = (c1.blue * (1 - ratio)) + (c2.blue * ratio);
+
+            // 2. Apply a Gamma 2.2 correction curve to prevent the pink/white blowout
+            int red = (int) Math.round(Math.pow(rMix, 2.2) * 255);
+            int green = (int) Math.round(Math.pow(gMix, 2.2) * 255);
+            int blue = (int) Math.round(Math.pow(bMix, 2.2) * 255);
+
             ledBuffer.setRGB(i, red, green, blue);
         }
     }

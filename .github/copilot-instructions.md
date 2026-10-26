@@ -177,12 +177,12 @@ When reviewing a PR (or when asked to review code), follow these rules:
 | Library | Version | Javadoc | User Guide |
 |---------|---------|---------|------------|
 | WPILib | 2026 | [Javadoc](https://github.wpilib.org/allwpilib/docs/release/java/index.html) | [Docs](https://docs.wpilib.org/en/stable/) |
-| CTRE Phoenix 6 | 26.1.3 | [Javadoc](https://api.ctr-electronics.com/phoenix6/stable/java/index.html) | [Docs](https://v6.docs.ctr-electronics.com/en/stable/) |
+| CTRE Phoenix 6 | 26.3.0 | [Javadoc](https://api.ctr-electronics.com/phoenix6/stable/java/index.html) | [Docs](https://v6.docs.ctr-electronics.com/en/stable/) |
 | REVLib | 2026 | [Javadoc](https://codedocs.revrobotics.com/java/com/revrobotics/package-summary.html) | [Docs](https://docs.revrobotics.com/revlib) |
 | PathplannerLib | 2026.1.2 | [Javadoc](https://pathplanner.dev/api/java/) | [Docs](https://pathplanner.dev/home.html) |
 | AdvantageKit | 26.0.0 | [Javadoc](https://docs.advantagekit.org/javadoc/) | [Docs](https://docs.advantagekit.org/) |
 | PhotonVision | 2026 | [Javadoc](https://photonvision.github.io/photonvision/javadoc/) | [Docs](https://docs.photonvision.org/) |
-| YAMS | 2026.1.17 | — | [Docs](https://yagsl.gitbook.io/yams) |
+| YAMS | 2026.3.11 (do NOT bump to 2026.10.x — 2027 rewrite, breaking API) | — | [Docs](https://yagsl.gitbook.io/yams) |
 
 ## Key File Map
 | Area | Path |
